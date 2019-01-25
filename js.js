@@ -4,7 +4,8 @@ function hideForm() {
   document.getElementById('appendForm').style.display = "none"
 }
 
-jonFunc(score);
+// jonFunc(score);
+
 // The above!
 
 // Below is the creation of the name form, and fetch post requests to the JSON
