@@ -591,3 +591,24 @@ body::before {
     transform: translateX(-50%) scale(1.03);
   }
 }
+
+/* Colorblind Mode — swaps red/green to blue/orange */
+body.colorblind canvas {
+  filter: hue-rotate(90deg) saturate(1.2);
+}
+
+body.colorblind .pause-buttons button,
+body.colorblind #level-select-back {
+  border-color: #ff8800;
+  color: #ff8800;
+}
+
+body.colorblind .level-grid button.unlocked {
+  border-color: #0088ff;
+  color: #0088ff;
+}
+
+body.colorblind .tutorial-prompt {
+  border-color: #ff8800;
+  color: #ff8800;
+}

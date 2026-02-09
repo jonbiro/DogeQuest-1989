@@ -50,8 +50,10 @@ export class Game {
         this.restartBtn = document.getElementById('restart-btn');
         this.levelselectBtn = document.getElementById('levelselect-btn');
         this.quitBtn = document.getElementById('quit-btn');
+        this.colorblindBtn = document.getElementById('colorblind-btn');
         this.tutorialPrompt = document.getElementById('tutorial-prompt');
         this.levelSelectOverlay = document.getElementById('level-select-overlay');
+        this.colorblindMode = false;
 
         // Setup pause controls
         this.setupPauseControls();
@@ -104,6 +106,16 @@ export class Game {
         if (backBtn) {
             backBtn.addEventListener('click', () => {
                 if (this.levelSelectOverlay) this.levelSelectOverlay.classList.add('hidden');
+            });
+        }
+
+        // Colorblind toggle
+        if (this.colorblindBtn) {
+            this.colorblindBtn.addEventListener('click', () => {
+                this.colorblindMode = !this.colorblindMode;
+                document.body.classList.toggle('colorblind', this.colorblindMode);
+                this.colorblindBtn.textContent = `COLORBLIND: ${this.colorblindMode ? 'ON' : 'OFF'}`;
+                this.saveProgress();
             });
         }
 
@@ -305,7 +317,8 @@ export class Game {
             unlockedLevels: this.stats.unlockedLevels,
             highScore: this.gameInfo.highScore,
             deaths: this.stats.deaths,
-            totalPlayTime: this.stats.totalPlayTime + (Date.now() - this.stats.playStartTime) / 1000
+            totalPlayTime: this.stats.totalPlayTime + (Date.now() - this.stats.playStartTime) / 1000,
+            colorblindMode: this.colorblindMode
         };
         localStorage.setItem('dogeQuestProgress', JSON.stringify(data));
     }
@@ -318,6 +331,10 @@ export class Game {
                 this.stats.deaths = data.deaths || 0;
                 this.stats.totalPlayTime = data.totalPlayTime || 0;
                 if (data.highScore) this.gameInfo.highScore = data.highScore;
+                if (data.colorblindMode) {
+                    this.colorblindMode = true;
+                    document.body.classList.add('colorblind');
+                }
             }
         } catch (e) { /* ignore corrupt data */ }
     }

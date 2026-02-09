@@ -1,36 +1,30 @@
 export class Input {
     constructor() {
-        this.keys = Object.create(null);
-        this.codes = {
-            37: "left", 38: "up", 39: "right",
-            87: "up", 65: "left", 68: "right",
-            32: "up", 16: "shift"
-        };
+        this.codes = { 37: "left", 38: "up", 39: "right", 65: "left", 68: "right", 87: "up", 32: "up", 16: "shift" };
+        this.keys = {};
 
-        this.handler = this.handler.bind(this);
+        document.addEventListener("keydown", this.handler.bind(this));
+        document.addEventListener("keyup", this.handler.bind(this));
 
-        window.addEventListener("keydown", this.handler);
-        window.addEventListener("keyup", this.handler);
-
-        // Mobile Touch Handlers
-        this.setupTouch('btn-left', 'left');
-        this.setupTouch('btn-right', 'right');
-        this.setupTouch('btn-jump', 'up');
-        this.setupTouch('btn-dash', 'shift');
-    }
-
-    setupTouch(id, keyName) {
-        const btn = document.getElementById(id);
-        if (!btn) return;
-
-        const setKey = (state) => {
-            this.keys[keyName] = state;
-        };
-
-        btn.addEventListener('touchstart', (e) => { e.preventDefault(); setKey(true); });
-        btn.addEventListener('touchend', (e) => { e.preventDefault(); setKey(false); });
-        btn.addEventListener('mousedown', (e) => { setKey(true); });
-        btn.addEventListener('mouseup', (e) => { setKey(false); });
+        // Mobile controls with haptic feedback
+        let buttons = { "btn-left": "left", "btn-right": "right", "btn-jump": "up", "btn-dash": "shift" };
+        for (let name in buttons) {
+            let el = document.getElementById(name);
+            if (el) {
+                el.addEventListener("touchstart", (e) => {
+                    e.preventDefault();
+                    this.keys[buttons[name]] = true;
+                    el.style.opacity = '1';
+                    // Haptic feedback
+                    if (navigator.vibrate) navigator.vibrate(15);
+                });
+                el.addEventListener("touchend", (e) => {
+                    e.preventDefault();
+                    this.keys[buttons[name]] = false;
+                    el.style.opacity = '0.6';
+                });
+            }
+        }
     }
 
     handler(event) {

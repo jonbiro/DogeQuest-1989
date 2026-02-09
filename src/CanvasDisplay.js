@@ -73,6 +73,7 @@ export class CanvasDisplay {
 
         this.updateHUD();
         this.drawFrame(0);
+        this.buildWallCache();
     }
 
     generateStars(count) {
@@ -611,16 +612,33 @@ export class CanvasDisplay {
 
         for (let y = yStart; y < yEnd; y++) {
             for (let x = xStart; x < xEnd; x++) {
-                let tile = this.isWall(x, y) ? "wall" : (this.level.grid[y] && this.level.grid[y][x] === "lava" ? "lava" : null);
+                const key = `${x},${y}`;
+                const cached = this.wallCache && this.wallCache[key];
 
-                if (tile === "lava") {
+                if (cached) {
+                    let screenX = (x - view.left) * this.scale;
+                    let screenY = (y - view.top) * this.scale;
+                    this.drawSmoothWallCached(screenX, screenY, cached);
+                } else if (this.level.grid[y] && this.level.grid[y][x] === "lava") {
                     let screenX = (x - view.left) * this.scale;
                     let screenY = (y - view.top) * this.scale;
                     this.drawPlasmaLava(screenX, screenY, x, y);
-                } else if (tile === "wall") {
-                    let screenX = (x - view.left) * this.scale;
-                    let screenY = (y - view.top) * this.scale;
-                    this.drawSmoothWall(screenX, screenY, x, y);
+                }
+            }
+        }
+    }
+
+    buildWallCache() {
+        this.wallCache = {};
+        for (let y = 0; y < this.level.height; y++) {
+            for (let x = 0; x < this.level.width; x++) {
+                if (this.isWall(x, y)) {
+                    this.wallCache[`${x},${y}`] = {
+                        n: this.isWall(x, y - 1),
+                        s: this.isWall(x, y + 1),
+                        w: this.isWall(x - 1, y),
+                        e: this.isWall(x + 1, y)
+                    };
                 }
             }
         }
@@ -631,15 +649,10 @@ export class CanvasDisplay {
         return this.level.grid[y] && this.level.grid[y][x] === "wall";
     }
 
-    drawSmoothWall(screenX, screenY, gridX, gridY) {
+    drawSmoothWallCached(screenX, screenY, neighbors) {
         const size = this.scale;
-        const r = size * 0.25; // Corner radius
-
-        // Check neighbors
-        const n = this.isWall(gridX, gridY - 1);
-        const s = this.isWall(gridX, gridY + 1);
-        const w = this.isWall(gridX - 1, gridY);
-        const e = this.isWall(gridX + 1, gridY);
+        const r = size * 0.25;
+        const { n, s, w, e } = neighbors;
 
         // -- PATH CONSTRUCTION --
         this.cx.beginPath();
