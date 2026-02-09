@@ -315,9 +315,9 @@ export class CanvasDisplay {
         this.cx.save();
         this.cx.beginPath();
         this.cx.rect(0, horizon, width, height - horizon);
-        this.cx.clip(); // Only draw below horizon
+        this.cx.clip();
 
-        // Floor effect
+        // Floor gradient
         const grad = this.cx.createLinearGradient(0, horizon, 0, height);
         grad.addColorStop(0, "rgba(255, 0, 255, 0.1)");
         grad.addColorStop(1, "rgba(0, 255, 255, 0.2)");
@@ -325,46 +325,26 @@ export class CanvasDisplay {
         this.cx.fillRect(0, horizon, width, height - horizon);
 
         this.cx.strokeStyle = "rgba(0, 255, 255, 0.3)";
-        this.cx.lineWidth = 2;
-        this.cx.shadowBlur = 10;
+        this.cx.lineWidth = 1.5;
+        this.cx.shadowBlur = 8;
         this.cx.shadowColor = "#00ffff";
 
-        // Vertical lines (perspective)
-        const fov = 300;
+        // Radiating lines from vanishing point
+        const spacing = 100;
+        const offset = (this.viewport.left * this.scale * 0.5) % spacing;
         for (let i = -20; i <= 20; i++) {
-            const x = (i * 100) - (this.viewport.left * 40) % 100;
-            const z = 100; // arbitrary depth
-
-            // Simple perspective approach
-            // A precise 3D projection isn't strictly necessary for the aesthetic,
-            // but let's try a simple fan out.
-
-            // Actually, simpler retro grid:
-            // vanishing point is cx, horizon.
-            // lines radiate from there.
-
-            // We want them to scroll though.
-            // Let's just draw vertical lines that slant based on x position relative to center
-
-            // Simplified:
-            const spacing = 100;
-            const offset = (this.viewport.left * this.scale * 0.5) % spacing;
             const lineX = (cx + i * spacing * 2) - offset;
-
             this.cx.beginPath();
             this.cx.moveTo(cx, horizon);
             this.cx.lineTo(lineX, height);
             this.cx.stroke();
         }
 
-        // Horizontal lines (moving towards camera)
-        const speed = 40; // speed of grid movement
-        const timeOffset = (this.animationTime * speed) % 50;
-
+        // Horizontal depth lines
+        const timeOffset = (this.animationTime * 40) % 50;
         for (let i = 0; i < 20; i++) {
-            const y = horizon + Math.pow(i, 2.5) * 2 + timeOffset; // Exponential spacing for depth
+            const y = horizon + Math.pow(i, 2.5) * 2 + timeOffset;
             if (y > height) break;
-
             this.cx.beginPath();
             this.cx.moveTo(0, y);
             this.cx.lineTo(width, y);
@@ -376,22 +356,53 @@ export class CanvasDisplay {
 
     drawStars() {
         this.cx.save();
+
+        // Nebula clouds (soft background glow)
+        this.nebulaClouds.forEach(cloud => {
+            const x = (cloud.x * this.canvas.width + Math.sin(this.animationTime * 0.2 + cloud.drift * 1000) * 20 - this.viewport.left * 0.5) % this.canvas.width;
+            const y = cloud.y * this.canvas.height * 0.6;
+            const drawX = x < 0 ? x + this.canvas.width : x;
+
+            const gradient = this.cx.createRadialGradient(drawX, y, 0, drawX, y, cloud.size);
+            gradient.addColorStop(0, cloud.color);
+            gradient.addColorStop(1, 'transparent');
+            this.cx.fillStyle = gradient;
+            this.cx.fillRect(drawX - cloud.size, y - cloud.size, cloud.size * 2, cloud.size * 2);
+        });
+
+        // Far stars (slower parallax, dimmer)
+        this.farStars.forEach(star => {
+            const opacity = 0.3 + Math.sin(star.twinkle + this.animationTime * 0.5) * 0.2;
+            const x = (star.x * this.canvas.width - this.viewport.left * 0.5) % this.canvas.width;
+            const y = (star.y * this.canvas.height * 0.6 - this.viewport.top * 0.3) % (this.canvas.height * 0.6);
+            const drawX = x < 0 ? x + this.canvas.width : x;
+            const drawY = y < 0 ? y + this.canvas.height * 0.6 : y;
+
+            this.cx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+            this.cx.beginPath();
+            this.cx.arc(drawX, drawY, star.size * 0.7, 0, Math.PI * 2);
+            this.cx.fill();
+        });
+
+        // Near stars (brighter, faster parallax)
         this.stars.forEach(star => {
             const opacity = 0.5 + Math.sin(star.twinkle + this.animationTime) * 0.5;
-            // Parallax
             const x = (star.x * this.canvas.width - this.viewport.left * 2) % this.canvas.width;
             const y = (star.y * this.canvas.height - this.viewport.top * 1) % this.canvas.height;
-
             const drawX = x < 0 ? x + this.canvas.width : x;
             const drawY = y < 0 ? y + this.canvas.height : y;
 
-            this.cx.fillStyle = "rgba(255, 255, 255, " + opacity + ")";
-            this.cx.shadowBlur = star.size * 2;
-            this.cx.shadowColor = "#fff";
+            this.cx.fillStyle = star.color.replace(')', `, ${opacity})`);
+            if (star.color.startsWith('#')) {
+                this.cx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+            }
+            this.cx.shadowBlur = star.size * 3;
+            this.cx.shadowColor = star.color;
             this.cx.beginPath();
             this.cx.arc(drawX, drawY, star.size, 0, Math.PI * 2);
             this.cx.fill();
         });
+
         this.cx.restore();
     }
 
@@ -400,18 +411,32 @@ export class CanvasDisplay {
         if (!player.trailPositions || player.trailPositions.length === 0) return;
 
         this.cx.save();
+        const color = player.isDashing ? '#00ffff' : '#ff00ff';
         player.trailPositions.forEach((trail, i) => {
-            const opacity = (trail.time / 0.2) * 0.3;
+            const opacity = (trail.time / 0.2) * 0.25;
             const x = (trail.x - this.viewport.left) * this.scale;
             const y = (trail.y - this.viewport.top) * this.scale;
-            const width = player.size.x * this.scale;
-            const height = player.size.y * this.scale;
+            const w = player.size.x * this.scale;
+            const h = player.size.y * this.scale;
+            const r = 4; // rounded corner radius
 
             this.cx.globalAlpha = opacity;
-            this.cx.fillStyle = player.isDashing ? '#00ffff' : '#ff00ff';
-            this.cx.shadowBlur = 10;
-            this.cx.shadowColor = player.isDashing ? '#00ffff' : '#ff00ff';
-            this.cx.fillRect(x, y, width, height);
+            this.cx.fillStyle = color;
+            this.cx.shadowBlur = 12;
+            this.cx.shadowColor = color;
+
+            this.cx.beginPath();
+            this.cx.moveTo(x + r, y);
+            this.cx.lineTo(x + w - r, y);
+            this.cx.arcTo(x + w, y, x + w, y + r, r);
+            this.cx.lineTo(x + w, y + h - r);
+            this.cx.arcTo(x + w, y + h, x + w - r, y + h, r);
+            this.cx.lineTo(x + r, y + h);
+            this.cx.arcTo(x, y + h, x, y + h - r, r);
+            this.cx.lineTo(x, y + r);
+            this.cx.arcTo(x, y, x + r, y, r);
+            this.cx.closePath();
+            this.cx.fill();
         });
         this.cx.restore();
     }
@@ -778,27 +803,41 @@ export class CanvasDisplay {
 
     drawBone(x, y, width, height) {
         this.cx.save();
-        // Float animation
+
+        // Float & spin animation
         const floatY = Math.sin(this.animationTime * 4) * 5;
+        const pulse = 0.8 + Math.sin(this.animationTime * 6) * 0.2; // size pulse
+        const glowPulse = 15 + Math.sin(this.animationTime * 8) * 10; // glow pulse
 
         this.cx.translate(x + width / 2, y + height / 2 + floatY);
-        this.cx.rotate(this.animationTime); // Rotate
+        this.cx.rotate(this.animationTime);
+        this.cx.scale(pulse, pulse);
 
-        this.cx.fillStyle = "#ffd700"; // Gold
-        this.cx.shadowBlur = 20;
+        // Outer glow ring
+        this.cx.strokeStyle = "rgba(255, 215, 0, 0.3)";
+        this.cx.lineWidth = 2;
+        this.cx.shadowBlur = glowPulse;
         this.cx.shadowColor = "#ffd700";
-
-        // Draw a diamond/coin shape instead of a realistic bone
         this.cx.beginPath();
+        this.cx.arc(0, 0, width * 0.5, 0, Math.PI * 2);
+        this.cx.stroke();
+
+        // Diamond shape
+        this.cx.fillStyle = "#ffd700";
+        this.cx.shadowBlur = 20;
         const size = width * 0.6;
+        this.cx.beginPath();
         this.cx.moveTo(0, -size);
         this.cx.lineTo(size, 0);
         this.cx.lineTo(0, size);
         this.cx.lineTo(-size, 0);
+        this.cx.closePath();
         this.cx.fill();
 
-        // Inner detail
+        // Inner sparkle
         this.cx.fillStyle = "#fff";
+        this.cx.shadowBlur = 10;
+        this.cx.shadowColor = "#fff";
         this.cx.beginPath();
         this.cx.arc(0, 0, size / 3, 0, Math.PI * 2);
         this.cx.fill();
@@ -807,33 +846,51 @@ export class CanvasDisplay {
     }
 
     drawSpring(x, y, width, height, compressed) {
-        // Draw spring as a neon jump pad
         this.cx.save();
 
         const springHeight = compressed ? height * 0.5 : height;
         const springY = y + (height - springHeight);
+        const glow = compressed ? 25 : 10;
 
-        this.cx.shadowBlur = 10;
+        // Base platform with rounded top
+        this.cx.shadowBlur = glow;
         this.cx.shadowColor = '#00ff00';
 
-        // Base
         this.cx.fillStyle = '#003300';
-        this.cx.fillRect(x, springY + springHeight * 0.7, width, springHeight * 0.3);
+        const baseY = springY + springHeight * 0.65;
+        const baseH = springHeight * 0.35;
+        const r = 3;
+        this.cx.beginPath();
+        this.cx.moveTo(x + r, baseY);
+        this.cx.lineTo(x + width - r, baseY);
+        this.cx.arcTo(x + width, baseY, x + width, baseY + r, r);
+        this.cx.lineTo(x + width, baseY + baseH);
+        this.cx.lineTo(x, baseY + baseH);
+        this.cx.lineTo(x, baseY + r);
+        this.cx.arcTo(x, baseY, x + r, baseY, r);
+        this.cx.closePath();
+        this.cx.fill();
 
-        // Glowing chevron arrows pointing up
+        // Glowing top surface line
         this.cx.strokeStyle = '#00ff00';
         this.cx.lineWidth = 3;
+        this.cx.lineCap = 'round';
+        this.cx.beginPath();
+        this.cx.moveTo(x + 2, baseY);
+        this.cx.lineTo(x + width - 2, baseY);
+        this.cx.stroke();
 
-        // Animated flow
+        // Animated chevrons
+        this.cx.lineWidth = 2;
+        this.cx.globalAlpha = 0.8;
         const offset = (this.animationTime * 20) % 10;
 
         this.cx.beginPath();
-        // Three chevrons
         for (let i = 0; i < 3; i++) {
-            const cy = springY + springHeight * 0.7 - i * 8 - offset;
+            const cy = baseY - i * 7 - offset;
             if (cy < springY) continue;
             this.cx.moveTo(x + 5, cy);
-            this.cx.lineTo(x + width / 2, cy - 5);
+            this.cx.lineTo(x + width / 2, cy - 4);
             this.cx.lineTo(x + width - 5, cy);
         }
         this.cx.stroke();
