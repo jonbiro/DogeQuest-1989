@@ -2,10 +2,7 @@
 body {
   margin: 0;
   padding: 0;
-  background: #0a0a0a;
-  background-image:
-    repeating-linear-gradient(0deg, rgba(0, 255, 255, 0.03) 0px, transparent 1px, transparent 2px, rgba(0, 255, 255, 0.03) 3px),
-    repeating-linear-gradient(90deg, rgba(255, 0, 255, 0.03) 0px, transparent 1px, transparent 2px, rgba(255, 0, 255, 0.03) 3px);
+  background: #050010;
   color: white;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   overflow: hidden;
@@ -25,9 +22,9 @@ body::before {
   right: 0;
   bottom: 0;
   border: 20px solid #1a1a1a;
-  border-radius: 8px;
+  border-radius: 20px;
   box-shadow:
-    inset 0 0 30px rgba(0, 0, 0, 0.8),
+    inset 0 0 50px rgba(0, 0, 0, 0.9),
     0 0 50px rgba(0, 255, 255, 0.1);
   pointer-events: none;
   z-index: 1000;
@@ -41,18 +38,19 @@ body::before {
   max-width: 800px;
   max-height: 600px;
   box-shadow:
-    0 0 80px rgba(0, 255, 255, 0.3),
-    0 0 40px rgba(255, 0, 255, 0.2),
-    inset 0 0 60px rgba(0, 0, 0, 0.5);
-  background: #44bfff;
+    0 0 40px rgba(0, 255, 255, 0.2),
+    0 0 80px rgba(255, 0, 255, 0.2),
+    inset 0 0 100px rgba(0, 0, 0, 0.8);
+  background: #000;
   border-radius: 4px;
+  /* Slight curve */
   overflow: hidden;
   /* CRT screen curvature */
-  transform: perspective(800px) rotateX(1deg);
-  transform-style: preserve-3d;
+  transform: scale(1.02);
+  /* Slight scale to hide edges behind frame */
 }
 
-/* CRT Scanline Effect */
+/* CRT Scanline Effect (Stronger) */
 .game-container::before {
   content: '';
   position: absolute;
@@ -61,16 +59,16 @@ body::before {
   width: 100%;
   height: 100%;
   background: repeating-linear-gradient(0deg,
-      rgba(0, 0, 0, 0.15) 0px,
+      rgba(0, 0, 0, 0.3) 0px,
       transparent 1px,
       transparent 2px,
-      rgba(0, 0, 0, 0.15) 3px);
+      rgba(0, 0, 0, 0.3) 3px);
   pointer-events: none;
   z-index: 999;
-  animation: scanline 8s linear infinite;
+  background-size: 100% 4px;
 }
 
-/* Chromatic Aberration overlay */
+/* CRT Glow/Bloom */
 .game-container::after {
   content: '';
   position: absolute;
@@ -80,155 +78,23 @@ body::before {
   height: 100%;
   pointer-events: none;
   z-index: 997;
-  background:
-    linear-gradient(90deg, rgba(255, 0, 0, 0.03) 0%, transparent 5%, transparent 95%, rgba(0, 255, 255, 0.03) 100%);
-}
-
-@keyframes scanline {
-  0% {
-    transform: translateY(0);
-  }
-
-  100% {
-    transform: translateY(4px);
-  }
-}
-
-/* Screen flash effect */
-@keyframes screenFlash {
-  0% {
-    opacity: 0;
-  }
-
-  50% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0;
-  }
-}
-
-.game-container.flash::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.5), transparent);
-  pointer-events: none;
-  z-index: 998;
-  animation: screenFlash 0.3s ease-out;
-}
-
-/* VHS Glitch effect for death */
-@keyframes vhsGlitch {
-
-  0%,
-  100% {
-    clip-path: inset(0 0 0 0);
-    transform: translate(0);
-  }
-
-  10% {
-    clip-path: inset(10% 0 80% 0);
-    transform: translate(-5px);
-  }
-
-  20% {
-    clip-path: inset(40% 0 40% 0);
-    transform: translate(5px);
-  }
-
-  30% {
-    clip-path: inset(70% 0 10% 0);
-    transform: translate(-3px);
-  }
-
-  40% {
-    clip-path: inset(20% 0 60% 0);
-    transform: translate(3px);
-  }
-}
-
-.game-container.glitch {
-  animation: vhsGlitch 0.3s linear;
-}
-
-
-/* Screen shake effect */
-@keyframes screenShake {
-
-  0%,
-  100% {
-    transform: translate(0, 0);
-  }
-
-  10% {
-    transform: translate(-4px, 2px);
-  }
-
-  20% {
-    transform: translate(4px, -2px);
-  }
-
-  30% {
-    transform: translate(-4px, -2px);
-  }
-
-  40% {
-    transform: translate(4px, 2px);
-  }
-
-  50% {
-    transform: translate(-4px, 2px);
-  }
-
-  60% {
-    transform: translate(4px, -2px);
-  }
-
-  70% {
-    transform: translate(-4px, -2px);
-  }
-
-  80% {
-    transform: translate(4px, 2px);
-  }
-
-  90% {
-    transform: translate(-2px, 1px);
-  }
-}
-
-.game-container.shake {
-  animation: screenShake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
-}
-
-/* Canvas */
-canvas#gameBoard {
-  display: block;
-  width: 100%;
-  height: 100%;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.4) 100%);
+  mix-blend-mode: overlay;
 }
 
 /* HUD System */
 #hud {
   position: absolute;
-  top: 10px;
+  top: 20px;
   left: 50%;
   transform: translateX(-50%);
-  width: 95%;
-  height: auto;
+  width: 90%;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   pointer-events: none;
   z-index: 10;
-  gap: 8px;
+  gap: 15px;
   flex-wrap: wrap;
 }
 
@@ -236,53 +102,30 @@ canvas#gameBoard {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: rgba(0, 0, 0, 0.85);
-  padding: 8px 15px;
-  border-radius: 8px;
-  border: 3px solid #00ffff;
-  box-shadow:
-    0 4px 0 #006666,
-    0 0 20px rgba(0, 255, 255, 0.5),
-    inset 0 0 10px rgba(0, 255, 255, 0.2);
-  animation: hudPulse 2s ease-in-out infinite;
-}
-
-@keyframes hudPulse {
-
-  0%,
-  100% {
-    box-shadow:
-      0 4px 0 #006666,
-      0 0 20px rgba(0, 255, 255, 0.5),
-      inset 0 0 10px rgba(0, 255, 255, 0.2);
-  }
-
-  50% {
-    box-shadow:
-      0 4px 0 #006666,
-      0 0 30px rgba(0, 255, 255, 0.8),
-      inset 0 0 15px rgba(0, 255, 255, 0.3);
-  }
+  /* Transparent background */
+  background: rgba(0, 0, 0, 0.3);
+  padding: 5px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
+  backdrop-filter: blur(2px);
 }
 
 .hud-item .label {
-  font-size: 9px;
-  color: #00ffff;
+  font-size: 10px;
+  color: #ff00ff;
   font-weight: bold;
-  letter-spacing: 1px;
-  margin-bottom: 4px;
-  text-shadow:
-    0 0 5px #00ffff,
-    1px 1px 0 #000;
+  letter-spacing: 2px;
+  margin-bottom: 2px;
+  text-shadow: 0 0 5px #ff00ff;
+  font-family: 'Press Start 2P', monospace;
 }
 
 .hud-item span {
   font-family: 'Press Start 2P', monospace;
-  font-size: 13px;
-  color: #fff;
-  text-shadow:
-    0 0 10px #ff00ff,
-    2px 2px 0 #000;
+  font-size: 16px;
+  color: #00ffff;
+  text-shadow: 0 0 8px #00ffff;
 }
 
 /* Overlays (Start Screen, Messages) */

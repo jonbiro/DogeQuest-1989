@@ -146,12 +146,14 @@ export class Player extends Actor {
                 // Trail particles
                 if (level.particleSystem) {
                     level.particleSystem.emit(this.pos.plus(new Vector(0.4, 0.5)), {
-                        count: 3,
+                        count: 5,
                         color: "#00ffff",
-                        speed: 2,
+                        speed: 3,
                         lifetime: 0.4,
-                        sizeMin: 3,
-                        sizeMax: 6
+                        sizeMin: 2,
+                        sizeMax: 5,
+                        friction: 0.9,
+                        shrink: true
                     });
                 }
                 return;
@@ -173,12 +175,15 @@ export class Player extends Actor {
 
             if (level.particleSystem) {
                 level.particleSystem.emit(this.pos.plus(new Vector(0.4, 0.75)), {
-                    count: 20,
+                    count: 30,
                     color: "#ff00ff",
-                    speed: 4,
-                    lifetime: 0.6,
-                    sizeMin: 4,
-                    sizeMax: 8
+                    speed: 6,
+                    lifetime: 0.8,
+                    sizeMin: 3,
+                    sizeMax: 10,
+                    gravity: 0,
+                    friction: 0.95,
+                    composite: 'lighter'
                 });
             }
             if (level.audio) level.audio.dash();
@@ -269,12 +274,14 @@ export class Player extends Actor {
             // Wall slide particles
             if (level.particleSystem && Math.random() < 0.3) {
                 level.particleSystem.emit(this.pos.plus(new Vector(this.wallDir > 0 ? 0.8 : 0, 0.5)), {
-                    count: 1,
-                    color: "#aaaaaa",
-                    speed: 1,
-                    lifetime: 0.3,
+                    count: 2,
+                    color: "#ff00ff",
+                    speed: 2,
+                    lifetime: 0.4,
                     sizeMin: 2,
-                    sizeMax: 4
+                    sizeMax: 4,
+                    gravity: 10,
+                    friction: 0.95
                 });
             }
             if (level.audio && !this._wallSlideSound) {
@@ -297,6 +304,22 @@ export class Player extends Actor {
             // Ground collision detection
             if (this.speed.y > 0) {
                 if (!this.isGrounded && level.audio) level.audio.land();
+
+                // Land particles
+                if (!this.isGrounded && level.particleSystem) {
+                    level.particleSystem.emit(this.pos.plus(new Vector(0.4, 1.0)), {
+                        count: 10,
+                        color: "#ffffff",
+                        speed: 4,
+                        lifetime: 0.3,
+                        sizeMin: 2,
+                        sizeMax: 5,
+                        spread: Math.PI,
+                        angleOffset: -Math.PI / 2,
+                        gravity: 5
+                    });
+                }
+
                 this.coyoteTimer = coyoteTimeDuration;
                 this.isGrounded = true;
                 this.canDoubleJump = true;
@@ -312,15 +335,17 @@ export class Player extends Actor {
                 this.coyoteTimer = 0;
 
                 if (level.particleSystem) {
-                    level.particleSystem.emit(this.pos.plus(new Vector(0.4, 1.3)), {
-                        count: 8,
-                        color: "#ffffff",
-                        speed: 3,
-                        lifetime: 0.5,
+                    level.particleSystem.emit(this.pos.plus(new Vector(0.4, 1.0)), {
+                        count: 15,
+                        color: "#00ffff",
+                        speed: 5,
+                        lifetime: 0.6,
                         sizeMin: 3,
-                        sizeMax: 6,
+                        sizeMax: 7,
                         spread: Math.PI,
-                        angleOffset: Math.PI / 2
+                        angleOffset: Math.PI / 2,
+                        gravity: 10,
+                        composite: 'lighter'
                     });
                 }
                 if (level.audio) level.audio.jump();
@@ -344,12 +369,14 @@ export class Player extends Actor {
 
             if (level.particleSystem) {
                 level.particleSystem.emit(this.pos.plus(new Vector(this.wallDir > 0 ? 0.8 : 0, 0.75)), {
-                    count: 12,
+                    count: 20,
                     color: "#00ffff",
-                    speed: 4,
-                    lifetime: 0.5,
+                    speed: 6,
+                    lifetime: 0.6,
                     sizeMin: 3,
-                    sizeMax: 7
+                    sizeMax: 8,
+                    gravity: 5,
+                    composite: 'lighter'
                 });
             }
             if (level.audio) level.audio.wallJump();
@@ -364,15 +391,16 @@ export class Player extends Actor {
                 this.jumpBufferTimer = 0;
                 this.coyoteTimer = 0;
                 if (level.particleSystem) {
-                    level.particleSystem.emit(this.pos.plus(new Vector(0.4, 1.3)), {
-                        count: 8,
-                        color: "#ffffff",
-                        speed: 3,
-                        lifetime: 0.5,
+                    level.particleSystem.emit(this.pos.plus(new Vector(0.4, 1.0)), {
+                        count: 15,
+                        color: "#00ffff",
+                        speed: 5,
+                        lifetime: 0.6,
                         sizeMin: 3,
-                        sizeMax: 6,
+                        sizeMax: 7,
                         spread: Math.PI,
-                        angleOffset: Math.PI / 2
+                        angleOffset: Math.PI / 2,
+                        gravity: 10
                     });
                 }
                 if (level.audio) level.audio.jump();
@@ -384,12 +412,14 @@ export class Player extends Actor {
                 this.canDoubleJump = false;
                 if (level.particleSystem) {
                     level.particleSystem.emit(this.pos.plus(new Vector(0.4, 0.75)), {
-                        count: 15,
-                        color: "#00ffff",
-                        speed: 4,
-                        lifetime: 0.6,
+                        count: 25,
+                        color: "#ff00ff",
+                        speed: 6,
+                        lifetime: 0.7,
                         sizeMin: 4,
-                        sizeMax: 8
+                        sizeMax: 9,
+                        gravity: 5,
+                        composite: 'lighter'
                     });
                 }
                 if (level.audio) level.audio.jump();

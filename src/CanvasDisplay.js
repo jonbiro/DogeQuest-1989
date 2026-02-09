@@ -62,7 +62,8 @@ export class CanvasDisplay {
         this.otherSprites = document.createElement("img");
         this.otherSprites.src = "img/sprites.png";
         this.playerSprites = document.createElement("img");
-        this.playerSprites.src = "img/player.png"; // Use original sprite
+        // NEW: Load the generated neon player sprite
+        this.playerSprites.src = "img/player_neon.png";
 
         // Get game container for effects
         this.gameContainer = document.querySelector('.game-container');
@@ -246,65 +247,151 @@ export class CanvasDisplay {
     }
 
     clearDisplay() {
-        // Gradient Background
-        const grad = this.cx.createLinearGradient(0, 0, 0, this.canvas.height);
-        grad.addColorStop(0, "#0a0015");
-        grad.addColorStop(0.5, "#150030");
-        grad.addColorStop(1, "#1a1055");
+        // Vaporwave Background
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+
+        // Sky Gradient (Deep purple to pink/orange at bottom)
+        const grad = this.cx.createLinearGradient(0, 0, 0, height);
+        grad.addColorStop(0, "#050010");
+        grad.addColorStop(0.6, "#1a0b36");
+        grad.addColorStop(1, "#3c1053");
         this.cx.fillStyle = grad;
-        this.cx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.cx.fillRect(0, 0, width, height);
 
-        // Draw nebula clouds (far layer - slowest parallax)
+        // Retro Sun
+        this.drawRetroSun(width, height);
+
+        // Moving Perspective Grid (The "Floor")
+        this.drawPerspectiveGrid(width, height);
+
+        // Stars (Enhanced)
+        this.drawStars();
+    }
+
+    drawRetroSun(width, height) {
+        const cx = width / 2;
+        const cy = height * 0.6; // Horizon line
+        const radius = Math.min(width, height) * 0.25;
+
         this.cx.save();
-        this.nebulaClouds.forEach(cloud => {
-            cloud.x += cloud.drift;
-            if (cloud.x > 1.2) cloud.x = -0.2;
-            const parallaxX = cloud.x * this.canvas.width - this.viewport.left * 2;
-            const parallaxY = cloud.y * this.canvas.height;
 
-            const gradient = this.cx.createRadialGradient(parallaxX, parallaxY, 0, parallaxX, parallaxY, cloud.size);
-            gradient.addColorStop(0, cloud.color);
-            gradient.addColorStop(1, 'transparent');
-            this.cx.fillStyle = gradient;
-            this.cx.fillRect(parallaxX - cloud.size, parallaxY - cloud.size, cloud.size * 2, cloud.size * 2);
-        });
+        // Sun Gradient
+        const grad = this.cx.createLinearGradient(cx, cy - radius, cx, cy + radius);
+        grad.addColorStop(0, "#ffd700");
+        grad.addColorStop(0.5, "#ff00ff");
+        grad.addColorStop(1, "#9900ff");
+
+        this.cx.fillStyle = grad;
+
+        // Clip bottom to horizon
+        this.cx.beginPath();
+        this.cx.arc(cx, cy, radius, Math.PI, 0);
+        this.cx.fill();
+
+        // Scanlines on Sun
+        this.cx.fillStyle = "rgba(0, 0, 0, 0.2)";
+        for (let i = 0; i < 10; i++) {
+            const h = radius / 5;
+            const y = cy - i * h * 0.6 - (this.animationTime * 10) % (h * 0.6);
+            if (y < cy - radius) continue;
+            this.cx.fillRect(cx - radius, y, radius * 2, h * 0.2);
+        }
+
+        // Glow
+        this.cx.shadowBlur = 40;
+        this.cx.shadowColor = "#ff00ff";
+        this.cx.beginPath();
+        this.cx.arc(cx, cy, radius, Math.PI, 0);
+        this.cx.fill();
+
         this.cx.restore();
+    }
 
-        // Draw far starfield (slower parallax)
+    drawPerspectiveGrid(width, height) {
+        const horizon = height * 0.6;
+        const cx = width / 2;
+
         this.cx.save();
-        this.farStars.forEach(star => {
-            star.twinkle += 0.03 * star.speed;
-            const opacity = 0.3 + Math.sin(star.twinkle) * 0.3;
-            const x = (star.x * this.canvas.width - this.viewport.left * 5) % this.canvas.width;
-            const y = (star.y * this.canvas.height - this.viewport.top * 3) % this.canvas.height;
+        this.cx.beginPath();
+        this.cx.rect(0, horizon, width, height - horizon);
+        this.cx.clip(); // Only draw below horizon
 
-            this.cx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+        // Floor effect
+        const grad = this.cx.createLinearGradient(0, horizon, 0, height);
+        grad.addColorStop(0, "rgba(255, 0, 255, 0.1)");
+        grad.addColorStop(1, "rgba(0, 255, 255, 0.2)");
+        this.cx.fillStyle = grad;
+        this.cx.fillRect(0, horizon, width, height - horizon);
+
+        this.cx.strokeStyle = "rgba(0, 255, 255, 0.3)";
+        this.cx.lineWidth = 2;
+        this.cx.shadowBlur = 10;
+        this.cx.shadowColor = "#00ffff";
+
+        // Vertical lines (perspective)
+        const fov = 300;
+        for (let i = -20; i <= 20; i++) {
+            const x = (i * 100) - (this.viewport.left * 40) % 100;
+            const z = 100; // arbitrary depth
+
+            // Simple perspective approach
+            // A precise 3D projection isn't strictly necessary for the aesthetic,
+            // but let's try a simple fan out.
+
+            // Actually, simpler retro grid:
+            // vanishing point is cx, horizon.
+            // lines radiate from there.
+
+            // We want them to scroll though.
+            // Let's just draw vertical lines that slant based on x position relative to center
+
+            // Simplified:
+            const spacing = 100;
+            const offset = (this.viewport.left * this.scale * 0.5) % spacing;
+            const lineX = (cx + i * spacing * 2) - offset;
+
             this.cx.beginPath();
-            this.cx.arc(x < 0 ? x + this.canvas.width : x, y < 0 ? y + this.canvas.height : y, star.size * 0.7, 0, Math.PI * 2);
-            this.cx.fill();
-        });
-        this.cx.restore();
+            this.cx.moveTo(cx, horizon);
+            this.cx.lineTo(lineX, height);
+            this.cx.stroke();
+        }
 
-        // Draw near starfield (faster parallax)
+        // Horizontal lines (moving towards camera)
+        const speed = 40; // speed of grid movement
+        const timeOffset = (this.animationTime * speed) % 50;
+
+        for (let i = 0; i < 20; i++) {
+            const y = horizon + Math.pow(i, 2.5) * 2 + timeOffset; // Exponential spacing for depth
+            if (y > height) break;
+
+            this.cx.beginPath();
+            this.cx.moveTo(0, y);
+            this.cx.lineTo(width, y);
+            this.cx.stroke();
+        }
+
+        this.cx.restore();
+    }
+
+    drawStars() {
         this.cx.save();
         this.stars.forEach(star => {
-            star.twinkle += 0.05 * star.speed;
-            const opacity = 0.5 + Math.sin(star.twinkle) * 0.5;
-            const x = (star.x * this.canvas.width - this.viewport.left * 10) % this.canvas.width;
-            const y = (star.y * this.canvas.height - this.viewport.top * 8) % this.canvas.height;
+            const opacity = 0.5 + Math.sin(star.twinkle + this.animationTime) * 0.5;
+            // Parallax
+            const x = (star.x * this.canvas.width - this.viewport.left * 2) % this.canvas.width;
+            const y = (star.y * this.canvas.height - this.viewport.top * 1) % this.canvas.height;
 
-            this.cx.fillStyle = star.color.replace(')', `, ${opacity})`).replace('rgb', 'rgba').replace('#ffffff', `rgba(255,255,255,${opacity})`).replace('#ff00ff', `rgba(255,0,255,${opacity})`).replace('#00ffff', `rgba(0,255,255,${opacity})`);
-            if (star.color.startsWith('#')) {
-                this.cx.fillStyle = star.color;
-                this.cx.globalAlpha = opacity;
-            }
-            this.cx.shadowBlur = 5;
-            this.cx.shadowColor = star.color;
+            const drawX = x < 0 ? x + this.canvas.width : x;
+            const drawY = y < 0 ? y + this.canvas.height : y;
+
+            this.cx.fillStyle = "rgba(255, 255, 255, " + opacity + ")";
+            this.cx.shadowBlur = star.size * 2;
+            this.cx.shadowColor = "#fff";
             this.cx.beginPath();
-            this.cx.arc(x < 0 ? x + this.canvas.width : x, y < 0 ? y + this.canvas.height : y, star.size, 0, Math.PI * 2);
+            this.cx.arc(drawX, drawY, star.size, 0, Math.PI * 2);
             this.cx.fill();
         });
-        this.cx.globalAlpha = 1;
         this.cx.restore();
     }
 
@@ -402,56 +489,220 @@ export class CanvasDisplay {
 
         for (let y = yStart; y < yEnd; y++) {
             for (let x = xStart; x < xEnd; x++) {
-                let tile = this.level.grid[y][x];
-                if (tile == null) continue;
-                let screenX = (x - view.left) * this.scale;
-                let screenY = (y - view.top) * this.scale;
+                let tile = this.isWall(x, y) ? "wall" : (this.level.grid[y] && this.level.grid[y][x] === "lava" ? "lava" : null);
 
                 if (tile === "lava") {
-                    // Animated lava with glow
-                    this.drawAnimatedLava(screenX, screenY, x, y);
-                } else {
-                    let tileX = 0;
-                    this.cx.drawImage(this.otherSprites, tileX, 0, this.scale, this.scale, screenX, screenY, this.scale, this.scale);
+                    let screenX = (x - view.left) * this.scale;
+                    let screenY = (y - view.top) * this.scale;
+                    this.drawPlasmaLava(screenX, screenY, x, y);
+                } else if (tile === "wall") {
+                    let screenX = (x - view.left) * this.scale;
+                    let screenY = (y - view.top) * this.scale;
+                    this.drawSmoothWall(screenX, screenY, x, y);
                 }
             }
         }
     }
 
-    drawAnimatedLava(screenX, screenY, tileX, tileY) {
-        // Base lava from sprite
-        this.cx.drawImage(this.otherSprites, this.scale, 0, this.scale, this.scale, screenX, screenY, this.scale, this.scale);
+    isWall(x, y) {
+        if (x < 0 || x >= this.level.width || y < 0 || y >= this.level.height) return false;
+        return this.level.grid[y] && this.level.grid[y][x] === "wall";
+    }
 
-        // Animated glow overlay
-        const glowIntensity = 0.3 + Math.sin(this.lavaTime * 3 + tileX * 0.5 + tileY * 0.3) * 0.2;
-        this.cx.save();
-        this.cx.globalAlpha = glowIntensity;
-        this.cx.fillStyle = '#ff4400';
-        this.cx.shadowBlur = 15;
-        this.cx.shadowColor = '#ff4400';
-        this.cx.fillRect(screenX, screenY, this.scale, this.scale);
-        this.cx.restore();
+    drawSmoothWall(screenX, screenY, gridX, gridY) {
+        const size = this.scale;
+        const r = size * 0.25; // Corner radius
 
-        // Bubbling effect
-        const bubblePhase = (this.lavaTime * 2 + tileX + tileY) % 1;
-        if (bubblePhase < 0.3) {
-            this.cx.save();
-            this.cx.fillStyle = '#ffaa00';
-            this.cx.globalAlpha = (0.3 - bubblePhase) * 2;
-            const bubbleX = screenX + (Math.sin(tileX * 3) * 0.5 + 0.5) * this.scale;
-            const bubbleY = screenY + bubblePhase * this.scale * 0.5;
-            this.cx.beginPath();
-            this.cx.arc(bubbleX, bubbleY, 3, 0, Math.PI * 2);
-            this.cx.fill();
-            this.cx.restore();
+        // Check neighbors
+        const n = this.isWall(gridX, gridY - 1);
+        const s = this.isWall(gridX, gridY + 1);
+        const w = this.isWall(gridX - 1, gridY);
+        const e = this.isWall(gridX + 1, gridY);
+
+        // -- PATH CONSTRUCTION --
+        this.cx.beginPath();
+
+        // Top-Left Corner
+        if (!n && !w) {
+            this.cx.moveTo(screenX, screenY + r);
+            this.cx.arcTo(screenX, screenY, screenX + r, screenY, r);
+        } else {
+            this.cx.moveTo(screenX, screenY);
         }
+
+        // Top Edge -> Top-Right Corner
+        if (!n) {
+            this.cx.lineTo(screenX + size - (e ? 0 : r), screenY);
+        } else {
+            this.cx.lineTo(screenX + size, screenY);
+        }
+
+        if (!n && !e) {
+            this.cx.arcTo(screenX + size, screenY, screenX + size, screenY + r, r);
+        }
+
+        // Right Edge -> Bottom-Right Corner
+        if (!e) {
+            this.cx.lineTo(screenX + size, screenY + size - (s ? 0 : r));
+        } else {
+            this.cx.lineTo(screenX + size, screenY + size);
+        }
+
+        if (!s && !e) {
+            this.cx.arcTo(screenX + size, screenY + size, screenX + size - r, screenY + size, r);
+        }
+
+        // Bottom Edge -> Bottom-Left Corner
+        if (!s) {
+            this.cx.lineTo(screenX + (w ? 0 : r), screenY + size);
+        } else {
+            this.cx.lineTo(screenX, screenY + size);
+        }
+
+        if (!s && !w) {
+            this.cx.arcTo(screenX, screenY + size, screenX, screenY + size - r, r);
+        }
+
+        // Left Edge -> Close
+        this.cx.lineTo(screenX, screenY + (n ? 0 : r)); // Connect back to start
+
+        this.cx.closePath();
+
+        // -- FILL --
+        this.cx.fillStyle = "#0a0a0a";
+        this.cx.fill();
+
+        // -- STROKE (Exposed edges only) --
+        // We re-draw specific segments to apply the glow only on the outer edge
+        // This gives a cleaner "connected" look than stroking the whole cell path
+
+        this.cx.save();
+        this.cx.strokeStyle = "#00ffff";
+        this.cx.lineWidth = 2;
+        this.cx.shadowBlur = 15;
+        this.cx.shadowColor = "#00ffff";
+        this.cx.lineCap = "round";
+
+        this.cx.beginPath();
+
+        // Top Edge (if exposed)
+        if (!n) {
+            const startX = screenX + (w ? 0 : r);
+            const endX = screenX + size - (e ? 0 : r);
+            this.cx.moveTo(startX, screenY);
+            this.cx.lineTo(endX, screenY);
+
+            // Corners
+            if (!w) { // TL Corner
+                this.cx.moveTo(screenX, screenY + r);
+                this.cx.arcTo(screenX, screenY, screenX + r, screenY, r);
+            }
+            if (!e) { // TR Corner
+                this.cx.moveTo(screenX + size - r, screenY);
+                this.cx.arcTo(screenX + size, screenY, screenX + size, screenY + r, r);
+            }
+        }
+
+        // Right Edge (if exposed)
+        if (!e) {
+            const startY = screenY + (n ? 0 : r);
+            const endY = screenY + size - (s ? 0 : r);
+            this.cx.moveTo(screenX + size, startY);
+            this.cx.lineTo(screenX + size, endY);
+
+            // Corners already handled by Top/Bottom checks logic? 
+            // We need to be careful not to double draw corners. 
+            // The previous block handled TL and TR.
+            // Let's verify BR.
+            if (!s) { // BR Corner
+                this.cx.moveTo(screenX + size, screenY + size - r);
+                this.cx.arcTo(screenX + size, screenY + size, screenX + size - r, screenY + size, r);
+            }
+        }
+
+        // Bottom Edge (if exposed)
+        if (!s) {
+            const startX = screenX + size - (e ? 0 : r);
+            const endX = screenX + (w ? 0 : r);
+            this.cx.moveTo(startX, screenY + size);
+            this.cx.lineTo(endX, screenY + size);
+
+            if (!w) { // BL Corner
+                this.cx.moveTo(screenX + r, screenY + size);
+                this.cx.arcTo(screenX, screenY + size, screenX, screenY + size - r, r);
+            }
+        }
+
+        // Left Edge (if exposed)
+        if (!w) {
+            const startY = screenY + size - (s ? 0 : r);
+            const endY = screenY + (n ? 0 : r);
+            this.cx.moveTo(screenX, startY);
+            this.cx.lineTo(screenX, endY);
+        }
+
+        this.cx.stroke();
+        this.cx.restore();
+    }
+
+    drawPlasmaLava(x, y, tileX, tileY) {
+        const size = this.scale;
+
+        // Time-based animation
+        const t = this.lavaTime * 2;
+
+        // Calculate color based on position and time for "plasma" effect
+        // We simulate a fluid surface
+
+        this.cx.save();
+
+        // Base fill
+        this.cx.fillStyle = "#ff0055";
+        this.cx.fillRect(x, y, size, size);
+
+        // Animated waves/plasma
+        // Create a few overlapping sine waves
+        const wave1 = Math.sin(tileX * 0.5 + t) * 0.5 + 0.5;
+        const wave2 = Math.cos(tileY * 0.5 + t * 1.5) * 0.5 + 0.5;
+        const intensity = (wave1 + wave2) / 2;
+
+        const r = Math.floor(255);
+        const g = Math.floor(intensity * 100);
+        const b = Math.floor(intensity * 255); // Magenta/Purple feel
+
+        this.cx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+        this.cx.shadowBlur = 15;
+        this.cx.shadowColor = "#ff0055";
+
+        // Draw fluid top
+        const topOffset = Math.sin(tileX * 1 + t * 2) * 5;
+        this.cx.fillRect(x, y + 5 + topOffset, size, size - 5 - topOffset);
+
+        // Surface line
+        this.cx.strokeStyle = "#fff";
+        this.cx.lineWidth = 2;
+        this.cx.beginPath();
+        this.cx.moveTo(x, y + 5 + topOffset);
+        this.cx.lineTo(x + size, y + 5 + Math.sin((tileX + 1) * 1 + t * 2) * 5);
+        this.cx.stroke();
+
+        // Bubbles
+        if ((tileX + tileY + Math.floor(t)) % 7 === 0) {
+            this.cx.fillStyle = "#fff";
+            this.cx.beginPath();
+            this.cx.arc(x + size / 2, y + size / 2, 2, 0, Math.PI * 2);
+            this.cx.fill();
+        }
+
+        this.cx.restore();
     }
 
     drawPlayer(x, y, width, height) {
         const player = this.level.player;
 
         // Scale for visibility
-        const scale = 1.3;
+        // Slightly larger scale for the sprite to look good
+        const scale = 1.5;
         width *= scale;
         height *= scale;
         x -= (width * (scale - 1)) / 2;
@@ -461,9 +712,24 @@ export class CanvasDisplay {
             this.flipPlayer = player.speed.x < 0;
 
         this.cx.save();
+
+        // Translate to center for rotation/scale effects
+        const cx = x + width / 2;
+        const cy = y + height / 2;
+
+        this.cx.translate(cx, cy);
+
+        // Flip horizontally if moving left
         if (this.flipPlayer) {
-            this.flipHorizontally(this.cx, x + width / 2);
+            this.cx.scale(-1, 1);
         }
+
+        // Animation bounce (Squash and Stretch)
+        const bounce = player.speed.x !== 0 ? Math.sin(this.animationTime * 15) * 0.1 : 0;
+        const squash = player.speed.y < 0 ? 0.9 : (player.speed.y > 5 ? 1.1 : 1);
+
+        this.cx.scale(1, squash);
+        this.cx.translate(0, bounce * 10); // Bounce up and down
 
         // Glow effects
         if (player.isDashing) {
@@ -472,93 +738,17 @@ export class CanvasDisplay {
         } else if (player.isWallSliding) {
             this.cx.shadowBlur = 15;
             this.cx.shadowColor = '#ff00ff';
+        } else {
+            // Standard neon glow
+            this.cx.shadowBlur = 10;
+            this.cx.shadowColor = '#00ffff';
         }
 
-        // Animation bounce
-        const bounce = player.speed.x !== 0 ? Math.sin(this.animationTime * 15) * 2 : 0;
-        const squash = player.speed.y < 0 ? 0.9 : (player.speed.y > 5 ? 1.1 : 1);
-
-        // Draw cute shiba inu dog
-        const cx = x + width / 2;
-        const cy = y + height / 2 + bounce;
-
-        // Body (golden orange)
-        this.cx.fillStyle = '#f5a623';
-        this.cx.beginPath();
-        this.cx.ellipse(cx, cy + height * 0.1, width * 0.35, height * 0.3 * squash, 0, 0, Math.PI * 2);
-        this.cx.fill();
-
-        // Head
-        this.cx.beginPath();
-        this.cx.ellipse(cx + width * 0.15, cy - height * 0.15, width * 0.28, height * 0.25, 0, 0, Math.PI * 2);
-        this.cx.fill();
-
-        // Ears (triangles)
-        this.cx.beginPath();
-        this.cx.moveTo(cx - width * 0.05, cy - height * 0.35);
-        this.cx.lineTo(cx + width * 0.1, cy - height * 0.15);
-        this.cx.lineTo(cx + width * 0.2, cy - height * 0.35);
-        this.cx.fill();
-
-        this.cx.beginPath();
-        this.cx.moveTo(cx + width * 0.25, cy - height * 0.38);
-        this.cx.lineTo(cx + width * 0.35, cy - height * 0.15);
-        this.cx.lineTo(cx + width * 0.45, cy - height * 0.35);
-        this.cx.fill();
-
-        // Inner ears (cream)
-        this.cx.fillStyle = '#ffd9a0';
-        this.cx.beginPath();
-        this.cx.moveTo(cx, cy - height * 0.3);
-        this.cx.lineTo(cx + width * 0.08, cy - height * 0.18);
-        this.cx.lineTo(cx + width * 0.15, cy - height * 0.3);
-        this.cx.fill();
-
-        // Face cream patch
-        this.cx.beginPath();
-        this.cx.ellipse(cx + width * 0.18, cy - height * 0.08, width * 0.15, height * 0.12, 0, 0, Math.PI * 2);
-        this.cx.fill();
-
-        // Eyes
-        this.cx.fillStyle = '#000';
-        this.cx.beginPath();
-        this.cx.arc(cx + width * 0.08, cy - height * 0.18, width * 0.05, 0, Math.PI * 2);
-        this.cx.arc(cx + width * 0.25, cy - height * 0.18, width * 0.05, 0, Math.PI * 2);
-        this.cx.fill();
-
-        // Eye shine
-        this.cx.fillStyle = '#fff';
-        this.cx.beginPath();
-        this.cx.arc(cx + width * 0.06, cy - height * 0.2, width * 0.02, 0, Math.PI * 2);
-        this.cx.arc(cx + width * 0.23, cy - height * 0.2, width * 0.02, 0, Math.PI * 2);
-        this.cx.fill();
-
-        // Nose
-        this.cx.fillStyle = '#000';
-        this.cx.beginPath();
-        this.cx.ellipse(cx + width * 0.32, cy - height * 0.08, width * 0.04, height * 0.03, 0, 0, Math.PI * 2);
-        this.cx.fill();
-
-        // Tail (curled)
-        this.cx.fillStyle = '#f5a623';
-        this.cx.beginPath();
-        const tailWag = Math.sin(this.animationTime * 10) * 0.1;
-        this.cx.arc(cx - width * 0.35, cy + height * 0.05, width * 0.12, -0.5 + tailWag, Math.PI + 0.5 + tailWag, false);
-        this.cx.lineWidth = width * 0.1;
-        this.cx.strokeStyle = '#f5a623';
-        this.cx.stroke();
-
-        // Legs (animated when running)
-        const legAnim = player.speed.x !== 0 ? Math.sin(this.animationTime * 20) * 0.15 : 0;
-        this.cx.fillStyle = '#f5a623';
-
-        // Front legs
-        this.cx.fillRect(cx + width * 0.1, cy + height * 0.25, width * 0.1, height * 0.2 + legAnim * height);
-        this.cx.fillRect(cx + width * 0.25, cy + height * 0.25, width * 0.1, height * 0.2 - legAnim * height);
-
-        // Back legs
-        this.cx.fillRect(cx - width * 0.25, cy + height * 0.2, width * 0.12, height * 0.25 - legAnim * height);
-        this.cx.fillRect(cx - width * 0.1, cy + height * 0.2, width * 0.12, height * 0.25 + legAnim * height);
+        // Draw the sprite
+        // Assuming sprite is roughly square, we draw it centered
+        // adjust dimensions to maintain aspect ratio if needed, but for pixel art 
+        // usually we want to keep it crisp.
+        this.cx.drawImage(this.playerSprites, -width / 2, -height / 2, width, height);
 
         this.cx.restore();
     }
@@ -580,51 +770,73 @@ export class CanvasDisplay {
                 this.drawPlayer(x, y, width, height);
             } else if (actor.type === "spring") {
                 this.drawSpring(x, y, width, height, actor.compressed);
-            } else {
-                let tileX = (actor.type === "bone" ? 2 : 1) * this.scale;
-
-                // Add glow to bones
-                if (actor.type === "bone") {
-                    this.cx.save();
-                    this.cx.shadowBlur = 10;
-                    this.cx.shadowColor = '#ffd700';
-                    this.cx.drawImage(this.otherSprites, tileX, 0, width, height, x, y, width, height);
-                    this.cx.restore();
-                } else {
-                    this.cx.drawImage(this.otherSprites, tileX, 0, width, height, x, y, width, height);
-                }
+            } else if (actor.type === "bone") {
+                this.drawBone(x, y, width, height);
             }
         });
     }
 
-    drawSpring(x, y, width, height, compressed) {
-        // Draw spring as a green bouncy platform
+    drawBone(x, y, width, height) {
         this.cx.save();
-        this.cx.fillStyle = '#00ff00';
-        this.cx.shadowBlur = 10;
-        this.cx.shadowColor = '#00ff00';
+        // Float animation
+        const floatY = Math.sin(this.animationTime * 4) * 5;
+
+        this.cx.translate(x + width / 2, y + height / 2 + floatY);
+        this.cx.rotate(this.animationTime); // Rotate
+
+        this.cx.fillStyle = "#ffd700"; // Gold
+        this.cx.shadowBlur = 20;
+        this.cx.shadowColor = "#ffd700";
+
+        // Draw a diamond/coin shape instead of a realistic bone
+        this.cx.beginPath();
+        const size = width * 0.6;
+        this.cx.moveTo(0, -size);
+        this.cx.lineTo(size, 0);
+        this.cx.lineTo(0, size);
+        this.cx.lineTo(-size, 0);
+        this.cx.fill();
+
+        // Inner detail
+        this.cx.fillStyle = "#fff";
+        this.cx.beginPath();
+        this.cx.arc(0, 0, size / 3, 0, Math.PI * 2);
+        this.cx.fill();
+
+        this.cx.restore();
+    }
+
+    drawSpring(x, y, width, height, compressed) {
+        // Draw spring as a neon jump pad
+        this.cx.save();
 
         const springHeight = compressed ? height * 0.5 : height;
         const springY = y + (height - springHeight);
 
-        // Spring base
+        this.cx.shadowBlur = 10;
+        this.cx.shadowColor = '#00ff00';
+
+        // Base
+        this.cx.fillStyle = '#003300';
         this.cx.fillRect(x, springY + springHeight * 0.7, width, springHeight * 0.3);
 
-        // Spring coils
-        this.cx.strokeStyle = '#00cc00';
+        // Glowing chevron arrows pointing up
+        this.cx.strokeStyle = '#00ff00';
         this.cx.lineWidth = 3;
+
+        // Animated flow
+        const offset = (this.animationTime * 20) % 10;
+
         this.cx.beginPath();
-        const coils = 3;
-        for (let i = 0; i <= coils; i++) {
-            const coilY = springY + (springHeight * 0.7 / coils) * i;
-            this.cx.moveTo(x + 2, coilY);
-            this.cx.lineTo(x + width - 2, coilY);
+        // Three chevrons
+        for (let i = 0; i < 3; i++) {
+            const cy = springY + springHeight * 0.7 - i * 8 - offset;
+            if (cy < springY) continue;
+            this.cx.moveTo(x + 5, cy);
+            this.cx.lineTo(x + width / 2, cy - 5);
+            this.cx.lineTo(x + width - 5, cy);
         }
         this.cx.stroke();
-
-        // Top platform
-        this.cx.fillStyle = '#44ff44';
-        this.cx.fillRect(x - 2, springY, width + 4, 4);
 
         this.cx.restore();
     }
