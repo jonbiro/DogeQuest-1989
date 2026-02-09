@@ -98,10 +98,31 @@
     <div id="pause-overlay" class="overlay hidden">
       <div class="content">
         <h1>PAUSED</h1>
-        <p>Press ESC or click to resume</p>
-        <button id="resume-btn">RESUME</button>
+        <p>Press ESC to resume</p>
+        <div class="pause-buttons">
+          <button id="resume-btn">RESUME</button>
+          <button id="restart-btn">RESTART LEVEL</button>
+          <button id="levelselect-btn">LEVEL SELECT</button>
+          <button id="quit-btn">QUIT TO MENU</button>
+        </div>
+        <div class="pause-stats">
+          <span>Deaths: <span id="death-count">0</span></span>
+          <span>Total Time: <span id="total-time">0:00</span></span>
+        </div>
       </div>
     </div>
+
+    <!-- Level Select Overlay -->
+    <div id="level-select-overlay" class="overlay hidden">
+      <div class="content">
+        <h1>LEVEL SELECT</h1>
+        <div id="level-grid" class="level-grid"></div>
+        <button id="level-select-back">BACK</button>
+      </div>
+    </div>
+
+    <!-- Tutorial Prompt -->
+    <div id="tutorial-prompt" class="tutorial-prompt hidden"></div>
   </div>
 
   <!-- Main Entry Point -->
