@@ -1,5 +1,5 @@
 import { Vector } from './utils/Vector.js';
-import { Player, Lava, Bone, Spring } from './actors/Actors.js';
+import { Player, Lava, Bone, Spring, Spike, Patrol, SpeedBoost, Shield, BreakableWall } from './actors/Actors.js';
 
 const actorChars = {
     "@": Player,
@@ -7,7 +7,12 @@ const actorChars = {
     "=": Lava,
     "|": Lava,
     "v": Lava,
-    "^": Spring
+    "^": Spring,
+    "S": Spike,
+    "P": Patrol,
+    "+": SpeedBoost,
+    "*": Shield,
+    "B": BreakableWall
 };
 
 export class Level {
@@ -109,6 +114,9 @@ export class Level {
         if (this.status != null) {
             this.finishDelay -= step;
         }
+
+        // Remove broken breakable walls
+        this.actors = this.actors.filter(a => !(a.type === 'breakablewall' && a.broken));
 
         const maxStep = 0.05;
         while (step > 0) {
@@ -219,6 +227,75 @@ export class Level {
                 });
             }
             if (this.audio) this.audio.spring();
+        } else if (type === "spike" || type === "patrol") {
+            // Hazards — kill player (unless shielded)
+            if (this.player.shieldTimer > 0 && this.status == null) {
+                // Shield absorbs the hit
+                this.player.shieldTimer = 0;
+                if (this.audio) this.audio.shieldHit();
+                if (this.display) this.display.triggerFlash();
+                // Knock player back
+                this.player.speed.y = -10;
+                this.player.speed.x = (this.player.pos.x < actor.pos.x) ? -8 : 8;
+                // Remove patrol enemy on hit
+                if (type === "patrol") {
+                    this.actors = this.actors.filter(a => a !== actor);
+                    if (this.particleSystem) {
+                        this.particleSystem.emit(actor.pos.plus(new Vector(0.4, 0.6)), {
+                            count: 20, color: "#ff0066", speed: 6, lifetime: 0.8,
+                            sizeMin: 3, sizeMax: 8, composite: 'lighter'
+                        });
+                    }
+                }
+            } else if (this.status == null) {
+                this.status = "lost";
+                this.finishDelay = 1;
+                this.combo = 0;
+                if (this.display) {
+                    this.display.addScreenShake(8);
+                    this.display.triggerGlitch();
+                }
+                if (this.particleSystem) {
+                    this.particleSystem.emit(this.player.pos.plus(new Vector(0.4, 0.75)), {
+                        count: 30, color: "#ff0000", speed: 6, lifetime: 1.0,
+                        sizeMin: 4, sizeMax: 10
+                    });
+                }
+            }
+        } else if (type === "speedboost") {
+            this.actors = this.actors.filter(a => a !== actor);
+            this.player.speedBoostTimer = 5.0;
+            if (this.audio) this.audio.powerUp();
+            if (this.display) this.display.triggerFlash();
+            if (this.particleSystem) {
+                this.particleSystem.emit(actor.pos.plus(new Vector(0.3, 0.3)), {
+                    count: 20, color: "#00aaff", speed: 5, lifetime: 0.8,
+                    sizeMin: 3, sizeMax: 8, composite: 'lighter'
+                });
+            }
+        } else if (type === "shield") {
+            this.actors = this.actors.filter(a => a !== actor);
+            this.player.shieldTimer = 8.0;
+            if (this.audio) this.audio.powerUp();
+            if (this.display) this.display.triggerFlash();
+            if (this.particleSystem) {
+                this.particleSystem.emit(actor.pos.plus(new Vector(0.3, 0.3)), {
+                    count: 20, color: "#00ffff", speed: 5, lifetime: 0.8,
+                    sizeMin: 3, sizeMax: 8, composite: 'lighter'
+                });
+            }
+        } else if (type === "breakablewall") {
+            if (this.player.isDashing) {
+                actor.breakWall();
+                if (this.audio) this.audio.breakWall();
+                if (this.display) this.display.addScreenShake(4);
+                if (this.particleSystem) {
+                    this.particleSystem.emit(actor.pos.plus(new Vector(0.5, 0.5)), {
+                        count: 25, color: "#ff8800", speed: 7, lifetime: 0.6,
+                        sizeMin: 3, sizeMax: 9, gravity: 15
+                    });
+                }
+            }
         }
     }
 }

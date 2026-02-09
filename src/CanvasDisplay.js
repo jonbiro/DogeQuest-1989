@@ -793,12 +793,246 @@ export class CanvasDisplay {
 
             if (actor.type === "player") {
                 this.drawPlayer(x, y, width, height);
+                // Shield bubble
+                if (this.level.player.shieldTimer > 0) {
+                    this.drawShieldBubble(x, y, width, height);
+                }
+                // Speed boost aura
+                if (this.level.player.speedBoostTimer > 0) {
+                    this.drawSpeedAura(x, y, width, height);
+                }
             } else if (actor.type === "spring") {
                 this.drawSpring(x, y, width, height, actor.compressed);
             } else if (actor.type === "bone") {
                 this.drawBone(x, y, width, height);
+            } else if (actor.type === "spike") {
+                this.drawSpike(x, y, width, height);
+            } else if (actor.type === "patrol") {
+                this.drawPatrol(x, y, width, height, actor);
+            } else if (actor.type === "speedboost") {
+                this.drawSpeedBoostPickup(x, y, width, height, actor);
+            } else if (actor.type === "shield") {
+                this.drawShieldPickup(x, y, width, height, actor);
+            } else if (actor.type === "breakablewall") {
+                this.drawBreakableWall(x, y, width, height);
             }
         });
+    }
+
+    drawSpike(x, y, width, height) {
+        this.cx.save();
+        this.cx.fillStyle = '#ff0044';
+        this.cx.shadowBlur = 15;
+        this.cx.shadowColor = '#ff0044';
+
+        const pulse = 0.9 + Math.sin(this.animationTime * 6) * 0.1;
+        const cx = x + width / 2;
+        const cy = y + height;
+
+        // Three triangular spikes
+        for (let i = 0; i < 3; i++) {
+            const sx = x + (width * i / 3) + width / 6;
+            this.cx.beginPath();
+            this.cx.moveTo(sx - width * 0.12 * pulse, cy);
+            this.cx.lineTo(sx, cy - height * 0.9 * pulse);
+            this.cx.lineTo(sx + width * 0.12 * pulse, cy);
+            this.cx.closePath();
+            this.cx.fill();
+        }
+        this.cx.restore();
+    }
+
+    drawPatrol(x, y, width, height, actor) {
+        this.cx.save();
+        const bob = Math.sin(actor.wobble) * 3;
+        const facingRight = actor.speed.x > 0;
+
+        // Body (neon robot)
+        this.cx.fillStyle = '#ff0066';
+        this.cx.shadowBlur = 15;
+        this.cx.shadowColor = '#ff0066';
+
+        // Torso
+        const r = 4;
+        this.cx.beginPath();
+        this.cx.moveTo(x + r, y + height * 0.3 + bob);
+        this.cx.lineTo(x + width - r, y + height * 0.3 + bob);
+        this.cx.arcTo(x + width, y + height * 0.3 + bob, x + width, y + height * 0.3 + r + bob, r);
+        this.cx.lineTo(x + width, y + height - r + bob);
+        this.cx.arcTo(x + width, y + height + bob, x + width - r, y + height + bob, r);
+        this.cx.lineTo(x + r, y + height + bob);
+        this.cx.arcTo(x, y + height + bob, x, y + height - r + bob, r);
+        this.cx.lineTo(x, y + height * 0.3 + r + bob);
+        this.cx.arcTo(x, y + height * 0.3 + bob, x + r, y + height * 0.3 + bob, r);
+        this.cx.closePath();
+        this.cx.fill();
+
+        // Eye (single visor)
+        this.cx.fillStyle = '#00ffff';
+        this.cx.shadowColor = '#00ffff';
+        this.cx.shadowBlur = 10;
+        const eyeX = facingRight ? x + width * 0.55 : x + width * 0.2;
+        this.cx.fillRect(eyeX, y + height * 0.4 + bob, width * 0.25, height * 0.12);
+
+        // Antenna
+        this.cx.strokeStyle = '#ff0066';
+        this.cx.lineWidth = 2;
+        this.cx.beginPath();
+        this.cx.moveTo(x + width / 2, y + height * 0.3 + bob);
+        this.cx.lineTo(x + width / 2, y + height * 0.1 + bob);
+        this.cx.stroke();
+
+        // Antenna tip
+        this.cx.fillStyle = '#ffff00';
+        this.cx.shadowColor = '#ffff00';
+        this.cx.beginPath();
+        this.cx.arc(x + width / 2, y + height * 0.1 + bob, 3, 0, Math.PI * 2);
+        this.cx.fill();
+
+        this.cx.restore();
+    }
+
+    drawSpeedBoostPickup(x, y, width, height, actor) {
+        this.cx.save();
+        const floatY = Math.sin(actor.wobble) * 4;
+        const pulse = 0.85 + Math.sin(actor.wobble * 1.5) * 0.15;
+
+        this.cx.translate(x + width / 2, y + height / 2 + floatY);
+        this.cx.scale(pulse, pulse);
+
+        // Lightning bolt
+        this.cx.fillStyle = '#00aaff';
+        this.cx.shadowBlur = 20;
+        this.cx.shadowColor = '#00aaff';
+
+        const s = width * 0.5;
+        this.cx.beginPath();
+        this.cx.moveTo(-s * 0.2, -s);
+        this.cx.lineTo(s * 0.3, -s);
+        this.cx.lineTo(-s * 0.1, 0);
+        this.cx.lineTo(s * 0.2, 0);
+        this.cx.lineTo(-s * 0.3, s * 1.2);
+        this.cx.lineTo(0, s * 0.1);
+        this.cx.lineTo(-s * 0.4, s * 0.1);
+        this.cx.closePath();
+        this.cx.fill();
+
+        this.cx.restore();
+    }
+
+    drawShieldPickup(x, y, width, height, actor) {
+        this.cx.save();
+        const floatY = Math.sin(actor.wobble) * 4;
+        const pulse = 0.85 + Math.sin(actor.wobble * 1.3) * 0.15;
+
+        this.cx.translate(x + width / 2, y + height / 2 + floatY);
+        this.cx.scale(pulse, pulse);
+
+        // Shield shape
+        this.cx.fillStyle = 'rgba(0, 255, 255, 0.4)';
+        this.cx.strokeStyle = '#00ffff';
+        this.cx.lineWidth = 2;
+        this.cx.shadowBlur = 15;
+        this.cx.shadowColor = '#00ffff';
+
+        const s = width * 0.5;
+        this.cx.beginPath();
+        this.cx.moveTo(0, -s);
+        this.cx.quadraticCurveTo(s, -s * 0.5, s, 0);
+        this.cx.quadraticCurveTo(s, s * 0.8, 0, s * 1.2);
+        this.cx.quadraticCurveTo(-s, s * 0.8, -s, 0);
+        this.cx.quadraticCurveTo(-s, -s * 0.5, 0, -s);
+        this.cx.closePath();
+        this.cx.fill();
+        this.cx.stroke();
+
+        // Star in center
+        this.cx.fillStyle = '#fff';
+        this.cx.beginPath();
+        this.cx.arc(0, 0, s * 0.2, 0, Math.PI * 2);
+        this.cx.fill();
+
+        this.cx.restore();
+    }
+
+    drawBreakableWall(x, y, width, height) {
+        this.cx.save();
+
+        // Cracked wall with orange tint
+        this.cx.fillStyle = '#553300';
+        this.cx.shadowBlur = 8;
+        this.cx.shadowColor = '#ff8800';
+        this.cx.fillRect(x, y, width, height);
+
+        // Crack pattern
+        this.cx.strokeStyle = '#ff8800';
+        this.cx.lineWidth = 1.5;
+        this.cx.shadowBlur = 5;
+
+        this.cx.beginPath();
+        this.cx.moveTo(x + width * 0.3, y);
+        this.cx.lineTo(x + width * 0.5, y + height * 0.4);
+        this.cx.lineTo(x + width * 0.7, y + height * 0.2);
+        this.cx.moveTo(x + width * 0.5, y + height * 0.4);
+        this.cx.lineTo(x + width * 0.4, y + height * 0.7);
+        this.cx.lineTo(x + width * 0.6, y + height);
+        this.cx.moveTo(x + width * 0.4, y + height * 0.7);
+        this.cx.lineTo(x + width * 0.2, y + height * 0.9);
+        this.cx.stroke();
+
+        // Glow border
+        this.cx.strokeStyle = 'rgba(255, 136, 0, 0.5)';
+        this.cx.lineWidth = 2;
+        this.cx.strokeRect(x + 1, y + 1, width - 2, height - 2);
+
+        this.cx.restore();
+    }
+
+    drawShieldBubble(x, y, width, height) {
+        this.cx.save();
+        const pulse = 0.95 + Math.sin(this.animationTime * 8) * 0.05;
+        const cx = x + width / 2;
+        const cy = y + height / 2;
+        const r = Math.max(width, height) * 0.7 * pulse;
+
+        this.cx.strokeStyle = 'rgba(0, 255, 255, 0.6)';
+        this.cx.lineWidth = 2;
+        this.cx.shadowBlur = 20;
+        this.cx.shadowColor = '#00ffff';
+
+        this.cx.beginPath();
+        this.cx.arc(cx, cy, r, 0, Math.PI * 2);
+        this.cx.stroke();
+
+        // Inner glow ring
+        this.cx.strokeStyle = 'rgba(0, 255, 255, 0.2)';
+        this.cx.beginPath();
+        this.cx.arc(cx, cy, r * 0.85, 0, Math.PI * 2);
+        this.cx.stroke();
+
+        this.cx.restore();
+    }
+
+    drawSpeedAura(x, y, width, height) {
+        this.cx.save();
+        const cx = x + width / 2;
+        const cy = y + height / 2;
+
+        // Speed lines behind player
+        this.cx.strokeStyle = 'rgba(0, 170, 255, 0.4)';
+        this.cx.lineWidth = 2;
+        this.cx.shadowBlur = 8;
+        this.cx.shadowColor = '#00aaff';
+
+        for (let i = 0; i < 4; i++) {
+            const ly = cy - height * 0.3 + i * height * 0.2;
+            const offset = (this.animationTime * 200 + i * 50) % 30;
+            this.cx.beginPath();
+            this.cx.moveTo(x - 5 - offset, ly);
+            this.cx.lineTo(x - 15 - offset, ly);
+            this.cx.stroke();
+        }
+        this.cx.restore();
     }
 
     drawBone(x, y, width, height) {

@@ -98,5 +98,22 @@ export class AudioSystem {
             setTimeout(() => this.playTone(freq, 'square', 0.15, 0.1), i * 60);
         });
     }
+
+    powerUp() {
+        [600, 900, 1200, 1600].forEach((freq, i) => {
+            setTimeout(() => this.playTone(freq, 'sine', 0.15, 0.12), i * 70);
+        });
+    }
+
+    shieldHit() {
+        this.playTone(300, 'sawtooth', 0.15, 0.15);
+        setTimeout(() => this.playTone(150, 'square', 0.3, 0.1), 100);
+    }
+
+    breakWall() {
+        this.playTone(100, 'sawtooth', 0.2, 0.15);
+        setTimeout(() => this.playTone(60, 'square', 0.3, 0.1), 80);
+        setTimeout(() => this.playTone(40, 'sawtooth', 0.4, 0.08), 160);
+    }
 }
 

@@ -57,6 +57,27 @@ export class LevelGenerator {
             }
         }
 
+        // Add power-ups (rarer at low difficulty)
+        if (this.difficulty >= 2 && Math.random() < 0.6) {
+            const px = 10 + Math.floor(Math.random() * (this.width - 20));
+            const py = this.height - 4 - Math.floor(Math.random() * 3);
+            if (grid[py][px] === ' ') {
+                grid[py][px] = Math.random() < 0.5 ? '+' : '*';
+            }
+        }
+
+        // Add spikes at higher difficulties
+        if (this.difficulty >= 3) {
+            const spikeCount = Math.floor(this.difficulty / 3);
+            for (let i = 0; i < spikeCount; i++) {
+                const sx = 8 + Math.floor(Math.random() * (this.width - 16));
+                const sy = this.height - 3;
+                if (grid[sy][sx] === ' ' && grid[sy + 1][sx] === 'x') {
+                    grid[sy][sx] = 'S';
+                }
+            }
+        }
+
         // Convert to string array
         return grid.map(row => row.join(''));
     }
@@ -83,7 +104,6 @@ export class LevelGenerator {
             for (let i = 0; i < 3; i++) {
                 features.push({ x: i, y: -1, ch: '!' });
             }
-            // Floating platform above
             features.push({ x: 1, y: 3, ch: 'x' });
             features.push({ x: 1, y: 4, ch: 'o' });
         }
@@ -95,7 +115,7 @@ export class LevelGenerator {
             features.push({ x: 3, y: 4, ch: 'x' });
             features.push({ x: 3, y: 5, ch: 'o' });
         }
-        // Type 4: Spring Jump (new!)
+        // Type 4: Spring Jump
         else if (type === 4) {
             features.push({ x: 0, y: 0, ch: '^' });
             features.push({ x: 3, y: 7, ch: 'x' });
@@ -104,15 +124,12 @@ export class LevelGenerator {
         }
         // Type 5: Wall Jump Challenge
         else if (type === 5) {
-            // Left wall
             for (let i = 0; i < 6; i++) {
                 features.push({ x: 0, y: i, ch: 'x' });
             }
-            // Right wall
             for (let i = 0; i < 6; i++) {
                 features.push({ x: 3, y: i, ch: 'x' });
             }
-            // Bone at top
             features.push({ x: 1, y: 6, ch: 'o' });
             features.push({ x: 2, y: 6, ch: 'o' });
         }
@@ -141,16 +158,45 @@ export class LevelGenerator {
         }
         // Type 9: Tunnel
         else if (type === 9) {
-            // Floor
             for (let i = 0; i < 5; i++) {
                 features.push({ x: i, y: 0, ch: 'x' });
             }
-            // Ceiling
             for (let i = 0; i < 5; i++) {
                 features.push({ x: i, y: 3, ch: 'x' });
             }
-            // Bones inside
             features.push({ x: 2, y: 1, ch: 'o' });
+        }
+        // Type 10: Spike Pit — spikes on floor with platform above
+        else if (type === 10) {
+            features.push({ x: 0, y: 0, ch: 'S' });
+            features.push({ x: 1, y: 0, ch: 'S' });
+            features.push({ x: 2, y: 0, ch: 'S' });
+            features.push({ x: 1, y: 4, ch: 'x' });
+            features.push({ x: 2, y: 4, ch: 'x' });
+            features.push({ x: 1, y: 5, ch: 'o' });
+        }
+        // Type 11: Patrol Platform — enemy pacing on a platform
+        else if (type === 11) {
+            for (let i = 0; i < 5; i++) {
+                features.push({ x: i, y: 2, ch: 'x' });
+            }
+            features.push({ x: 2, y: 3, ch: 'P' });
+            features.push({ x: 2, y: 5, ch: 'o' });
+        }
+        // Type 12: Power-Up Platform
+        else if (type === 12) {
+            features.push({ x: 0, y: 3, ch: 'x' });
+            features.push({ x: 1, y: 3, ch: 'x' });
+            features.push({ x: 2, y: 3, ch: 'x' });
+            features.push({ x: 1, y: 4, ch: Math.random() < 0.5 ? '+' : '*' });
+        }
+        // Type 13: Breakable Wall Corridor — dash through to reach bone
+        else if (type === 13) {
+            for (let i = 0; i < 3; i++) {
+                features.push({ x: 2, y: i, ch: 'B' });
+            }
+            features.push({ x: 4, y: 1, ch: 'o' });
+            features.push({ x: 5, y: 1, ch: 'o' });
         }
 
         return features;

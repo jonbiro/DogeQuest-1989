@@ -83,6 +83,79 @@ export class Spring extends Actor {
     }
 }
 
+// Stationary spike hazard — kills on contact
+export class Spike extends Actor {
+    constructor(pos) {
+        super(pos.plus(new Vector(0.1, 0.5)), new Vector(0.8, 0.5), new Vector(0, 0));
+    }
+    get type() { return "spike"; }
+    act() { }
+}
+
+// Patrol enemy — walks back and forth on platforms
+export class Patrol extends Actor {
+    constructor(pos) {
+        super(pos.plus(new Vector(0, -0.2)), new Vector(0.8, 1.2), new Vector(2, 0));
+        this.wobble = 0;
+    }
+    get type() { return "patrol"; }
+    act(step, level) {
+        this.wobble += step * 8;
+        const newPos = this.pos.plus(this.speed.times(step));
+        if (level.obstacleAt(newPos, this.size)) {
+            this.speed = this.speed.times(-1);
+        } else {
+            // Check for edge — don't walk off platforms
+            const checkX = this.speed.x > 0 ? newPos.x + this.size.x : newPos.x;
+            const below = new Vector(checkX, newPos.y + this.size.y + 0.1);
+            const tile = level.grid[Math.floor(below.y)] && level.grid[Math.floor(below.y)][Math.floor(below.x)];
+            if (!tile) {
+                this.speed = this.speed.times(-1);
+            } else {
+                this.pos = newPos;
+            }
+        }
+    }
+}
+
+// Speed boost power-up
+export class SpeedBoost extends Actor {
+    constructor(pos) {
+        super(pos.plus(new Vector(0.2, 0.2)), new Vector(0.6, 0.6), new Vector(0, 0));
+        this.wobble = Math.random() * Math.PI * 2;
+    }
+    get type() { return "speedboost"; }
+    act(step) {
+        this.wobble += step * 6;
+    }
+}
+
+// Shield power-up
+export class Shield extends Actor {
+    constructor(pos) {
+        super(pos.plus(new Vector(0.2, 0.2)), new Vector(0.6, 0.6), new Vector(0, 0));
+        this.wobble = Math.random() * Math.PI * 2;
+    }
+    get type() { return "shield"; }
+    act(step) {
+        this.wobble += step * 4;
+    }
+}
+
+// Breakable wall — destroyed by dashing into it
+export class BreakableWall extends Actor {
+    constructor(pos) {
+        super(pos, new Vector(1, 1), new Vector(0, 0));
+        this.health = 1;
+        this.broken = false;
+    }
+    get type() { return "breakablewall"; }
+    act() { }
+    breakWall() {
+        this.broken = true;
+    }
+}
+
 export class Player extends Actor {
     constructor(pos) {
         // Reduced height from 1.5 to 0.95 so player can fit under platforms
@@ -100,14 +173,21 @@ export class Player extends Actor {
         this.isWallSliding = false;
         this.wallDir = 0;
         this.wallJumpCooldown = 0;
-        this.wallSlideTimer = 0; // Timer to exit wall slide
+        this.wallSlideTimer = 0;
         // Trail for visual effect
         this.trailPositions = [];
+        // Power-up timers
+        this.speedBoostTimer = 0;
+        this.shieldTimer = 0;
     }
 
     get type() { return "player"; }
 
     act(step, level, keys) {
+        // Power-up timers
+        if (this.speedBoostTimer > 0) this.speedBoostTimer -= step;
+        if (this.shieldTimer > 0) this.shieldTimer -= step;
+
         // Dash Cooldown
         if (this.dashCooldown > 0) this.dashCooldown -= step;
         if (this.wallJumpCooldown > 0) this.wallJumpCooldown -= step;
@@ -210,7 +290,7 @@ export class Player extends Actor {
 
     moveX(step, level, keys) {
         this.speed.x = 0;
-        const playerXSpeed = 8;
+        const playerXSpeed = (this.speedBoostTimer > 0) ? 12 : 8;
         if (keys.left || keys.a) {
             this.speed.x -= playerXSpeed;
             this.lastDir = -1;
