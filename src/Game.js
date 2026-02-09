@@ -70,6 +70,7 @@ export class Game {
         if (this.pauseOverlay) {
             this.pauseOverlay.classList.remove('hidden');
         }
+        this.audio.stopMusic();
         cancelAnimationFrame(this.animationId);
     }
 
@@ -79,6 +80,7 @@ export class Game {
         if (this.pauseOverlay) {
             this.pauseOverlay.classList.add('hidden');
         }
+        this.audio.startMusic();
         // Resume animation loop
         let lastTime = performance.now();
         const frame = (time) => {
@@ -133,6 +135,14 @@ export class Game {
 
         // Link display to level for effects
         this.currentLevel.display = this.display;
+
+        // Start transition in
+        this.display.startTransition('in');
+
+        // Start music on first play
+        if (!this.audio.musicPlaying) {
+            this.audio.startMusic();
+        }
 
         this.runAnimation(n);
     }

@@ -41,6 +41,9 @@ export class CanvasDisplay {
         // Lava animation time
         this.lavaTime = 0;
 
+        // Screen transition
+        this.transition = { active: false, progress: 0, type: 'in', duration: 0.5 };
+
         // Camera State
         this.viewport = {
             left: 0,
@@ -220,6 +223,44 @@ export class CanvasDisplay {
         this.drawConfetti();
         this.drawComboTexts();
         this.updateHUD();
+
+        // Screen transition overlay
+        if (this.transition.active) {
+            this.transition.progress += step / this.transition.duration;
+            if (this.transition.progress >= 1) {
+                this.transition.progress = 1;
+                this.transition.active = false;
+            }
+            this.drawTransition();
+        }
+    }
+
+    startTransition(type = 'out') {
+        this.transition.active = true;
+        this.transition.progress = 0;
+        this.transition.type = type;
+    }
+
+    drawTransition() {
+        const p = this.transition.type === 'out'
+            ? this.transition.progress
+            : 1 - this.transition.progress;
+
+        this.cx.save();
+        this.cx.fillStyle = '#000';
+
+        // Circular wipe from center
+        const cx = this.canvas.width / 2;
+        const cy = this.canvas.height / 2;
+        const maxR = Math.sqrt(cx * cx + cy * cy);
+        const r = maxR * (1 - p);
+
+        this.cx.beginPath();
+        this.cx.rect(0, 0, this.canvas.width, this.canvas.height);
+        this.cx.arc(cx, cy, Math.max(0, r), 0, Math.PI * 2, true);
+        this.cx.fill('evenodd');
+
+        this.cx.restore();
     }
 
     updateViewport(step) {
@@ -267,6 +308,62 @@ export class CanvasDisplay {
 
         // Stars (Enhanced)
         this.drawStars();
+
+        // Parallax City Skyline
+        this.drawCitySkyline(width, height);
+    }
+
+    drawCitySkyline(width, height) {
+        this.cx.save();
+        const horizon = height * 0.6;
+        const parallax = (this.viewport.left * this.scale * 0.15) % width;
+
+        this.cx.globalAlpha = 0.4;
+
+        // Generate building silhouettes
+        const buildings = [
+            { x: 0, w: 30, h: 80 }, { x: 35, w: 20, h: 50 }, { x: 60, w: 40, h: 100 },
+            { x: 110, w: 25, h: 60 }, { x: 140, w: 35, h: 90 }, { x: 180, w: 20, h: 45 },
+            { x: 205, w: 45, h: 110 }, { x: 260, w: 30, h: 70 }, { x: 295, w: 25, h: 55 },
+            { x: 325, w: 40, h: 95 }, { x: 370, w: 20, h: 40 }, { x: 395, w: 35, h: 85 },
+            { x: 440, w: 30, h: 65 }, { x: 475, w: 45, h: 105 }, { x: 530, w: 25, h: 50 },
+            { x: 560, w: 40, h: 90 }, { x: 610, w: 30, h: 75 }, { x: 650, w: 35, h: 60 },
+            { x: 690, w: 25, h: 80 }, { x: 720, w: 40, h: 100 },
+        ];
+
+        // Dark silhouette
+        this.cx.fillStyle = '#0a0015';
+        buildings.forEach(b => {
+            const bx = ((b.x - parallax) % (width + 100) + width + 100) % (width + 100) - 50;
+            this.cx.fillRect(bx, horizon - b.h, b.w, b.h);
+
+            // Windows (small glowing dots)
+            this.cx.save();
+            this.cx.fillStyle = 'rgba(255, 0, 255, 0.5)';
+            for (let wy = 0; wy < b.h - 10; wy += 12) {
+                for (let wx = 4; wx < b.w - 4; wx += 8) {
+                    if (Math.sin(b.x * 7 + wx * 3 + wy * 5) > 0.1) {
+                        this.cx.fillRect(bx + wx, horizon - b.h + 5 + wy, 3, 4);
+                    }
+                }
+            }
+            this.cx.restore();
+        });
+
+        // Neon glow line at building tops
+        this.cx.strokeStyle = 'rgba(255, 0, 255, 0.3)';
+        this.cx.lineWidth = 1;
+        this.cx.shadowBlur = 8;
+        this.cx.shadowColor = '#ff00ff';
+        buildings.forEach(b => {
+            const bx = ((b.x - parallax) % (width + 100) + width + 100) % (width + 100) - 50;
+            this.cx.beginPath();
+            this.cx.moveTo(bx, horizon - b.h);
+            this.cx.lineTo(bx + b.w, horizon - b.h);
+            this.cx.stroke();
+        });
+
+        this.cx.restore();
     }
 
     drawRetroSun(width, height) {
