@@ -1,58 +1,111 @@
 <!DOCTYPE html>
-<head>
-  <title>Fetch The Bones!</title>
-  <!-- <script src="js.js" charset="utf-8"></script> -->
-  <script src="game.js"></script>
+<html lang="en">
 
-  <link rel="stylesheet" type="text/css" href="css.css">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Puppy Quest 1989</title>
+  <link rel="stylesheet" href="css.css">
+  <!-- Font for retro feel -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 
-
 <body>
-  <!-- Background CSS Div -->
-  <div class='container'>
-    <div class='body'>
-      <div class='ears'></div>
-      <div class='eyebrows'>
-        <div class='left'></div>
-        <div class='right'></div>
-      </div>
-      <div class='eyes'>
-        <div class='left'></div>
-        <div class='right'></div>
-      </div>
-      <div class='nose'></div>
-      <div class='mouth'></div>
-      <div class='whiskers'>
-        <div class='left'></div>
-        <div class='right'></div>
-      </div>
-      <div class='tongue'></div>
-      <div class='bandana'>
-        <div class='top'></div>
-        <div class='bottom'></div>
-      </div>
-      <div class='stomach'></div>
+
+  <div class="game-container">
+    <!-- The Canvas is created by CanvasDisplay.js inside this or appended to body. 
+             Let's give it a dedicated container to be safe. -->
+    <div id="game-wrapper">
+      <!-- Canvas will be injected here or found by ID -->
+      <canvas id="gameBoard"></canvas>
     </div>
-    <div class='legs'>
-      <div class='lfront'></div>
-      <div class='lback'></div>
-      <div class='rfront'></div>
-      <div class='rback'></div>
+
+    <!-- Start Screen Overlay -->
+    <div id="start-screen" class="overlay">
+      <div class="content">
+        <h1>Puppy Quest 1989</h1>
+        <p>Fetch the bones. Avoid the lava.</p>
+
+        <div class="controls">
+          <div class="key-group">
+            <span class="key">WASD</span>
+            <span class="action">Move</span>
+          </div>
+          <div class="key-group">
+            <span class="key">SPACE</span>
+            <span class="action">Jump</span>
+          </div>
+        </div>
+
+        <div class="controls-advanced">
+          <p><strong>Double Jump:</strong> Press Jump in air</p>
+          <p><strong>Dash:</strong> Hold <span class="key">SHIFT</span></p>
+        </div>
+
+        <button id="start-btn">START GAME</button>
+      </div>
     </div>
-    <div class='tail'></div>
+
+    <!-- Mobile Controls -->
+    <div id="mobile-controls">
+      <div class="d-pad">
+        <button id="btn-left">◀</button>
+        <button id="btn-right">▶</button>
+      </div>
+      <div class="action-buttons">
+        <button id="btn-dash">Dash</button>
+        <button id="btn-jump">Jump</button>
+      </div>
+    </div>
+
+    <!-- HUD Overlay -->
+    <div id="hud">
+      <div class="hud-item">
+        <span class="label">LEVEL</span>
+        <span id="level-display">1</span>
+      </div>
+      <div class="hud-item">
+        <span class="label">BONES</span>
+        <span><span id="score-display">0</span> / <span id="total-bones-display">0</span></span>
+      </div>
+      <div class="hud-item">
+        <span class="label">TIME</span>
+        <span id="timer-display">0:00</span>
+      </div>
+      <div class="hud-item">
+        <span class="label">COMBO</span>
+        <span id="combo-display"></span>
+      </div>
+      <div class="hud-item">
+        <span class="label">LIVES</span>
+        <span id="lives-display">5</span>
+      </div>
+      <div class="hud-item">
+        <span class="label">HIGH SCORE</span>
+        <span id="highscore-display">0</span>
+      </div>
+    </div>
+
+    <!-- Message Overlay (Win/Loss) -->
+    <div id="message-overlay" class="overlay hidden">
+      <div class="content">
+        <h1 id="message-title">Level Complete!</h1>
+        <p id="message-subtitle">Loading next...</p>
+      </div>
+    </div>
+
+    <!-- Pause Overlay -->
+    <div id="pause-overlay" class="overlay hidden">
+      <div class="content">
+        <h1>PAUSED</h1>
+        <p>Press ESC or click to resume</p>
+        <button id="resume-btn">RESUME</button>
+      </div>
+    </div>
   </div>
 
-  <center>
-  <div id="win" align="center">
-  </div>
-</center>
-<div class="game">
-  <script>
-  runGame(GAME_LEVELS, CanvasDisplay)
-  </script>
-</div>
-
+  <!-- Main Entry Point -->
+  <script type="module" src="src/main.js"></script>
 </body>
 
 </html>

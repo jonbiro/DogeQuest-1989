@@ -1,0 +1,15 @@
+{
+  "name": "dogequest-2025",
+  "version": "2.0.0",
+  "description": "A modernized version of the classic DogeQuest platformer.",
+  "type": "module",
+  "scripts": {
+    "start": "npx serve",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "serve": "^14.2.4"
+  }
+}
