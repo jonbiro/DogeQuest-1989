@@ -289,16 +289,50 @@ export class Player extends Actor {
     }
 
     moveX(step, level, keys) {
-        this.speed.x = 0;
-        const playerXSpeed = (this.speedBoostTimer > 0) ? 12 : 8;
-        if (keys.left || keys.a) {
-            this.speed.x -= playerXSpeed;
-            this.lastDir = -1;
+        // Physics constants
+        const runAccel = 60;
+        const runDecel = 40;
+        const airAccel = 20;
+        const airDecel = 10;
+        const maxSpeedNormal = 10;
+        const maxSpeedBoost = 15;
+        const turnAccelerate = 3.0; // Multiplier when turning against momentum
+
+        const maxSpeed = (this.speedBoostTimer > 0) ? maxSpeedBoost : maxSpeedNormal;
+
+        // Determine target direction
+        let targetDir = 0;
+        if (keys.left || keys.a) targetDir -= 1;
+        if (keys.right || keys.d) targetDir += 1;
+
+        if (targetDir !== 0) {
+            this.lastDir = targetDir;
+
+            // Choose acceleration based on state
+            let accel = this.isGrounded ? runAccel : airAccel;
+
+            // Turn boost: if moving opposite to input, accelerate faster (snappy turning)
+            if (this.speed.x !== 0 && Math.sign(this.speed.x) !== targetDir) {
+                accel *= turnAccelerate;
+            }
+
+            this.speed.x += targetDir * accel * step;
+        } else {
+            // Friction / Deceleration
+            const decel = this.isGrounded ? runDecel : airDecel;
+            if (this.speed.x > 0) {
+                this.speed.x = Math.max(0, this.speed.x - decel * step);
+            } else if (this.speed.x < 0) {
+                this.speed.x = Math.min(0, this.speed.x + decel * step);
+            }
+
+            // Snap to 0 if very slow to prevent micro-sliding
+            if (Math.abs(this.speed.x) < 0.1) this.speed.x = 0;
         }
-        if (keys.right || keys.d) {
-            this.speed.x += playerXSpeed;
-            this.lastDir = 1;
-        }
+
+        // Clamp speed
+        if (this.speed.x > maxSpeed) this.speed.x = maxSpeed;
+        else if (this.speed.x < -maxSpeed) this.speed.x = -maxSpeed;
 
         const motion = new Vector(this.speed.x * step, 0);
         const newPos = this.pos.plus(motion);
@@ -312,6 +346,8 @@ export class Player extends Actor {
                 this.wallDir = this.lastDir;
                 this.wallSlideTimer = 0.5; // Max wall slide time
             }
+            // If hitting a wall, stop horizontal momentum immediately
+            if (obstacle === "wall") this.speed.x = 0;
         } else {
             this.pos = newPos;
             // Exit wall slide when no longer pressing into wall
@@ -322,10 +358,11 @@ export class Player extends Actor {
     }
 
     moveY(step, level, keys) {
-        const gravity = 30;
-        const jumpSpeed = 17;
+        const gravity = 40; // Increased gravity for snappier fall
+        const jumpSpeed = 20; // Increased jump to compensate for gravity
         const wallSlideSpeed = 3;
         const wallJumpXSpeed = 12;
+        const terminalVelocity = 35; // Cap falling speed
 
         // Physics constants
         const coyoteTimeDuration = 0.1;
@@ -370,6 +407,9 @@ export class Player extends Actor {
             }
         } else {
             this.speed.y += step * gravity;
+            // Terminal velocity cap
+            if (this.speed.y > terminalVelocity) this.speed.y = terminalVelocity;
+
             this._wallSlideSound = false;
             this.isWallSliding = false;
         }
@@ -487,7 +527,13 @@ export class Player extends Actor {
             }
             // Double Jump
             else if (this.canDoubleJump) {
-                this.speed.y = -jumpSpeed;
+                if (this.speed.y < -jumpSpeed) {
+                    // Additive jump if already moving up fast (e.g. spring)
+                    this.speed.y -= jumpSpeed;
+                } else {
+                    // Standard double jump reset
+                    this.speed.y = -jumpSpeed;
+                }
                 this.jumpBufferTimer = 0;
                 this.canDoubleJump = false;
                 if (level.particleSystem) {

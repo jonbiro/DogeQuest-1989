@@ -64,9 +64,8 @@ export class CanvasDisplay {
         // Load sprites
         this.otherSprites = document.createElement("img");
         this.otherSprites.src = "img/sprites.png";
-        this.playerSprites = document.createElement("img");
-        // NEW: Load the generated neon player sprite
-        this.playerSprites.src = "img/player_neon.png";
+
+        // Player is now drawn procedurally
 
         // Get game container for effects
         this.gameContainer = document.querySelector('.game-container');
@@ -836,8 +835,8 @@ export class CanvasDisplay {
         const player = this.level.player;
 
         // Scale for visibility
-        // Slightly larger scale for the sprite to look good
-        const scale = 1.5;
+        // Slightly larger scale to make the character pop
+        const scale = 1.3;
         width *= scale;
         height *= scale;
         x -= (width * (scale - 1)) / 2;
@@ -864,26 +863,92 @@ export class CanvasDisplay {
         const squash = player.speed.y < 0 ? 0.9 : (player.speed.y > 5 ? 1.1 : 1);
 
         this.cx.scale(1, squash);
-        this.cx.translate(0, bounce * 10); // Bounce up and down
+        this.cx.translate(0, bounce * 5); // Bounce up and down
+
+        // -- NEON DOGE DRAWING --
+        // A stylized, geometric doge head suitable for a neon/retro theme.
+
+        const headSize = width * 0.6;
 
         // Glow effects
         if (player.isDashing) {
-            this.cx.shadowBlur = 25;
-            this.cx.shadowColor = '#00ffff';
+            this.cx.shadowBlur = 20;
+            this.cx.shadowColor = '#00ffff'; // Cyan dash
         } else if (player.isWallSliding) {
             this.cx.shadowBlur = 15;
-            this.cx.shadowColor = '#ff00ff';
+            this.cx.shadowColor = '#ff00ff'; // Magenta wall slide
         } else {
-            // Standard neon glow
-            this.cx.shadowBlur = 10;
-            this.cx.shadowColor = '#00ffff';
+            this.cx.shadowBlur = 12;
+            this.cx.shadowColor = '#ffd700'; // Gold default
         }
 
-        // Draw the sprite
-        // Assuming sprite is roughly square, we draw it centered
-        // adjust dimensions to maintain aspect ratio if needed, but for pixel art 
-        // usually we want to keep it crisp.
-        this.cx.drawImage(this.playerSprites, -width / 2, -height / 2, width, height);
+        // 1. Head Shape (Soft Rhombus/Hexagon hybrid)
+        this.cx.fillStyle = 'rgba(255, 215, 0, 0.2)'; // Gold tint
+        this.cx.strokeStyle = '#ffd700'; // Gold neon
+        this.cx.lineWidth = 2;
+
+        this.cx.beginPath();
+        // Snout
+        this.cx.moveTo(headSize * 0.6, headSize * 0.1);
+        // Cheek Right
+        this.cx.lineTo(headSize * 0.4, headSize * 0.5);
+        // Chin
+        this.cx.lineTo(0, headSize * 0.6);
+        // Cheek Left
+        this.cx.lineTo(-headSize * 0.4, headSize * 0.5);
+        // Top Left Ear Start
+        this.cx.lineTo(-headSize * 0.5, -headSize * 0.2);
+        // Top Right Ear Start
+        this.cx.lineTo(headSize * 0.3, -headSize * 0.3);
+        this.cx.closePath();
+        this.cx.fill();
+        this.cx.stroke();
+
+        // 2. Ears (Triangular, Perky)
+        // Left Ear
+        this.cx.beginPath();
+        this.cx.moveTo(-headSize * 0.5, -headSize * 0.2);
+        this.cx.lineTo(-headSize * 0.7, -headSize * 0.7); // Tip
+        this.cx.lineTo(-headSize * 0.2, -headSize * 0.4);
+        this.cx.stroke();
+
+        // Right Ear
+        this.cx.beginPath();
+        this.cx.moveTo(headSize * 0.3, -headSize * 0.3);
+        this.cx.lineTo(headSize * 0.6, -headSize * 0.8); // Tip
+        this.cx.lineTo(headSize * 0.5, -headSize * 0.1);
+        this.cx.stroke();
+
+        // 3. Face Details
+        // Eyes (Sunglasses/Visor style for "Cool" factor)
+        this.cx.fillStyle = '#000';
+        this.cx.beginPath();
+        this.cx.moveTo(-headSize * 0.3, -headSize * 0.1);
+        this.cx.lineTo(headSize * 0.4, -headSize * 0.15);
+        this.cx.lineTo(headSize * 0.35, headSize * 0.1);
+        this.cx.lineTo(-headSize * 0.25, headSize * 0.1);
+        this.cx.fill();
+
+        // Eye glint
+        this.cx.fillStyle = '#fff';
+        this.cx.beginPath();
+        this.cx.arc(headSize * 0.1, -headSize * 0.05, 2, 0, Math.PI * 2);
+        this.cx.fill();
+
+        // Nose/Snout Tip
+        this.cx.fillStyle = '#000';
+        this.cx.beginPath();
+        this.cx.arc(headSize * 0.5, headSize * 0.1, 3, 0, Math.PI * 2);
+        this.cx.fill();
+
+        // 4. Scarf / Collar (Neon Blue)
+        this.cx.strokeStyle = '#00ffff';
+        this.cx.lineWidth = 2;
+        this.cx.shadowColor = '#00ffff';
+        this.cx.beginPath();
+        this.cx.moveTo(-headSize * 0.3, headSize * 0.5);
+        this.cx.quadraticCurveTo(0, headSize * 0.7, headSize * 0.2, headSize * 0.55);
+        this.cx.stroke();
 
         this.cx.restore();
     }
