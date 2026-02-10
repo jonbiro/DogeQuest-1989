@@ -119,6 +119,15 @@ export class AudioSystem {
         setTimeout(() => this.playTone(40, 'sawtooth', 0.4, 0.08), 160);
     }
 
+    stomp() {
+        this.playTone(150, 'square', 0.1, 0.1);
+        setTimeout(() => this.playTone(400, 'sine', 0.2, 0.1), 50);
+    }
+
+    bump() {
+        this.playTone(150, 'square', 0.1, 0.05);
+    }
+
     startMusic() {
         if (this.musicPlaying || !this.enabled) return;
         this.musicPlaying = true;

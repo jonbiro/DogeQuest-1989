@@ -267,27 +267,53 @@ export class Game {
         const overlay = document.getElementById('message-overlay');
         const title = document.getElementById('message-title');
         const subtitle = document.getElementById('message-subtitle');
+        const actionBtn = document.getElementById('message-action-btn');
 
         if (status === "lost") {
             this.stats.deaths++;
             this.audio.die();
-            title.textContent = "You Died!";
-            subtitle.textContent = "Restarting Level...";
-            overlay.classList.remove('hidden');
+            this.gameInfo.life--;
 
-            setTimeout(() => {
-                overlay.classList.add('hidden');
-                this.gameInfo.life--;
-                if (this.gameInfo.life <= 0) {
-                    this.gameInfo.life = 5;
-                    this.startLevel(0);
+            if (this.gameInfo.life <= 0) {
+                // Game Over
+                title.textContent = "GAME OVER";
+                subtitle.textContent = `High Score: ${this.gameInfo.highScore}`;
+                overlay.classList.remove('hidden');
+
+                if (actionBtn) {
+                    actionBtn.textContent = "TRY AGAIN";
+                    actionBtn.classList.remove('hidden');
+                    actionBtn.onclick = () => {
+                        overlay.classList.add('hidden');
+                        actionBtn.classList.add('hidden');
+                        this.gameInfo.life = 5;
+                        this.gameInfo.bone = 0;
+                        this.startLevel(0);
+                    };
                 } else {
-                    this.startLevel(levelIndex);
+                    // Fallback if button missing
+                    setTimeout(() => {
+                        overlay.classList.add('hidden');
+                        this.gameInfo.life = 5;
+                        this.startLevel(0);
+                    }, 3000);
                 }
-            }, 1500);
+            } else {
+                // Just a death, restart level
+                title.textContent = "You Died!";
+                subtitle.textContent = `Lives Remaining: ${this.gameInfo.life}`;
+                overlay.classList.remove('hidden');
+                if (actionBtn) actionBtn.classList.add('hidden');
+
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    this.startLevel(levelIndex);
+                }, 1500);
+            }
 
         } else {
             this.audio.win();
+            if (actionBtn) actionBtn.classList.add('hidden');
 
             // Unlock next level
             if (levelIndex + 2 > this.stats.unlockedLevels) {

@@ -990,8 +990,79 @@ export class CanvasDisplay {
                 this.drawShieldPickup(x, y, width, height, actor);
             } else if (actor.type === "breakablewall") {
                 this.drawBreakableWall(x, y, width, height);
+            } else if (actor.type === "coinblock") {
+                this.drawCoinBlock(x, y, width, height, actor);
             }
         });
+    }
+
+    drawCoinBlock(x, y, width, height, actor) {
+        this.cx.save();
+
+        // Apply bump offset
+        const bumpY = actor.bumpOffset * this.scale;
+        this.cx.translate(x, y + bumpY);
+
+        // Shadow (static, doesn't move with bump)
+        this.cx.save();
+        this.cx.fillStyle = "rgba(0,0,0,0.5)";
+        this.cx.fillRect(5, 5 - bumpY, width, height); // Shadow stays down
+        this.cx.restore();
+
+        if (actor.active) {
+            // Gold Box
+            this.cx.fillStyle = "#ffd700";
+            this.cx.fillRect(0, 0, width, height);
+
+            // Bevel
+            this.cx.lineWidth = 2;
+            this.cx.strokeStyle = "#ffed88"; // Highlight
+            this.cx.beginPath();
+            this.cx.moveTo(0, height);
+            this.cx.lineTo(0, 0);
+            this.cx.lineTo(width, 0);
+            this.cx.stroke();
+
+            this.cx.strokeStyle = "#b8860b"; // Shadow
+            this.cx.beginPath();
+            this.cx.moveTo(width, 0);
+            this.cx.lineTo(width, height);
+            this.cx.lineTo(0, height);
+            this.cx.stroke();
+
+            // Glowing '?'
+            this.cx.fillStyle = "#000";
+            this.cx.font = "bold " + (height * 0.8) + "px monospace";
+            this.cx.textAlign = "center";
+            this.cx.textBaseline = "middle";
+            this.cx.fillText("?", width / 2, height / 2);
+
+            // Pulsing glow
+            const pulse = 10 + Math.sin(this.animationTime * 5) * 5;
+            this.cx.shadowBlur = pulse;
+            this.cx.shadowColor = "#ffd700";
+            this.cx.strokeStyle = "#fff";
+            this.cx.lineWidth = 1;
+            this.cx.strokeRect(0, 0, width, height);
+
+        } else {
+            // Empty Block (Brown/Metal)
+            this.cx.fillStyle = "#8b4513";
+            this.cx.fillRect(0, 0, width, height);
+
+            this.cx.strokeStyle = "#5c2e0b";
+            this.cx.lineWidth = 2;
+            this.cx.strokeRect(0, 0, width, height);
+
+            // Bolts
+            this.cx.fillStyle = "#000";
+            this.cx.fillRect(2, 2, 2, 2);
+            this.cx.fillRect(width - 4, 2, 2, 2);
+            this.cx.fillRect(2, height - 4, 2, 2);
+            this.cx.fillRect(width - 4, height - 4, 2, 2);
+        }
+
+        this.cx.restore();
     }
 
     drawSpike(x, y, width, height) {

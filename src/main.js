@@ -40,7 +40,7 @@ const Level1 = [
     "                     o o       x  ",
     "xxx                 xxxxx      x  ",
     "  x         ooo       v    o   x  ",
-    "  x @o                     xxxxx  ",
+    "  x @o      ???            xxxxx  ",
     "  xxxxx   xxxxx   x            x  ",
     "      x!!!!!!!!!!!!!!!!!!!!!!!!x  ",
     "      xxxxxxxxxxxxxxxxxxxxxxxxxx  ",

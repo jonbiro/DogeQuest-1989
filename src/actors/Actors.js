@@ -156,6 +156,61 @@ export class BreakableWall extends Actor {
     }
 }
 
+// Interactable Block - bounces and gives item when hit from below
+export class CoinBlock extends Actor {
+    constructor(pos) {
+        super(pos, new Vector(1, 1), new Vector(0, 0));
+        this.basePos = pos;
+        this.active = true;
+        this.bumpOffset = 0;
+        this.bumpSpeed = 0;
+    }
+
+    get type() { return "coinblock"; }
+
+    act(step) {
+        // Handle bump animation
+        if (this.bumpSpeed !== 0 || this.bumpOffset !== 0) {
+            this.bumpOffset += this.bumpSpeed * step;
+            this.bumpSpeed += 80 * step; // Gravity for the block bump
+
+            if (this.bumpOffset > 0) {
+                this.bumpOffset = 0;
+                this.bumpSpeed = 0;
+            }
+        }
+    }
+
+    trigger(level) {
+        if (!this.active) return;
+
+        // Start bump animation
+        this.bumpSpeed = -20;
+        this.active = false;
+
+        // Give reward
+        level.gameInfo.bone--; // Reduce bone count (as if collected)
+        level.combo++;
+        level.comboTimer = level.comboDecayTime;
+
+        if (level.audio) {
+            level.audio.bump();
+            // Delay collect sound slightly for the item popping out
+            setTimeout(() => level.audio.collect(), 100);
+        }
+
+        // Spawn particle/visual effect
+        if (level.particleSystem) {
+            level.particleSystem.emit(this.pos.plus(new Vector(0.5, -0.5)), {
+                count: 15, color: "#ffd700", speed: 8, lifetime: 0.6,
+                sizeMin: 4, sizeMax: 10, gravity: 10
+            });
+            // Floating text
+            if (level.display) level.display.showComboText("100", this.pos.plus(new Vector(0, -1)));
+        }
+    }
+}
+
 export class Player extends Actor {
     constructor(pos) {
         // Reduced height from 1.5 to 0.95 so player can fit under platforms
@@ -341,13 +396,13 @@ export class Player extends Actor {
         if (obstacle) {
             level.playerTouched(obstacle);
             // Check for wall slide opportunity (only when moving into wall and falling)
-            if (obstacle === "wall" && !this.isGrounded && this.speed.y > 0 && Math.abs(this.speed.x) > 0) {
+            if ((obstacle === "wall" || obstacle === "block") && !this.isGrounded && this.speed.y > 0 && Math.abs(this.speed.x) > 0) {
                 this.isWallSliding = true;
                 this.wallDir = this.lastDir;
                 this.wallSlideTimer = 0.5; // Max wall slide time
             }
             // If hitting a wall, stop horizontal momentum immediately
-            if (obstacle === "wall") this.speed.x = 0;
+            if (obstacle === "wall" || obstacle === "block") this.speed.x = 0;
         } else {
             this.pos = newPos;
             // Exit wall slide when no longer pressing into wall
@@ -420,6 +475,18 @@ export class Player extends Actor {
 
         if (obstacle) {
             level.playerTouched(obstacle);
+
+            // Check for block hit from below
+            if (obstacle === "block" && this.speed.y < 0) {
+                // Determine which block was hit
+                // We check the grid coordinate above the player
+                const headX = Math.floor(this.pos.x + 0.5);
+                const headY = Math.floor(this.pos.y);
+                const blockActor = level.actors.find(a => a.type === "coinblock" && Math.round(a.pos.x) === headX && Math.round(a.pos.y) === headY);
+                if (blockActor) {
+                    blockActor.trigger(level);
+                }
+            }
 
             // Ground collision detection
             if (this.speed.y > 0) {
