@@ -118,7 +118,6 @@ body:not(.game-active) #mobile-controls {
   pointer-events: none;
   z-index: 997;
   background: radial-gradient(circle, rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.4) 100%);
-  mix-blend-mode: overlay;
 }
 
 /* HUD System */
@@ -142,12 +141,15 @@ body:not(.game-active) #mobile-controls {
   flex-direction: column;
   align-items: center;
   /* Transparent background */
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.78);
   padding: 5px 10px;
   border-radius: 4px;
   border: 1px solid rgba(0, 255, 255, 0.3);
   box-shadow: 0 0 10px rgba(0, 255, 255, 0.1);
-  backdrop-filter: blur(2px);
+}
+
+.hud-item[hidden] {
+  display: none;
 }
 
 .hud-item .label {
@@ -182,7 +184,6 @@ body:not(.game-active) #mobile-controls {
   justify-content: center;
   align-items: center;
   z-index: 100;
-  backdrop-filter: blur(5px);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -307,7 +308,7 @@ body:not(.game-active) #mobile-controls {
 /* Start Button */
 #start-btn {
   background: linear-gradient(180deg, #ff00ff 0%, #cc00cc 100%);
-  color: #fff;
+  color: #000;
   border: none;
   padding: 15px 50px;
   font-size: clamp(1rem, 2.5vw, 1.5rem);
@@ -319,7 +320,7 @@ body:not(.game-active) #mobile-controls {
     0 0 30px rgba(255, 0, 255, 0.6);
   transition: all 0.15s;
   font-family: 'Press Start 2P', monospace;
-  text-shadow: 2px 2px 0 #000;
+  text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.75);
   border: 3px solid #ff00ff;
 }
 
@@ -405,7 +406,7 @@ body:not(.game-active) #mobile-controls {
 
 #mobile-controls button {
   pointer-events: auto;
-  background: rgba(0, 255, 255, 0.2);
+  background: rgba(0, 40, 48, 0.82);
   border: 3px solid rgba(0, 255, 255, 0.8);
   color: #00ffff;
   font-size: 24px;
@@ -415,7 +416,6 @@ body:not(.game-active) #mobile-controls {
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
-  backdrop-filter: blur(5px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -462,7 +462,7 @@ body:not(.game-active) #mobile-controls {
 #btn-dash {
   font-size: 10px;
   font-weight: bold;
-  background: rgba(255, 0, 255, 0.2);
+  background: rgba(55, 0, 55, 0.84);
   border-color: rgba(255, 0, 255, 0.8);
   color: #ff00ff;
   text-shadow: 0 0 10px #ff00ff;
@@ -561,6 +561,29 @@ body:not(.game-active) #mobile-controls {
   font-family: 'Press Start 2P', monospace;
   font-size: 10px;
   color: #888;
+}
+
+.pause-help {
+  max-width: 520px;
+  color: #fff;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  line-height: 1.7;
+}
+
+.pause-help summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #00ffff;
+}
+
+.pause-help p {
+  margin: 8px 0;
+  font-size: 11px;
+  line-height: 1.7;
 }
 
 /* Level Select Grid */
@@ -693,6 +716,40 @@ body:not(.game-active) #mobile-controls {
 
   .key {
     padding: 7px 12px;
+  }
+}
+
+@media (max-height: 380px) {
+  #start-screen .content {
+    padding-block: 4px 10px;
+  }
+
+  #start-screen .controls-advanced {
+    display: none;
+  }
+
+  #start-screen p,
+  #start-screen .controls {
+    margin-block: 6px;
+  }
+
+  #start-screen .controls {
+    gap: 8px;
+  }
+
+  #start-screen .key-group {
+    gap: 2px;
+  }
+
+  #start-screen .key {
+    padding: 5px 8px;
+    font-size: 0.65rem;
+  }
+
+  #start-btn {
+    min-height: 44px;
+    padding: 9px 24px;
+    font-size: 0.8rem;
   }
 }
 

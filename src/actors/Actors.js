@@ -188,7 +188,7 @@ export class CoinBlock extends Actor {
     }
 
     trigger(level) {
-        if (!this.active) return;
+        if (!this.active || level.status != null) return;
 
         // Start bump animation
         this.bumpSpeed = -20;
@@ -198,6 +198,7 @@ export class CoinBlock extends Actor {
         level.gameInfo.bone = Math.max(0, level.gameInfo.bone - 1);
         level.combo++;
         level.comboTimer = level.comboDecayTime;
+        level.display?.announceStatus?.(`Coin block collected. ${level.gameInfo.bone} bones remaining.`);
 
         if (level.audio) {
             level.audio.bump();
@@ -243,6 +244,7 @@ export class Player extends Actor {
         this.wallSlideTimer = 0;
         // Trail for visual effect
         this.trailPositions = [];
+        this.trailSampleTimer = 0;
         // Power-up timers
         this.speedBoostTimer = 0;
         this.shieldTimer = 0;
@@ -252,6 +254,8 @@ export class Player extends Actor {
     get type() { return "player"; }
 
     act(step, level, keys) {
+        if (level.status != null) return;
+
         // Power-up timers
         if (this.speedBoostTimer > 0) this.speedBoostTimer -= step;
         if (this.shieldTimer > 0) this.shieldTimer -= step;
@@ -261,13 +265,20 @@ export class Player extends Actor {
         if (this.dashCooldown > 0) this.dashCooldown -= step;
         if (this.wallJumpCooldown > 0) this.wallJumpCooldown -= step;
 
-        // Store trail positions for ghost effect
-        this.trailPositions.unshift({ x: this.pos.x, y: this.pos.y, time: 0.2 });
-        this.trailPositions = this.trailPositions.filter(p => {
-            p.time -= step;
-            return p.time > 0;
-        });
-        if (this.trailPositions.length > 8) this.trailPositions.length = 8;
+        // Keep a small sampled trail without allocating replacement arrays every frame.
+        this.trailSampleTimer -= step;
+        if (this.trailSampleTimer <= 0) {
+            this.trailPositions.push({ x: this.pos.x, y: this.pos.y, time: 0.2 });
+            this.trailSampleTimer = 1 / 30;
+        }
+        for (let index = this.trailPositions.length - 1; index >= 0; index--) {
+            const trail = this.trailPositions[index];
+            trail.time -= step;
+            if (trail.time <= 0) this.trailPositions.splice(index, 1);
+        }
+        if (this.trailPositions.length > 8) {
+            this.trailPositions.splice(0, this.trailPositions.length - 8);
+        }
 
         // Dash Logic
         if (this.isDashing) {
@@ -296,8 +307,7 @@ export class Player extends Actor {
                     this.pos = newPos;
                 }
 
-                const otherActor = level.actorAt(this);
-                if (otherActor) level.playerTouched(otherActor.type, otherActor);
+                level.forEachActorAt(this, otherActor => level.playerTouched(otherActor.type, otherActor));
 
                 // Trail particles
                 if (level.particleSystem) {
@@ -346,15 +356,14 @@ export class Player extends Actor {
         }
 
         this.moveX(step, level, keys);
+        if (level.status != null) return;
         this.moveY(step, level, keys);
+        if (level.status != null) return;
 
         // Store key state for next frame
         this.wasUp = keys.up;
 
-        const otherActor = level.actorAt(this);
-        if (otherActor) {
-            level.playerTouched(otherActor.type, otherActor);
-        }
+        level.forEachActorAt(this, otherActor => level.playerTouched(otherActor.type, otherActor));
 
     }
 
@@ -411,13 +420,13 @@ export class Player extends Actor {
         if (obstacle) {
             level.playerTouched(obstacle);
             // Check for wall slide opportunity (only when moving into wall and falling)
-            if ((obstacle === "wall" || obstacle === "block") && !this.isGrounded && this.speed.y > 0 && Math.abs(this.speed.x) > 0) {
+            if ((obstacle === "wall" || obstacle === "block" || obstacle === "breakable") && !this.isGrounded && this.speed.y > 0 && Math.abs(this.speed.x) > 0) {
                 this.isWallSliding = true;
                 this.wallDir = this.lastDir;
                 this.wallSlideTimer = 0.5; // Max wall slide time
             }
             // If hitting a wall, stop horizontal momentum immediately
-            if (obstacle === "wall" || obstacle === "block") this.speed.x = 0;
+            if (obstacle === "wall" || obstacle === "block" || obstacle === "breakable") this.speed.x = 0;
         } else {
             this.pos = newPos;
             // Exit wall slide when no longer pressing into wall
@@ -490,6 +499,7 @@ export class Player extends Actor {
 
         if (obstacle) {
             level.playerTouched(obstacle);
+            if (level.status != null) return;
 
             // Check for block hit from below
             if (obstacle === "block" && this.speed.y < 0) {
@@ -498,6 +508,7 @@ export class Player extends Actor {
                 const blockActor = level.actorAtPosition(newPos, this.size, actor => actor.type === "coinblock");
                 if (blockActor) {
                     blockActor.trigger(level);
+                    if (level.status != null) return;
                 }
             }
 

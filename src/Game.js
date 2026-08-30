@@ -206,7 +206,7 @@ export class Game {
             const sec = totalSec % 60;
             timeEl.textContent = `${min}:${String(sec).padStart(2, '0')}`;
         }
-        this.audio.stopMusic();
+        this.audio.stopAll();
         this.stopAnimation();
     }
 
@@ -227,6 +227,7 @@ export class Game {
         const requestedIndex = Number.isFinite(n) ? Math.floor(n) : 0;
         const levelIndex = Math.max(0, Math.min(requestedIndex, TOTAL_LEVELS - 1));
         this.stopAnimation();
+        this.audio.stopAll();
         this.clearPendingTransition();
         this.hideTutorial();
         this.hideOverlays();
@@ -260,6 +261,7 @@ export class Game {
         this.currentLevel = new Level(plan, this.gameInfo, this.particleSystem, this.audio);
         this.display = new CanvasDisplay(document.body, this.currentLevel, this.gameInfo, this.particleSystem);
         this.currentLevel.display = this.display;
+        this.display.announceStatus(`Level ${this.gameInfo.level} started. ${this.gameInfo.bone} bones to collect. ${this.gameInfo.life} lives remaining.`);
 
         this.display.startTransition('in');
 
@@ -349,7 +351,7 @@ export class Game {
         this.accumulatePlayTime();
         this.running = false;
         this.hideTutorial();
-        this.audio.stopMusic();
+        this.audio.stopAll();
         this.setGameplayInteractive(false);
 
         const overlay = document.getElementById('message-overlay');
@@ -361,12 +363,14 @@ export class Game {
             this.stats.deaths++;
             this.audio.die();
             this.gameInfo.life--;
+            this.saveProgress();
 
             if (this.gameInfo.life <= 0) {
                 // Game Over
                 title.textContent = "GAME OVER";
                 subtitle.textContent = `High Score: ${this.gameInfo.highScore}`;
                 overlay.classList.remove('hidden');
+                this.display?.announceStatus(`Game over. High score ${this.gameInfo.highScore}.`);
 
                 if (actionBtn) {
                     actionBtn.textContent = "TRY AGAIN";
@@ -385,6 +389,7 @@ export class Game {
                 title.textContent = "You Died!";
                 subtitle.textContent = `Lives Remaining: ${this.gameInfo.life}`;
                 overlay.classList.remove('hidden');
+                this.display?.announceStatus(`Life lost. ${this.gameInfo.life} lives remaining. Choose retry when ready.`);
                 if (actionBtn) {
                     actionBtn.textContent = "RETRY";
                     actionBtn.classList.remove('hidden');
@@ -414,6 +419,7 @@ export class Game {
             if (levelIndex === TOTAL_LEVELS - 1) {
                 title.textContent = "QUEST COMPLETE!";
                 subtitle.textContent = `All ${TOTAL_LEVELS} levels cleared. Final time: ${Math.floor(this.currentLevel.timer)}s`;
+                this.display?.announceStatus(`Quest complete. All ${TOTAL_LEVELS} levels cleared.`);
                 if (actionBtn) {
                     actionBtn.textContent = "PLAY AGAIN";
                     actionBtn.classList.remove('hidden');
@@ -421,6 +427,7 @@ export class Game {
                     this.focusDialog(overlay, actionBtn);
                 }
             } else {
+                this.display?.announceStatus(`Level ${this.gameInfo.level} complete. Choose next level when ready.`);
                 if (actionBtn) {
                     actionBtn.textContent = "NEXT LEVEL";
                     actionBtn.classList.remove('hidden');
@@ -483,7 +490,7 @@ export class Game {
         if (!this.paused) this.accumulatePlayTime();
         this.paused = true;
         this.stopAnimation();
-        this.audio.stopMusic();
+        this.audio.stopAll();
         if (this.pauseOverlay) this.pauseOverlay.classList.add('hidden');
 
         const grid = document.getElementById('level-grid');
@@ -546,12 +553,13 @@ export class Game {
         this.stopAnimation();
         this.clearPendingTransition();
         this.hideTutorial();
-        this.audio.stopMusic();
+        this.audio.stopAll();
         this.particleSystem.clear();
         this.saveProgress();
         this.hideOverlays();
 
-        if (this.display) this.display.clear();
+        if (this.display) this.display.dispose();
+        this.display = null;
         this.currentLevel = null;
         document.body.classList.remove('game-active');
         this.setGameplayInteractive(false);
@@ -597,13 +605,13 @@ export class Game {
     focusDialog(dialog, preferredElement) {
         if (!dialog) return;
         requestAnimationFrame(() => {
-            const target = preferredElement || dialog.querySelector('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])') || dialog;
+            const target = preferredElement || dialog.querySelector('button:not([disabled]), summary, [href], [tabindex]:not([tabindex="-1"])') || dialog;
             target.focus();
         });
     }
 
     trapFocus(event, dialog) {
-        const focusable = [...dialog.querySelectorAll('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])')]
+        const focusable = [...dialog.querySelectorAll('button:not([disabled]), summary, [href], [tabindex]:not([tabindex="-1"])')]
             .filter(element => !element.classList.contains('hidden'));
         if (focusable.length === 0) {
             event.preventDefault();

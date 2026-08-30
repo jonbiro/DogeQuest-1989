@@ -31,10 +31,13 @@
              Let's give it a dedicated container to be safe. -->
     <div id="game-wrapper" inert aria-hidden="true">
       <!-- Canvas will be injected here or found by ID -->
-      <canvas id="gameBoard" role="img" aria-label="Puppy Quest game world" tabindex="0">
+      <canvas id="gameBoard" role="img" aria-label="Puppy Quest game world" aria-describedby="game-help game-status" tabindex="0">
         Puppy Quest 1989 requires a browser with Canvas support.
       </canvas>
     </div>
+
+    <p id="game-help" class="sr-only">Collect every bone to finish the level. Move with A and D or the left and right arrow keys. Jump with Space, W, or the up arrow. Press jump again in the air to double jump, Shift to dash, and Escape to pause.</p>
+    <div id="game-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true">Ready to start Puppy Quest 1989.</div>
 
     <!-- Start Screen Overlay -->
     <div id="start-screen" class="overlay" role="dialog" aria-modal="true" aria-labelledby="start-title" aria-describedby="start-description" tabindex="-1">
@@ -102,6 +105,10 @@
         <span class="label">HIGH SCORE</span>
         <span id="highscore-display">0</span>
       </div>
+      <div id="power-hud" class="hud-item" hidden>
+        <span class="label">POWER</span>
+        <span id="power-display">NONE</span>
+      </div>
     </section>
 
     <!-- Message Overlay (Win/Loss) -->
@@ -126,6 +133,10 @@
           <button id="colorblind-btn">COLORBLIND: OFF</button>
           <button id="quit-btn">QUIT TO MENU</button>
         </div>
+        <details class="pause-help">
+          <summary>HOW TO PLAY</summary>
+          <p>Collect every bone. Avoid lava and spikes, stomp patrols from above, double jump in the air, wall jump beside walls, and dash through breakable barriers.</p>
+        </details>
         <div class="pause-stats">
           <span>Deaths: <span id="death-count">0</span></span>
           <span>Total Time: <span id="total-time">0:00</span></span>

@@ -8,6 +8,11 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 - Documented the live GitHub Pages deployment, procedural level behavior, mobile controls, persistence, and browser setup.
 - Added a clean static build, lint/test check, deterministic level-generation hooks, and automated coverage for core level and actor behavior.
 - Hardened lifecycle, visibility, input-reset, persistence, level-plan validation, and final-level handling.
+- Added responsive short-screen onboarding, live gameplay announcements, power-up status, and in-pause help.
+- Removed unused legacy level definitions and image assets from the production path.
+- Fixed terminal-state actor updates, stale coin-block rewards, overlapping collision priority, breakable-wall momentum, and immediate death-stat persistence.
+- Cached wall, skyline, gradient, star, and nebula rendering; culled offscreen actors and particles; compacted transient arrays in place; and added complete visual/audio teardown.
+- Updated GitHub Actions to their current major releases and grouped future Dependabot updates.
 
 ## 2.0.0 development baseline — 2026-02-09
 

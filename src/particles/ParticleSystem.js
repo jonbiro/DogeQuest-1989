@@ -17,11 +17,13 @@ class Particle {
 
     update(step) {
         this.timeLeft -= step;
-        this.pos = this.pos.plus(this.speed.times(step));
+        this.pos.x += this.speed.x * step;
+        this.pos.y += this.speed.y * step;
 
         // Physics
         this.speed.y += step * this.gravity;
-        this.speed = this.speed.times(this.friction);
+        this.speed.x *= this.friction;
+        this.speed.y *= this.friction;
 
         // Size logic
         if (this.shrink) {
@@ -74,8 +76,12 @@ export class ParticleSystem {
     }
 
     update(step) {
-        this.particles.forEach(p => p.update(step));
-        this.particles = this.particles.filter(p => p.timeLeft > 0);
+        let writeIndex = 0;
+        for (const particle of this.particles) {
+            particle.update(step);
+            if (particle.timeLeft > 0) this.particles[writeIndex++] = particle;
+        }
+        this.particles.length = writeIndex;
     }
 
     clear() {

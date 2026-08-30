@@ -46,6 +46,7 @@ export function makeDisplaySpy() {
     calls,
     addScreenShake: (...args) => calls.push({ method: 'addScreenShake', args }),
     showComboText: (...args) => calls.push({ method: 'showComboText', args }),
+    announceStatus: (...args) => calls.push({ method: 'announceStatus', args }),
     triggerFlash: (...args) => calls.push({ method: 'triggerFlash', args }),
     triggerGlitch: (...args) => calls.push({ method: 'triggerGlitch', args }),
     triggerVictory: (...args) => calls.push({ method: 'triggerVictory', args })

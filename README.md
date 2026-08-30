@@ -26,7 +26,7 @@ Collect every bone in a level, use the movement abilities to cross the course, a
 | Double jump | Press jump again while airborne | Tap `JUMP` again while airborne |
 | Wall jump | Press jump while sliding against a wall | Tap `JUMP` while sliding against a wall |
 | Dash | Hold `Shift`; direction follows movement input or the last facing direction | Hold `DASH` |
-| Pause / resume | `Escape` | Use the pause menu when available |
+| Pause / resume | `Escape` | Tap the `Ⅱ` button |
 
 Click **START GAME** once before playing. This user gesture also lets browsers enable the synthesized audio. On mobile, hold a movement or action button for continuous input; vibration is optional and depends on device/browser support.
 
@@ -57,7 +57,7 @@ Run `npm run check` before submitting changes. It builds the static site, lints 
 
 - A blank page or module error usually means the file was opened directly; use `npm start` or another local HTTP server.
 - Sound may remain silent until **START GAME** is clicked because browsers require a user gesture before starting an `AudioContext`.
-- Progress, unlocked levels, high score, death count, play time, and the colorblind preference are stored in this browser's `localStorage`. Clearing site data resets them.
+- Progress, unlocked levels, high score, death count, play time, sound, and the colorblind preference are stored in this browser's `localStorage`. Clearing site data resets them.
 - Procedural layouts use randomness, so exact level geometry and screenshots can differ between fresh runs.
 
 ## Project structure
@@ -66,7 +66,7 @@ Run `npm run check` before submitting changes. It builds the static site, lints 
 | :--- | :--- |
 | `index.html` | Game shell, overlays, HUD, start screen, and touch controls. |
 | `css.css` | Neon/CRT styling, responsive layout, overlays, and mobile controls. |
-| `src/main.js` | Application entry point, tutorial plan, and level catalogue. |
+| `src/main.js` | Application entry point and fixed tutorial plan. |
 | `src/Game.js` | Game lifecycle, animation loop, progression, pause menu, persistence, and level selection. |
 | `src/Level.js` | Tile-plan parsing, actor management, collisions, scoring, and win/loss state. |
 | `src/LevelGenerator.js` | Difficulty-scaled procedural level generation. |
@@ -84,6 +84,8 @@ The first level slot is the fixed tutorial. Slots 2–10 are generated with incr
 
 - Keyboard play is supported throughout the game, and touch controls appear on small or coarse-pointer devices.
 - The pause menu includes a colorblind display option and exposes restart, level selection, and quit actions without requiring a page reload.
+- Screen-reader users receive concise level, collectible, life, outcome, and power-up announcements; HUD values have explicit accessible labels and the pause menu includes a keyboard-accessible help section.
+- Short-height layouts keep the start action above the fold, and reduced-motion preferences suppress nonessential interface animation.
 - The game is primarily a visual Canvas experience. When changing overlays or controls, preserve readable text, keyboard access, visible focus, touch targets, and non-color cues. Test CRT/glow animations with reduced-motion settings in mind.
 - Audio is synthesized locally in the browser; no account or server connection is needed to play. The page currently requests the `Press Start 2P` font from Google Fonts.
 

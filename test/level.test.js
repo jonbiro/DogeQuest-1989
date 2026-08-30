@@ -14,6 +14,12 @@ test('Level counts bone actors and coin blocks as collectibles', () => {
   );
 });
 
+test('Level rejects empty, ragged, and playerless plans', () => {
+  assert.throws(() => makeLevel([]), /non-empty/);
+  assert.throws(() => makeLevel(['@x', 'x']), /same width/);
+  assert.throws(() => makeLevel(['  ', 'xx']), /player start/);
+});
+
 test('Level.obstacleAt handles walls, empty space, and out-of-bounds positions', () => {
   const { level } = makeLevel(['@ x', 'xxx']);
 
@@ -59,13 +65,91 @@ test('hazards kill an unshielded player but a shield absorbs one hit', () => {
   level.player.shieldTimer = 1;
   level.playerTouched('spike', spike);
   assert.equal(level.player.shieldTimer, 0);
+  assert.equal(level.player.invulnerabilityTimer, 0.75);
   assert.equal(level.status, null);
+
+  level.playerTouched('spike', spike);
+  assert.equal(level.status, null, 'temporary invulnerability prevents an immediate repeated hit');
 
   const unshielded = makeLevel(['@S', 'xx']).level;
   const unshieldedSpike = unshielded.actors.find((actor) => actor.type === 'spike');
   unshielded.playerTouched('spike', unshieldedSpike);
   assert.equal(unshielded.status, 'lost');
   assert.equal(unshielded.finishDelay, 1);
+});
+
+test('a terminal loss cannot be overwritten by a later collectible collision', () => {
+  const { gameInfo, level } = makeLevel(['@oS', 'xxx']);
+  const bone = level.actors.find((actor) => actor.type === 'bone');
+  const spike = level.actors.find((actor) => actor.type === 'spike');
+
+  level.playerTouched('spike', spike);
+  level.playerTouched('bone', bone);
+
+  assert.equal(level.status, 'lost');
+  assert.equal(gameInfo.bone, 1);
+  assert.equal(level.actors.includes(bone), true);
+});
+
+test('dashing through a breakable wall clears both collision and actor state', () => {
+  const { level } = makeLevel(['@B', 'xx']);
+  const wall = level.actors.find((actor) => actor.type === 'breakablewall');
+
+  level.player.isDashing = true;
+  level.playerTouched('breakablewall', wall);
+
+  assert.equal(level.grid[0][1], null);
+  assert.equal(level.actors.includes(wall), false);
+});
+
+test('animate stops the active substep as soon as the level becomes terminal', () => {
+  const { level } = makeLevel(['@']);
+  let actorAfterTerminalRan = false;
+  const terminalActor = {
+    type: 'test',
+    act() {
+      level.status = 'lost';
+      level.finishDelay = 1;
+    }
+  };
+  const actorAfterTerminal = {
+    type: 'test',
+    act() {
+      actorAfterTerminalRan = true;
+    }
+  };
+  level.actors = [terminalActor, actorAfterTerminal];
+
+  level.animate(0.15, {});
+
+  assert.equal(actorAfterTerminalRan, false);
+  assert.equal(level.status, 'lost');
+  assert.equal(level.finishDelay, 1);
+});
+
+test('overlapping hazards take priority over collectibles', () => {
+  const { gameInfo, level } = makeLevel(['@oS', 'xxx']);
+  const bone = level.actors.find((actor) => actor.type === 'bone');
+  const spike = level.actors.find((actor) => actor.type === 'spike');
+  bone.pos = level.player.pos;
+  spike.pos = level.player.pos;
+
+  level.forEachActorAt(level.player, actor => level.playerTouched(actor.type, actor));
+
+  assert.equal(level.status, 'lost');
+  assert.equal(gameInfo.bone, 1);
+  assert.equal(level.actors.includes(bone), true);
+});
+
+test('a solid breakable wall cancels normal horizontal momentum', () => {
+  const { level } = makeLevel(['@B', 'xx']);
+  level.player.pos = new Vector(0.1, 0);
+  level.player.speed = new Vector(5, 0);
+  level.player.isGrounded = true;
+
+  level.player.moveX(0.1, level, { right: true });
+
+  assert.equal(level.player.speed.x, 0);
 });
 
 test('animate advances time, decays expired combos, and removes broken walls', () => {

@@ -26,6 +26,23 @@ test('LevelGenerator caps difficulty and emits a valid rectangular plan', () => 
   });
 });
 
+test('LevelGenerator clamps invalid low difficulty and accepts an injected random source', () => {
+  const values = [0.25, 0.5, 0.75];
+  let index = 0;
+  const generator = new LevelGenerator(Number.NaN, () => values[index++ % values.length]);
+
+  assert.equal(generator.difficulty, 1);
+  assertValidPlan(generator.generate(), generator.width);
+});
+
+test('LevelGenerator sanitizes non-finite and out-of-range random values', () => {
+  const values = [Number.NaN, Number.POSITIVE_INFINITY, -4, 8];
+  let index = 0;
+  const generator = new LevelGenerator(10, () => values[index++ % values.length]);
+
+  assertValidPlan(generator.generate(), generator.width);
+});
+
 test('LevelGenerator output is reproducible for a deterministic random source', () => {
   const first = withRandom([0.02, 0.41, 0.73, 0.91], () => new LevelGenerator(4).generate());
   const second = withRandom([0.02, 0.41, 0.73, 0.91], () => new LevelGenerator(4).generate());

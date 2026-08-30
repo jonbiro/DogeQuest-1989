@@ -16,6 +16,8 @@ const actorChars = {
     "?": CoinBlock
 };
 
+const HAZARD_ACTOR_TYPES = new Set(['lava', 'spike', 'patrol']);
+
 export class Level {
     constructor(plan, gameInfo, particleSystem, audio, display = null) {
         if (!Array.isArray(plan) || plan.length === 0 || typeof plan[0] !== 'string' || plan[0].length === 0) {
@@ -118,6 +120,22 @@ export class Level {
             pos.y < other.pos.y + other.size.y);
     }
 
+    forEachActorAt(actor, callback) {
+        for (let pass = 0; pass < 2; pass++) {
+            const hazardsOnly = pass === 0;
+            for (const other of this.actors) {
+                if (other === actor || HAZARD_ACTOR_TYPES.has(other.type) !== hazardsOnly) continue;
+                const overlaps = actor.pos.x + actor.size.x > other.pos.x &&
+                    actor.pos.x < other.pos.x + other.size.x &&
+                    actor.pos.y + actor.size.y > other.pos.y &&
+                    actor.pos.y < other.pos.y + other.size.y;
+                if (!overlaps) continue;
+                callback(other);
+                if (this.status != null) return;
+            }
+        }
+    }
+
     animate(step, keys) {
         // Update timer
         if (this.status === null) {
@@ -142,14 +160,18 @@ export class Level {
         }
 
         // Remove broken breakable walls
-        this.actors = this.actors.filter(a => !(a.type === 'breakablewall' && a.broken));
+        for (let index = this.actors.length - 1; index >= 0; index--) {
+            const actor = this.actors[index];
+            if (actor.type === 'breakablewall' && actor.broken) this.actors.splice(index, 1);
+        }
 
         const maxStep = 0.05;
-        while (step > 0) {
+        while (step > 0 && this.status == null) {
             let thisStep = Math.min(step, maxStep);
-            this.actors.forEach(actor => {
+            for (const actor of this.actors) {
                 actor.act(thisStep, this, keys);
-            });
+                if (this.status != null) break;
+            }
             step -= thisStep;
         }
     }
@@ -165,6 +187,7 @@ export class Level {
                 this.player.speed.y = -10;
                 if (this.audio) this.audio.shieldHit();
                 if (this.display) this.display.triggerFlash();
+                this.display?.announceStatus?.('Shield absorbed the lava.');
                 return;
             }
 
@@ -212,6 +235,7 @@ export class Level {
             // Flash effect on collection
             if (this.display) {
                 this.display.triggerFlash();
+                this.display.announceStatus?.(`Bone collected. ${this.gameInfo.bone} remaining.`);
             }
 
             // Emit particles - more dramatic for combos
@@ -285,6 +309,7 @@ export class Level {
                     if (this.display) {
                         this.display.addScreenShake(3);
                         this.display.showComboText("STOMP!", actor.pos); // Reuse combo text for effect
+                        this.display.announceStatus?.('Patrol stomped.');
                     }
                     if (this.particleSystem) {
                         this.particleSystem.emit(actor.pos.plus(new Vector(0.4, 0.6)), {
@@ -307,6 +332,7 @@ export class Level {
                 this.player.invulnerabilityTimer = 0.75;
                 if (this.audio) this.audio.shieldHit();
                 if (this.display) this.display.triggerFlash();
+                this.display?.announceStatus?.('Shield absorbed a hazard.');
                 // Knock player back
                 this.player.speed.y = -10;
                 this.player.speed.x = (this.player.pos.x < actor.pos.x) ? -8 : 8;
@@ -342,6 +368,7 @@ export class Level {
             this.player.speedBoostTimer = 5.0;
             if (this.audio) this.audio.powerUp();
             if (this.display) this.display.triggerFlash();
+            this.display?.announceStatus?.('Speed boost active for 5 seconds.');
             if (this.particleSystem) {
                 this.particleSystem.emit(actor.pos.plus(new Vector(0.3, 0.3)), {
                     count: 20, color: "#00aaff", speed: 5, lifetime: 0.8,
@@ -353,6 +380,7 @@ export class Level {
             this.player.shieldTimer = 8.0;
             if (this.audio) this.audio.powerUp();
             if (this.display) this.display.triggerFlash();
+            this.display?.announceStatus?.('Shield active for 8 seconds.');
             if (this.particleSystem) {
                 this.particleSystem.emit(actor.pos.plus(new Vector(0.3, 0.3)), {
                     count: 20, color: "#00ffff", speed: 5, lifetime: 0.8,

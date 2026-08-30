@@ -28,6 +28,8 @@ export class CanvasDisplay {
 
         this.cx = this.canvas.getContext("2d");
         this.cx.imageSmoothingEnabled = false;
+        this.starSprites = new Map();
+        this.buildGradientCache();
 
         this.level = level;
         this.animationTime = 0;
@@ -71,12 +73,18 @@ export class CanvasDisplay {
         this.hudHighScore = document.getElementById("highscore-display");
         this.hudTimer = document.getElementById("timer-display");
         this.hudCombo = document.getElementById("combo-display");
+        this.hudPower = document.getElementById("power-display");
+        this.hudPowerItem = document.getElementById("power-hud");
+        this.statusMessage = document.getElementById("game-status");
         this.hudValues = {};
+        this.activePowerKinds = '';
 
         // Get game container for effects
         this.gameContainer = document.querySelector('.game-container');
 
         this.buildWallCache();
+        this.buildWallLayer();
+        this.buildCityLayer();
         this.updateHUD();
         this.drawFrame(0);
     }
@@ -84,30 +92,87 @@ export class CanvasDisplay {
     generateStars(count) {
         const stars = [];
         for (let i = 0; i < count; i++) {
+            const size = Math.round((Math.random() * 2 + 1) * 2) / 2;
+            const color = Math.random() > 0.8 ? '#ff00ff' : (Math.random() > 0.5 ? '#00ffff' : '#ffffff');
             stars.push({
                 x: Math.random(),
                 y: Math.random(),
-                size: Math.random() * 2 + 1,
+                size,
                 twinkle: Math.random() * Math.PI * 2,
                 speed: Math.random() * 0.5 + 0.5,
-                color: Math.random() > 0.8 ? '#ff00ff' : (Math.random() > 0.5 ? '#00ffff' : '#ffffff')
+                color,
+                sprite: this.getStarSprite(color, size)
             });
         }
         return stars;
     }
 
+    getStarSprite(color, size) {
+        const key = `${color}:${size}`;
+        if (this.starSprites.has(key)) return this.starSprites.get(key);
+
+        const padding = Math.ceil(size * 4);
+        const sprite = document.createElement('canvas');
+        sprite.width = padding * 2;
+        sprite.height = padding * 2;
+        const context = sprite.getContext('2d');
+        context.fillStyle = '#fff';
+        context.shadowBlur = size * 3;
+        context.shadowColor = color;
+        context.beginPath();
+        context.arc(padding, padding, size, 0, Math.PI * 2);
+        context.fill();
+        this.starSprites.set(key, sprite);
+        return sprite;
+    }
+
     generateNebula(count) {
         const clouds = [];
         for (let i = 0; i < count; i++) {
+            const size = Math.random() * 150 + 100;
+            const color = Math.random() > 0.5 ? 'rgba(255,0,255,0.03)' : 'rgba(0,255,255,0.03)';
+            const sprite = document.createElement('canvas');
+            sprite.width = Math.ceil(size * 2);
+            sprite.height = Math.ceil(size * 2);
+            const context = sprite.getContext('2d');
+            const gradient = context.createRadialGradient(size, size, 0, size, size, size);
+            gradient.addColorStop(0, color);
+            gradient.addColorStop(1, 'transparent');
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, sprite.width, sprite.height);
             clouds.push({
                 x: Math.random(),
                 y: Math.random(),
-                size: Math.random() * 150 + 100,
-                color: Math.random() > 0.5 ? 'rgba(255,0,255,0.03)' : 'rgba(0,255,255,0.03)',
-                drift: Math.random() * 0.0001
+                size,
+                drift: Math.random() * 0.0001,
+                sprite
             });
         }
         return clouds;
+    }
+
+    buildGradientCache() {
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const horizon = height * 0.6;
+        const sunX = width / 2;
+        const sunRadius = Math.min(width, height) * 0.25;
+
+        const sky = this.cx.createLinearGradient(0, 0, 0, height);
+        sky.addColorStop(0, '#050010');
+        sky.addColorStop(0.6, '#1a0b36');
+        sky.addColorStop(1, '#3c1053');
+
+        const sun = this.cx.createLinearGradient(sunX, horizon - sunRadius, sunX, horizon + sunRadius);
+        sun.addColorStop(0, '#ffd700');
+        sun.addColorStop(0.5, '#ff00ff');
+        sun.addColorStop(1, '#9900ff');
+
+        const floor = this.cx.createLinearGradient(0, horizon, 0, height);
+        floor.addColorStop(0, 'rgba(255, 0, 255, 0.1)');
+        floor.addColorStop(1, 'rgba(0, 255, 255, 0.2)');
+
+        this.gradients = { sky, sun, floor };
     }
 
     addScreenShake(intensity = 5) {
@@ -171,6 +236,33 @@ export class CanvasDisplay {
         this.cx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
 
+    dispose() {
+        this.clear();
+        if (this.wallLayer) {
+            this.wallLayer.width = 0;
+            this.wallLayer.height = 0;
+        }
+        if (this.cityLayer) {
+            this.cityLayer.width = 0;
+            this.cityLayer.height = 0;
+        }
+        this.starSprites.forEach(sprite => {
+            sprite.width = 0;
+            sprite.height = 0;
+        });
+        this.nebulaClouds.forEach(cloud => {
+            cloud.sprite.width = 0;
+            cloud.sprite.height = 0;
+        });
+        this.starSprites.clear();
+        this.wallCache = null;
+        this.wallLayer = null;
+        this.cityLayer = null;
+        this.gradients = null;
+        this.level = null;
+        this.particleSystem = null;
+    }
+
     resize() {
         const wrapper = this.canvas.parentElement;
         const width = Math.max(1, Math.round(wrapper?.clientWidth || this.canvas.width));
@@ -181,27 +273,38 @@ export class CanvasDisplay {
         this.canvas.height = height;
         this.cx = this.canvas.getContext("2d");
         this.cx.imageSmoothingEnabled = false;
+        this.buildGradientCache();
         this.scale = Math.max(20, Math.min(30, height / this.level.height));
         this.viewport.width = width / this.scale;
         this.viewport.height = height / this.scale;
+        this.buildWallLayer();
+        this.buildCityLayer();
         this.updateViewport(0);
         this.drawFrame(0);
     }
 
-    updateHudValue(key, element, value) {
+    updateHudValue(key, element, value, accessibleLabel = '') {
         const text = String(value);
         if (element && this.hudValues[key] !== text) {
             element.textContent = text;
             this.hudValues[key] = text;
+            const item = element.closest('.hud-item');
+            if (item && accessibleLabel) item.setAttribute('aria-label', accessibleLabel);
+        }
+    }
+
+    announceStatus(message) {
+        if (this.statusMessage && this.statusMessage.textContent !== message) {
+            this.statusMessage.textContent = message;
         }
     }
 
     updateHUD() {
         const collected = this.gameInfo.totalBone - this.gameInfo.bone;
-        this.updateHudValue('level', this.hudLevel, this.gameInfo.level);
-        this.updateHudValue('score', this.hudScore, collected);
-        this.updateHudValue('total', this.hudTotal, this.gameInfo.totalBone);
-        this.updateHudValue('lives', this.hudLives, this.gameInfo.life);
+        this.updateHudValue('level', this.hudLevel, this.gameInfo.level, `Level ${this.gameInfo.level}`);
+        this.updateHudValue('score', this.hudScore, collected, `Bones ${collected} of ${this.gameInfo.totalBone}`);
+        this.updateHudValue('total', this.hudTotal, this.gameInfo.totalBone, `Bones ${collected} of ${this.gameInfo.totalBone}`);
+        this.updateHudValue('lives', this.hudLives, this.gameInfo.life, `${this.gameInfo.life} lives remaining`);
 
         // Update High Score check
         if (collected > this.gameInfo.highScore) {
@@ -212,18 +315,38 @@ export class CanvasDisplay {
                 // High scores remain available for the current session.
             }
         }
-        this.updateHudValue('highScore', this.hudHighScore, this.gameInfo.highScore);
+        this.updateHudValue('highScore', this.hudHighScore, this.gameInfo.highScore, `High score ${this.gameInfo.highScore}`);
 
         // Timer display
         if (this.hudTimer && this.level) {
             const mins = Math.floor(this.level.timer / 60);
             const secs = Math.floor(this.level.timer % 60);
-            this.updateHudValue('timer', this.hudTimer, `${mins}:${secs.toString().padStart(2, '0')}`);
+            this.updateHudValue('timer', this.hudTimer, `${mins}:${secs.toString().padStart(2, '0')}`, `Time ${mins} minutes ${secs} seconds`);
         }
 
         // Combo display
         if (this.hudCombo && this.level) {
-            this.updateHudValue('combo', this.hudCombo, this.level.combo > 0 ? `${this.level.combo}x` : '');
+            this.updateHudValue('combo', this.hudCombo, this.level.combo > 0 ? `${this.level.combo}x` : '', `Combo ${this.level.combo}`);
+        }
+
+        if (this.hudPower && this.level?.player) {
+            const powers = [];
+            const powerKinds = [];
+            if (this.level.player.shieldTimer > 0) {
+                powerKinds.push('shield');
+                powers.push(`SHIELD ${Math.ceil(this.level.player.shieldTimer)}s`);
+            }
+            if (this.level.player.speedBoostTimer > 0) {
+                powerKinds.push('speed');
+                powers.push(`SPEED ${Math.ceil(this.level.player.speedBoostTimer)}s`);
+            }
+
+            const kindKey = powerKinds.join('+');
+            const powerText = powers.join(' + ') || 'NONE';
+            if (this.hudPowerItem) this.hudPowerItem.hidden = powers.length === 0;
+            this.updateHudValue('power', this.hudPower, powerText, `Power-up ${powerText.toLowerCase()}`);
+            if (this.activePowerKinds && !kindKey) this.announceStatus('Power-up expired.');
+            this.activePowerKinds = kindKey;
         }
     }
 
@@ -236,18 +359,23 @@ export class CanvasDisplay {
             this.screenShake -= step;
         }
 
-        // Update confetti
-        this.confetti.forEach(c => {
+        // Update and compact transient effects in place to reduce frame-time garbage.
+        let confettiWriteIndex = 0;
+        for (const c of this.confetti) {
             c.x += c.vx;
             c.y += c.vy;
             c.vy += 0.1;
             c.rotation += c.rotSpeed;
-        });
-        this.confetti = this.confetti.filter(c => c.y < this.canvas.height + 50);
+            if (c.y < this.canvas.height + 50) this.confetti[confettiWriteIndex++] = c;
+        }
+        this.confetti.length = confettiWriteIndex;
 
-        // Update combo texts
-        this.comboTexts.forEach(t => t.life -= step);
-        this.comboTexts = this.comboTexts.filter(t => t.life > 0);
+        let comboWriteIndex = 0;
+        for (const text of this.comboTexts) {
+            text.life -= step;
+            if (text.life > 0) this.comboTexts[comboWriteIndex++] = text;
+        }
+        this.comboTexts.length = comboWriteIndex;
 
         this.updateViewport(step);
         this.clearDisplay();
@@ -328,11 +456,7 @@ export class CanvasDisplay {
         const height = this.canvas.height;
 
         // Sky Gradient (Deep purple to pink/orange at bottom)
-        const grad = this.cx.createLinearGradient(0, 0, 0, height);
-        grad.addColorStop(0, "#050010");
-        grad.addColorStop(0.6, "#1a0b36");
-        grad.addColorStop(1, "#3c1053");
-        this.cx.fillStyle = grad;
+        this.cx.fillStyle = this.gradients.sky;
         this.cx.fillRect(0, 0, width, height);
 
         // Retro Sun
@@ -349,45 +473,52 @@ export class CanvasDisplay {
     }
 
     drawCitySkyline(width, height) {
-        this.cx.save();
-        const horizon = height * 0.6;
-        const parallax = (this.viewport.left * this.scale * 0.15) % width;
+        if (!this.cityLayer || this.cityLayer.height !== height) this.buildCityLayer();
+        const period = this.cityPeriod;
+        const parallax = ((this.viewport.left * this.scale * 0.15) % period + period) % period;
+        this.cx.drawImage(this.cityLayer, -parallax, 0);
+        if (period - parallax < width) this.cx.drawImage(this.cityLayer, period - parallax, 0);
+    }
 
-        this.cx.globalAlpha = 0.4;
+    buildCityLayer() {
+        const period = this.canvas.width + 100;
+        const layer = document.createElement('canvas');
+        layer.width = period;
+        layer.height = this.canvas.height;
+        const context = layer.getContext('2d');
+        const horizon = layer.height * 0.6;
 
-        // Dark silhouette
-        this.cx.fillStyle = '#0a0015';
-        CITY_BUILDINGS.forEach(b => {
-            const bx = ((b.x - parallax) % (width + 100) + width + 100) % (width + 100) - 50;
-            this.cx.fillRect(bx, horizon - b.h, b.w, b.h);
-
-            // Windows (small glowing dots)
-            this.cx.save();
-            this.cx.fillStyle = 'rgba(255, 0, 255, 0.5)';
-            for (let wy = 0; wy < b.h - 10; wy += 12) {
-                for (let wx = 4; wx < b.w - 4; wx += 8) {
-                    if (Math.sin(b.x * 7 + wx * 3 + wy * 5) > 0.1) {
-                        this.cx.fillRect(bx + wx, horizon - b.h + 5 + wy, 3, 4);
+        context.save();
+        context.globalAlpha = 0.4;
+        for (const building of CITY_BUILDINGS) {
+            const baseX = ((building.x % period) + period) % period - 50;
+            for (const offset of [-period, 0, period]) {
+                const x = baseX + offset;
+                if (x + building.w < 0 || x > period) continue;
+                context.fillStyle = '#0a0015';
+                context.fillRect(x, horizon - building.h, building.w, building.h);
+                context.fillStyle = 'rgba(255, 0, 255, 0.5)';
+                for (let windowY = 0; windowY < building.h - 10; windowY += 12) {
+                    for (let windowX = 4; windowX < building.w - 4; windowX += 8) {
+                        if (Math.sin(building.x * 7 + windowX * 3 + windowY * 5) > 0.1) {
+                            context.fillRect(x + windowX, horizon - building.h + 5 + windowY, 3, 4);
+                        }
                     }
                 }
+                context.strokeStyle = 'rgba(255, 0, 255, 0.3)';
+                context.lineWidth = 1;
+                context.shadowBlur = 8;
+                context.shadowColor = '#ff00ff';
+                context.beginPath();
+                context.moveTo(x, horizon - building.h);
+                context.lineTo(x + building.w, horizon - building.h);
+                context.stroke();
             }
-            this.cx.restore();
-        });
+        }
+        context.restore();
 
-        // Neon glow line at building tops
-        this.cx.strokeStyle = 'rgba(255, 0, 255, 0.3)';
-        this.cx.lineWidth = 1;
-        this.cx.shadowBlur = 8;
-        this.cx.shadowColor = '#ff00ff';
-        CITY_BUILDINGS.forEach(b => {
-            const bx = ((b.x - parallax) % (width + 100) + width + 100) % (width + 100) - 50;
-            this.cx.beginPath();
-            this.cx.moveTo(bx, horizon - b.h);
-            this.cx.lineTo(bx + b.w, horizon - b.h);
-            this.cx.stroke();
-        });
-
-        this.cx.restore();
+        this.cityLayer = layer;
+        this.cityPeriod = period;
     }
 
     drawRetroSun(width, height) {
@@ -397,13 +528,7 @@ export class CanvasDisplay {
 
         this.cx.save();
 
-        // Sun Gradient
-        const grad = this.cx.createLinearGradient(cx, cy - radius, cx, cy + radius);
-        grad.addColorStop(0, "#ffd700");
-        grad.addColorStop(0.5, "#ff00ff");
-        grad.addColorStop(1, "#9900ff");
-
-        this.cx.fillStyle = grad;
+        this.cx.fillStyle = this.gradients.sun;
 
         // Clip bottom to horizon
         this.cx.beginPath();
@@ -438,11 +563,7 @@ export class CanvasDisplay {
         this.cx.rect(0, horizon, width, height - horizon);
         this.cx.clip();
 
-        // Floor gradient
-        const grad = this.cx.createLinearGradient(0, horizon, 0, height);
-        grad.addColorStop(0, "rgba(255, 0, 255, 0.1)");
-        grad.addColorStop(1, "rgba(0, 255, 255, 0.2)");
-        this.cx.fillStyle = grad;
+        this.cx.fillStyle = this.gradients.floor;
         this.cx.fillRect(0, horizon, width, height - horizon);
 
         this.cx.strokeStyle = "rgba(0, 255, 255, 0.3)";
@@ -484,11 +605,7 @@ export class CanvasDisplay {
             const y = cloud.y * this.canvas.height * 0.6;
             const drawX = x < 0 ? x + this.canvas.width : x;
 
-            const gradient = this.cx.createRadialGradient(drawX, y, 0, drawX, y, cloud.size);
-            gradient.addColorStop(0, cloud.color);
-            gradient.addColorStop(1, 'transparent');
-            this.cx.fillStyle = gradient;
-            this.cx.fillRect(drawX - cloud.size, y - cloud.size, cloud.size * 2, cloud.size * 2);
+            this.cx.drawImage(cloud.sprite, drawX - cloud.size, y - cloud.size);
         });
 
         // Far stars (slower parallax, dimmer)
@@ -499,10 +616,10 @@ export class CanvasDisplay {
             const drawX = x < 0 ? x + this.canvas.width : x;
             const drawY = y < 0 ? y + this.canvas.height * 0.6 : y;
 
-            this.cx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-            this.cx.beginPath();
-            this.cx.arc(drawX, drawY, star.size * 0.7, 0, Math.PI * 2);
-            this.cx.fill();
+            const width = star.sprite.width * 0.7;
+            const height = star.sprite.height * 0.7;
+            this.cx.globalAlpha = opacity;
+            this.cx.drawImage(star.sprite, drawX - width / 2, drawY - height / 2, width, height);
         });
 
         // Near stars (brighter, faster parallax)
@@ -513,15 +630,8 @@ export class CanvasDisplay {
             const drawX = x < 0 ? x + this.canvas.width : x;
             const drawY = y < 0 ? y + this.canvas.height : y;
 
-            this.cx.fillStyle = star.color.replace(')', `, ${opacity})`);
-            if (star.color.startsWith('#')) {
-                this.cx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-            }
-            this.cx.shadowBlur = star.size * 3;
-            this.cx.shadowColor = star.color;
-            this.cx.beginPath();
-            this.cx.arc(drawX, drawY, star.size, 0, Math.PI * 2);
-            this.cx.fill();
+            this.cx.globalAlpha = opacity;
+            this.cx.drawImage(star.sprite, drawX - star.sprite.width / 2, drawY - star.sprite.height / 2);
         });
 
         this.cx.restore();
@@ -610,6 +720,8 @@ export class CanvasDisplay {
         this.particleSystem.particles.forEach(p => {
             let x = (p.pos.x - this.viewport.left) * this.scale;
             let y = (p.pos.y - this.viewport.top) * this.scale;
+            const radius = p.size || 3;
+            if (x + radius < 0 || x - radius > this.canvas.width || y + radius < 0 || y - radius > this.canvas.height) return;
 
             const opacity = p.opacity || 1;
             this.cx.globalAlpha = opacity;
@@ -620,7 +732,7 @@ export class CanvasDisplay {
             this.cx.fillStyle = p.color;
 
             this.cx.beginPath();
-            this.cx.arc(x, y, p.size || 3, 0, Math.PI * 2);
+            this.cx.arc(x, y, radius, 0, Math.PI * 2);
             this.cx.fill();
         });
         this.cx.restore();
@@ -633,16 +745,25 @@ export class CanvasDisplay {
         let yStart = Math.floor(view.top);
         let yEnd = Math.ceil(view.top + view.height);
 
+        if (this.wallLayer) {
+            const sourceX = view.left * this.scale + this.wallLayerPadding;
+            const sourceY = view.top * this.scale + this.wallLayerPadding;
+            this.cx.drawImage(
+                this.wallLayer,
+                sourceX,
+                sourceY,
+                this.canvas.width,
+                this.canvas.height,
+                0,
+                0,
+                this.canvas.width,
+                this.canvas.height
+            );
+        }
+
         for (let y = yStart; y < yEnd; y++) {
             for (let x = xStart; x < xEnd; x++) {
-                const key = `${x},${y}`;
-                const cached = this.wallCache && this.wallCache[key];
-
-                if (cached) {
-                    let screenX = (x - view.left) * this.scale;
-                    let screenY = (y - view.top) * this.scale;
-                    this.drawSmoothWallCached(screenX, screenY, cached);
-                } else if (this.level.grid[y] && this.level.grid[y][x] === "lava") {
+                if (this.level.grid[y] && this.level.grid[y][x] === "lava") {
                     let screenX = (x - view.left) * this.scale;
                     let screenY = (y - view.top) * this.scale;
                     this.drawPlasmaLava(screenX, screenY, x, y);
@@ -665,6 +786,29 @@ export class CanvasDisplay {
                 }
             }
         }
+    }
+
+    buildWallLayer() {
+        const padding = Math.ceil(this.scale);
+        const layer = document.createElement('canvas');
+        layer.width = Math.ceil(this.level.width * this.scale) + padding * 2;
+        layer.height = Math.ceil(this.level.height * this.scale) + padding * 2;
+        const context = layer.getContext('2d');
+        context.imageSmoothingEnabled = false;
+
+        const originalContext = this.cx;
+        this.cx = context;
+        try {
+            for (const [key, neighbors] of Object.entries(this.wallCache)) {
+                const [x, y] = key.split(',').map(Number);
+                this.drawSmoothWallCached(x * this.scale + padding, y * this.scale + padding, neighbors);
+            }
+        } finally {
+            this.cx = originalContext;
+        }
+
+        this.wallLayer = layer;
+        this.wallLayerPadding = padding;
     }
 
     isWall(x, y) {
@@ -989,6 +1133,9 @@ export class CanvasDisplay {
             let height = actor.size.y * this.scale;
             let x = (actor.pos.x - this.viewport.left) * this.scale;
             let y = (actor.pos.y - this.viewport.top) * this.scale;
+            const margin = this.scale;
+            if (x + width < -margin || x > this.canvas.width + margin ||
+                y + height < -margin || y > this.canvas.height + margin) return;
 
             if (actor.type === "player") {
                 this.drawPlayer(x, y, width, height);
