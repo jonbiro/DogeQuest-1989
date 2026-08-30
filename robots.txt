@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jonbiro.github.io/DogeQuest-1989/sitemap.xml

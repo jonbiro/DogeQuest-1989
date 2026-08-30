@@ -37,6 +37,7 @@ class Particle {
 export class ParticleSystem {
     constructor() {
         this.particles = [];
+        this.maxParticles = 1200;
     }
 
     emit(pos, options = {}) {
@@ -55,7 +56,9 @@ export class ParticleSystem {
         const shrink = options.shrink !== undefined ? options.shrink : true;
         const composite = options.composite || 'source-over';
 
-        for (let i = 0; i < count; i++) {
+        const available = Math.max(0, this.maxParticles - this.particles.length);
+        const emitCount = Math.min(count, available);
+        for (let i = 0; i < emitCount; i++) {
             const angle = angleOffset + (Math.random() - 0.5) * spread;
             const magnitude = Math.random() * speed;
             const speedVec = new Vector(Math.cos(angle) * magnitude, Math.sin(angle) * magnitude);
@@ -73,5 +76,9 @@ export class ParticleSystem {
     update(step) {
         this.particles.forEach(p => p.update(step));
         this.particles = this.particles.filter(p => p.timeLeft > 0);
+    }
+
+    clear() {
+        this.particles = [];
     }
 }

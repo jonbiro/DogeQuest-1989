@@ -1,0 +1,61 @@
+name: Bug report
+description: Report a reproducible problem in Puppy Quest 1989.
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem. Please avoid posting security-sensitive details here; see SECURITY.md for private reporting.
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the actual behavior and why it is a problem.
+      placeholder: Tell us what you saw.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the smallest sequence that reliably demonstrates the issue.
+      placeholder: |
+        1. Start level ...
+        2. Press ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include level slot, browser/version, OS, viewport/device, and keyboard or touch input.
+      placeholder: Level 3 · Safari 18 · iPhone · touch controls
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Add console output, screenshots, or a short recording when useful. Remove private data first.
+      render: text
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I tested the current deployed or default-branch version.
+          required: true
+        - label: I have not included private or security-sensitive information.
+          required: true

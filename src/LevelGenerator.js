@@ -1,6 +1,8 @@
 export class LevelGenerator {
-    constructor(difficulty = 1) {
-        this.difficulty = Math.min(difficulty, 10);
+    constructor(difficulty = 1, random = Math.random) {
+        const parsedDifficulty = Number.isFinite(difficulty) ? Math.floor(difficulty) : 1;
+        this.difficulty = Math.max(1, Math.min(parsedDifficulty, 10));
+        this.random = random;
         this.width = 50 + this.difficulty * 5; // Longer levels at higher difficulty
         this.height = 20;
     }
@@ -26,9 +28,9 @@ export class LevelGenerator {
 
         // Procedural Segments
         let currentX = 5;
-        let segmentCount = 0;
         while (currentX < this.width - 8) {
-            const segmentType = Math.floor(Math.random() * (6 + Math.min(this.difficulty, 4)));
+            const unlockedSegmentTypes = Math.min(14, 6 + this.difficulty);
+            const segmentType = Math.floor(this.random() * unlockedSegmentTypes);
             const features = this.createSegment(segmentType);
 
             // Apply features
@@ -41,28 +43,28 @@ export class LevelGenerator {
             });
 
             // Variable spacing based on difficulty
-            const baseSpacing = 6 + Math.floor(Math.random() * 4);
+            const baseSpacing = 6 + Math.floor(this.random() * 4);
             const difficultyModifier = Math.max(0, 3 - Math.floor(this.difficulty / 3));
-            currentX += baseSpacing + difficultyModifier;
-            segmentCount++;
+            const segmentWidth = features.reduce((max, feature) => Math.max(max, feature.x + 2), 1);
+            currentX += Math.max(baseSpacing + difficultyModifier, segmentWidth);
         }
 
         // Add some bones along the path
         let boneCount = 3 + this.difficulty;
         for (let i = 0; i < boneCount; i++) {
-            const x = 8 + Math.floor(Math.random() * (this.width - 16));
-            const y = this.height - 4 - Math.floor(Math.random() * 5);
+            const x = 8 + Math.floor(this.random() * (this.width - 16));
+            const y = this.height - 4 - Math.floor(this.random() * 5);
             if (grid[y][x] === ' ' && grid[y + 1][x] !== ' ') {
                 grid[y][x] = 'o';
             }
         }
 
         // Add power-ups (rarer at low difficulty)
-        if (this.difficulty >= 2 && Math.random() < 0.6) {
-            const px = 10 + Math.floor(Math.random() * (this.width - 20));
-            const py = this.height - 4 - Math.floor(Math.random() * 3);
+        if (this.difficulty >= 2 && this.random() < 0.6) {
+            const px = 10 + Math.floor(this.random() * (this.width - 20));
+            const py = this.height - 4 - Math.floor(this.random() * 3);
             if (grid[py][px] === ' ') {
-                grid[py][px] = Math.random() < 0.5 ? '+' : '*';
+                grid[py][px] = this.random() < 0.5 ? '+' : '*';
             }
         }
 
@@ -70,7 +72,7 @@ export class LevelGenerator {
         if (this.difficulty >= 3) {
             const spikeCount = Math.floor(this.difficulty / 3);
             for (let i = 0; i < spikeCount; i++) {
-                const sx = 8 + Math.floor(Math.random() * (this.width - 16));
+                const sx = 8 + Math.floor(this.random() * (this.width - 16));
                 const sy = this.height - 3;
                 if (grid[sy][sx] === ' ' && grid[sy + 1][sx] === 'x') {
                     grid[sy][sx] = 'S';
@@ -188,7 +190,7 @@ export class LevelGenerator {
             features.push({ x: 0, y: 3, ch: 'x' });
             features.push({ x: 1, y: 3, ch: 'x' });
             features.push({ x: 2, y: 3, ch: 'x' });
-            features.push({ x: 1, y: 4, ch: Math.random() < 0.5 ? '+' : '*' });
+            features.push({ x: 1, y: 4, ch: this.random() < 0.5 ? '+' : '*' });
         }
         // Type 13: Breakable Wall Corridor — dash through to reach bone
         else if (type === 13) {
@@ -202,4 +204,3 @@ export class LevelGenerator {
         return features;
     }
 }
-

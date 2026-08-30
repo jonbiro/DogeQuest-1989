@@ -1,6 +1,15 @@
+const CITY_BUILDINGS = [
+    { x: 0, w: 30, h: 80 }, { x: 35, w: 20, h: 50 }, { x: 60, w: 40, h: 100 },
+    { x: 110, w: 25, h: 60 }, { x: 140, w: 35, h: 90 }, { x: 180, w: 20, h: 45 },
+    { x: 205, w: 45, h: 110 }, { x: 260, w: 30, h: 70 }, { x: 295, w: 25, h: 55 },
+    { x: 325, w: 40, h: 95 }, { x: 370, w: 20, h: 40 }, { x: 395, w: 35, h: 85 },
+    { x: 440, w: 30, h: 65 }, { x: 475, w: 45, h: 105 }, { x: 530, w: 25, h: 50 },
+    { x: 560, w: 40, h: 90 }, { x: 610, w: 30, h: 75 }, { x: 650, w: 35, h: 60 },
+    { x: 690, w: 25, h: 80 }, { x: 720, w: 40, h: 100 }
+];
+
 export class CanvasDisplay {
     constructor(parent, level, gameInfo, particleSystem) {
-        this.scale = 20;
         this.gameInfo = gameInfo;
         this.particleSystem = particleSystem;
 
@@ -12,8 +21,10 @@ export class CanvasDisplay {
             parent.appendChild(this.canvas);
         }
 
-        this.canvas.width = Math.min(800, level.width * this.scale);
-        this.canvas.height = Math.min(600, level.height * this.scale);
+        const wrapper = this.canvas.parentElement;
+        this.canvas.width = Math.max(1, Math.round(wrapper?.clientWidth || Math.min(800, level.width * 20)));
+        this.canvas.height = Math.max(1, Math.round(wrapper?.clientHeight || Math.min(600, level.height * 20)));
+        this.scale = Math.max(20, Math.min(30, this.canvas.height / level.height));
 
         this.cx = this.canvas.getContext("2d");
         this.cx.imageSmoothingEnabled = false;
@@ -60,19 +71,14 @@ export class CanvasDisplay {
         this.hudHighScore = document.getElementById("highscore-display");
         this.hudTimer = document.getElementById("timer-display");
         this.hudCombo = document.getElementById("combo-display");
-
-        // Load sprites
-        this.otherSprites = document.createElement("img");
-        this.otherSprites.src = "img/sprites.png";
-
-        // Player is now drawn procedurally
+        this.hudValues = {};
 
         // Get game container for effects
         this.gameContainer = document.querySelector('.game-container');
 
+        this.buildWallCache();
         this.updateHUD();
         this.drawFrame(0);
-        this.buildWallCache();
     }
 
     generateStars(count) {
@@ -151,12 +157,13 @@ export class CanvasDisplay {
     }
 
     showComboText(combo, pos) {
+        const numericCombo = typeof combo === 'number' ? combo : Number.NaN;
         this.comboTexts.push({
-            text: `${combo}x COMBO!`,
+            text: Number.isFinite(numericCombo) ? `${numericCombo}x COMBO!` : String(combo),
             x: (pos.x - this.viewport.left) * this.scale,
             y: (pos.y - this.viewport.top) * this.scale,
             life: 1.5,
-            color: combo >= 10 ? '#ffd700' : (combo >= 5 ? '#ff00ff' : '#00ffff')
+            color: numericCombo >= 10 ? '#ffd700' : (numericCombo >= 5 ? '#ff00ff' : '#00ffff')
         });
     }
 
@@ -164,31 +171,59 @@ export class CanvasDisplay {
         this.cx.clearRect(0, 0, this.canvas.width, this.canvas.height);
     }
 
-    updateHUD() {
-        if (this.hudLevel) this.hudLevel.textContent = this.gameInfo.level;
-        const collected = this.gameInfo.totalBone - this.gameInfo.bone;
+    resize() {
+        const wrapper = this.canvas.parentElement;
+        const width = Math.max(1, Math.round(wrapper?.clientWidth || this.canvas.width));
+        const height = Math.max(1, Math.round(wrapper?.clientHeight || this.canvas.height));
+        if (width === this.canvas.width && height === this.canvas.height) return;
 
-        if (this.hudScore) this.hudScore.textContent = collected;
-        if (this.hudTotal) this.hudTotal.textContent = this.gameInfo.totalBone;
-        if (this.hudLives) this.hudLives.textContent = this.gameInfo.life;
+        this.canvas.width = width;
+        this.canvas.height = height;
+        this.cx = this.canvas.getContext("2d");
+        this.cx.imageSmoothingEnabled = false;
+        this.scale = Math.max(20, Math.min(30, height / this.level.height));
+        this.viewport.width = width / this.scale;
+        this.viewport.height = height / this.scale;
+        this.updateViewport(0);
+        this.drawFrame(0);
+    }
+
+    updateHudValue(key, element, value) {
+        const text = String(value);
+        if (element && this.hudValues[key] !== text) {
+            element.textContent = text;
+            this.hudValues[key] = text;
+        }
+    }
+
+    updateHUD() {
+        const collected = this.gameInfo.totalBone - this.gameInfo.bone;
+        this.updateHudValue('level', this.hudLevel, this.gameInfo.level);
+        this.updateHudValue('score', this.hudScore, collected);
+        this.updateHudValue('total', this.hudTotal, this.gameInfo.totalBone);
+        this.updateHudValue('lives', this.hudLives, this.gameInfo.life);
 
         // Update High Score check
         if (collected > this.gameInfo.highScore) {
             this.gameInfo.highScore = collected;
-            localStorage.setItem('puppyQuestHighScore', collected);
+            try {
+                localStorage.setItem('puppyQuestHighScore', String(collected));
+            } catch {
+                // High scores remain available for the current session.
+            }
         }
-        if (this.hudHighScore) this.hudHighScore.textContent = this.gameInfo.highScore;
+        this.updateHudValue('highScore', this.hudHighScore, this.gameInfo.highScore);
 
         // Timer display
         if (this.hudTimer && this.level) {
             const mins = Math.floor(this.level.timer / 60);
             const secs = Math.floor(this.level.timer % 60);
-            this.hudTimer.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+            this.updateHudValue('timer', this.hudTimer, `${mins}:${secs.toString().padStart(2, '0')}`);
         }
 
         // Combo display
         if (this.hudCombo && this.level) {
-            this.hudCombo.textContent = this.level.combo > 0 ? `${this.level.combo}x` : '';
+            this.updateHudValue('combo', this.hudCombo, this.level.combo > 0 ? `${this.level.combo}x` : '');
         }
     }
 
@@ -264,7 +299,7 @@ export class CanvasDisplay {
     }
 
     updateViewport(step) {
-        let view = this.viewport, margin = view.width / 3;
+        let view = this.viewport;
         let player = this.level.player;
         let center = player.pos.plus(player.size.times(0.5));
 
@@ -320,20 +355,9 @@ export class CanvasDisplay {
 
         this.cx.globalAlpha = 0.4;
 
-        // Generate building silhouettes
-        const buildings = [
-            { x: 0, w: 30, h: 80 }, { x: 35, w: 20, h: 50 }, { x: 60, w: 40, h: 100 },
-            { x: 110, w: 25, h: 60 }, { x: 140, w: 35, h: 90 }, { x: 180, w: 20, h: 45 },
-            { x: 205, w: 45, h: 110 }, { x: 260, w: 30, h: 70 }, { x: 295, w: 25, h: 55 },
-            { x: 325, w: 40, h: 95 }, { x: 370, w: 20, h: 40 }, { x: 395, w: 35, h: 85 },
-            { x: 440, w: 30, h: 65 }, { x: 475, w: 45, h: 105 }, { x: 530, w: 25, h: 50 },
-            { x: 560, w: 40, h: 90 }, { x: 610, w: 30, h: 75 }, { x: 650, w: 35, h: 60 },
-            { x: 690, w: 25, h: 80 }, { x: 720, w: 40, h: 100 },
-        ];
-
         // Dark silhouette
         this.cx.fillStyle = '#0a0015';
-        buildings.forEach(b => {
+        CITY_BUILDINGS.forEach(b => {
             const bx = ((b.x - parallax) % (width + 100) + width + 100) % (width + 100) - 50;
             this.cx.fillRect(bx, horizon - b.h, b.w, b.h);
 
@@ -355,7 +379,7 @@ export class CanvasDisplay {
         this.cx.lineWidth = 1;
         this.cx.shadowBlur = 8;
         this.cx.shadowColor = '#ff00ff';
-        buildings.forEach(b => {
+        CITY_BUILDINGS.forEach(b => {
             const bx = ((b.x - parallax) % (width + 100) + width + 100) % (width + 100) - 50;
             this.cx.beginPath();
             this.cx.moveTo(bx, horizon - b.h);
@@ -992,6 +1016,8 @@ export class CanvasDisplay {
                 this.drawBreakableWall(x, y, width, height);
             } else if (actor.type === "coinblock") {
                 this.drawCoinBlock(x, y, width, height, actor);
+            } else if (actor.type === "lava") {
+                this.drawPlasmaLava(x, y, actor.pos.x, actor.pos.y);
             }
         });
     }
@@ -1072,7 +1098,6 @@ export class CanvasDisplay {
         this.cx.shadowColor = '#ff0044';
 
         const pulse = 0.9 + Math.sin(this.animationTime * 6) * 0.1;
-        const cx = x + width / 2;
         const cy = y + height;
 
         // Three triangular spikes
@@ -1261,7 +1286,6 @@ export class CanvasDisplay {
 
     drawSpeedAura(x, y, width, height) {
         this.cx.save();
-        const cx = x + width / 2;
         const cy = y + height / 2;
 
         // Speed lines behind player
@@ -1378,4 +1402,3 @@ export class CanvasDisplay {
         this.cx.restore();
     }
 }
-

@@ -116,9 +116,7 @@ const startBtn = document.getElementById('start-btn');
 startBtn.addEventListener('click', () => {
     startScreen.classList.add('hidden');
     // Initialize Audio context on user gesture
-    if (game.audio && game.audio.ctx.state === 'suspended') {
-        game.audio.ctx.resume();
-    }
+    if (game.audio) game.audio.resume();
 
     // Check if we should use dynamic levels (e.g. checkbox or just default)
     // For now, let's inject a dynamic level after the tutorial
@@ -126,5 +124,5 @@ startBtn.addEventListener('click', () => {
     // Let's replace the fixed levels (except tutorial/win) with dynamic ones
     // Actually, user asked for "levels dynamic and change every time"
 
-    game.startLevel(0);
+    game.startNewGame();
 });

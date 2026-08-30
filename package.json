@@ -1,15 +1,34 @@
 {
-  "name": "dogequest-2025",
+  "name": "dogequest-1989",
   "version": "2.0.0",
-  "description": "A modernized version of the classic DogeQuest platformer.",
+  "description": "A retro-styled browser platformer with modern physics, mobile controls, and synthwave visuals.",
   "type": "module",
-  "scripts": {
-    "start": "npx serve",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
+  "private": true,
   "license": "MIT",
+  "author": "Jonathan Biro",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jonbiro/DogeQuest-1989.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jonbiro/DogeQuest-1989/issues"
+  },
+  "homepage": "https://jonbiro.github.io/DogeQuest-1989/",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.js",
+    "start": "npm run build && serve dist --listen tcp://127.0.0.1:3000 --no-clipboard",
+    "lint": "eslint .",
+    "test": "node --test",
+    "test:watch": "node --test --watch",
+    "verify:dist": "node scripts/verify-dist.js",
+    "check": "npm run build && npm run verify:dist && npm run lint && npm test"
+  },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.9.1",
     "serve": "^14.2.4"
   }
 }

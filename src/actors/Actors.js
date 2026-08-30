@@ -109,7 +109,8 @@ export class Patrol extends Actor {
             const checkX = this.speed.x > 0 ? newPos.x + this.size.x : newPos.x;
             const below = new Vector(checkX, newPos.y + this.size.y + 0.1);
             const tile = level.grid[Math.floor(below.y)] && level.grid[Math.floor(below.y)][Math.floor(below.x)];
-            if (!tile) {
+            const hasGround = tile === 'wall' || tile === 'block' || tile === 'breakable';
+            if (!hasGround) {
                 this.speed = this.speed.times(-1);
             } else {
                 this.pos = newPos;
@@ -151,8 +152,13 @@ export class BreakableWall extends Actor {
     }
     get type() { return "breakablewall"; }
     act() { }
-    breakWall() {
+    breakWall(level) {
         this.broken = true;
+        const x = Math.round(this.pos.x);
+        const y = Math.round(this.pos.y);
+        if (level && level.grid[y] && level.grid[y][x] === 'breakable') {
+            level.grid[y][x] = null;
+        }
     }
 }
 
@@ -189,7 +195,7 @@ export class CoinBlock extends Actor {
         this.active = false;
 
         // Give reward
-        level.gameInfo.bone--; // Reduce bone count (as if collected)
+        level.gameInfo.bone = Math.max(0, level.gameInfo.bone - 1);
         level.combo++;
         level.comboTimer = level.comboDecayTime;
 
@@ -207,6 +213,12 @@ export class CoinBlock extends Actor {
             });
             // Floating text
             if (level.display) level.display.showComboText("100", this.pos.plus(new Vector(0, -1)));
+        }
+
+        if (level.gameInfo.bone === 0 && level.status == null) {
+            level.status = "won";
+            level.finishDelay = 1;
+            if (level.display) level.display.triggerVictory();
         }
     }
 }
@@ -234,6 +246,7 @@ export class Player extends Actor {
         // Power-up timers
         this.speedBoostTimer = 0;
         this.shieldTimer = 0;
+        this.invulnerabilityTimer = 0;
     }
 
     get type() { return "player"; }
@@ -242,6 +255,7 @@ export class Player extends Actor {
         // Power-up timers
         if (this.speedBoostTimer > 0) this.speedBoostTimer -= step;
         if (this.shieldTimer > 0) this.shieldTimer -= step;
+        if (this.invulnerabilityTimer > 0) this.invulnerabilityTimer -= step;
 
         // Dash Cooldown
         if (this.dashCooldown > 0) this.dashCooldown -= step;
@@ -266,7 +280,11 @@ export class Player extends Actor {
                 const newPos = this.pos.plus(this.speed.times(step));
                 const obstacle = level.obstacleAt(newPos, this.size);
 
-                if (obstacle) {
+                if (obstacle === "breakable") {
+                    const wall = level.actorAtPosition(newPos, this.size, actor => actor.type === "breakablewall" && !actor.broken);
+                    if (wall) level.playerTouched("breakablewall", wall);
+                    if (!wall || wall.broken) this.pos = newPos;
+                } else if (obstacle) {
                     // Hit something - stop dash but don't move into it
                     level.playerTouched(obstacle);
                     this.isDashing = false;
@@ -277,6 +295,9 @@ export class Player extends Actor {
                     // Safe to move
                     this.pos = newPos;
                 }
+
+                const otherActor = level.actorAt(this);
+                if (otherActor) level.playerTouched(otherActor.type, otherActor);
 
                 // Trail particles
                 if (level.particleSystem) {
@@ -301,10 +322,9 @@ export class Player extends Actor {
             this.dashTimer = 0.2;
             this.dashCooldown = 1.0;
             const dashSpeed = 15;
-            let dir = 0;
-            if (keys.right || keys.d) dir = 1;
-            else if (keys.left || keys.a) dir = -1;
-            else dir = this.lastDir || 1;
+            const dir = (keys.right || keys.d)
+                ? 1
+                : ((keys.left || keys.a) ? -1 : (this.lastDir || 1));
 
             this.speed = new Vector(dir * dashSpeed, 0);
 
@@ -336,11 +356,6 @@ export class Player extends Actor {
             level.playerTouched(otherActor.type, otherActor);
         }
 
-        // Losing animation
-        if (level.status === "lost") {
-            this.pos.y += step;
-            this.size.y -= step;
-        }
     }
 
     moveX(step, level, keys) {
@@ -480,9 +495,7 @@ export class Player extends Actor {
             if (obstacle === "block" && this.speed.y < 0) {
                 // Determine which block was hit
                 // We check the grid coordinate above the player
-                const headX = Math.floor(this.pos.x + 0.5);
-                const headY = Math.floor(this.pos.y);
-                const blockActor = level.actors.find(a => a.type === "coinblock" && Math.round(a.pos.x) === headX && Math.round(a.pos.y) === headY);
+                const blockActor = level.actorAtPosition(newPos, this.size, actor => actor.type === "coinblock");
                 if (blockActor) {
                     blockActor.trigger(level);
                 }

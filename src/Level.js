@@ -18,6 +18,15 @@ const actorChars = {
 
 export class Level {
     constructor(plan, gameInfo, particleSystem, audio, display = null) {
+        if (!Array.isArray(plan) || plan.length === 0 || typeof plan[0] !== 'string' || plan[0].length === 0) {
+            throw new TypeError('A level plan must be a non-empty array of non-empty strings.');
+        }
+
+        const expectedWidth = plan[0].length;
+        if (plan.some(row => typeof row !== 'string' || row.length !== expectedWidth)) {
+            throw new TypeError('Every row in a level plan must have the same width.');
+        }
+
         this.width = plan[0].length;
         this.height = plan.length;
         this.grid = [];
@@ -58,6 +67,8 @@ export class Level {
                     fieldType = "block"; // Solid block
                     // Also count as a bone since it gives one
                     this.gameInfo.bone++;
+                } else if (ch === "B") {
+                    fieldType = "breakable";
                 }
                 gridLine.push(fieldType);
             }
@@ -67,6 +78,9 @@ export class Level {
         this.gameInfo.totalBone = this.gameInfo.bone;
 
         this.player = this.actors.find(actor => actor.type === "player");
+        if (!this.player) {
+            throw new TypeError('A level plan must contain a player start (@).');
+        }
         this.status = null;
         this.finishDelay = null;
     }
@@ -93,15 +107,15 @@ export class Level {
     }
 
     actorAt(actor) {
-        for (let i = 0; i < this.actors.length; i++) {
-            let other = this.actors[i];
-            if (other !== actor &&
-                actor.pos.x + actor.size.x > other.pos.x &&
-                actor.pos.x < other.pos.x + other.size.x &&
-                actor.pos.y + actor.size.y > other.pos.y &&
-                actor.pos.y < other.pos.y + other.size.y)
-                return other;
-        }
+        return this.actorAtPosition(actor.pos, actor.size, other => other !== actor);
+    }
+
+    actorAtPosition(pos, size, predicate = () => true) {
+        return this.actors.find(other => predicate(other) &&
+            pos.x + size.x > other.pos.x &&
+            pos.x < other.pos.x + other.size.x &&
+            pos.y + size.y > other.pos.y &&
+            pos.y < other.pos.y + other.size.y);
     }
 
     animate(step, keys) {
@@ -120,6 +134,11 @@ export class Level {
 
         if (this.status != null) {
             this.finishDelay -= step;
+            if (this.status === "lost" && this.player) {
+                this.player.pos.y += step;
+                this.player.size.y = Math.max(0.1, this.player.size.y - step);
+            }
+            return;
         }
 
         // Remove broken breakable walls
@@ -136,7 +155,19 @@ export class Level {
     }
 
     playerTouched(type, actor) {
+        if (this.status != null) return;
+        if (["lava", "spike", "patrol"].includes(type) && this.player.invulnerabilityTimer > 0) return;
+
         if (type === "lava" && this.status == null) {
+            if (this.player.shieldTimer > 0) {
+                this.player.shieldTimer = 0;
+                this.player.invulnerabilityTimer = 0.75;
+                this.player.speed.y = -10;
+                if (this.audio) this.audio.shieldHit();
+                if (this.display) this.display.triggerFlash();
+                return;
+            }
+
             this.status = "lost";
             this.finishDelay = 1;
             this.combo = 0;
@@ -159,7 +190,7 @@ export class Level {
                 });
             }
         } else if (type === "bone") {
-            this.gameInfo.bone--;
+            this.gameInfo.bone = Math.max(0, this.gameInfo.bone - 1);
             this.actors = this.actors.filter(other => other !== actor);
 
             // Combo system
@@ -207,7 +238,7 @@ export class Level {
             if (this.audio) this.audio.collect();
 
             // Check if all bones collected
-            if (!this.actors.some(actor => actor.type === "bone")) {
+            if (this.gameInfo.bone === 0) {
                 this.status = "won";
                 this.finishDelay = 1;
 
@@ -235,9 +266,6 @@ export class Level {
             }
             if (this.audio) this.audio.spring();
         } else if (type === "spike" || type === "patrol") {
-            // Patrol collision logic
-            let stompSuccess = false;
-
             if (type === "patrol") {
                 // Check if stomped (Player above enemy and falling)
                 // We use a lenient "above" check to make it feel fair
@@ -245,7 +273,6 @@ export class Level {
                 const isFalling = this.player.speed.y > 0;
 
                 if (isAbove && isFalling) {
-                    stompSuccess = true;
                     // Remove enemy
                     this.actors = this.actors.filter(a => a !== actor);
 
@@ -274,9 +301,10 @@ export class Level {
             }
 
             // Hazards — kill player (unless shielded)
-            if (this.player.shieldTimer > 0 && this.status == null && !stompSuccess) {
+            if (this.player.shieldTimer > 0 && this.status == null) {
                 // Shield absorbs the hit
                 this.player.shieldTimer = 0;
+                this.player.invulnerabilityTimer = 0.75;
                 if (this.audio) this.audio.shieldHit();
                 if (this.display) this.display.triggerFlash();
                 // Knock player back
@@ -293,7 +321,7 @@ export class Level {
                         });
                     }
                 }
-            } else if (this.status == null && !stompSuccess) {
+            } else if (this.status == null) {
                 // Death
                 this.status = "lost";
                 this.finishDelay = 1;
@@ -333,7 +361,8 @@ export class Level {
             }
         } else if (type === "breakablewall") {
             if (this.player.isDashing) {
-                actor.breakWall();
+                actor.breakWall(this);
+                this.actors = this.actors.filter(other => other !== actor);
                 if (this.audio) this.audio.breakWall();
                 if (this.display) this.display.addScreenShake(4);
                 if (this.particleSystem) {
@@ -346,4 +375,3 @@ export class Level {
         }
     }
 }
-

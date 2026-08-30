@@ -10,7 +10,28 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  min-height: 100dvh;
   position: relative;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+button:focus-visible,
+canvas:focus-visible,
+[tabindex]:focus-visible {
+  outline: 4px solid #fff;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 7px #005fcc, 0 0 24px rgba(255, 255, 255, 0.9);
 }
 
 /* Retro Monitor Frame */
@@ -35,6 +56,7 @@ body::before {
   position: relative;
   width: min(95vw, 800px);
   height: min(95vh, 600px);
+  height: min(95dvh, 600px);
   max-width: 800px;
   max-height: 600px;
   box-shadow:
@@ -48,6 +70,23 @@ body::before {
   /* CRT screen curvature */
   transform: scale(1.02);
   /* Slight scale to hide edges behind frame */
+}
+
+#game-wrapper,
+#gameBoard {
+  width: 100%;
+  height: 100%;
+}
+
+body:not(.game-active) #game-wrapper,
+body:not(.game-active) #hud,
+body:not(.game-active) #mobile-controls {
+  visibility: hidden;
+}
+
+#gameBoard {
+  display: block;
+  touch-action: none;
 }
 
 /* CRT Scanline Effect (Stronger) */
@@ -144,6 +183,8 @@ body::before {
   align-items: center;
   z-index: 100;
   backdrop-filter: blur(5px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .overlay.hidden {
@@ -155,6 +196,10 @@ body::before {
   color: white;
   animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   padding: 20px;
+  max-width: min(90%, 680px);
+  max-height: calc(100% - 32px);
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 @keyframes popIn {
@@ -169,7 +214,8 @@ body::before {
   }
 }
 
-.overlay h1 {
+.overlay h1,
+.overlay h2 {
   font-size: clamp(1.5rem, 5vw, 3rem);
   color: #ff00ff;
   text-shadow:
@@ -381,6 +427,19 @@ body::before {
   text-shadow: 0 0 10px #00ffff;
 }
 
+#btn-pause {
+  position: absolute;
+  right: 20px;
+  bottom: 100px;
+  width: 48px;
+  height: 48px;
+  font-size: 18px;
+  background: rgba(0, 0, 0, 0.7);
+  border-color: #fff;
+  color: #fff;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.5);
+}
+
 #mobile-controls button:active {
   background: rgba(0, 255, 255, 0.5);
   transform: translateY(2px);
@@ -485,6 +544,7 @@ body::before {
   text-transform: uppercase;
   transition: all 0.2s ease;
   text-shadow: 0 0 8px #ff00ff;
+  min-height: 44px;
 }
 
 .pause-buttons button:hover {
@@ -552,6 +612,103 @@ body::before {
   padding: 10px 20px;
   cursor: pointer;
   margin-top: 10px;
+  min-height: 44px;
+}
+
+.game-container.shake {
+  animation: screenShake 0.25s steps(2, end);
+}
+
+.game-container.flash {
+  animation: screenFlash 0.25s ease-out;
+}
+
+.game-container.glitch #gameBoard {
+  animation: screenGlitch 0.25s steps(2, end);
+}
+
+@keyframes screenShake {
+  0%, 100% { translate: 0 0; }
+  25% { translate: -4px 2px; }
+  50% { translate: 4px -2px; }
+  75% { translate: -2px -3px; }
+}
+
+@keyframes screenFlash {
+  50% { filter: brightness(1.8) saturate(1.4); }
+}
+
+@keyframes screenGlitch {
+  25% { translate: 3px 0; filter: hue-rotate(30deg); }
+  75% { translate: -3px 0; filter: hue-rotate(-30deg); }
+}
+
+@media (max-width: 420px) {
+  #mobile-controls {
+    padding-inline: 12px;
+  }
+
+  #mobile-controls button:not(#btn-pause) {
+    width: 56px;
+    height: 56px;
+  }
+
+  .d-pad,
+  .action-buttons {
+    gap: 8px;
+  }
+
+  #btn-dash,
+  #btn-jump {
+    font-size: 8px;
+    text-shadow: 0 0 4px currentColor;
+  }
+
+  #btn-pause {
+    right: 12px;
+  }
+}
+
+@media (max-height: 520px) {
+  .overlay {
+    align-items: flex-start;
+  }
+
+  .overlay .content {
+    max-height: none;
+    padding-block: 12px 24px;
+  }
+
+  .overlay h1,
+  .overlay h2 {
+    margin-block: 8px;
+    font-size: clamp(1rem, 6vh, 1.6rem);
+  }
+
+  .overlay p,
+  .controls,
+  .controls-advanced {
+    margin-bottom: 12px;
+  }
+
+  .key {
+    padding: 7px 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .game-container::before {
+    opacity: 0.35;
+  }
 }
 
 /* Tutorial Prompt */

@@ -1,0 +1,18 @@
+{
+  "name": "Puppy Quest 1989",
+  "short_name": "Puppy Quest",
+  "description": "A neon browser platformer with procedural levels and expressive movement.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#050010",
+  "theme_color": "#050010",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

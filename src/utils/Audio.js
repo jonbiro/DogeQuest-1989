@@ -1,14 +1,41 @@
 export class AudioSystem {
     constructor() {
-        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-        this.enabled = true;
+        this.AudioContext = window.AudioContext || window.webkitAudioContext;
+        this.ctx = null;
+        this.available = Boolean(this.AudioContext);
+        this.enabled = this.available;
         this.musicPlaying = false;
         this.musicNodes = [];
+        this.musicTimer = null;
         this.musicVolume = 0.04;
     }
 
+    initialize() {
+        if (!this.ctx && this.AudioContext) {
+            try {
+                this.ctx = new this.AudioContext();
+            } catch {
+                this.available = false;
+                this.enabled = false;
+            }
+        }
+        return this.ctx;
+    }
+
+    setEnabled(enabled) {
+        this.enabled = this.available && enabled;
+        if (!this.enabled) this.stopMusic();
+    }
+
+    resume() {
+        const context = this.initialize();
+        if (context && context.state === 'suspended') return context.resume().catch(() => undefined);
+        return Promise.resolve();
+    }
+
     playTone(freq, type, duration, vol = 0.1) {
-        if (!this.enabled) return;
+        const context = this.initialize();
+        if (!this.enabled || !context) return;
         if (this.ctx.state === 'suspended') this.ctx.resume();
 
         const osc = this.ctx.createOscillator();
@@ -33,6 +60,10 @@ export class AudioSystem {
 
         osc.connect(gain);
         gain.connect(this.ctx.destination);
+        osc.addEventListener('ended', () => {
+            osc.disconnect();
+            gain.disconnect();
+        }, { once: true });
         osc.start();
         osc.stop(this.ctx.currentTime + duration);
     }
@@ -129,7 +160,8 @@ export class AudioSystem {
     }
 
     startMusic() {
-        if (this.musicPlaying || !this.enabled) return;
+        const context = this.initialize();
+        if (this.musicPlaying || !this.enabled || !context) return;
         this.musicPlaying = true;
 
         if (this.ctx.state === 'suspended') this.ctx.resume();
@@ -152,18 +184,7 @@ export class AudioSystem {
         // Schedule repeating bass pattern
         const bpm = 110;
         const beatDur = 60 / bpm;
-        const patternLen = bassNotes.length * beatDur;
-        const totalDuration = 600; // 10 minutes of music
-
-        for (let t = 0; t < totalDuration; t += patternLen) {
-            bassNotes.forEach((note, i) => {
-                const time = this.ctx.currentTime + t + i * beatDur;
-                bassOsc.frequency.setValueAtTime(note, time);
-            });
-        }
-
         bassOsc.start();
-        bassOsc.stop(this.ctx.currentTime + totalDuration);
         this.musicNodes.push(bassOsc, bassGain);
 
         // Pad/chord layer
@@ -173,7 +194,7 @@ export class AudioSystem {
             [130.81, 164.81, 196.00],
             [174.61, 220.00, 261.63], // F3 A3 C4
         ];
-        const chordDur = beatDur * 4;
+        const padOscillators = [];
 
         padNotes[0].forEach((_, voiceIdx) => {
             const osc = this.ctx.createOscillator();
@@ -183,21 +204,36 @@ export class AudioSystem {
             osc.connect(gain);
             gain.connect(masterGain);
 
-            for (let t = 0; t < totalDuration; t += chordDur * padNotes.length) {
-                padNotes.forEach((chord, ci) => {
-                    const time = this.ctx.currentTime + t + ci * chordDur;
-                    osc.frequency.setValueAtTime(chord[voiceIdx], time);
-                });
-            }
-
             osc.start();
-            osc.stop(this.ctx.currentTime + totalDuration);
+            padOscillators.push(osc);
             this.musicNodes.push(osc, gain);
         });
+
+        let step = 0;
+        const updatePattern = () => {
+            if (!this.musicPlaying || !this.ctx) return;
+            const now = this.ctx.currentTime;
+            bassOsc.frequency.setTargetAtTime(bassNotes[step % bassNotes.length], now, 0.01);
+
+            if (step % 4 === 0) {
+                const chord = padNotes[Math.floor(step / 4) % padNotes.length];
+                padOscillators.forEach((oscillator, voiceIndex) => {
+                    oscillator.frequency.setTargetAtTime(chord[voiceIndex], now, 0.05);
+                });
+            }
+            step++;
+        };
+
+        updatePattern();
+        this.musicTimer = window.setInterval(updatePattern, beatDur * 1000);
     }
 
     stopMusic() {
         this.musicPlaying = false;
+        if (this.musicTimer !== null) {
+            window.clearInterval(this.musicTimer);
+            this.musicTimer = null;
+        }
         this.musicNodes.forEach(node => {
             try {
                 if (node.stop) node.stop();

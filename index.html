@@ -4,35 +4,51 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Play Puppy Quest 1989, a neon browser platformer with procedural levels, expressive movement, and touch controls.">
+  <meta name="theme-color" content="#050010">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+  <link rel="canonical" href="https://jonbiro.github.io/DogeQuest-1989/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Puppy Quest 1989">
+  <meta property="og:description" content="A neon browser platformer with procedural levels, expressive movement, and touch controls.">
+  <meta property="og:url" content="https://jonbiro.github.io/DogeQuest-1989/">
+  <meta name="twitter:card" content="summary">
   <title>Puppy Quest 1989</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="site.webmanifest">
   <link rel="stylesheet" href="css.css">
-  <!-- Font for retro feel -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 
 <body>
 
-  <div class="game-container">
+  <main class="game-container" aria-labelledby="page-title">
+    <h1 id="page-title" class="sr-only">Puppy Quest 1989</h1>
     <!-- The Canvas is created by CanvasDisplay.js inside this or appended to body. 
              Let's give it a dedicated container to be safe. -->
-    <div id="game-wrapper">
+    <div id="game-wrapper" inert aria-hidden="true">
       <!-- Canvas will be injected here or found by ID -->
-      <canvas id="gameBoard"></canvas>
+      <canvas id="gameBoard" role="img" aria-label="Puppy Quest game world" tabindex="0">
+        Puppy Quest 1989 requires a browser with Canvas support.
+      </canvas>
     </div>
 
     <!-- Start Screen Overlay -->
-    <div id="start-screen" class="overlay">
+    <div id="start-screen" class="overlay" role="dialog" aria-modal="true" aria-labelledby="start-title" aria-describedby="start-description" tabindex="-1">
       <div class="content">
-        <h1>Puppy Quest 1989</h1>
-        <p>Fetch the bones. Avoid the lava.</p>
+        <h2 id="start-title">Puppy Quest 1989</h2>
+        <p id="start-description">Fetch the bones. Avoid the lava.</p>
 
         <div class="controls">
           <div class="key-group">
-            <span class="key">WASD</span>
+            <span class="key">A/D + ←/→</span>
             <span class="action">Move</span>
           </div>
           <div class="key-group">
-            <span class="key">SPACE</span>
+            <span class="key">SPACE/W/↑</span>
             <span class="action">Jump</span>
           </div>
         </div>
@@ -40,26 +56,28 @@
         <div class="controls-advanced">
           <p><strong>Double Jump:</strong> Press Jump in air</p>
           <p><strong>Dash:</strong> Hold <span class="key">SHIFT</span></p>
+          <p><strong>Pause:</strong> Press <span class="key">ESC</span> or tap Ⅱ</p>
         </div>
 
-        <button id="start-btn">START GAME</button>
+        <button id="start-btn" type="button">START GAME</button>
       </div>
     </div>
 
     <!-- Mobile Controls -->
-    <div id="mobile-controls">
+    <nav id="mobile-controls" aria-label="Touch game controls" inert aria-hidden="true">
+      <button id="btn-pause" type="button" aria-label="Pause game">Ⅱ</button>
       <div class="d-pad">
-        <button id="btn-left">◀</button>
-        <button id="btn-right">▶</button>
+        <button id="btn-left" type="button" aria-label="Move left">◀</button>
+        <button id="btn-right" type="button" aria-label="Move right">▶</button>
       </div>
       <div class="action-buttons">
-        <button id="btn-dash">Dash</button>
-        <button id="btn-jump">Jump</button>
+        <button id="btn-dash" type="button">Dash</button>
+        <button id="btn-jump" type="button">Jump</button>
       </div>
-    </div>
+    </nav>
 
     <!-- HUD Overlay -->
-    <div id="hud">
+    <section id="hud" aria-label="Game status" inert aria-hidden="true">
       <div class="hud-item">
         <span class="label">LEVEL</span>
         <span id="level-display">1</span>
@@ -84,26 +102,27 @@
         <span class="label">HIGH SCORE</span>
         <span id="highscore-display">0</span>
       </div>
-    </div>
+    </section>
 
     <!-- Message Overlay (Win/Loss) -->
-    <div id="message-overlay" class="overlay hidden">
+    <div id="message-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="message-title" aria-describedby="message-subtitle" tabindex="-1">
       <div class="content">
-        <h1 id="message-title">Level Complete!</h1>
+        <h2 id="message-title">Level Complete!</h2>
         <p id="message-subtitle">Loading next...</p>
-        <button id="message-action-btn" class="hidden">TRY AGAIN</button>
+        <button id="message-action-btn" class="hidden" type="button">TRY AGAIN</button>
       </div>
     </div>
 
     <!-- Pause Overlay -->
-    <div id="pause-overlay" class="overlay hidden">
+    <div id="pause-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pause-title" tabindex="-1">
       <div class="content">
-        <h1>PAUSED</h1>
+        <h2 id="pause-title">PAUSED</h2>
         <p>Press ESC to resume</p>
         <div class="pause-buttons">
           <button id="resume-btn">RESUME</button>
           <button id="restart-btn">RESTART LEVEL</button>
           <button id="levelselect-btn">LEVEL SELECT</button>
+          <button id="sound-btn" aria-pressed="true">SOUND: ON</button>
           <button id="colorblind-btn">COLORBLIND: OFF</button>
           <button id="quit-btn">QUIT TO MENU</button>
         </div>
@@ -115,17 +134,17 @@
     </div>
 
     <!-- Level Select Overlay -->
-    <div id="level-select-overlay" class="overlay hidden">
+    <div id="level-select-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="level-select-title" tabindex="-1">
       <div class="content">
-        <h1>LEVEL SELECT</h1>
+        <h2 id="level-select-title">LEVEL SELECT</h2>
         <div id="level-grid" class="level-grid"></div>
         <button id="level-select-back">BACK</button>
       </div>
     </div>
 
     <!-- Tutorial Prompt -->
-    <div id="tutorial-prompt" class="tutorial-prompt hidden"></div>
-  </div>
+    <div id="tutorial-prompt" class="tutorial-prompt hidden" role="status" aria-live="polite"></div>
+  </main>
 
   <!-- Main Entry Point -->
   <script type="module" src="src/main.js"></script>
