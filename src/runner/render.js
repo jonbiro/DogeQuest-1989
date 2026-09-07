@@ -6,6 +6,7 @@ import { routeOffset, routeHeading } from "./route.js";
 import { PUPPIES } from "./collection.js";
 import { REGIONS, regionAt, regionBlend } from "./regions.js";
 import { puppyPose } from "./puppy-pose.js";
+import { isBridge } from "./bridges.js";
 
 // Shared low-poly geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -82,6 +83,22 @@ export function createView(canvas) {
     }
     for (const x of [-1.2, 1.2])
       box(tile, "#e3d7a3", x, 0.11, 0, 0.045, 0.03, 2.8);
+    // Alternative deck shares the road's recycled instances and curve transform.
+    const bridge = new THREE.Group();
+    const bridgeBox = (...args) => {
+      const part = box(bridge, ...args);
+      part.userData.bridge = true;
+      return part;
+    };
+    bridgeBox("#327f91", 0, -1.12, 0, 70, .08, 5.4);
+    for (let plank = 0; plank < 6; plank++)
+      bridgeBox(plank % 2 ? "#b77c4c" : "#c9915e", 0, .02, -2.08 + plank * .833, 7.8, .22, .79);
+    for (const x of [-4.05, 4.05]) {
+      bridgeBox("#765036", x, .65, 0, .23, 1.6, .23);
+      for (const y of [.5, 1.3]) bridgeBox("#efd6a0", x, y, 0, .1, .1, 5.4);
+      bridgeBox("#64472e", x, -.45, 0, .22, .22, 5.4);
+    }
+    tile.add(bridge);
     scenery.add(tile);
     tiles.push(tile);
   }
@@ -192,6 +209,7 @@ export function createView(canvas) {
             period: 175,
             start: 10,
             road: true,
+            bridge: item.userData.bridge === true,
           });
       });
     for (const group of decorations)
@@ -573,9 +591,11 @@ export function createView(canvas) {
           bendMatrix.setPosition(routeOffset(distance, z), 0, z);
           instanceMatrix.multiplyMatrices(bendMatrix, entry.matrix);
           const region = regionAt(menu ? 0 : distance-z);
+          const bridge = !menu && isBridge(distance-z);
+          if ((entry.road && entry.bridge !== bridge) || (!entry.road && bridge)) instanceMatrix.scale(bendScale.set(0,0,0));
           if(entry.region !== undefined && entry.region !== region) instanceMatrix.scale(bendScale.set(0,0,0));
           if(entry.road && gaps.some(gap => Math.abs(distance-z-gap.at)<.1)) instanceMatrix.scale(bendScale.set(0,0,0));
-          if(entry.road || entry.region === undefined) instanced.setColorAt(i,entry.colors[region]);
+          if(entry.road || entry.region === undefined) instanced.setColorAt(i,entry.bridge ? entry.color : entry.colors[region]);
           instanced.setMatrixAt(i, instanceMatrix);
         });
         instanced.instanceMatrix.needsUpdate = true;
