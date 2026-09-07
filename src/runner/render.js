@@ -5,6 +5,7 @@ import { LANES, PICKUPS, seededRandom } from "./world.js";
 import { routeOffset, routeHeading } from "./route.js";
 import { PUPPIES } from "./collection.js";
 import { REGIONS, regionAt, regionBlend } from "./regions.js";
+import { puppyPose } from "./puppy-pose.js";
 
 // Shared low-poly geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -223,18 +224,21 @@ export function createView(canvas) {
   // Biscuit is an original articulated model, not a billboard.
   const dog = new THREE.Group();
   scene.add(dog);
-  box(dog, "#d89043", 0, 0.82, 0.12, 0.83, 0.72, 1.45);
-  box(dog, "#f2c67b", 0, 1.2, -0.62, 0.95, 0.85, 0.9);
-  box(dog, "#ffe0a1", 0, 1.06, -1.13, 0.66, 0.42, 0.4);
-  box(dog, "#243b33", 0, 1.22, -1.36, 0.26, 0.2, 0.12);
-  const ears = [];
+  ball(dog, "#d89043", 0, 0.82, 0.12, 0.51, 0.44, .85);
+  ball(dog, "#f2c67b", 0, 1.2, -0.62, 0.58, 0.52, 0.55);
+  ball(dog, "#ffe0a1", 0, 1.06, -1.13, 0.38, 0.25, 0.29);
+  ball(dog, "#243b33", 0, 1.22, -1.36, 0.16, 0.12, 0.09);
+  ball(dog,"#f5919d",0,.88,-1.32,.1,.12,.045);
+  const ears = [], eyes = [];
   for (const side of [-1, 1]) {
     const ear = box(dog, "#e9ac59", side * 0.35, 1.85, -0.55, 0.26, 0.62, 0.32);
     ear.rotation.z = -side * 0.15;
     const inner = box(dog, "#b97847", side * 0.35, 1.87, -0.73, 0.13, 0.36, 0.04);
+    inner.geometry = coneGeometry;
     ears.push({ear, inner, side});
-    box(dog, "#20352d", side * 0.25, 1.39, -1.082, 0.11, 0.15, 0.025);
-    box(dog, "#fff7db", side * 0.25 - 0.02, 1.43, -1.1, 0.035, 0.05, 0.02);
+    const eye = new THREE.Group(); eye.position.set(side*.25,1.39,-1.082);dog.add(eye);eyes.push(eye);
+    ball(eye,"#20352d",0,0,0,.08,.115,.05);
+    ball(eye,"#fff7db",-.025,.04,-.044,.025,.033,.018);
   }
   const collar = box(dog, "#ed734b", 0, 0.95, -0.26, 0.93, 0.25, 0.3);
   const scarf = box(dog, "#d85235", 0.48, 0.82, 0.15, 0.13, 0.38, 0.85);
@@ -245,7 +249,7 @@ export function createView(canvas) {
       const leg = new THREE.Group();
       leg.position.set(x, 0.68, z);
       box(leg, "#c7823d", 0, -0.22, 0, 0.23, 0.5, 0.25);
-      box(leg, "#ffe3b1", 0, -0.48, -0.07, 0.25, 0.16, 0.37);
+      ball(leg, "#ffe3b1", 0, -0.46, -0.07, 0.16, 0.13, 0.22);
       dog.add(leg);
       legs.push(leg);
     }
@@ -261,8 +265,8 @@ export function createView(canvas) {
   });
   const spots = new THREE.Group(); dog.add(spots);
   for (const side of [-1, 1]) {
-    ball(spots, "#293a43", side * .414, .95, .3, .04, .22, .29);
-    ball(spots, "#293a43", side * .414, .75, -.1, .04, .12, .16);
+    ball(spots, "#293a43", side * .47, .95, .3, .055, .17, .24);
+    ball(spots, "#293a43", side * .48, .75, -.1, .04, .12, .16);
   }
   ball(spots, "#293a43", -.22, 1.34, -1.079, .18, .22, .035);
   const outfits = Object.fromEntries(["explorer", "hero", "raincoat", "royal", "party"].map(id => {
@@ -291,6 +295,7 @@ export function createView(canvas) {
     for (const {item,color} of furMeshes) if (palette[color]) item.material = mat(palette[color]);
     for (const {ear,inner,side} of ears) {
       const floppy = puppy.ears === "floppy";
+      ear.geometry = floppy ? boxGeometry : coneGeometry;
       ear.position.set(side * (floppy ? .53 : .35), floppy ? 1.38 : 1.85, -.55);
       ear.rotation.z = side * (floppy ? .15 : -.15);
       inner.visible = !floppy;
@@ -575,16 +580,14 @@ export function createView(canvas) {
       dog.rotation.y = menu ? -2.35 : lean;
       dog.rotation.z = menu || reducedMotion ? 0 : lean * 0.3;
       dog.scale.setScalar(1);
-      dog.scale.y = pose;
+      const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:y>.1,sliding:run.slide>0});
+      dog.scale.y = pose + personality.breathe;
       dog.visible = true;
-      for (let i = 0; i < legs.length; i++)
-        legs[i].rotation.x = !menu
-          ? y > 0.1
-            ? -0.3
-            : Math.sin(distance * 0.82 + (i === 0 || i === 3 ? 0 : Math.PI)) *
-              0.7
-          : 0;
-      tail.rotation.z = reducedMotion ? 0 : Math.sin(time * 9) * 0.3;
+      for (let i = 0; i < legs.length; i++) legs[i].rotation.x = personality.legs[i];
+      for (const eye of eyes) eye.scale.y = personality.blink;
+      for (const {ear,side} of ears) ear.rotation.x = personality.ears*side;
+      cape.rotation.x = -.14 + personality.cape;
+      tail.rotation.z = personality.tail;
       scarf.rotation.x = reducedMotion ? 0 : Math.sin(time * 12) * 0.15;
       shadow.position.x = dog.position.x;
       shadow.scale.setScalar(Math.max(0.45, 1 - y * 0.12));

@@ -23,4 +23,6 @@ Three visual regions now cycle every 450 meters: Whispering Jungle, Biscuit Cany
 
 Broken trail sections now require full-width jumps. Generation aligns them with actual removed paving tiles; striped edges and a dark opening identify the gap. Tests cover jump timing at 22 and 36 m/s, missed-jump damage, shield recovery, automatic Zoomies jumps and generation alignment. The real-renderer phone-sized fixture was visually checked and revised for clearer contrast.
 
-Still required: meaningful route decisions and more substantial traversal set pieces, more expressive character animation, richer puppy-themed art/audio, and comprehensive final-state gameplay and performance QA. Do not mark the overall goal complete from the existing narrower checks.
+The puppy models now have rounded heads, bodies, noses and paws, expressive eyes and tongues. Cosmetic pose logic adds blinking, idle breathing, ear bounce, cape flutter and distinct airborne/slide leg poses without changing physics. Pose bounds and reduced-motion behavior have regression tests; the updated face was inspected in the browser.
+
+Still required: meaningful route decisions and more substantial traversal set pieces, richer puppy-themed audio, and comprehensive final-state gameplay and performance QA. Do not mark the overall goal complete from the existing narrower checks.
