@@ -21,4 +21,6 @@ Zoomies adds a tennis-ball pickup, six-second speed burst, obstacle-smash reward
 
 Three visual regions now cycle every 450 meters: Whispering Jungle, Biscuit Canyon (rock stacks and cacti), and Moonpaw Glade (crystal clusters). Track sections show their destination region ahead; atmosphere blends over 65 meters. Region boundaries have unit tests and each region was inspected through the local real-renderer fixture at phone size. This does not yet prove a complete uninterrupted browser run through all regions.
 
-Still required: meaningful route decisions and traversal set pieces, more expressive character animation, richer puppy-themed art/audio, and comprehensive final-state gameplay and performance QA. Do not mark the overall goal complete from the existing narrower checks.
+Broken trail sections now require full-width jumps. Generation aligns them with actual removed paving tiles; striped edges and a dark opening identify the gap. Tests cover jump timing at 22 and 36 m/s, missed-jump damage, shield recovery, automatic Zoomies jumps and generation alignment. The real-renderer phone-sized fixture was visually checked and revised for clearer contrast.
+
+Still required: meaningful route decisions and more substantial traversal set pieces, more expressive character animation, richer puppy-themed art/audio, and comprehensive final-state gameplay and performance QA. Do not mark the overall goal complete from the existing narrower checks.

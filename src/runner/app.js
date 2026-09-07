@@ -444,7 +444,7 @@ function frame(now) {
         tone(660, 0.2);
       }
       if (event === "hit") {
-        toast("Jump logs and blocks. Slide under overhead obstacles.");
+        toast("Jump logs, blocks and gaps. Slide under overhead obstacles.");
         tone(120, 0.2);
       }
     }
@@ -476,7 +476,7 @@ function frame(now) {
           !object.used &&
           !object.passed &&
           object.lane === run.lane &&
-          ["rock", "log", "arch", "branch", "gate"].includes(object.type) &&
+          ["rock", "log", "arch", "branch", "gate", "gap"].includes(object.type) &&
           object.at - run.distance > 0 &&
           object.at - run.distance < run.speed * 0.8,
       );
@@ -484,7 +484,7 @@ function frame(now) {
       $("cue").textContent = danger && run.zoomies === 0
         ? duck
           ? "↓ SLIDE under"
-          : "↑ JUMP over"
+          : danger.type === "gap" ? "↑ JUMP the gap" : "↑ JUMP over"
         : "";
       $("hearts").textContent =
         "♥ ".repeat(Math.max(0, run.hearts)) + "♡ ".repeat(3 - run.hearts);

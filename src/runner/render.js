@@ -480,6 +480,12 @@ export function createView(canvas) {
     templates[type].add(halo);
     templates[type].scale.multiplyScalar(1.2);
   }
+  templates.gap = new THREE.Group();
+  box(templates.gap,"#153c48",0,-.24,0,2.4,.08,5);
+  for(const z of [-2.6,2.6]) {
+    box(templates.gap,"#efae45",0,.12,z,2.4,.22,.22);
+    for(const x of [-.8,0,.8]) box(templates.gap,"#5d422c",x,.25,z,.3,.04,.24);
+  }
   const active = new Map(),
     pools = Object.fromEntries(
       Object.keys(templates).map((type) => [type, []]),
@@ -533,6 +539,7 @@ export function createView(canvas) {
       scene.fog.color.copy(scene.background);
       ground.material.color.copy(regionColors[atmosphere.previous].ground).lerp(regionColors[atmosphere.index].ground,atmosphere.blend);
       for(const mountain of mountains) mountain.material.color.copy(ground.material.color).lerp(scene.background,.3);
+      const gaps = menu ? [] : run.objects.filter(object => object.type === "gap" && object.lane === 1);
       if (state === "playing" || menu) {
         pose += ((menu || run.slide === 0 ? 1 : 0.46) - pose) * smooth;
         lean += ((menu ? 0 : -(LANES[run.lane] - x) * 0.12) - lean) * smooth;
@@ -551,6 +558,7 @@ export function createView(canvas) {
           instanceMatrix.multiplyMatrices(bendMatrix, entry.matrix);
           const region = regionAt(menu ? 0 : distance-z);
           if(entry.region !== undefined && entry.region !== region) instanceMatrix.scale(bendScale.set(0,0,0));
+          if(entry.road && gaps.some(gap => Math.abs(distance-z-gap.at)<.1)) instanceMatrix.scale(bendScale.set(0,0,0));
           if(entry.road || entry.region === undefined) instanced.setColorAt(i,entry.colors[region]);
           instanced.setMatrixAt(i, instanceMatrix);
         });

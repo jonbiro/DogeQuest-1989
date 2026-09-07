@@ -11,7 +11,7 @@ test("tennis ball activates once; speed ramps smoothly and returns after expiry"
   assert.ok(Math.abs(r.speed-Math.min(36,22+r.distance/90))<.2);
 });
 test("zoomies smashes all obstacle types once without consuming shield",()=>{
-  for(const type of HAZARDS){
+  for(const type of HAZARDS.filter(type=>type!=="gap")){
     const r=fixture();r.zoomies=2;r.shield=1;r.objects=[{id:1,type,lane:1,at:2}];
     advance(r,.5);assert.equal(r.hearts,3);assert.equal(r.shield,1);
     assert.equal(r.smashes,1);assert.equal(r.bonusPoints,40);

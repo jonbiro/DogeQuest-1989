@@ -10,7 +10,8 @@ export function seededRandom(seed) {
   };
 }
 import { levels } from "./progression.js";
-export const HAZARDS = ["rock", "log", "arch", "branch", "gate"];
+const SOLID_HAZARDS = ["rock", "log", "arch", "branch", "gate"];
+export const HAZARDS = [...SOLID_HAZARDS,"gap"];
 export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart", 'gift', 'zoomies'];
 export function createRun(seed = Date.now(), upgrades = {}) {
   const run = {
@@ -58,19 +59,20 @@ function add(run, type, lane, at) {
 }
 export function fillTrack(run) {
   while (run.nextRow < run.distance + 170) {
-    const at = run.nextRow;
+    const gapRow = run.row > 5 && run.row % 12 === 10;
+    const at = gapRow ? Math.round(run.nextRow/5)*5 : run.nextRow;
     const safe = Math.floor(run.random() * 3);
     const blocked = (safe + 1 + Math.floor(run.random() * 2)) % 3;
     const actionRow = run.row > 5 && run.row % 4 === 2;
     if (actionRow) {
-      const type = run.row % 8 === 2 ? "log" : "gate";
+      const type = gapRow ? "gap" : run.row % 8 === 2 ? "log" : "gate";
       for (let lane = 0; lane < 3; lane++) add(run, type, lane, at);
     } else if (run.row > 0) {
-      add(run, HAZARDS[Math.floor(run.random() * HAZARDS.length)], blocked, at);
+      add(run, SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)], blocked, at);
       if (run.row > 2 && run.random() > 0.15)
         add(
           run,
-          HAZARDS[Math.floor(run.random() * HAZARDS.length)],
+          SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)],
           3 - safe - blocked,
           at,
         );
@@ -121,6 +123,7 @@ export function step(run, dt) {
     run.events.push("zoomies-end");
   }
   run.distance += run.speed * dt;
+  if(run.zoomies>0 && run.y===0 && run.objects.some(object=>object.type==="gap" && object.at-run.distance>0 && object.at-run.distance<run.speed*.45)) act(run,"jump");
   run.x += (LANES[run.lane] - run.x) * (1 - Math.exp(-15 * dt));
   run.y = Math.max(0, run.y + run.vy * dt - 11 * dt * dt);
   run.vy -= 22 * dt;
@@ -200,7 +203,7 @@ export function step(run, dt) {
       });
     } else if (HAZARDS.includes(object.type) && dz < -0.4 && !object.passed) {
       object.passed = true;
-      if (sameLane && run.zoomies > 0) {
+      if (sameLane && run.zoomies > 0 && object.type !== "gap") {
         object.used = true;
         run.smashes++;
         run.bonusPoints += 40;
@@ -209,6 +212,7 @@ export function step(run, dt) {
         continue;
       }
       const cleared =
+        (object.type === "gap" && (run.y > .8 || run.zoomies > 0)) ||
         (object.type === "log" && run.y > 0.65) ||
         (object.type === "rock" && run.y > 1.25) ||
         (["arch", "branch", "gate"].includes(object.type) &&

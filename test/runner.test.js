@@ -31,7 +31,7 @@ test("runner seeds reproduce solvable open-lane or uniform action rows", () => {
             (o) => o.at === at && HAZARDS.includes(o.type),
           );
           assert.equal(new Set(obstacles.map((o) => o.type)).size, 1);
-          assert.ok(["log", "gate"].includes(obstacles[0].type));
+          assert.ok(["log", "gate", "gap"].includes(obstacles[0].type));
         }
       assert.ok(a.objects.length < 80, "The active track stays bounded");
     }
@@ -177,7 +177,7 @@ test("a lane-following runner survives a long seeded route at maximum difficulty
       const safe = [0, 1, 2].find((lane) => !blocked.has(lane));
       if (safe !== undefined) run.lane = safe;
       else if (next.at - run.distance < run.speed * 0.6)
-        act(run, next.type === "log" ? "jump" : "slide");
+        act(run, next.type === "gate" ? "slide" : "jump");
     }
     step(run, 1 / 120);
   }
