@@ -1,7 +1,7 @@
 {
   "name": "dogequest-1989",
   "version": "2.0.0",
-  "description": "A retro-styled browser platformer with modern physics, mobile controls, and synthwave visuals.",
+  "description": "A neon browser platformer with ten themed worlds, score combos, golden bones, and speedrun ranks.",
   "type": "module",
   "private": true,
   "license": "MIT",

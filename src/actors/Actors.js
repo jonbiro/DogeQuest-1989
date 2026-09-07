@@ -58,6 +58,21 @@ export class Bone extends Actor {
     }
 }
 
+// A rare, high-value collectible that also kicks the player into turbo mode.
+export class GoldenBone extends Bone {
+    constructor(pos) {
+        super(pos);
+    }
+
+    get type() { return "goldenbone"; }
+
+    act(step) {
+        this.wobble += step * 12;
+        const wobblePos = Math.sin(this.wobble) * 0.11;
+        this.pos = this.basePos.plus(new Vector(0, wobblePos));
+    }
+}
+
 // Spring pad that bounces player upward
 export class Spring extends Actor {
     constructor(pos) {
@@ -196,9 +211,9 @@ export class CoinBlock extends Actor {
 
         // Give reward
         level.gameInfo.bone = Math.max(0, level.gameInfo.bone - 1);
-        level.combo++;
-        level.comboTimer = level.comboDecayTime;
-        level.display?.announceStatus?.(`Coin block collected. ${level.gameInfo.bone} bones remaining.`);
+        level.advanceCombo();
+        const points = level.awardScore('coinBlock', this.pos);
+        level.display?.announceStatus?.(`Coin block collected for ${points} points. ${level.gameInfo.bone} bones remaining.`);
 
         if (level.audio) {
             level.audio.bump();
@@ -212,8 +227,6 @@ export class CoinBlock extends Actor {
                 count: 15, color: "#ffd700", speed: 8, lifetime: 0.6,
                 sizeMin: 4, sizeMax: 10, gravity: 10
             });
-            // Floating text
-            if (level.display) level.display.showComboText("100", this.pos.plus(new Vector(0, -1)));
         }
 
         if (level.gameInfo.bone === 0 && level.status == null) {

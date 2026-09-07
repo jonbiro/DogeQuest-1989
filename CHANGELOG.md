@@ -4,6 +4,11 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Rebuilt the opening screen, HUD, level-select grid, mission briefing, and results flow with a more cohesive responsive arcade presentation.
+- Added ten named world themes with individual palettes, taglines, par times, and tempo variations.
+- Added real event scoring, capped combo multipliers, time/combo completion bonuses, C-to-S speedrun ranks, and saved per-world records.
+- Added rare golden bones to generated worlds; collecting one awards extra points, refreshes dash, and activates turbo speed.
+- Expanded automated coverage from 24 to 31 tests for world metadata, scoring, ranks, formatting, golden-bone behavior, and existing game systems.
 - Added repository documentation, contribution guidance, security policy, community standards, and issue/pull-request templates.
 - Documented the live GitHub Pages deployment, procedural level behavior, mobile controls, persistence, and browser setup.
 - Added a clean static build, lint/test check, deterministic level-generation hooks, and automated coverage for core level and actor behavior.

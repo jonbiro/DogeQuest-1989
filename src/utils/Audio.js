@@ -10,6 +10,7 @@ export class AudioSystem {
         this.effectNodes = new Set();
         this.effectTimers = new Set();
         this.musicVolume = 0.04;
+        this.themeIndex = 0;
     }
 
     initialize() {
@@ -27,6 +28,10 @@ export class AudioSystem {
     setEnabled(enabled) {
         this.enabled = this.available && enabled;
         if (!this.enabled) this.stopAll();
+    }
+
+    setTheme(index) {
+        this.themeIndex = Number.isFinite(index) ? Math.max(0, Math.floor(index)) : 0;
     }
 
     resume() {
@@ -191,7 +196,13 @@ export class AudioSystem {
         this.musicNodes.push(masterGain);
 
         // Synthwave bass loop
-        const bassNotes = [65.41, 82.41, 73.42, 87.31]; // C2, E2, D2, F2
+        const bassPatterns = [
+            [65.41, 82.41, 73.42, 87.31],
+            [73.42, 92.50, 82.41, 98.00],
+            [55.00, 73.42, 65.41, 82.41],
+            [61.74, 77.78, 69.30, 92.50]
+        ];
+        const bassNotes = bassPatterns[this.themeIndex % bassPatterns.length];
         const bassOsc = this.ctx.createOscillator();
         const bassGain = this.ctx.createGain();
         bassOsc.type = 'sawtooth';
@@ -200,7 +211,7 @@ export class AudioSystem {
         bassGain.connect(masterGain);
 
         // Schedule repeating bass pattern
-        const bpm = 110;
+        const bpm = 106 + (this.themeIndex % 5) * 4;
         const beatDur = 60 / bpm;
         bassOsc.start();
         this.musicNodes.push(bassOsc, bassGain);

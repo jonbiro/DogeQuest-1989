@@ -65,6 +65,17 @@ export class LevelGenerator {
             }
         }
 
+        // Every post-tutorial world has one high-value golden bone near the exit.
+        if (this.difficulty >= 2) {
+            for (let x = this.width - 5; x >= Math.max(8, this.width - 14); x--) {
+                const y = this.height - 3;
+                if (grid[y][x] === ' ' && grid[y + 1][x] === 'x') {
+                    grid[y][x] = '$';
+                    break;
+                }
+            }
+        }
+
         // Add power-ups (rarer at low difficulty)
         if (this.difficulty >= 2 && this.nextRandom() < 0.6) {
             const px = 10 + Math.floor(this.nextRandom() * (this.width - 20));

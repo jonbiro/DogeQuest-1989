@@ -1,9 +1,11 @@
 import { Vector } from './utils/Vector.js';
-import { Player, Lava, Bone, Spring, Spike, Patrol, SpeedBoost, Shield, BreakableWall, CoinBlock } from './actors/Actors.js';
+import { Player, Lava, Bone, GoldenBone, Spring, Spike, Patrol, SpeedBoost, Shield, BreakableWall, CoinBlock } from './actors/Actors.js';
+import { scoreForEvent } from './GameMeta.js';
 
 const actorChars = {
     "@": Player,
     "o": Bone,
+    "$": GoldenBone,
     "=": Lava,
     "|": Lava,
     "v": Lava,
@@ -41,6 +43,7 @@ export class Level {
         // Timer and combo system
         this.timer = 0;
         this.combo = 0;
+        this.bestCombo = 0;
         this.comboTimer = 0;
         this.comboDecayTime = 2.0; // Seconds before combo resets
 
@@ -53,7 +56,7 @@ export class Level {
                 let ch = line[x], fieldType = null;
                 let Actor = actorChars[ch];
 
-                if (ch === 'o') {
+                if (ch === 'o' || ch === '$') {
                     this.gameInfo.bone++;
                 }
 
@@ -176,6 +179,21 @@ export class Level {
         }
     }
 
+    advanceCombo() {
+        this.combo++;
+        this.bestCombo = Math.max(this.bestCombo, this.combo);
+        this.comboTimer = this.comboDecayTime;
+        return this.combo;
+    }
+
+    awardScore(type, pos) {
+        const points = scoreForEvent(type, this.combo);
+        this.gameInfo.score = Math.max(0, Number(this.gameInfo.score) || 0) + points;
+        this.gameInfo.highScore = Math.max(Number(this.gameInfo.highScore) || 0, this.gameInfo.score);
+        if (pos && points > 0) this.display?.showScoreText?.(`+${points}`, pos);
+        return points;
+    }
+
     playerTouched(type, actor) {
         if (this.status != null) return;
         if (["lava", "spike", "patrol"].includes(type) && this.player.invulnerabilityTimer > 0) return;
@@ -212,13 +230,20 @@ export class Level {
                     sizeMax: 10
                 });
             }
-        } else if (type === "bone") {
+        } else if (type === "bone" || type === "goldenbone") {
             this.gameInfo.bone = Math.max(0, this.gameInfo.bone - 1);
             this.actors = this.actors.filter(other => other !== actor);
 
             // Combo system
-            this.combo++;
-            this.comboTimer = this.comboDecayTime;
+            this.advanceCombo();
+            const isGolden = type === 'goldenbone';
+            const points = this.awardScore(isGolden ? 'goldenBone' : 'bone', actor.pos);
+
+            if (isGolden) {
+                this.player.dashCooldown = 0;
+                this.player.speedBoostTimer = Math.max(this.player.speedBoostTimer, 4);
+                this.display?.addScreenShake?.(3);
+            }
 
             // Show combo text for streaks
             if (this.combo >= 3 && this.display) {
@@ -235,16 +260,18 @@ export class Level {
             // Flash effect on collection
             if (this.display) {
                 this.display.triggerFlash();
-                this.display.announceStatus?.(`Bone collected. ${this.gameInfo.bone} remaining.`);
+                this.display.announceStatus?.(isGolden
+                    ? `Golden bone collected for ${points} points. Turbo is active. ${this.gameInfo.bone} bones remain.`
+                    : `Bone collected for ${points} points. ${this.gameInfo.bone} remaining.`);
             }
 
             // Emit particles - more dramatic for combos
             if (this.particleSystem) {
-                const particleCount = Math.min(25 + this.combo * 3, 50);
+                const particleCount = Math.min((isGolden ? 40 : 25) + this.combo * 3, 60);
                 this.particleSystem.emit(actor.pos.plus(new Vector(0.3, 0.3)), {
                     count: particleCount,
-                    color: "#ffd700",
-                    speed: 5 + this.combo * 0.5,
+                    color: isGolden ? "#fff4a3" : "#ffd700",
+                    speed: (isGolden ? 7 : 5) + this.combo * 0.5,
                     lifetime: 1.0,
                     sizeMin: 4,
                     sizeMax: 10
@@ -259,7 +286,10 @@ export class Level {
                     sizeMax: 7
                 });
             }
-            if (this.audio) this.audio.collect();
+            if (this.audio) {
+                this.audio.collect();
+                if (isGolden) this.audio.powerUp();
+            }
 
             // Check if all bones collected
             if (this.gameInfo.bone === 0) {
@@ -318,9 +348,8 @@ export class Level {
                         });
                     }
 
-                    // Combo point/score for stomping?
-                    this.combo++;
-                    this.comboTimer = this.comboDecayTime;
+                    this.advanceCombo();
+                    this.awardScore('stomp', actor.pos);
                     return; // Return early, don't hurt player
                 }
             }
@@ -366,6 +395,7 @@ export class Level {
         } else if (type === "speedboost") {
             this.actors = this.actors.filter(a => a !== actor);
             this.player.speedBoostTimer = 5.0;
+            this.awardScore('powerUp', actor.pos);
             if (this.audio) this.audio.powerUp();
             if (this.display) this.display.triggerFlash();
             this.display?.announceStatus?.('Speed boost active for 5 seconds.');
@@ -378,6 +408,7 @@ export class Level {
         } else if (type === "shield") {
             this.actors = this.actors.filter(a => a !== actor);
             this.player.shieldTimer = 8.0;
+            this.awardScore('powerUp', actor.pos);
             if (this.audio) this.audio.powerUp();
             if (this.display) this.display.triggerFlash();
             this.display?.announceStatus?.('Shield active for 8 seconds.');
@@ -391,6 +422,7 @@ export class Level {
             if (this.player.isDashing) {
                 actor.breakWall(this);
                 this.actors = this.actors.filter(other => other !== actor);
+                this.awardScore('breakWall', actor.pos);
                 if (this.audio) this.audio.breakWall();
                 if (this.display) this.display.addScreenShake(4);
                 if (this.particleSystem) {

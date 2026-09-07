@@ -4,8 +4,8 @@ import { Input } from './Input.js';
 import { ParticleSystem } from './particles/ParticleSystem.js';
 import { AudioSystem } from './utils/Audio.js';
 import { LevelGenerator } from './LevelGenerator.js';
+import { calculateLevelResult, formatTime, getLevelMeta, rankForTime, TOTAL_LEVELS } from './GameMeta.js';
 
-const TOTAL_LEVELS = 10;
 const STARTING_LIVES = 5;
 const PROGRESS_KEY = 'dogeQuestProgress';
 const HIGH_SCORE_KEY = 'puppyQuestHighScore';
@@ -23,6 +23,7 @@ export class Game {
             bone: 0,
             totalBone: 0,
             level: 1,
+            score: 0,
             highScore: 0
         };
         this.input = new Input();
@@ -36,6 +37,7 @@ export class Game {
         this.currentLevelIndex = 0;
         this.pendingTransition = null;
         this.tutorialTimeout = null;
+        this.levelBannerTimeout = null;
         this.cachedLevelPlans = {};
         this.resizeAnimationId = null;
 
@@ -44,7 +46,9 @@ export class Game {
             deaths: 0,
             totalPlayTime: 0,
             unlockedLevels: 1,
-            playStartTime: Date.now()
+            playStartTime: Date.now(),
+            bestTimes: Array(TOTAL_LEVELS).fill(null),
+            bestScores: Array(TOTAL_LEVELS).fill(0)
         };
 
         // Tutorial messages per level
@@ -66,11 +70,14 @@ export class Game {
         this.colorblindBtn = document.getElementById('colorblind-btn');
         this.tutorialPrompt = document.getElementById('tutorial-prompt');
         this.levelSelectOverlay = document.getElementById('level-select-overlay');
+        this.levelBanner = document.getElementById('level-banner');
+        this.menuProgress = document.getElementById('menu-progress');
         this.colorblindMode = false;
         this.soundEnabled = true;
 
         // Load saved progress after all preference defaults are initialized.
         this.loadProgress();
+        this.updateMenuProgress();
 
         // Setup pause controls
         this.setupPauseControls();
@@ -191,6 +198,8 @@ export class Game {
         if (this.paused || !this.running || !this.currentLevel || this.currentLevel.status) return;
         this.accumulatePlayTime();
         this.paused = true;
+        this.hideTutorial();
+        this.hideLevelBanner();
         if (this.pauseOverlay) {
             this.pauseOverlay.classList.remove('hidden');
             this.focusDialog(this.pauseOverlay, this.resumeBtn);
@@ -230,7 +239,12 @@ export class Game {
         this.audio.stopAll();
         this.clearPendingTransition();
         this.hideTutorial();
+        this.hideLevelBanner();
         this.hideOverlays();
+        if (this.display) {
+            this.display.dispose();
+            this.display = null;
+        }
 
         this.running = true;
         this.paused = false;
@@ -240,7 +254,10 @@ export class Game {
         this.particleSystem.clear();
 
         this.gameInfo.level = levelIndex + 1;
+        this.gameInfo.score = 0;
         this.currentLevelIndex = levelIndex;
+        const meta = getLevelMeta(levelIndex);
+        this.audio.setTheme(levelIndex);
 
         let plan = this.levels[levelIndex];
 
@@ -261,7 +278,7 @@ export class Game {
         this.currentLevel = new Level(plan, this.gameInfo, this.particleSystem, this.audio);
         this.display = new CanvasDisplay(document.body, this.currentLevel, this.gameInfo, this.particleSystem);
         this.currentLevel.display = this.display;
-        this.display.announceStatus(`Level ${this.gameInfo.level} started. ${this.gameInfo.bone} bones to collect. ${this.gameInfo.life} lives remaining.`);
+        this.display.announceStatus(`Level ${this.gameInfo.level}, ${meta.name}, started. ${this.gameInfo.bone} bones to collect. Par time ${formatTime(meta.parTime)}. ${this.gameInfo.life} lives remaining.`);
 
         this.display.startTransition('in');
 
@@ -271,6 +288,7 @@ export class Game {
 
         // Show tutorial if applicable
         this.showTutorial(levelIndex);
+        this.showLevelBanner(levelIndex);
 
         this.runAnimation(levelIndex);
     }
@@ -358,8 +376,10 @@ export class Game {
         const title = document.getElementById('message-title');
         const subtitle = document.getElementById('message-subtitle');
         const actionBtn = document.getElementById('message-action-btn');
+        const resultCard = document.getElementById('result-card');
 
         if (status === "lost") {
+            if (resultCard) resultCard.classList.add('hidden');
             this.stats.deaths++;
             this.audio.die();
             this.gameInfo.life--;
@@ -404,6 +424,26 @@ export class Game {
             this.audio.win();
             if (actionBtn) actionBtn.classList.add('hidden');
 
+            const meta = getLevelMeta(levelIndex);
+            const previousBestTime = this.stats.bestTimes[levelIndex];
+            const previousBestScore = this.stats.bestScores[levelIndex];
+            const result = calculateLevelResult({
+                time: this.currentLevel.timer,
+                parTime: meta.parTime,
+                score: this.gameInfo.score,
+                bestCombo: this.currentLevel.bestCombo
+            });
+            this.gameInfo.score = result.totalScore;
+            this.gameInfo.highScore = Math.max(this.gameInfo.highScore, result.totalScore);
+            const isNewBest = previousBestTime === null ||
+                this.currentLevel.timer < previousBestTime ||
+                result.totalScore > previousBestScore;
+            this.stats.bestTimes[levelIndex] = previousBestTime === null
+                ? this.currentLevel.timer
+                : Math.min(previousBestTime, this.currentLevel.timer);
+            this.stats.bestScores[levelIndex] = Math.max(previousBestScore, result.totalScore);
+            this.renderLevelResult(result, isNewBest);
+
             // Unlock next level
             if (levelIndex + 2 > this.stats.unlockedLevels) {
                 this.stats.unlockedLevels = Math.min(TOTAL_LEVELS, levelIndex + 2);
@@ -412,13 +452,13 @@ export class Game {
             // Save progress on win
             this.saveProgress();
 
-            title.textContent = `Level ${this.gameInfo.level} Complete!`;
-            subtitle.textContent = `Time: ${Math.floor(this.currentLevel.timer)}s | Best combo: ${this.currentLevel.combo}x`;
+            title.textContent = `${meta.name} Cleared!`;
+            subtitle.textContent = `All bones secured · Par ${formatTime(meta.parTime)}`;
             overlay.classList.remove('hidden');
 
             if (levelIndex === TOTAL_LEVELS - 1) {
                 title.textContent = "QUEST COMPLETE!";
-                subtitle.textContent = `All ${TOTAL_LEVELS} levels cleared. Final time: ${Math.floor(this.currentLevel.timer)}s`;
+                subtitle.textContent = `All ${TOTAL_LEVELS} neon worlds cleared. You are a cosmic fetch legend.`;
                 this.display?.announceStatus(`Quest complete. All ${TOTAL_LEVELS} levels cleared.`);
                 if (actionBtn) {
                     actionBtn.textContent = "PLAY AGAIN";
@@ -452,6 +492,8 @@ export class Game {
             highScore: this.gameInfo.highScore,
             deaths: this.stats.deaths,
             totalPlayTime: this.stats.totalPlayTime,
+            bestTimes: this.stats.bestTimes,
+            bestScores: this.stats.bestScores,
             colorblindMode: this.colorblindMode,
             soundEnabled: this.soundEnabled
         };
@@ -474,6 +516,17 @@ export class Game {
                 this.stats.deaths = Math.floor(finiteNumber(data.deaths, 0));
                 this.stats.totalPlayTime = finiteNumber(data.totalPlayTime, 0);
                 this.gameInfo.highScore = Math.max(this.gameInfo.highScore, Math.floor(finiteNumber(data.highScore, 0)));
+                if (Array.isArray(data.bestTimes)) {
+                    this.stats.bestTimes = Array.from({ length: TOTAL_LEVELS }, (_, index) => {
+                        const value = data.bestTimes[index];
+                        return value === null || value === undefined ? null : finiteNumber(value, null, 0, 60 * 60);
+                    });
+                }
+                if (Array.isArray(data.bestScores)) {
+                    this.stats.bestScores = Array.from({ length: TOTAL_LEVELS }, (_, index) => {
+                        return Math.floor(finiteNumber(data.bestScores[index], 0));
+                    });
+                }
                 this.colorblindMode = data.colorblindMode === true;
                 this.soundEnabled = data.soundEnabled !== false;
             }
@@ -488,6 +541,8 @@ export class Game {
         if (!this.levelSelectOverlay) return;
 
         if (!this.paused) this.accumulatePlayTime();
+        this.hideTutorial();
+        this.hideLevelBanner();
         this.paused = true;
         this.stopAnimation();
         this.audio.stopAll();
@@ -499,8 +554,20 @@ export class Game {
 
         for (let i = 0; i < TOTAL_LEVELS; i++) {
             const btn = document.createElement('button');
-            btn.textContent = i + 1;
-            btn.setAttribute('aria-label', `Level ${i + 1}`);
+            const meta = getLevelMeta(i);
+            const number = document.createElement('span');
+            const name = document.createElement('strong');
+            const record = document.createElement('small');
+            number.textContent = String(i + 1).padStart(2, '0');
+            name.textContent = meta.name;
+            const bestTime = this.stats.bestTimes[i];
+            record.textContent = bestTime === null
+                ? (i < this.stats.unlockedLevels ? `PAR ${formatTime(meta.parTime)}` : 'LOCKED')
+                : `${rankForTime(bestTime, meta.parTime)} · ${formatTime(bestTime, true)}`;
+            btn.append(number, name, record);
+            btn.setAttribute('aria-label', bestTime === null
+                ? `Level ${i + 1}, ${meta.name}`
+                : `Level ${i + 1}, ${meta.name}, best rank ${rankForTime(bestTime, meta.parTime)}, time ${formatTime(bestTime, true)}`);
             if (i < this.stats.unlockedLevels) {
                 btn.classList.add('unlocked');
                 if (i === this.currentLevelIndex) btn.classList.add('current');
@@ -540,6 +607,7 @@ export class Game {
         this.gameInfo.life = STARTING_LIVES;
         this.gameInfo.bone = 0;
         this.gameInfo.totalBone = 0;
+        this.gameInfo.score = 0;
         this.cachedLevelPlans = {};
         this.tutorialShown = {};
         this.startLevel(0);
@@ -553,6 +621,7 @@ export class Game {
         this.stopAnimation();
         this.clearPendingTransition();
         this.hideTutorial();
+        this.hideLevelBanner();
         this.audio.stopAll();
         this.particleSystem.clear();
         this.saveProgress();
@@ -565,6 +634,7 @@ export class Game {
         this.setGameplayInteractive(false);
         const startScreen = document.getElementById('start-screen');
         if (startScreen) startScreen.classList.remove('hidden');
+        this.updateMenuProgress();
         this.focusDialog(startScreen, document.getElementById('start-btn'));
     }
 
@@ -574,6 +644,8 @@ export class Game {
             .forEach(overlay => overlay.classList.add('hidden'));
         const actionBtn = document.getElementById('message-action-btn');
         if (actionBtn) actionBtn.classList.add('hidden');
+        const resultCard = document.getElementById('result-card');
+        if (resultCard) resultCard.classList.add('hidden');
     }
 
     setGameplayInteractive(interactive) {
@@ -633,6 +705,72 @@ export class Game {
     focusGame() {
         const canvas = document.getElementById('gameBoard');
         if (canvas) requestAnimationFrame(() => canvas.focus());
+    }
+
+    renderLevelResult(result, isNewBest) {
+        const resultCard = document.getElementById('result-card');
+        if (!resultCard) return;
+        const bonus = result.timeBonus + result.comboBonus;
+        const values = {
+            'result-rank': result.rank,
+            'result-score': result.totalScore.toLocaleString('en-US'),
+            'result-time': formatTime(this.currentLevel.timer, true),
+            'result-combo': `${this.currentLevel.bestCombo}x`,
+            'result-bonus': `+${bonus.toLocaleString('en-US')}`
+        };
+        Object.entries(values).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = value;
+        });
+        resultCard.dataset.rank = result.rank;
+        const best = document.getElementById('result-best');
+        if (best) best.classList.toggle('hidden', !isNewBest);
+        resultCard.classList.remove('hidden');
+    }
+
+    showLevelBanner(levelIndex) {
+        if (!this.levelBanner) return;
+        const meta = getLevelMeta(levelIndex);
+        const fields = {
+            'level-banner-index': `LEVEL ${String(levelIndex + 1).padStart(2, '0')}`,
+            'level-banner-name': meta.name,
+            'level-banner-tagline': meta.tagline,
+            'level-banner-par': `PAR ${formatTime(meta.parTime)}`
+        };
+        Object.entries(fields).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) element.textContent = value;
+        });
+        this.levelBanner.classList.remove('hidden');
+        this.levelBannerTimeout = window.setTimeout(() => {
+            this.levelBannerTimeout = null;
+            this.levelBanner?.classList.add('hidden');
+        }, 2700);
+    }
+
+    hideLevelBanner() {
+        if (this.levelBannerTimeout !== null) {
+            window.clearTimeout(this.levelBannerTimeout);
+            this.levelBannerTimeout = null;
+        }
+        this.levelBanner?.classList.add('hidden');
+    }
+
+    updateMenuProgress() {
+        if (!this.menuProgress) return;
+        const completed = this.stats.bestTimes.filter(time => time !== null).length;
+        const bestRank = this.stats.bestTimes.reduce((best, time, index) => {
+            if (time === null) return best;
+            const rank = rankForTime(time, getLevelMeta(index).parTime);
+            const order = { S: 0, A: 1, B: 2, C: 3 };
+            return !best || order[rank] < order[best] ? rank : best;
+        }, null);
+        const label = this.menuProgress.querySelector('strong');
+        if (label) {
+            label.textContent = completed > 0
+                ? `${completed}/${TOTAL_LEVELS} CLEARED · BEST RANK ${bestRank}`
+                : `${this.stats.unlockedLevels}/${TOTAL_LEVELS} WORLDS UNLOCKED`;
+        }
     }
 
     showTutorial(levelIndex) {

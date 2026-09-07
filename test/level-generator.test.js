@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import { LevelGenerator } from '../src/LevelGenerator.js';
 import { withRandom } from '../scripts/level-fixtures.js';
 
-const allowedTiles = new Set([' ', '@', 'o', 'x', '!', '=', '|', 'v', '^', 'S', 'P', '+', '*', 'B', '?']);
+const allowedTiles = new Set([' ', '@', 'o', '$', 'x', '!', '=', '|', 'v', '^', 'S', 'P', '+', '*', 'B', '?']);
 
 function assertValidPlan(plan, expectedWidth) {
   assert.equal(plan.length, 20);
@@ -48,6 +48,11 @@ test('LevelGenerator output is reproducible for a deterministic random source', 
   const second = withRandom([0.02, 0.41, 0.73, 0.91], () => new LevelGenerator(4).generate());
 
   assert.deepStrictEqual(first, second);
+});
+
+test('post-tutorial generated worlds contain a golden bone', () => {
+  const plan = withRandom([0.31, 0.62, 0.83], () => new LevelGenerator(2).generate());
+  assert.equal(plan.join('').includes('$'), true);
 });
 
 test('all documented segment types produce feature descriptors', () => {

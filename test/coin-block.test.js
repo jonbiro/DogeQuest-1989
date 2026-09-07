@@ -15,6 +15,8 @@ test('triggering the final active coin block completes the level exactly once', 
   assert.equal(block.active, false);
   assert.equal(gameInfo.bone, 0);
   assert.equal(level.combo, 1);
+  assert.equal(level.bestCombo, 1);
+  assert.equal(gameInfo.score, 250);
   assert.equal(level.status, 'won');
   assert.equal(level.finishDelay, 1);
   assert.ok(level.display.calls.some((call) => call.method === 'announceStatus'));
@@ -22,6 +24,7 @@ test('triggering the final active coin block completes the level exactly once', 
   block.trigger(level);
   assert.equal(gameInfo.bone, 0);
   assert.equal(level.combo, 1);
+  assert.equal(gameInfo.score, 250);
 });
 
 test('coin blocks ignore stale triggers after a terminal level state', () => {

@@ -57,6 +57,7 @@ export function makeDisplaySpy() {
 export function makeLevel(plan, options = {}) {
   const gameInfo = {
     bone: 0,
+    score: 0,
     highScore: 0,
     level: 1,
     life: 5,

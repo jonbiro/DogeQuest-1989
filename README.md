@@ -8,12 +8,14 @@ Collect every bone in a level, use the movement abilities to cross the course, a
 
 ## Features
 
-- Canvas-rendered neon/synthwave presentation with procedural player art, parallax scenery, particles, screen transitions, screen shake, and combo feedback.
+- Ten named neon worlds with individual color palettes, par times, mission briefings, and progressively faster synthesized music.
+- Canvas-rendered synthwave presentation with procedural player art, parallax scenery, particles, screen transitions, screen shake, and combo feedback.
 - Responsive platforming physics: acceleration, air control, coyote time, jump buffering, variable jump height, double jump, wall slide, and wall jump.
-- Hazards and interactive objects: stationary and moving lava, falling lava, spikes, patrol enemies that can be stomped, springs, breakable walls, question blocks, speed boosts, and shields.
+- Score-chasing progression with capped combo multipliers, speedrun ranks, time/combo bonuses, per-world personal bests, and an expanded mission HUD.
+- Hazards and interactive objects: stationary and moving lava, falling lava, spikes, patrol enemies that can be stomped, springs, breakable walls, question blocks, speed boosts, shields, and rare golden bones that trigger turbo mode.
 - Synthesized sound effects and background music through the Web Audio API; no audio files are required.
 - Ten selectable level slots: a fixed tutorial followed by nine procedurally generated levels whose layouts vary between successful runs. A level layout is cached while retrying it, then regenerated when it is completed.
-- Pause/resume, restart, level select, game-over flow, lives, timer, combo scoring, high score, and progress persistence.
+- Pause/resume, restart, a record-rich level select, game-over flow, lives, dash readiness, timer, combo scoring, high score, and progress persistence.
 - Keyboard controls plus touch controls on small/coarse-pointer devices. Haptic feedback is used when the browser supports it.
 - A colorblind display option is available from the pause menu.
 
@@ -28,7 +30,7 @@ Collect every bone in a level, use the movement abilities to cross the course, a
 | Dash | Hold `Shift`; direction follows movement input or the last facing direction | Hold `DASH` |
 | Pause / resume | `Escape` | Tap the `Ⅱ` button |
 
-Click **START GAME** once before playing. This user gesture also lets browsers enable the synthesized audio. On mobile, hold a movement or action button for continuous input; vibration is optional and depends on device/browser support.
+Click **BEGIN QUEST** once before playing. This user gesture also lets browsers enable the synthesized audio. On mobile, hold a movement or action button for continuous input; vibration is optional and depends on device/browser support.
 
 ## Local development
 
@@ -57,7 +59,7 @@ Run `npm run check` before submitting changes. It builds the static site, lints 
 
 - A blank page or module error usually means the file was opened directly; use `npm start` or another local HTTP server.
 - Sound may remain silent until **START GAME** is clicked because browsers require a user gesture before starting an `AudioContext`.
-- Progress, unlocked levels, high score, death count, play time, sound, and the colorblind preference are stored in this browser's `localStorage`. Clearing site data resets them.
+- Progress, unlocked levels, high score, per-world best times/scores, death count, play time, sound, and the colorblind preference are stored in this browser's `localStorage`. Clearing site data resets them.
 - Procedural layouts use randomness, so exact level geometry and screenshots can differ between fresh runs.
 
 ## Project structure
@@ -68,6 +70,7 @@ Run `npm run check` before submitting changes. It builds the static site, lints 
 | `css.css` | Neon/CRT styling, responsive layout, overlays, and mobile controls. |
 | `src/main.js` | Application entry point and fixed tutorial plan. |
 | `src/Game.js` | Game lifecycle, animation loop, progression, pause menu, persistence, and level selection. |
+| `src/GameMeta.js` | World identities, visual palettes, par times, rank thresholds, and score rules. |
 | `src/Level.js` | Tile-plan parsing, actor management, collisions, scoring, and win/loss state. |
 | `src/LevelGenerator.js` | Difficulty-scaled procedural level generation. |
 | `src/actors/Actors.js` | Player, lava, bone, spring, spike, patrol, power-up, breakable-wall, and question-block actors. |
@@ -78,7 +81,7 @@ Run `npm run check` before submitting changes. It builds the static site, lints 
 | `scripts/build.js` | Copies the static site into the clean `dist/` deploy directory. |
 | `test/` | Node-based unit tests for deterministic utilities and level generation. |
 
-The first level slot is the fixed tutorial. Slots 2–10 are generated with increasing difficulty. Completing a slot unlocks the next one and saves the result locally. Completing slot 10 shows the quest-complete screen and offers a fresh run.
+The first level slot is the fixed tutorial. Slots 2–10 are generated with increasing difficulty and each generated world hides one golden bone. Completing a slot calculates a C-to-S speed rank, saves its best result, and unlocks the next one. Completing slot 10 shows the quest-complete screen and offers a fresh run.
 
 ## Accessibility and device support
 

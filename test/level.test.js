@@ -14,6 +14,21 @@ test('Level counts bone actors and coin blocks as collectibles', () => {
   );
 });
 
+test('golden bones count toward the goal and trigger turbo scoring', () => {
+  const { gameInfo, level } = makeLevel(['@$o', 'xxx']);
+  const goldenBone = level.actors.find((actor) => actor.type === 'goldenbone');
+
+  level.player.dashCooldown = 0.8;
+  level.playerTouched('goldenbone', goldenBone);
+
+  assert.equal(gameInfo.bone, 1);
+  assert.equal(gameInfo.score, 500);
+  assert.equal(level.combo, 1);
+  assert.equal(level.bestCombo, 1);
+  assert.equal(level.player.dashCooldown, 0);
+  assert.equal(level.player.speedBoostTimer, 4);
+});
+
 test('Level rejects empty, ragged, and playerless plans', () => {
   assert.throws(() => makeLevel([]), /non-empty/);
   assert.throws(() => makeLevel(['@x', 'x']), /same width/);
@@ -48,12 +63,16 @@ test('collecting bones updates the combo and wins when the last bone is collecte
   level.playerTouched('bone', bones[0]);
   assert.equal(gameInfo.bone, 1);
   assert.equal(level.combo, 1);
+  assert.equal(level.bestCombo, 1);
+  assert.equal(gameInfo.score, 100);
   assert.equal(level.status, null);
   assert.equal(level.actors.includes(bones[0]), false);
 
   level.playerTouched('bone', bones[1]);
   assert.equal(gameInfo.bone, 0);
   assert.equal(level.combo, 2);
+  assert.equal(level.bestCombo, 2);
+  assert.equal(gameInfo.score, 300);
   assert.equal(level.status, 'won');
   assert.equal(level.finishDelay, 1);
 });

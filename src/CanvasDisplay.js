@@ -1,3 +1,5 @@
+import { formatTime, getLevelMeta } from './GameMeta.js';
+
 const CITY_BUILDINGS = [
     { x: 0, w: 30, h: 80 }, { x: 35, w: 20, h: 50 }, { x: 60, w: 40, h: 100 },
     { x: 110, w: 25, h: 60 }, { x: 140, w: 35, h: 90 }, { x: 180, w: 20, h: 45 },
@@ -12,6 +14,8 @@ export class CanvasDisplay {
     constructor(parent, level, gameInfo, particleSystem) {
         this.gameInfo = gameInfo;
         this.particleSystem = particleSystem;
+        this.meta = getLevelMeta(gameInfo.level - 1);
+        this.theme = this.meta.palette;
 
         // Use existing canvas if present (preferred) or create one
         this.canvas = document.getElementById("gameBoard");
@@ -71,16 +75,24 @@ export class CanvasDisplay {
         this.hudTotal = document.getElementById("total-bones-display");
         this.hudLives = document.getElementById("lives-display");
         this.hudHighScore = document.getElementById("highscore-display");
+        this.hudPoints = document.getElementById("points-display");
         this.hudTimer = document.getElementById("timer-display");
         this.hudCombo = document.getElementById("combo-display");
+        this.hudComboItem = document.getElementById("combo-hud");
         this.hudPower = document.getElementById("power-display");
         this.hudPowerItem = document.getElementById("power-hud");
+        this.hudLevelName = document.getElementById("level-name-display");
+        this.hudBoneProgress = document.getElementById("bone-progress-fill");
+        this.hudBoneProgressTrack = document.getElementById("bone-progress");
+        this.hudDash = document.getElementById("dash-display");
+        this.hudDashMeter = document.getElementById("dash-meter-fill");
         this.statusMessage = document.getElementById("game-status");
         this.hudValues = {};
         this.activePowerKinds = '';
 
         // Get game container for effects
         this.gameContainer = document.querySelector('.game-container');
+        this.applyTheme();
 
         this.buildWallCache();
         this.buildWallLayer();
@@ -93,7 +105,7 @@ export class CanvasDisplay {
         const stars = [];
         for (let i = 0; i < count; i++) {
             const size = Math.round((Math.random() * 2 + 1) * 2) / 2;
-            const color = Math.random() > 0.8 ? '#ff00ff' : (Math.random() > 0.5 ? '#00ffff' : '#ffffff');
+            const color = Math.random() > 0.8 ? this.theme.secondary : (Math.random() > 0.5 ? this.theme.primary : '#ffffff');
             stars.push({
                 x: Math.random(),
                 y: Math.random(),
@@ -130,7 +142,7 @@ export class CanvasDisplay {
         const clouds = [];
         for (let i = 0; i < count; i++) {
             const size = Math.random() * 150 + 100;
-            const color = Math.random() > 0.5 ? 'rgba(255,0,255,0.03)' : 'rgba(0,255,255,0.03)';
+            const color = Math.random() > 0.5 ? `${this.theme.secondary}12` : `${this.theme.primary}12`;
             const sprite = document.createElement('canvas');
             sprite.width = Math.ceil(size * 2);
             sprite.height = Math.ceil(size * 2);
@@ -159,20 +171,27 @@ export class CanvasDisplay {
         const sunRadius = Math.min(width, height) * 0.25;
 
         const sky = this.cx.createLinearGradient(0, 0, 0, height);
-        sky.addColorStop(0, '#050010');
-        sky.addColorStop(0.6, '#1a0b36');
-        sky.addColorStop(1, '#3c1053');
+        sky.addColorStop(0, this.theme.skyTop);
+        sky.addColorStop(0.58, this.theme.skyMid);
+        sky.addColorStop(1, this.theme.skyBottom);
 
         const sun = this.cx.createLinearGradient(sunX, horizon - sunRadius, sunX, horizon + sunRadius);
-        sun.addColorStop(0, '#ffd700');
-        sun.addColorStop(0.5, '#ff00ff');
-        sun.addColorStop(1, '#9900ff');
+        sun.addColorStop(0, this.theme.sunTop);
+        sun.addColorStop(0.5, this.theme.secondary);
+        sun.addColorStop(1, this.theme.sunBottom);
 
         const floor = this.cx.createLinearGradient(0, horizon, 0, height);
-        floor.addColorStop(0, 'rgba(255, 0, 255, 0.1)');
-        floor.addColorStop(1, 'rgba(0, 255, 255, 0.2)');
+        floor.addColorStop(0, `${this.theme.secondary}1f`);
+        floor.addColorStop(1, `${this.theme.primary}38`);
 
         this.gradients = { sky, sun, floor };
+    }
+
+    applyTheme() {
+        if (!this.gameContainer) return;
+        this.gameContainer.style.setProperty('--level-primary', this.theme.primary);
+        this.gameContainer.style.setProperty('--level-secondary', this.theme.secondary);
+        this.gameContainer.style.setProperty('--level-accent', this.theme.accent);
     }
 
     addScreenShake(intensity = 5) {
@@ -229,6 +248,16 @@ export class CanvasDisplay {
             y: (pos.y - this.viewport.top) * this.scale,
             life: 1.5,
             color: numericCombo >= 10 ? '#ffd700' : (numericCombo >= 5 ? '#ff00ff' : '#00ffff')
+        });
+    }
+
+    showScoreText(text, pos, color = this.theme.accent) {
+        this.comboTexts.push({
+            text: String(text),
+            x: (pos.x - this.viewport.left) * this.scale,
+            y: (pos.y - this.viewport.top) * this.scale,
+            life: 1.25,
+            color
         });
     }
 
@@ -289,7 +318,10 @@ export class CanvasDisplay {
             element.textContent = text;
             this.hudValues[key] = text;
             const item = element.closest('.hud-item');
-            if (item && accessibleLabel) item.setAttribute('aria-label', accessibleLabel);
+            if (item && accessibleLabel) {
+                item.setAttribute('role', 'group');
+                item.setAttribute('aria-label', accessibleLabel);
+            }
         }
     }
 
@@ -302,31 +334,41 @@ export class CanvasDisplay {
     updateHUD() {
         const collected = this.gameInfo.totalBone - this.gameInfo.bone;
         this.updateHudValue('level', this.hudLevel, this.gameInfo.level, `Level ${this.gameInfo.level}`);
+        this.updateHudValue('levelName', this.hudLevelName, this.meta.name, `Level ${this.gameInfo.level}, ${this.meta.name}`);
         this.updateHudValue('score', this.hudScore, collected, `Bones ${collected} of ${this.gameInfo.totalBone}`);
         this.updateHudValue('total', this.hudTotal, this.gameInfo.totalBone, `Bones ${collected} of ${this.gameInfo.totalBone}`);
         this.updateHudValue('lives', this.hudLives, this.gameInfo.life, `${this.gameInfo.life} lives remaining`);
-
-        // Update High Score check
-        if (collected > this.gameInfo.highScore) {
-            this.gameInfo.highScore = collected;
-            try {
-                localStorage.setItem('puppyQuestHighScore', String(collected));
-            } catch {
-                // High scores remain available for the current session.
-            }
-        }
+        this.updateHudValue('points', this.hudPoints, Number(this.gameInfo.score || 0).toLocaleString('en-US'), `Score ${this.gameInfo.score || 0}`);
         this.updateHudValue('highScore', this.hudHighScore, this.gameInfo.highScore, `High score ${this.gameInfo.highScore}`);
+
+        if (this.hudBoneProgress) {
+            const progress = this.gameInfo.totalBone > 0 ? collected / this.gameInfo.totalBone : 1;
+            this.hudBoneProgress.style.transform = `scaleX(${progress})`;
+            this.hudBoneProgressTrack?.setAttribute('aria-valuenow', String(collected));
+            this.hudBoneProgressTrack?.setAttribute('aria-valuemax', String(this.gameInfo.totalBone));
+            this.hudBoneProgressTrack?.setAttribute('aria-label', `${collected} of ${this.gameInfo.totalBone} bones collected`);
+        }
 
         // Timer display
         if (this.hudTimer && this.level) {
             const mins = Math.floor(this.level.timer / 60);
             const secs = Math.floor(this.level.timer % 60);
-            this.updateHudValue('timer', this.hudTimer, `${mins}:${secs.toString().padStart(2, '0')}`, `Time ${mins} minutes ${secs} seconds`);
+            this.updateHudValue('timer', this.hudTimer, formatTime(this.level.timer), `Time ${mins} minutes ${secs} seconds`);
         }
 
         // Combo display
         if (this.hudCombo && this.level) {
-            this.updateHudValue('combo', this.hudCombo, this.level.combo > 0 ? `${this.level.combo}x` : '', `Combo ${this.level.combo}`);
+            const fever = this.level.combo >= 5;
+            this.updateHudValue('combo', this.hudCombo, this.level.combo > 0 ? `${fever ? 'FEVER ' : ''}${this.level.combo}x` : '—', `Combo ${this.level.combo}`);
+            this.hudComboItem?.classList.toggle('is-fever', fever);
+        }
+
+        if (this.level?.player) {
+            const cooldown = Math.max(0, this.level.player.dashCooldown);
+            const ready = cooldown <= 0;
+            const readiness = ready ? 1 : Math.max(0, 1 - cooldown);
+            this.updateHudValue('dash', this.hudDash, ready ? 'READY' : `${cooldown.toFixed(1)}s`, ready ? 'Dash ready' : `Dash ready in ${cooldown.toFixed(1)} seconds`);
+            if (this.hudDashMeter) this.hudDashMeter.style.transform = `scaleX(${readiness})`;
         }
 
         if (this.hudPower && this.level?.player) {
@@ -495,9 +537,9 @@ export class CanvasDisplay {
             for (const offset of [-period, 0, period]) {
                 const x = baseX + offset;
                 if (x + building.w < 0 || x > period) continue;
-                context.fillStyle = '#0a0015';
+                context.fillStyle = this.theme.wall;
                 context.fillRect(x, horizon - building.h, building.w, building.h);
-                context.fillStyle = 'rgba(255, 0, 255, 0.5)';
+                context.fillStyle = `${this.theme.skyline}80`;
                 for (let windowY = 0; windowY < building.h - 10; windowY += 12) {
                     for (let windowX = 4; windowX < building.w - 4; windowX += 8) {
                         if (Math.sin(building.x * 7 + windowX * 3 + windowY * 5) > 0.1) {
@@ -505,10 +547,10 @@ export class CanvasDisplay {
                         }
                     }
                 }
-                context.strokeStyle = 'rgba(255, 0, 255, 0.3)';
+                context.strokeStyle = `${this.theme.skyline}66`;
                 context.lineWidth = 1;
                 context.shadowBlur = 8;
-                context.shadowColor = '#ff00ff';
+                context.shadowColor = this.theme.skyline;
                 context.beginPath();
                 context.moveTo(x, horizon - building.h);
                 context.lineTo(x + building.w, horizon - building.h);
@@ -546,7 +588,7 @@ export class CanvasDisplay {
 
         // Glow
         this.cx.shadowBlur = 40;
-        this.cx.shadowColor = "#ff00ff";
+        this.cx.shadowColor = this.theme.secondary;
         this.cx.beginPath();
         this.cx.arc(cx, cy, radius, Math.PI, 0);
         this.cx.fill();
@@ -566,10 +608,10 @@ export class CanvasDisplay {
         this.cx.fillStyle = this.gradients.floor;
         this.cx.fillRect(0, horizon, width, height - horizon);
 
-        this.cx.strokeStyle = "rgba(0, 255, 255, 0.3)";
+        this.cx.strokeStyle = `${this.theme.primary}66`;
         this.cx.lineWidth = 1.5;
         this.cx.shadowBlur = 8;
-        this.cx.shadowColor = "#00ffff";
+        this.cx.shadowColor = this.theme.primary;
 
         // Radiating lines from vanishing point
         const spacing = 100;
@@ -642,7 +684,7 @@ export class CanvasDisplay {
         if (!player.trailPositions || player.trailPositions.length === 0) return;
 
         this.cx.save();
-        const color = player.isDashing ? '#00ffff' : '#ff00ff';
+        const color = player.isDashing ? this.theme.primary : this.theme.secondary;
         player.trailPositions.forEach((trail, i) => {
             const opacity = (trail.time / 0.2) * 0.25;
             const x = (trail.x - this.viewport.left) * this.scale;
@@ -871,7 +913,7 @@ export class CanvasDisplay {
         this.cx.closePath();
 
         // -- FILL --
-        this.cx.fillStyle = "#0a0a0a";
+        this.cx.fillStyle = this.theme.wall;
         this.cx.fill();
 
         // -- STROKE (Exposed edges only) --
@@ -879,10 +921,10 @@ export class CanvasDisplay {
         // This gives a cleaner "connected" look than stroking the whole cell path
 
         this.cx.save();
-        this.cx.strokeStyle = "#00ffff";
+        this.cx.strokeStyle = this.theme.primary;
         this.cx.lineWidth = 2;
         this.cx.shadowBlur = 15;
-        this.cx.shadowColor = "#00ffff";
+        this.cx.shadowColor = this.theme.primary;
         this.cx.lineCap = "round";
 
         this.cx.beginPath();
@@ -959,7 +1001,7 @@ export class CanvasDisplay {
         this.cx.save();
 
         // Base fill
-        this.cx.fillStyle = "#ff0055";
+        this.cx.fillStyle = this.theme.hazard;
         this.cx.fillRect(x, y, size, size);
 
         // Animated waves/plasma
@@ -974,7 +1016,7 @@ export class CanvasDisplay {
 
         this.cx.fillStyle = `rgb(${r}, ${g}, ${b})`;
         this.cx.shadowBlur = 15;
-        this.cx.shadowColor = "#ff0055";
+        this.cx.shadowColor = this.theme.hazard;
 
         // Draw fluid top
         const topOffset = Math.sin(tileX * 1 + t * 2) * 5;
@@ -1151,6 +1193,8 @@ export class CanvasDisplay {
                 this.drawSpring(x, y, width, height, actor.compressed);
             } else if (actor.type === "bone") {
                 this.drawBone(x, y, width, height);
+            } else if (actor.type === "goldenbone") {
+                this.drawGoldenBone(x, y, width, height, actor);
             } else if (actor.type === "spike") {
                 this.drawSpike(x, y, width, height);
             } else if (actor.type === "patrol") {
@@ -1493,6 +1537,41 @@ export class CanvasDisplay {
         this.cx.arc(0, 0, size / 3, 0, Math.PI * 2);
         this.cx.fill();
 
+        this.cx.restore();
+    }
+
+    drawGoldenBone(x, y, width, height, actor) {
+        this.cx.save();
+        const floatY = Math.sin(actor.wobble) * 6;
+        const pulse = 1 + Math.sin(this.animationTime * 9) * 0.12;
+        this.cx.translate(x + width / 2, y + height / 2 + floatY);
+        this.cx.rotate(-this.animationTime * 1.7);
+        this.cx.scale(pulse, pulse);
+
+        const radius = width * 0.72;
+        this.cx.strokeStyle = this.theme.accent;
+        this.cx.lineWidth = 2;
+        this.cx.shadowBlur = 28;
+        this.cx.shadowColor = this.theme.accent;
+        this.cx.beginPath();
+        for (let point = 0; point < 10; point++) {
+            const angle = -Math.PI / 2 + point * Math.PI / 5;
+            const distance = point % 2 === 0 ? radius : radius * 0.42;
+            const px = Math.cos(angle) * distance;
+            const py = Math.sin(angle) * distance;
+            if (point === 0) this.cx.moveTo(px, py);
+            else this.cx.lineTo(px, py);
+        }
+        this.cx.closePath();
+        this.cx.fillStyle = '#fff3a3';
+        this.cx.fill();
+        this.cx.stroke();
+
+        this.cx.fillStyle = this.theme.secondary;
+        this.cx.shadowColor = this.theme.secondary;
+        this.cx.beginPath();
+        this.cx.arc(0, 0, width * 0.18, 0, Math.PI * 2);
+        this.cx.fill();
         this.cx.restore();
     }
 
