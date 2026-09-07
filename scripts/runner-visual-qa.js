@@ -82,6 +82,21 @@ export function previewZipline(distance=700,reducedMotion=false) {
   }
   return {distance:run.distance,zipline:run.zipline,y:run.y,hearts:run.hearts,...view.diagnostics()};
 }
+export function posePauseCheck() {
+  const canvas=document.createElement("canvas");
+  canvas.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;z-index:9999";document.body.append(canvas);
+  const run=createRun(1989),view=createView(canvas);
+  act(run,"jump");
+  for(let i=0;i<20;i++){step(run,1/120);view.draw(run,run.time,"playing",false,1/120,1);}
+  const before=view.diagnostics().legAngles;
+  for(let i=0;i<60;i++)view.draw(run,run.time,"paused",false,1/60,1);
+  const paused=view.diagnostics().legAngles;
+  if(JSON.stringify(before)!==JSON.stringify(paused))throw new Error("Leg transitions continued during pause");
+  view.draw(run,run.time,"playing",false,1/60,1);
+  const resumed=view.diagnostics().legAngles;
+  if(JSON.stringify(paused)===JSON.stringify(resumed))throw new Error("Leg transition did not resume");
+  return {before,paused,resumed};
+}
 export async function audioCheck() {
   const results=[];
   for(const [name,notes] of Object.entries(CUES)) {

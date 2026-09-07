@@ -5,7 +5,7 @@ import { LANES, PICKUPS, seededRandom } from "./world.js";
 import { routeOffset, routeHeading } from "./route.js";
 import { PUPPIES } from "./collection.js";
 import { REGIONS, regionAt, regionBlend } from "./regions.js";
-import { puppyPose } from "./puppy-pose.js";
+import { puppyPose, smoothLegAngles } from "./puppy-pose.js";
 import { isBridge } from "./bridges.js";
 import { ziplineAt, ZIPLINE_HEIGHT } from "./ziplines.js";
 
@@ -585,6 +585,7 @@ export function createView(canvas) {
         lean = 0;
         cameraX = run.x;
         cameraLift = 0;
+        for (const leg of legs) leg.rotation.x = 0;
       }
       if (state === "playing" || menu) animationTime += dt;
       time = animationTime;
@@ -642,7 +643,10 @@ export function createView(canvas) {
       const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:y>.1,sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline)});
       dog.scale.y = pose + personality.breathe;
       dog.visible = true;
-      for (let i = 0; i < legs.length; i++) legs[i].rotation.x = personality.legs[i];
+      if (state === "playing" || menu) {
+        const angles=smoothLegAngles(legs.map(leg=>leg.rotation.x),personality.legs,dt);
+        for (let i = 0; i < legs.length; i++) legs[i].rotation.x = angles[i];
+      }
       for (const eye of eyes) eye.scale.y = personality.blink;
       for (const {ear,side} of ears) ear.rotation.x = personality.ears*side;
       cape.rotation.x = -.14 + personality.cape;
@@ -768,7 +772,7 @@ export function createView(canvas) {
       renderer.render(scene, camera);
     },
     diagnostics() {
-      return {geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,activeObjects:active.size,pooledObjects:Object.values(pools).reduce((sum,items)=>sum+items.length,0)};
+      return {geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,activeObjects:active.size,pooledObjects:Object.values(pools).reduce((sum,items)=>sum+items.length,0),legAngles:legs.map(leg=>leg.rotation.x)};
     },
   };
 }
