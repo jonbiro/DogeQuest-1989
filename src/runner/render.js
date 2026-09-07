@@ -90,7 +90,7 @@ export function createView(canvas) {
       part.userData.bridge = true;
       return part;
     };
-    bridgeBox("#327f91", 0, -1.12, 0, 70, .08, 5.4);
+    bridgeBox("#327f91", 0, -1.12, 0, 70, .08, 5.4).userData.water = true;
     for (let plank = 0; plank < 6; plank++)
       bridgeBox(plank % 2 ? "#b77c4c" : "#c9915e", 0, .02, -2.08 + plank * .833, 7.8, .22, .79);
     for (const x of [-4.05, 4.05]) {
@@ -210,6 +210,7 @@ export function createView(canvas) {
             start: 10,
             road: true,
             bridge: item.userData.bridge === true,
+            water: item.userData.water === true,
           });
       });
     for (const group of decorations)
@@ -594,7 +595,7 @@ export function createView(canvas) {
           const bridge = !menu && isBridge(distance-z);
           if ((entry.road && entry.bridge !== bridge) || (!entry.road && bridge)) instanceMatrix.scale(bendScale.set(0,0,0));
           if(entry.region !== undefined && entry.region !== region) instanceMatrix.scale(bendScale.set(0,0,0));
-          if(entry.road && gaps.some(gap => Math.abs(distance-z-gap.at)<.1)) instanceMatrix.scale(bendScale.set(0,0,0));
+          if(entry.road && !entry.water && gaps.some(gap => Math.abs(distance-z-gap.at)<.1)) instanceMatrix.scale(bendScale.set(0,0,0));
           if(entry.road || entry.region === undefined) instanced.setColorAt(i,entry.bridge ? entry.color : entry.colors[region]);
           instanced.setMatrixAt(i, instanceMatrix);
         });
