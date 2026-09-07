@@ -2,6 +2,7 @@ import { createRun, act, step } from "./world.js";
 import { createView } from "./render.js";
 import { UPGRADES, levels, price, purchase } from "./progression.js";
 import { missionFor, missionProgress, claimMission } from "./missions.js";
+import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, awardPrizes } from "./collection.js";
 const $ = (id) => document.getElementById(id);
 let run = createRun(),
   state = "menu",
@@ -21,6 +22,7 @@ let saved = {
   credits: 0,
   challenges: 0,
   upgrades: levels(),
+  collection: collectionFrom(),
 };
 try {
   const value = JSON.parse(localStorage.getItem("biscuit-dash-v1"));
@@ -28,11 +30,14 @@ try {
     if (key !== "upgrades" && Number.isFinite(value?.[key]) && value[key] >= 0)
       saved[key] = value[key];
   saved.upgrades = levels(value?.upgrades);
+  saved.collection = collectionFrom(value?.collection);
   saved.challenges = Math.floor(saved.challenges);
 } catch {
   /* A run works without storage. */
 }
 function updateRecords() {
+  $("buddy").querySelector("strong").textContent = `${PUPPIES[saved.collection.puppy].name}.`;
+  $("buddy").querySelector("p").textContent = PUPPIES[saved.collection.puppy].description;
   $("best").innerHTML =
     `${Math.floor(saved.best).toLocaleString()}<span> pts</span>`;
   $("bank").textContent = Math.floor(saved.bones).toLocaleString();
@@ -41,6 +46,40 @@ function updateRecords() {
   const mission = missionFor(saved.challenges);
   $("mission-preview").textContent =
     `${mission.title}: ${mission.target} ${mission.unit} in one run · +${mission.reward} pts`;
+}
+function kennel() {
+  showOverlay("kennel");
+  $("overlay-label").textContent = "YOUR VERY GOOD CREW";
+  $("overlay-title").textContent = "The puppy clubhouse.";
+  $("overlay-copy").textContent = `${Math.floor(saved.credits).toLocaleString()} points · ${saved.collection.gifts} gifts banked. Outfits and puppies are cosmetic; your upgrades work with everyone.`;
+  $("overlay-primary").textContent = "Run with your puppy ↗";
+  const content = $("collection");
+  content.replaceChildren();
+  for (const [kind, catalog, title] of [["puppy", PUPPIES, "Meet the puppies"], ["costume", COSTUMES, "Dress for adventure"]]) {
+    const heading = document.createElement("h3");
+    heading.textContent = title;
+    content.append(heading);
+    for (const [id, item] of Object.entries(catalog)) {
+      const row = document.createElement("div"), copy = document.createElement("p"), button = document.createElement("button");
+      const owned = saved.collection[kind === "puppy" ? "puppies" : "costumes"].includes(id);
+      copy.textContent = `${item.name}${item.breed ? ` · ${item.breed}` : ""} — ${item.description}`;
+      button.dataset[kind] = id;
+      button.textContent = saved.collection[kind] === id ? "Equipped" : owned ? "Equip" : item.prize ? "Prize locked" : `${item.cost.toLocaleString()} pts`;
+      button.disabled = saved.collection[kind] === id || (!owned && (item.prize || saved.credits < item.cost));
+      button.onclick = () => {
+        if (equipOrBuy(saved, kind, id)) {
+          persist(); updateRecords(); kennel(); tone(880, .15);
+        }
+      };
+      row.append(copy, button); content.append(row);
+    }
+  }
+  const heading = document.createElement("h3"); heading.textContent = "Your prize cabinet"; content.append(heading);
+  for (const prize of PRIZES) {
+    const copy = document.createElement("p");
+    copy.textContent = `${saved.collection.prizes.includes(prize.id) ? "✓ Earned" : "◇ To discover"} · ${prize.name} — ${prize.description}${prize.points ? ` +${prize.points} pts.` : " Unlocks an outfit."}`;
+    content.append(copy);
+  }
 }
 function persist() {
   try {
@@ -117,10 +156,10 @@ function setState(next) {
   $("menu").hidden = state !== "menu";
   $("buddy").hidden = state !== "menu";
   $("footer").hidden = state !== "menu";
-  $("hud").hidden = ["menu", "help", "shop"].includes(state);
+  $("hud").hidden = ["menu", "help", "shop", "kennel"].includes(state);
   $("controls").hidden = state !== "playing";
   $("pause-button").hidden = state !== "playing";
-  $("overlay").hidden = !["paused", "ended", "help", "shop"].includes(state);
+  $("overlay").hidden = !["paused", "ended", "help", "shop", "kennel"].includes(state);
   const modal = !$("overlay").hidden;
   $("scene").inert = state !== "playing";
   document.querySelector("header").inert = modal;
@@ -130,6 +169,7 @@ function setState(next) {
 }
 function start() {
   run = createRun(Date.now(), saved.upgrades);
+  run.appearance = { ...saved.collection };
   currentMission = missionFor(saved.challenges);
   missionAnnounced = false;
   taughtObstacles = false;
@@ -139,6 +179,7 @@ function start() {
   tone(440);
 }
 function showOverlay(kind) {
+  $("collection").hidden = kind !== "kennel";
   $("upgrades").hidden = kind !== "shop";
   $("results").hidden = kind !== "ended";
   $("instructions").hidden = kind !== "help";
@@ -184,11 +225,14 @@ function finish() {
   saved.bones += run.bones;
   saved.credits += run.score;
   const reward = claimMission(saved, run, currentMission);
+  const prizes = awardPrizes(saved, run);
   $("overlay-copy").textContent +=
     ` +${run.score.toLocaleString()} upgrade points earned. Spend them at camp.`;
   if (reward)
     $("overlay-copy").textContent +=
       ` Challenge complete: +${reward} extra points!`;
+  if (run.gifts) $("overlay-copy").textContent += ` ${run.gifts} gift boxes banked.`;
+  if (prizes.length) $("overlay-copy").textContent += ` Prizes earned: ${prizes.map(p => p.name).join(", ")}! Visit the clubhouse.`;
   persist();
   updateRecords();
   tone(180, 0.3);
@@ -196,6 +240,7 @@ function finish() {
 $("play").onclick = start;
 $("help").onclick = () => showOverlay("help");
 $("shop").onclick = shop;
+$("kennel").onclick = kennel;
 $("pause-button").onclick = pause;
 $("home").onclick = () => {
   setState("menu");
@@ -385,6 +430,7 @@ function frame(now) {
         toast("Treasure gem! +250 points");
         tone(990, 0.2);
       }
+      if (event === "gift") { toast("Puppy present! +100 points. Finish this run to bank your gift."); tone(1040, .2); }
       if (event === "double") {
         toast("Golden bonus! Double bone points for 10 seconds.");
         tone(880, 0.2);
@@ -466,7 +512,7 @@ function frame(now) {
   }
   if (time > toastUntil) $("toast").textContent = "";
   if (view)
-    view.draw(run, time, state, reducedMotion, dt, accumulator / (1 / 120));
+    view.draw(run, time, state, reducedMotion, dt, accumulator / (1 / 120), saved.collection);
   requestAnimationFrame(frame);
 }
 $("play").focus({ preventScroll: true });

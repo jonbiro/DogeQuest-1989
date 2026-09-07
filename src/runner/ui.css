@@ -234,24 +234,24 @@ h1 em {
   order: 3;
   color: var(--lime);
 }
-#upgrades {
+#upgrades, #collection {
   max-height: 42svh;
   overflow-y: auto;
   text-align: left;
 }
-#upgrades > div {
+#upgrades > div, #collection > div {
   display: flex;
   align-items: center;
   gap: 14px;
   border-bottom: 1px solid #ffffff22;
   padding: 10px 0;
 }
-#upgrades p {
+#upgrades p, #collection p {
   flex: 1;
   font-size: 12px;
   line-height: 1.6;
 }
-#upgrades button {
+#upgrades button, #collection button {
   min-width: 95px;
   min-height: 44px;
   border: 1px solid #dcf78c66;
@@ -261,7 +261,7 @@ h1 em {
   padding: 8px;
   font-size: 12px;
 }
-#upgrades button:disabled {
+#upgrades button:disabled, #collection button:disabled {
   background: transparent;
   color: #b6cbc0;
   cursor: default;
@@ -755,7 +755,7 @@ kbd {
   }
   #buddy {
     right: 8%;
-    bottom: 20%;
+    bottom: 11%;
   }
   #buddy > span {
     display: none;

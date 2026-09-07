@@ -11,7 +11,7 @@ export function seededRandom(seed) {
 }
 import { levels } from "./progression.js";
 export const HAZARDS = ["rock", "log", "arch", "branch", "gate"];
-export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart"];
+export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart", 'gift'];
 export function createRun(seed = Date.now(), upgrades = {}) {
   const run = {
     seed,
@@ -37,6 +37,7 @@ export function createRun(seed = Date.now(), upgrades = {}) {
     combo: 0,
     bestCombo: 0,
     clears: 0,
+    gifts: 0,
     score: 0,
     ended: false,
     objects: [],
@@ -82,6 +83,7 @@ export function fillTrack(run) {
         at + 15,
       );
     run.row++;
+    if (run.row % 9 === 0) add(run,'gift',safe,at+19);
     run.nextRow += (actionRow ? 42 : 26) + run.random() * 6;
   }
 }
@@ -176,6 +178,7 @@ export function step(run, dt) {
       if (object.type === "gem") run.bonusPoints += 250;
       if (object.type === "double") run.double = 10;
       if (object.type === "heart") run.hearts = Math.min(3, run.hearts + 1);
+      if (object.type === 'gift') { run.gifts++;run.bonusPoints+=100; }
       run.events.push(object.type);
       run.effects.push({
         id: object.id,

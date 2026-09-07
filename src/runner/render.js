@@ -3,6 +3,7 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { LANES, PICKUPS, seededRandom } from "./world.js";
 import { routeOffset, routeHeading } from "./route.js";
+import { PUPPIES } from "./collection.js";
 
 // Shared low-poly geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -190,14 +191,16 @@ export function createView(canvas) {
   box(dog, "#f2c67b", 0, 1.2, -0.62, 0.95, 0.85, 0.9);
   box(dog, "#ffe0a1", 0, 1.06, -1.13, 0.66, 0.42, 0.4);
   box(dog, "#243b33", 0, 1.22, -1.36, 0.26, 0.2, 0.12);
+  const ears = [];
   for (const side of [-1, 1]) {
-    box(dog, "#e9ac59", side * 0.35, 1.85, -0.55, 0.26, 0.62, 0.32).rotation.z =
-      -side * 0.15;
-    box(dog, "#b97847", side * 0.35, 1.87, -0.73, 0.13, 0.36, 0.04);
+    const ear = box(dog, "#e9ac59", side * 0.35, 1.85, -0.55, 0.26, 0.62, 0.32);
+    ear.rotation.z = -side * 0.15;
+    const inner = box(dog, "#b97847", side * 0.35, 1.87, -0.73, 0.13, 0.36, 0.04);
+    ears.push({ear, inner, side});
     box(dog, "#20352d", side * 0.25, 1.39, -1.082, 0.11, 0.15, 0.025);
     box(dog, "#fff7db", side * 0.25 - 0.02, 1.43, -1.1, 0.035, 0.05, 0.02);
   }
-  box(dog, "#ed734b", 0, 0.95, -0.26, 0.93, 0.25, 0.3);
+  const collar = box(dog, "#ed734b", 0, 0.95, -0.26, 0.93, 0.25, 0.3);
   const scarf = box(dog, "#d85235", 0.48, 0.82, 0.15, 0.13, 0.38, 0.85);
   scarf.rotation.z = -0.2;
   const legs = [];
@@ -216,6 +219,50 @@ export function createView(canvas) {
   box(tail, "#db994e", 0, 0.24, 0.16, 0.25, 0.55, 0.3);
   box(tail, "#ffe3b1", 0, 0.57, 0.16, 0.27, 0.2, 0.3);
   dog.add(tail);
+  const furMeshes = [];
+  dog.traverse(item => {
+    if (item.isMesh) furMeshes.push({item, color: `#${item.material.color.getHexString()}`});
+  });
+  const spots = new THREE.Group(); dog.add(spots);
+  for (const side of [-1, 1]) {
+    ball(spots, "#293a43", side * .414, .95, .3, .04, .22, .29);
+    ball(spots, "#293a43", side * .414, .75, -.1, .04, .12, .16);
+  }
+  ball(spots, "#293a43", -.22, 1.34, -1.079, .18, .22, .035);
+  const outfits = Object.fromEntries(["explorer", "hero", "raincoat", "royal", "party"].map(id => {
+    const group = new THREE.Group(); dog.add(group); return [id, group];
+  }));
+  box(outfits.explorer, "#8c673c", 0, 1.68, -.62, 1.12, .1, 1.02);
+  box(outfits.explorer, "#cba96e", 0, 1.84, -.55, .65, .32, .55);
+  box(outfits.explorer, "#687e4b", 0, 1.28, .28, .75, .36, .7);
+  box(outfits.explorer, "#e7c984", 0, 1.48, .3, .14, .04, .67);
+  const cape = box(outfits.hero, "#3988e8", 0, 1.23, .52, 1.07, .09, 1.48);
+  cape.rotation.x = -.14;
+  ball(outfits.hero, "#ffe577", 0, 1.33, .24, .18, .035, .18);
+  box(outfits.raincoat, "#ffd34e", 0, .91, .16, .94, .61, 1.34);
+  box(outfits.raincoat, "#fff1a0", 0, 1.24, .12, .08, .04, 1.25);
+  box(outfits.royal, "#f8c648", 0, 1.69, -.58, .7, .14, .65);
+  for (const x of [-.25, 0, .25]) cone(outfits.royal, "#ffe286", x, 1.9, -.65, .13, .38, .13);
+  cone(outfits.party, "#d97cf1", 0, 1.97, -.55, .36, .72, .36);
+  ball(outfits.party, "#fff0a0", 0, 2.34, -.55, .12, .12, .12);
+  let appearanceKey = "";
+  function dress(appearance = {}) {
+    const key = `${appearance.puppy}:${appearance.costume}`;
+    if (key === appearanceKey) return;
+    appearanceKey = key;
+    const puppy = PUPPIES[appearance.puppy] || PUPPIES.biscuit;
+    const palette = {"#d89043":puppy.fur,"#e9ac59":puppy.fur,"#c7823d":puppy.fur,"#db994e":puppy.fur,"#f2c67b":puppy.head,"#ffe0a1":puppy.muzzle,"#ffe3b1":puppy.paws};
+    for (const {item,color} of furMeshes) if (palette[color]) item.material = mat(palette[color]);
+    for (const {ear,inner,side} of ears) {
+      const floppy = puppy.ears === "floppy";
+      ear.position.set(side * (floppy ? .53 : .35), floppy ? 1.38 : 1.85, -.55);
+      ear.rotation.z = side * (floppy ? .15 : -.15);
+      inner.visible = !floppy;
+    }
+    spots.visible = !!puppy.spots;
+    collar.visible = scarf.visible = !appearance.costume || appearance.costume === "scarf";
+    for (const [id, group] of Object.entries(outfits)) group.visible = appearance.costume === id;
+  }
   const shadowCanvas = document.createElement("canvas");
   shadowCanvas.width = shadowCanvas.height = 64;
   const shadowContext = shadowCanvas.getContext("2d");
@@ -366,6 +413,11 @@ export function createView(canvas) {
     0.25,
   );
   heartTip.rotation.z = Math.PI / 4;
+  templates.gift = new THREE.Group();
+  box(templates.gift, "#bd77e9", 0, 0, 0, .85, .8, .75);
+  box(templates.gift, "#fff0a1", 0, 0, 0, .16, .83, .78);
+  box(templates.gift, "#fff0a1", 0, .08, 0, .88, .15, .78);
+  for (const side of [-1,1]) ball(templates.gift, "#ffe89b", side * .19, .48, 0, .23, .14, .13);
   const haloGeometry = new THREE.TorusGeometry(0.86, 0.022, 6, 40);
   for (const type of PICKUPS.filter((type) => type !== "bone")) {
     const halo = new THREE.Mesh(
@@ -404,8 +456,9 @@ export function createView(canvas) {
     instanceMatrix = new THREE.Matrix4();
   const bendScale = new THREE.Vector3();
   return {
-    draw(run, time, state, reducedMotion, dt, alpha = 1) {
-      const menu = ["menu", "help", "shop"].includes(state);
+    draw(run, time, state, reducedMotion, dt, alpha = 1, collection) {
+      const menu = ["menu", "help", "shop", "kennel"].includes(state);
+      dress(menu ? collection : run.appearance);
       if (visualRun !== run) {
         // IDs restart on a new route; never reuse an old obstacle under a new type.
         for (const item of active.values()) {
