@@ -699,5 +699,8 @@ export function createView(canvas) {
       }
       renderer.render(scene, camera);
     },
+    diagnostics() {
+      return {geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,activeObjects:active.size,pooledObjects:Object.values(pools).reduce((sum,items)=>sum+items.length,0)};
+    },
   };
 }

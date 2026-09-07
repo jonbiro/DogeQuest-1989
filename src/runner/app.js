@@ -3,6 +3,7 @@ import { createView } from "./render.js";
 import { UPGRADES, levels, price, purchase } from "./progression.js";
 import { missionFor, missionProgress, claimMission } from "./missions.js";
 import {REGIONS,regionAt} from "./regions.js";
+import {preferencesFrom} from "./preferences.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, awardPrizes } from "./collection.js";
 const $ = (id) => document.getElementById(id);
 let run = createRun(),
@@ -24,6 +25,7 @@ let saved = {
   challenges: 0,
   upgrades: levels(),
   collection: collectionFrom(),
+  preferences: preferencesFrom(null,reducedMotion),
 };
 try {
   const value = JSON.parse(localStorage.getItem("biscuit-dash-v1"));
@@ -32,10 +34,13 @@ try {
       saved[key] = value[key];
   saved.upgrades = levels(value?.upgrades);
   saved.collection = collectionFrom(value?.collection);
+  saved.preferences = preferencesFrom(value?.preferences,reducedMotion);
   saved.challenges = Math.floor(saved.challenges);
 } catch {
   /* A run works without storage. */
 }
+sound=saved.preferences.sound;
+reducedMotion=saved.preferences.reducedMotion;
 function updateRecords() {
   $("buddy").querySelector("strong").textContent = `${PUPPIES[saved.collection.puppy].name}.`;
   $("buddy").querySelector("p").textContent = PUPPIES[saved.collection.puppy].description;
@@ -255,13 +260,20 @@ $("overlay-primary").onclick = () => {
 };
 $("audio").onclick = () => {
   sound = !sound;
+  saved.preferences.sound=sound;
+  persist();
   $("audio").setAttribute("aria-pressed", String(sound));
   $("audio").setAttribute("aria-label", sound ? "Mute sound" : "Enable sound");
   tone(660);
 };
+$("audio").setAttribute("aria-pressed", String(sound));
+$("audio").setAttribute("aria-label", sound ? "Mute sound" : "Enable sound");
 $("motion").setAttribute("aria-pressed", String(reducedMotion));
+$("motion").textContent = reducedMotion ? "Less motion: on" : "Less motion";
 $("motion").onclick = () => {
   reducedMotion = !reducedMotion;
+  saved.preferences.reducedMotion=reducedMotion;
+  persist();
   $("motion").setAttribute("aria-pressed", String(reducedMotion));
   $("motion").textContent = reducedMotion ? "Less motion: on" : "Less motion";
 };
