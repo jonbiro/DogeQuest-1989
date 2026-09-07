@@ -1,4 +1,5 @@
-import { lstat, readdir } from "node:fs/promises";
+import { lstat, readdir, readFile } from "node:fs/promises";
+import {createHash} from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { allowedEntries, distDirectory, projectRoot } from "./build.js";
@@ -30,6 +31,13 @@ export async function verifyDist() {
   }
 
   await assertNoSymlinks(distDirectory);
+  const runnerHtml=await readFile(path.join(distDirectory,"runner/index.html"),"utf8");
+  for(const asset of ["game.js","style.css"]) {
+    const contents=await readFile(path.join(distDirectory,"runner",asset));
+    const hash=createHash("sha256").update(contents).digest("hex").slice(0,16);
+    if(!runnerHtml.includes(`"${asset}?v=${hash}"`))throw new Error(`Stale runner asset reference: ${asset}`);
+    if(asset==="style.css" && contents.toString().includes("@import"))throw new Error("Runner styles must be bundled for cache versioning");
+  }
   for (const file of [
     "runner/index.html",
     "runner/game.js",

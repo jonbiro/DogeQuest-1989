@@ -1,0 +1,34 @@
+export const CUES = {
+  yip:[{from:320,to:620,at:0,duration:.1,type:"triangle"},{from:560,to:260,at:.11,duration:.13,type:"triangle"}],
+  reward:[{from:523,to:523,at:0,duration:.14,type:"triangle"},{from:659,to:659,at:.08,duration:.14,type:"triangle"},{from:784,to:1046,at:.16,duration:.23,type:"sine"}],
+  zoomies:[{from:220,to:880,at:0,duration:.22,type:"triangle"},{from:440,to:1320,at:.12,duration:.25,type:"sine"}],
+  jump:[{from:300,to:700,at:0,duration:.12,type:"sine"}],
+  finish:[{from:523,to:440,at:0,duration:.15,type:"triangle"},{from:392,to:330,at:.17,duration:.2,type:"triangle"}],
+};
+const voices=new WeakMap();
+export function playNotes(context,notes) {
+  const now=context.currentTime;
+  if(!voices.has(context))voices.set(context,new Set());
+  const active=voices.get(context);
+  for(const note of notes) {
+    if(active.size>=12)break;
+    const osc=context.createOscillator(),gain=context.createGain();
+    const start=now+(note.at||0),end=start+note.duration;
+    osc.type=note.type||"sine";
+    osc.frequency.setValueAtTime(note.from,start);
+    osc.frequency.exponentialRampToValueAtTime(note.to||note.from,end);
+    gain.gain.setValueAtTime(.0001,start);
+    gain.gain.linearRampToValueAtTime(.035,start+.008);
+    gain.gain.exponentialRampToValueAtTime(.0001,end);
+    osc.connect(gain);gain.connect(context.destination);
+    active.add(osc);
+    osc.onended=()=>{osc.disconnect();gain.disconnect();active.delete(osc);};
+    osc.start(start);osc.stop(end);
+  }
+}
+export function stopSound(context) {
+  const active=voices.get(context);
+  if(!active)return;
+  for(const osc of active)osc.stop();
+  active.clear();
+}

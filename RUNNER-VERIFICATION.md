@@ -26,6 +26,12 @@ Latest local result with deliberate Scenic and Challenge gate selections: 3 runs
 
 Unit tests cover absent/malformed preferences, sound opt-in, system reduced-motion defaults and explicit player overrides. In an isolated browser, sound-on persisted across reload; reduced motion was toggled off and on, reloaded each time, and both its pressed state and visible label matched the saved value.
 
-## Remaining release-wide evidence
+## Audio and release assets
+
+`audioCheck()` in the local fixture renders all five cues with a real browser OfflineAudioContext and rejects silent, invalid or excessive output. Latest peaks ranged from 0.0334 to 0.0348, with nonzero RMS for every cue. Unit tests verify the 12-voice cap, immediate mute stop calls and node disconnection. This is output validation, not a physical-speaker listening check.
+
+The build bundles runner CSS and adds content-derived revision queries to both the stylesheet and game script. Artifact verification recomputes both hashes and rejects stale HTML references or unbundled CSS imports. The local browser loaded both versioned assets and reached the playable state without errors.
+
+## Outstanding checks
 
 Real-time touch-driven runs, broad viewport checks, sustained frame-time profiling, audio listening checks, storage/context recovery flows and real-time route-choice UI interaction remain to be verified. Do not treat the narrower soak above as proof of these gates.

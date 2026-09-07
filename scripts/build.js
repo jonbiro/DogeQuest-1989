@@ -1,4 +1,5 @@
-import { copyFile, lstat, mkdir, readdir, rm } from "node:fs/promises";
+import { copyFile, lstat, mkdir, readdir, rm, readFile, writeFile } from "node:fs/promises";
+import {createHash} from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as bundle } from "esbuild";
@@ -77,6 +78,14 @@ export async function build() {
     path.join(projectRoot, "node_modules/three/LICENSE"),
     path.join(distDirectory, "runner/THREE-LICENSE.txt"),
   );
+  await bundle({entryPoints:[path.join(projectRoot,"src/runner/ui.css")],outfile:path.join(distDirectory,"runner/style.css"),bundle:true,minify:true});
+  const htmlPath=path.join(distDirectory,"runner/index.html");
+  let html=await readFile(htmlPath,"utf8");
+  for(const asset of ["game.js","style.css"]) {
+    const hash=createHash("sha256").update(await readFile(path.join(distDirectory,"runner",asset))).digest("hex").slice(0,16);
+    html=html.replace(`"${asset}"`,`"${asset}?v=${hash}"`);
+  }
+  await writeFile(htmlPath,html);
 }
 
 if (

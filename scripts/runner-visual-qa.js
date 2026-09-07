@@ -2,6 +2,7 @@
 // the production build never includes this file or exposes mutable run state.
 import {createView} from "../src/runner/render.js";
 import {createRun,step,act,fillTrack,HAZARDS} from "../src/runner/world.js";
+import {CUES,playNotes} from "../src/runner/sound.js";
 export function previewZoomies(reducedMotion=false,distance=0,gap=false) {
   const canvas=document.createElement("canvas");
   canvas.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;z-index:9999";
@@ -55,4 +56,17 @@ export function previewGates() {
   const run=createRun(1989);run.distance=325;run.previous.distance=325;fillTrack(run);
   createView(canvas).draw(run,1,"playing",true,1/60,1);
   return {gateAt:run.choicePending};
+}
+export async function audioCheck() {
+  const results=[];
+  for(const [name,notes] of Object.entries(CUES)) {
+    const context=new window.OfflineAudioContext(1,44100,44100);
+    playNotes(context,notes);
+    const buffer=await context.startRendering(),samples=buffer.getChannelData(0);
+    let peak=0,energy=0;
+    for(const sample of samples){if(!Number.isFinite(sample))throw new Error(`Invalid sample: ${name}`);peak=Math.max(peak,Math.abs(sample));energy+=sample*sample;}
+    if(peak<=0||peak>=.2||energy===0)throw new Error(`Invalid audio output: ${name}`);
+    results.push({name,peak,rms:Math.sqrt(energy/samples.length)});
+  }
+  return results;
 }

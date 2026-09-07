@@ -4,6 +4,7 @@ import { UPGRADES, levels, price, purchase } from "./progression.js";
 import { missionFor, missionProgress, claimMission } from "./missions.js";
 import {REGIONS,regionAt} from "./regions.js";
 import {preferencesFrom} from "./preferences.js";
+import {CUES,playNotes,stopSound} from "./sound.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, awardPrizes } from "./collection.js";
 const $ = (id) => document.getElementById(id);
 let run = createRun(),
@@ -134,20 +135,7 @@ function tone(frequency, duration = 0.08) {
   try {
     audio ??= new (window.AudioContext || window.webkitAudioContext)();
     audio.resume().catch(() => {});
-    const osc = audio.createOscillator(),
-      gain = audio.createGain();
-    osc.type = "sine";
-    osc.frequency.value = frequency;
-    gain.gain.setValueAtTime(0.06, audio.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(audio.destination);
-    osc.start();
-    osc.stop(audio.currentTime + duration);
-    osc.onended = () => {
-      osc.disconnect();
-      gain.disconnect();
-    };
+    playNotes(audio,typeof frequency==="string"?CUES[frequency]:[{from:frequency,duration}]);
   } catch {
     /* Sound is optional. */
   }
@@ -182,7 +170,7 @@ function start() {
   setState("playing");
   $("scene").focus({ preventScroll: true });
   toast("Stay sharp: bones can lead into obstacles. Watch the trail.", 5);
-  tone(440);
+  tone("yip");
 }
 function showOverlay(kind) {
   $("collection").hidden = kind !== "kennel";
@@ -241,7 +229,7 @@ function finish() {
   if (prizes.length) $("overlay-copy").textContent += ` Prizes earned: ${prizes.map(p => p.name).join(", ")}! Visit the clubhouse.`;
   persist();
   updateRecords();
-  tone(180, 0.3);
+  tone("finish");
 }
 $("play").onclick = start;
 $("help").onclick = () => showOverlay("help");
@@ -260,6 +248,7 @@ $("overlay-primary").onclick = () => {
 };
 $("audio").onclick = () => {
   sound = !sound;
+  if(!sound && audio)stopSound(audio);
   saved.preferences.sound=sound;
   persist();
   $("audio").setAttribute("aria-pressed", String(sound));
@@ -424,10 +413,10 @@ function frame(now) {
       if (event === "bone") tone(740 + Math.min(run.combo, 12) * 28, 0.055);
       if (event === "streak") {
         toast(`${run.combo} bones in a row! +100 points`);
-        tone(1000, 0.2);
+        tone("reward");
       }
       if (event === "clear") tone(540, 0.08);
-      if (event === "jump") tone(400, 0.06);
+      if (event === "jump") tone("jump");
       if (event === "magnet") {
         toast(
           `Bone magnet! ${10 + run.upgrades.magnet * 3} seconds of snack magic.`,
@@ -443,8 +432,8 @@ function frame(now) {
         toast("Treasure gem! +250 points");
         tone(990, 0.2);
       }
-      if (event === "gift") { toast("Puppy present! +100 points. Finish this run to bank your gift."); tone(1040, .2); }
-      if (event === "zoomies") { toast("ZOOMIES! 6 seconds of speed. Smash obstacles for +40 points!"); tone(1180,.25); }
+      if (event === "gift") { toast("Puppy present! +100 points. Finish this run to bank your gift."); tone("reward"); }
+      if (event === "zoomies") { toast("ZOOMIES! 6 seconds of speed. Smash obstacles for +40 points!"); tone("zoomies"); }
       if (event === "smash") tone(260,.08);
       if (event === "zoomies-end") toast("Zoomies finished. Back to jumping and sliding!",2);
       if(event==="route-scenic")toast("Scenic trail: fewer obstacles for the next 220 meters.",4);
