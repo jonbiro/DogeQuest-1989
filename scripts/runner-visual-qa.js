@@ -40,6 +40,36 @@ export function previewZoomies(reducedMotion=false,distance=0,gap=false) {
   view.draw(run,run.time,"playing",reducedMotion,1/60,1);
   return {zoomies:run.zoomies,speed:run.speed,bones:run.bones};
 }
+export function powerPreview(reducedMotion=false,combined=false) {
+  const source=document.createElement('canvas');
+  source.style.cssText='position:fixed;left:-1000px;width:360px;height:480px';document.body.append(source);
+  const view=createView(source),run=createRun(1989),samples=[];
+  run.nextRow=99999;
+  const gallery=document.createElement('section');
+  gallery.style.cssText='position:fixed;inset:0;z-index:9999;overflow:auto;background:#102a28;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:8px;color:white';document.body.append(gallery);
+  function capture(label) {
+    view.draw(run,run.time,'playing',reducedMotion,1/60,1);
+    const figure=document.createElement('figure'),canvas=document.createElement('canvas'),caption=document.createElement('figcaption');
+    figure.style.margin='0';canvas.width=270;canvas.height=360;canvas.style.width='100%';
+    canvas.getContext('2d').drawImage(source,0,0,270,360);
+    caption.textContent=label;figure.append(canvas,caption);gallery.append(figure);
+    samples.push({label,bones:run.bones,magnet:run.magnet,zoomies:run.zoomies,shield:run.shield,double:run.double,pulling:run.objects.filter(o=>o.pull&&!o.used).length});
+  }
+  if(!combined) {
+    for(const [id,type] of ['bone','magnet','shield','gem','double','heart','gift','zoomies'].entries()) {
+      run.objects=[{id,type,lane:1,at:12,used:false}];capture(type);
+    }
+  } else {
+    run.objects=['magnet','shield','zoomies','double'].map((type,id)=>({id,type,lane:1,at:.5,used:false}));
+    for(let lane=0;lane<3;lane++)run.objects.push({id:10+lane,type:'bone',lane,at:12,used:false});
+    for(const target of [.1,.4,6.5,10.5]) {
+      while(run.time<target)step(run,1/120);
+      capture(`${target}s · ${run.bones} bones`);
+    }
+    if(samples[0].pulling!==3||samples[0].bones!==0||samples[1].bones!==3||samples[2].zoomies!==0||samples[3].magnet!==0||samples[3].double!==0||samples.some(s=>s.shield!==1))throw new Error('Combined power lifecycle regression');
+  }
+  return {reducedMotion,combined,samples,...view.diagnostics()};
+}
 export function longRunCheck() {
   const canvas=document.createElement("canvas");
   canvas.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;z-index:9999";

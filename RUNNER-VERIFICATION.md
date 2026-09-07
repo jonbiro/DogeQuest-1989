@@ -121,3 +121,9 @@ Broader device/viewport coverage, longer worst-case frame-time profiling and phy
 - Completion now uses one guarded `bankRun()` operation for score, lifetime bones, best-run records, mission points, gifts and prizes. A repeated completion returns the same receipt without paying any component again; unfinished runs cannot bank.
 - All 77 tests pass. Integrated reward tests cover ten repeated completions, an unfinished run and a second completed run that earns another mission and the cumulative-gift outfit without reducing previous records.
 - A fresh browser run ended naturally at 212 meters: 662 score, eight bones, no mission or prize. Results announced a personal best; saved credits were exactly 662 and both lifetime and best-run bones were eight. Reload retained those values and returned to camp without browser errors.
+
+# Pickup matrix and combined power lifecycle
+
+- Inspected real-renderer galleries of all eight pickups (bone, magnet, shield, gem, double points, heart, present, tennis ball). The double-points coin initially resembled Pause; its two bars were replaced with a legible geometric ×2 stamp using shared box geometry and no extra textures.
+- `powerPreview()` places test pickups into the real simulation rather than setting active timers. Normal and reduced-motion runs both show three bones pulling at 0.1 seconds with zero credited, three collected at 0.4 seconds, Zoomies expired at 6.5 seconds, and magnet/double expired at 10.5 seconds. Shield remains one throughout. Assertions reject lifecycle deviations.
+- Four-stage screenshots in both motion modes were inspected for attraction rings, collected-bone disappearance and effect expiry. The local fixture is excluded from release artifacts. These are sampled simulation/render checks, not real-time frame pacing or natural random-spawn frequency evidence.

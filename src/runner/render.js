@@ -461,8 +461,13 @@ export function createView(canvas) {
   ball(templates.gem, "#bf8bff", 0, 0, 0, 0.5, 0.65, 0.4);
   templates.double = new THREE.Group();
   ball(templates.double, "#ffce4f", 0, 0, 0, 0.65, 0.65, 0.22);
-  for (const x of [-0.18, 0.18])
-    box(templates.double, "#784e22", x, 0, 0.24, 0.1, 0.65, 0.07);
+  // A readable ×2 stamp, not two vertical bars resembling Pause.
+  for (const angle of [-Math.PI / 4, Math.PI / 4])
+    box(templates.double, "#784e22", -.23, 0, .24, .07, .32, .07).rotation.z = angle;
+  for (const y of [-.22, 0, .22])
+    box(templates.double, "#784e22", .18, y, .24, .28, .07, .07);
+  box(templates.double, "#784e22", .285, .11, .24, .07, .22, .07);
+  box(templates.double, "#784e22", .075, -.11, .24, .07, .22, .07);
   templates.heart = new THREE.Group();
   for (const x of [-0.19, 0.19])
     ball(templates.heart, "#ff7b95", x, 0.14, 0, 0.3, 0.3, 0.2);

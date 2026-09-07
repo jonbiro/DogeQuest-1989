@@ -32,9 +32,10 @@ group. This supplements rather than replaces keyboard and physical-device QA.
 
 ## Remaining completion work
 
-1. Inspect every current pickup model plus the magnet/shield/Zoomies combined
-   presentation with normal and reduced motion. Retain evidence of actual
-   attraction/collection and expiry, not just static visibility.
+1. Completed after baseline: all eight pickup models and combined
+   magnet/shield/Zoomies/double presentation inspected in normal and reduced
+   motion. The new `powerPreview()` runs actual collection and expiry with
+   assertions; details and the corrected ×2 stamp are in the verification record.
 2. Verify the final published runner through gameplay, natural game-over,
    reward banking, purchase/equip and reload; verify the published root game
    still starts. Match served asset hashes to the release under test.
