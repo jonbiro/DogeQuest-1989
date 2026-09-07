@@ -15,6 +15,7 @@
 }
 #cue {
   position: fixed;
+  width: max-content;
   left: 50%;
   top: 42%;
   transform: translateX(-50%);
@@ -544,7 +545,9 @@ footer .text-button {
 }
 .modal {
   max-height: calc(100svh - 44px);
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   overscroll-behavior: contain;
   background: #173c32;
   border: 1px solid #c9e9b82e;
@@ -555,6 +558,22 @@ footer .text-button {
   max-width: 480px;
   width: 100%;
 }
+.modal-content {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #8eb79b #102a28;
+}
+.modal-actions {
+  flex-shrink: 0;
+}
+.modal-content #upgrades,
+.modal-content #collection {
+  max-height: none;
+  overflow: visible;
+}
 .modal .eyebrow {
   justify-content: center;
 }
@@ -563,7 +582,7 @@ footer .text-button {
   letter-spacing: -1.5px;
   margin: 18px 0 12px;
 }
-.modal > p {
+.modal-content > p {
   font-size: 13px;
   color: #c2d6c6;
   line-height: 1.6;
@@ -573,7 +592,7 @@ footer .text-button {
   width: 100%;
   margin-top: 24px;
 }
-.modal > .text-button {
+.modal-actions > .text-button {
   margin-top: 8px;
 }
 #results {
@@ -903,4 +922,44 @@ kbd {
   .primary:hover {
     transform: none;
   }
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  #power {
+    right: 0;
+    max-width: none;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .power-chip {
+    padding: 6px 8px;
+    font-size: 9px;
+  }
+  .power-chip small { display: none; }
+  .power-chip progress { margin-top: 4px; height: 3px; }
+}
+@media (max-width: 700px) and (orientation: portrait) and (max-height: 740px) {
+  #cue { top: 53%; max-width: 90%; text-align: center; }
+}
+@media (orientation: landscape) and (max-height: 520px) {
+  #hud.has-powers { top: 112px; }
+  #power {
+    position: fixed;
+    top: 60px;
+    left: 4%;
+    right: 4%;
+    max-width: none;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+  }
+  .power-chip { padding: 5px 6px; font-size: 8px; }
+  .power-chip small { display: none; }
+  .power-chip progress { margin-top: 3px; height: 3px; }
+  .run-stats { flex-direction: row; align-items: center; gap: 8px; }
+  .bones { padding: 6px 10px; font-size: 14px; }
+  #hearts { font-size: 15px; }
+  #mission-hud { bottom: 84px; padding: 5px 8px; font-size: 9px; }
+  #route-choice { margin-bottom: 4px; padding: 4px 6px; font-size: 10px; line-height: 1.2; }
+  #mission-progress { margin-top: 4px; }
 }

@@ -241,7 +241,7 @@ function finish() {
     $("overlay-copy").textContent +=
       ` Challenge complete: +${reward} extra points!`;
   if (run.gifts) $("overlay-copy").textContent += ` ${run.gifts} gift boxes banked.`;
-  if (run.ziplines) $("overlay-copy").textContent += ` ${run.ziplines} zipline rides completed (+${run.ziplines * 250} points included in your score).`;
+  if (run.ziplines) $("overlay-copy").textContent += ` ${run.ziplines} zipline ${run.ziplines === 1 ? "ride" : "rides"} completed (+${run.ziplines * 250} points included in your score).`;
   if (prizes.length) $("overlay-copy").textContent += ` Prizes earned: ${prizes.map(p => p.name).join(", ")}! Visit the clubhouse.`;
   persist();
   updateRecords();
@@ -538,6 +538,7 @@ function frame(now) {
       ]
         .filter(Boolean)
         .join("");
+      $("hud").classList.toggle("has-powers", $("power").childElementCount > 0);
     }
     const currentMilestone = Math.floor(run.distance / 250);
     if (!taughtObstacles && run.distance > 65) {

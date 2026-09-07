@@ -15,6 +15,8 @@ Build an original, polished Temple Run 2-style puppy runner. Keep Puppy Quest av
 
 ## Current iteration
 
+An integrated 60-second landscape browser run now verifies all three regions, the zipline and stable frame pacing. Its naturally completed run banked points, gifts and prizes; actual purchases and reload checks verified Pepper, an outfit, the crown and a jump upgrade. This pass found and repaired clipped dialog actions after long results: content now scrolls independently while Run/Back to camp remain visible. The verification record specifies the tested viewports and limits.
+
 Sky Paws ziplines add a distinct aerial traversal mode: jump into the turquoise catch bar, swing between lanes for 18 airborne bones and a gift, and finish the 140-meter ride for 250 points. The first starts at 650 meters and repeats every 1,400 meters between difficulty gates. A missed catch leaves a safe ground route; landing has a clear recovery stretch. Airborne prizes require the ride, and magnets work at the correct height. The camera rises smoothly, the puppy holds a tethered bar, and decorative ruins are cleared from the cable route.
 
 Wooden river crossings now replace the stone trail from 180–280 meters of each 900-meter cycle. Planks and rope rails follow the same curved route; nearby scenery gives way to water, then returns on the far bank. They use the existing instanced batches and preserve obstacle physics. This is environmental variety, not a new traversal mechanic or completion of the remaining set-piece requirement.
