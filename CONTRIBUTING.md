@@ -37,12 +37,12 @@ Run `npm run check`, then manually test the affected behavior in a current deskt
 At minimum, verify:
 
 - the start screen and audio initialization;
-- movement, jumping, dash, pause, restart, and level selection when affected;
-- bone collection, hazards, lives, win/loss overlays, and saved progress when affected;
+- movement, double jumping, running, pause, restart, and continuing a saved adventure;
+- bone collection, hazards, checkpoints, unlimited retries, completion screens, and saved stars;
 - no console errors, broken module paths, or missing assets;
 - readable focus states, usable touch targets, non-color cues, and reasonable behavior with reduced motion when changing UI or effects.
 
-Procedural layouts are random. When reporting a gameplay issue, include the level slot, a concise reproduction sequence, browser/device, input method, and a screenshot or recording if it helps.
+The five trails are handcrafted in `src/rebuild/world.js`. When reporting a gameplay issue, include the trail name, a concise reproduction sequence, browser/device, input method, and a screenshot or recording if it helps.
 
 ## Pull requests
 

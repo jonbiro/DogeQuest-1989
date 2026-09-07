@@ -1,211 +1,178 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Play Puppy Quest 1989, a neon browser platformer with ten themed worlds, golden bones, score combos, speedrun ranks, and touch controls.">
-  <meta name="theme-color" content="#050010">
-  <meta name="referrer" content="no-referrer">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
-  <link rel="canonical" href="https://jonbiro.github.io/DogeQuest-1989/">
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="Puppy Quest 1989">
-  <meta property="og:description" content="Dash across ten neon worlds, chain score combos, find golden bones, and earn speedrun ranks.">
-  <meta property="og:url" content="https://jonbiro.github.io/DogeQuest-1989/">
-  <meta name="twitter:card" content="summary">
-  <title>Puppy Quest 1989</title>
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="manifest" href="site.webmanifest">
-  <link rel="stylesheet" href="css.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-</head>
-
-<body>
-
-  <main class="game-container" aria-labelledby="page-title">
-    <h1 id="page-title" class="sr-only">Puppy Quest 1989</h1>
-    <!-- The Canvas is created by CanvasDisplay.js inside this or appended to body. 
-             Let's give it a dedicated container to be safe. -->
-    <div id="game-wrapper" inert aria-hidden="true">
-      <!-- Canvas will be injected here or found by ID -->
-      <canvas id="gameBoard" role="img" aria-label="Puppy Quest game world" aria-describedby="game-help game-status" tabindex="0">
-        Puppy Quest 1989 requires a browser with Canvas support.
-      </canvas>
-    </div>
-
-    <p id="game-help" class="sr-only">Collect every bone to finish the level. Golden bones award extra points and turbo speed. Move with A and D or the left and right arrow keys. Jump with Space, W, or the up arrow. Press jump again in the air to double jump, Shift to dash, and Escape to pause.</p>
-    <div id="game-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true">Ready to start Puppy Quest 1989.</div>
-
-    <!-- Start Screen Overlay -->
-    <div id="start-screen" class="overlay" role="dialog" aria-modal="true" aria-labelledby="start-title" aria-describedby="start-description" tabindex="-1">
-      <div class="menu-stars" aria-hidden="true"></div>
-      <div class="content start-content">
-        <div class="menu-mark" aria-hidden="true"><span>★</span></div>
-        <p class="eyebrow">THE ARCADE FETCH ADVENTURE</p>
-        <h2 id="start-title">Puppy Quest 1989</h2>
-        <p id="start-description" class="menu-tagline">Dash, double-jump, and combo your way across ten neon worlds.</p>
-
-        <div class="feature-chips" role="list" aria-label="Game features">
-          <span role="listitem">10 WORLDS</span>
-          <span role="listitem">GOLDEN BONES</span>
-          <span role="listitem">TIME RANKS</span>
-        </div>
-
-        <div class="menu-record" id="menu-progress" aria-live="polite">
-          <span>QUEST FILE</span>
-          <strong>1 / 10 WORLDS UNLOCKED</strong>
-        </div>
-
-        <div class="controls">
-          <div class="key-group">
-            <span class="key">A/D + ←/→</span>
-            <span class="action">Move</span>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1,viewport-fit=cover"
+    />
+    <title>Puppy Quest — A little adventure</title>
+    <meta
+      name="description"
+      content="A little dog. A big backyard. Five handcrafted platforming adventures with double jumps, hidden bones, and a place to call home."
+    />
+    <meta name="theme-color" content="#233e33" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'"
+    />
+    <link rel="icon" href="favicon.svg" />
+    <link rel="stylesheet" href="css.css" />
+  </head>
+  <body>
+    <main>
+      <header class="masthead">
+        <a href="./" aria-label="Puppy Quest home"
+          ><span class="brand-paw">✦</span> PUPPY QUEST <small>1989</small></a
+        ><span class="edition">A LITTLE ADVENTURE, REIMAGINED</span
+        ><button id="sound" aria-pressed="true">Sound on</button>
+      </header>
+      <section class="cabinet" aria-label="Puppy Quest game">
+        <div class="screen">
+          <canvas
+            id="world"
+            width="960"
+            height="540"
+            tabindex="0"
+            aria-label="Game world. Move with A and D, jump with Space, jump again in the air, run with Shift, pause with Escape."
+            inert
+          ></canvas>
+          <div id="hud" hidden>
+            <div class="world-label">
+              <span id="world-number">01 / 05</span
+              ><strong id="world-name">The backyard</strong>
+            </div>
+            <div class="hud-right">
+              <span>🦴 <b id="bones">0</b></span
+              ><span id="timer">0s</span
+              ><button id="pause-button" aria-label="Pause game">Ⅱ</button>
+            </div>
+            <progress
+              id="progress"
+              max="1"
+              value="0"
+              aria-label="Distance to home"
+            ></progress>
           </div>
-          <div class="key-group">
-            <span class="key">SPACE/W/↑</span>
-            <span class="action">Jump</span>
-          </div>
+          <section id="menu" class="panel" aria-labelledby="title">
+            <div class="menu-copy">
+              <p class="eyebrow">SMALL PAWS. GREAT BIG WORLD.</p>
+              <h1 id="title">A little dog.<br />A big <em>adventure.</em></h1>
+              <p class="intro">
+                Over the fence, through the woods, and home before dinner. Take
+                the scenic route.
+              </p>
+              <button id="play" class="primary">
+                Let’s go outside <span>↗</span>
+              </button>
+              <button id="continue" class="secondary" hidden>
+                Continue adventure →
+              </button>
+              <p id="saved-progress" class="start-tip" hidden></p>
+              <p class="start-tip">
+                Press Enter to play · No downloads. Just paws.
+              </p>
+            </div>
+            <div class="character-card">
+              <div class="card-top">
+                <span>YOUR ADVENTURE BUDDY</span><span>01</span>
+              </div>
+              <canvas
+                id="portrait"
+                width="190"
+                height="170"
+                aria-label="A golden puppy wearing a red scarf"
+              ></canvas
+              ><strong>Meet Biscuit.</strong>
+              <p>
+                Very brave. Easily distracted.<br />Probably thinking about
+                snacks.
+              </p>
+              <span class="character-tag">100% GOOD DOG</span>
+            </div>
+            <div class="menu-bottom">
+              <span>05 HANDCRAFTED TRAILS</span><span>∞ SECOND CHANCES</span
+              ><span>ONE WAY HOME →</span>
+            </div>
+          </section>
+          <section
+            id="pause"
+            class="panel centered"
+            hidden
+            aria-labelledby="pause-title"
+          >
+            <p class="eyebrow">TAKE A BREATHER</p>
+            <h2 id="pause-title">Paws for a moment.</h2>
+            <p>Your adventure will be right here.</p>
+            <button id="resume" class="primary">Keep exploring →</button
+            ><button id="restart" class="secondary">Restart this trail</button
+            ><button id="quit" class="secondary">Back to the porch</button>
+          </section>
+          <section
+            id="result"
+            class="panel centered"
+            hidden
+            aria-labelledby="result-title"
+          >
+            <p class="eyebrow">TRAIL COMPLETE</p>
+            <div id="stars" class="stars" aria-label="Stars earned"></div>
+            <h2 id="result-title">Very good adventuring.</h2>
+            <p id="result-copy"></p>
+            <dl class="results">
+              <div>
+                <dt>BONES FOUND</dt>
+                <dd id="result-bones"></dd>
+              </div>
+              <div>
+                <dt>TRAIL TIME</dt>
+                <dd id="result-time"></dd>
+              </div>
+              <div>
+                <dt>SECOND CHANCES</dt>
+                <dd id="result-retries"></dd>
+              </div>
+            </dl>
+            <p class="star-guide">
+              ★ Get home · ★ Find 65% of bones · ★ No retries
+            </p>
+            <button id="next" class="primary">Next adventure →</button
+            ><button id="replay" class="secondary">
+              Explore this trail again</button
+            ><button id="result-menu" class="secondary">
+              Back to the porch
+            </button>
+          </section>
         </div>
-
-        <div class="controls-advanced">
-          <p><strong>Double jump</strong> in the air · <strong>Dash</strong> with Shift · <strong>Pause</strong> with Esc</p>
+        <div class="cabinet-bottom">
+          <span class="led"></span
+          ><span id="hint">Made for a little break in your day.</span
+          ><span class="serial">PQ–1989 / 03</span>
         </div>
-
-        <button id="start-btn" type="button" aria-keyshortcuts="Enter Space"><span>BEGIN QUEST</span><span aria-hidden="true">→</span></button>
-        <p class="menu-footnote">Press Enter or tap anywhere · Progress saves locally</p>
-      </div>
-    </div>
-
-    <!-- Mobile Controls -->
-    <nav id="mobile-controls" aria-label="Touch game controls" inert aria-hidden="true">
-      <button id="btn-pause" type="button" aria-label="Pause game">Ⅱ</button>
-      <div class="d-pad">
-        <button id="btn-left" type="button" aria-label="Move left">◀</button>
-        <button id="btn-right" type="button" aria-label="Move right">▶</button>
-      </div>
-      <div class="action-buttons">
-        <button id="btn-dash" type="button">Dash</button>
-        <button id="btn-jump" type="button">Jump</button>
-      </div>
-    </nav>
-
-    <!-- HUD Overlay -->
-    <section id="hud" aria-label="Game status" inert aria-hidden="true">
-      <div class="mission-strip">
-        <div class="mission-copy">
-          <span class="mission-index">LEVEL <span id="level-display">1</span></span>
-          <strong id="level-name-display">NEON KENNEL</strong>
+      </section>
+      <nav id="touch" hidden aria-label="Touch controls">
+        <div>
+          <button data-key="ArrowLeft" aria-label="Move left">←</button
+          ><button data-key="ArrowRight" aria-label="Move right">→</button>
         </div>
-        <div class="mission-progress-copy">
-          <span>BONES</span>
-          <strong><span id="score-display">0</span>/<span id="total-bones-display">0</span></strong>
+        <div>
+          <button data-key="ShiftLeft">Run</button
+          ><button data-key="Space" class="jump">Jump ↑</button>
         </div>
-        <div id="bone-progress" class="meter bone-meter" role="progressbar" aria-valuemin="0" aria-valuenow="0" aria-valuemax="0">
-          <span id="bone-progress-fill"></span>
+      </nav>
+      <footer>
+        <div>
+          <kbd>A</kbd><kbd>D</kbd><span>move</span><kbd>SPACE</kbd
+          ><span>jump twice</span><kbd>SHIFT</kbd><span>run</span><kbd>ESC</kbd
+          ><span>pause</span>
         </div>
-      </div>
-
-      <div class="hud-stats">
-        <div class="hud-item">
-          <span class="label">SCORE</span>
-          <span id="points-display">0</span>
-        </div>
-        <div class="hud-item">
-          <span class="label">TIME</span>
-          <span id="timer-display">0:00</span>
-        </div>
-        <div id="combo-hud" class="hud-item">
-          <span class="label">COMBO</span>
-          <span id="combo-display">—</span>
-        </div>
-        <div class="hud-item">
-          <span class="label">LIVES</span>
-          <span id="lives-display">5</span>
-        </div>
-        <div class="hud-item hud-best">
-          <span class="label">BEST</span>
-          <span id="highscore-display">0</span>
-        </div>
-        <div class="hud-item dash-hud">
-          <span class="label">DASH</span>
-          <span id="dash-display">READY</span>
-          <span class="meter dash-meter" aria-hidden="true"><span id="dash-meter-fill"></span></span>
-        </div>
-        <div id="power-hud" class="hud-item" hidden>
-          <span class="label">POWER</span>
-          <span id="power-display">NONE</span>
-        </div>
-      </div>
-    </section>
-
-    <div id="level-banner" class="level-banner hidden" aria-hidden="true">
-      <span id="level-banner-index">LEVEL 01</span>
-      <strong id="level-banner-name">NEON KENNEL</strong>
-      <span id="level-banner-tagline">Warm up the paws and chase the glow.</span>
-      <span id="level-banner-par">PAR 0:55</span>
-    </div>
-
-    <!-- Message Overlay (Win/Loss) -->
-    <div id="message-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="message-title" aria-describedby="message-subtitle" tabindex="-1">
-      <div class="content">
-        <h2 id="message-title">Level Complete!</h2>
-        <p id="message-subtitle">Loading next...</p>
-        <div id="result-card" class="result-card hidden" aria-label="Level results">
-          <div class="rank-badge"><span>RANK</span><strong id="result-rank">A</strong></div>
-          <dl class="result-stats">
-            <div><dt>SCORE</dt><dd id="result-score">0</dd></div>
-            <div><dt>TIME</dt><dd id="result-time">0:00</dd></div>
-            <div><dt>BEST COMBO</dt><dd id="result-combo">0x</dd></div>
-            <div><dt>BONUS</dt><dd id="result-bonus">+0</dd></div>
-          </dl>
-          <p id="result-best" class="new-best hidden">NEW PERSONAL BEST!</p>
-        </div>
-        <button id="message-action-btn" class="hidden" type="button">TRY AGAIN</button>
-      </div>
-    </div>
-
-    <!-- Pause Overlay -->
-    <div id="pause-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="pause-title" tabindex="-1">
-      <div class="content">
-        <h2 id="pause-title">PAUSED</h2>
-        <p>Press ESC to resume</p>
-        <div class="pause-buttons">
-          <button id="resume-btn">RESUME</button>
-          <button id="restart-btn">RESTART LEVEL</button>
-          <button id="levelselect-btn">LEVEL SELECT</button>
-          <button id="sound-btn" aria-pressed="true">SOUND: ON</button>
-          <button id="colorblind-btn">COLORBLIND: OFF</button>
-          <button id="quit-btn">QUIT TO MENU</button>
-        </div>
-        <details class="pause-help">
-          <summary>HOW TO PLAY</summary>
-          <p>Collect every bone. Golden bones award extra points and turbo speed. Avoid lava and spikes, stomp patrols from above, double jump in the air, wall jump beside walls, and dash through breakable barriers.</p>
-        </details>
-        <div class="pause-stats">
-          <span>Deaths: <span id="death-count">0</span></span>
-          <span>Total Time: <span id="total-time">0:00</span></span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Level Select Overlay -->
-    <div id="level-select-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="level-select-title" tabindex="-1">
-      <div class="content">
-        <h2 id="level-select-title">LEVEL SELECT</h2>
-        <div id="level-grid" class="level-grid"></div>
-        <button id="level-select-back">BACK</button>
-      </div>
-    </div>
-
-    <!-- Tutorial Prompt -->
-    <div id="tutorial-prompt" class="tutorial-prompt hidden" role="status" aria-live="polite"></div>
-  </main>
-
-  <!-- Main Entry Point -->
-  <script type="module" src="src/main.js"></script>
-</body>
-
+        <p>Follow your nose. Find your way home.</p>
+      </footer>
+      <p id="status" class="sr-only" role="status" aria-live="polite"></p>
+      <noscript
+        >This game needs JavaScript. Enable it in your browser to
+        play.</noscript
+      >
+    </main>
+    <script type="module" src="src/rebuild/app.js"></script>
+  </body>
 </html>

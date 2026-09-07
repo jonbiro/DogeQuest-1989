@@ -4,6 +4,10 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Rebuilt the game from scratch around Biscuit, five handcrafted outdoor courses, double jumps, beetles, optional bones, checkpoint flags, unlimited retries, and doghouse goals.
+- Replaced the neon presentation with original puppy artwork, layered outdoor scenery, a cream-and-green interface, and touch controls below the game.
+- Retired the previous runtime and replaced its tests with simulation regressions for the new engine. Removed external font requests.
+
 - Made the game start reliably with Enter, Space, the start button, or a tap/click anywhere on the opening panel.
 - Rebuilt the opening screen, HUD, level-select grid, mission briefing, and results flow with a more cohesive responsive arcade presentation.
 - Added ten named world themes with individual palettes, taglines, par times, and tempo variations.

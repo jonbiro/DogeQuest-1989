@@ -1,117 +1,45 @@
-# Puppy Quest 1989
+# Puppy Quest — A little adventure
 
-Puppy Quest 1989 is a neon, retro-styled browser platformer built with vanilla JavaScript, HTML, CSS, and the Canvas 2D API. The project lives in the legacy `DogeQuest-1989` repository, but **Puppy Quest 1989** is the canonical in-game name.
+[Play in your browser](https://jonbiro.github.io/DogeQuest-1989/)
 
-[Play Puppy Quest 1989 online](https://jonbiro.github.io/DogeQuest-1989/)
+Meet Biscuit: a small golden dog with a red scarf and five handcrafted trails to explore. Reach the doghouse to finish each trail. Bones are optional; elevated routes reward exploration. Checkpoint flags save your place, and retries are unlimited.
 
-Collect every bone in a level, use the movement abilities to cross the course, and avoid lava, spikes, and patrol enemies. A level is complete when all of its bones have been collected.
+## Play
 
-## Features
+Click **Let’s go outside** or press Enter with the start button focused.
 
-- Ten named neon worlds with individual color palettes, par times, mission briefings, and progressively faster synthesized music.
-- Canvas-rendered synthwave presentation with procedural player art, parallax scenery, particles, screen transitions, screen shake, and combo feedback.
-- Responsive platforming physics: acceleration, air control, coyote time, jump buffering, variable jump height, double jump, wall slide, and wall jump.
-- Score-chasing progression with capped combo multipliers, speedrun ranks, time/combo bonuses, per-world personal bests, and an expanded mission HUD.
-- Hazards and interactive objects: stationary and moving lava, falling lava, spikes, patrol enemies that can be stomped, springs, breakable walls, question blocks, speed boosts, shields, and rare golden bones that trigger turbo mode.
-- Synthesized sound effects and background music through the Web Audio API; no audio files are required.
-- Ten selectable level slots: a fixed tutorial followed by nine procedurally generated levels whose layouts vary between successful runs. A level layout is cached while retrying it, then regenerated when it is completed.
-- Pause/resume, restart, a record-rich level select, game-over flow, lives, dash readiness, timer, combo scoring, high score, and progress persistence.
-- Keyboard controls plus touch controls on small/coarse-pointer devices. Haptic feedback is used when the browser supports it.
-- A colorblind display option is available from the pause menu.
+- A/D or arrow keys: move.
+- Space, W, or Up: jump. Press again for a double jump; release early for a shorter hop.
+- Shift: run.
+- Escape: pause/resume.
+- Touch controls appear below the game on small screens and touch devices.
 
-## Controls
+Hop on beetles from above. Each trail awards one star for reaching home, one for finding at least 65% of bones, and one for finishing without retries. Best times and star counts are saved locally in this browser. No account is needed.
 
-| Action | Keyboard | Touch |
-| :--- | :--- | :--- |
-| Move | `Arrow Left` / `Arrow Right` or `A` / `D` | Left and right buttons |
-| Jump | `Arrow Up`, `W`, or `Space` | `JUMP` |
-| Double jump | Press jump again while airborne | Tap `JUMP` again while airborne |
-| Wall jump | Press jump while sliding against a wall | Tap `JUMP` while sliding against a wall |
-| Dash | Hold `Shift`; direction follows movement input or the last facing direction | Hold `DASH` |
-| Pause / resume | `Escape` | Tap the `Ⅱ` button |
+## Development
 
-Click **BEGIN QUEST** once before playing. This user gesture also lets browsers enable the synthesized audio. On mobile, hold a movement or action button for continuous input; vibration is optional and depends on device/browser support.
+Requires Node.js 20.19+ and npm.
 
-## Local development
-
-The game uses native ES modules, so serve it over HTTP instead of opening `index.html` directly from the filesystem.
-
-### Requirements
-
-- Node.js 20.19 or newer is required by the development tooling.
-- npm, included with Node.js.
-
-### Run it
-
-```bash
-git clone git@github.com:jonbiro/DogeQuest-1989.git
-cd DogeQuest-1989
+```sh
 npm ci
 npm run check
 npm start
 ```
 
-`npm start` builds the static site into `dist/` and serves that directory. Open the local URL printed by the server, usually `http://localhost:3000`. There is no bundler or server-side runtime; the build step copies the browser files into a clean deployable directory. To build without starting a server, run `npm run build`.
+Open http://127.0.0.1:3000. Run `npm run build` again after changes; the server serves the static `dist` directory. The game uses native ES modules and must be served over HTTP.
 
-Run `npm run check` before submitting changes. It builds the static site, lints the project, and runs the Node test suite without requiring a browser. For gameplay changes, also test a complete level in a desktop browser and on a touch-capable viewport.
+## Architecture
 
-### Troubleshooting
+- `src/rebuild/world.js`: handcrafted course data and deterministic fixed-step physics.
+- `src/rebuild/render.js`: original Canvas artwork, puppy animation, scenery, and camera.
+- `src/rebuild/app.js`: input, audio, UI states, progression, and persistence.
+- `index.html`, `css.css`: responsive game shell and accessible HTML controls.
+- `test/rebuild.test.js`: movement, checkpoints, completion, and collision regression checks.
 
-- A blank page or module error usually means the file was opened directly; use `npm start` or another local HTTP server.
-- Sound may remain silent until **START GAME** is clicked because browsers require a user gesture before starting an `AudioContext`.
-- Progress, unlocked levels, high score, per-world best times/scores, death count, play time, sound, and the colorblind preference are stored in this browser's `localStorage`. Clearing site data resets them.
-- Procedural layouts use randomness, so exact level geometry and screenshots can differ between fresh runs.
+The simulation advances at 120 Hz independently of display refresh rate. Audio is generated locally and enabled by a user gesture. No external fonts, artwork, or runtime libraries are requested. The retired neon engine remains recoverable through Git history.
 
-## Project structure
+## Deployment and verification
 
-| Path | Purpose |
-| :--- | :--- |
-| `index.html` | Game shell, overlays, HUD, start screen, and touch controls. |
-| `css.css` | Neon/CRT styling, responsive layout, overlays, and mobile controls. |
-| `src/main.js` | Application entry point and fixed tutorial plan. |
-| `src/Game.js` | Game lifecycle, animation loop, progression, pause menu, persistence, and level selection. |
-| `src/GameMeta.js` | World identities, visual palettes, par times, rank thresholds, and score rules. |
-| `src/Level.js` | Tile-plan parsing, actor management, collisions, scoring, and win/loss state. |
-| `src/LevelGenerator.js` | Difficulty-scaled procedural level generation. |
-| `src/actors/Actors.js` | Player, lava, bone, spring, spike, patrol, power-up, breakable-wall, and question-block actors. |
-| `src/CanvasDisplay.js` | Canvas renderer, camera, HUD updates, particles/effects, and procedural player art. |
-| `src/Input.js` | Keyboard and touch input handling. |
-| `src/particles/ParticleSystem.js` | Transient particle effects. |
-| `src/utils/` | Vector math and Web Audio helpers. |
-| `scripts/build.js` | Copies the static site into the clean `dist/` deploy directory. |
-| `test/` | Node-based unit tests for deterministic utilities and level generation. |
+`npm run check` builds, verifies the distribution, runs ESLint, and executes the simulation tests. GitHub Actions deploys `master` to GitHub Pages. Browser testing should cover startup, movement, double jump, death/retry, pause, completion, and a mobile viewport. Canvas gameplay remains a primarily visual experience; HTML menus support keyboard navigation and important events are announced through a live region.
 
-The first level slot is the fixed tutorial. Slots 2–10 are generated with increasing difficulty and each generated world hides one golden bone. Completing a slot calculates a C-to-S speed rank, saves its best result, and unlocks the next one. Completing slot 10 shows the quest-complete screen and offers a fresh run.
-
-## Accessibility and device support
-
-- Keyboard play is supported throughout the game, and touch controls appear on small or coarse-pointer devices.
-- The pause menu includes a colorblind display option and exposes restart, level selection, and quit actions without requiring a page reload.
-- Screen-reader users receive concise level, collectible, life, outcome, and power-up announcements; HUD values have explicit accessible labels and the pause menu includes a keyboard-accessible help section.
-- Short-height layouts keep the start action above the fold, and reduced-motion preferences suppress nonessential interface animation.
-- The game is primarily a visual Canvas experience. When changing overlays or controls, preserve readable text, keyboard access, visible focus, touch targets, and non-color cues. Test CRT/glow animations with reduced-motion settings in mind.
-- Audio is synthesized locally in the browser; no account or server connection is needed to play. The page currently requests the `Press Start 2P` font from Google Fonts.
-
-## Deployment
-
-The production deployment is GitHub Pages:
-
-[https://jonbiro.github.io/DogeQuest-1989/](https://jonbiro.github.io/DogeQuest-1989/)
-
-To deploy another static host, run `npm run build` and publish `dist/`. Use HTTPS and preserve the relative source and stylesheet paths; no bundling or server-side runtime is required. After pushing to the default branch, confirm the GitHub Pages build completes and smoke-test the deployed start screen, module loading, touch controls, audio gesture, and a level transition.
-
-## Contributing
-
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Use the issue forms for reproducible bugs and scoped feature proposals. Do not add third-party art, fonts, sounds, or code without recording its source and license.
-
-For security-sensitive reports, follow [SECURITY.md](SECURITY.md) rather than opening a public issue. The community expectations are in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for the current development history and notable gameplay phases.
-
-## License
-
-Copyright © 2026 Jonathan Biro.
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for the complete text.
+MIT license. Copyright © 2026 Jonathan Biro. See LICENSE, CONTRIBUTING.md, and SECURITY.md.

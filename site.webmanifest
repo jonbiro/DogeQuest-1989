@@ -1,12 +1,12 @@
 {
   "name": "Puppy Quest 1989",
   "short_name": "Puppy Quest",
-  "description": "A neon browser platformer with ten themed worlds, golden bones, score combos, and speedrun ranks.",
+  "description": "Five handcrafted adventures with Biscuit the puppy.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#050010",
-  "theme_color": "#050010",
+  "background_color": "#f4f0e3",
+  "theme_color": "#233e33",
   "icons": [
     {
       "src": "favicon.svg",

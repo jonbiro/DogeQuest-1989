@@ -1,7 +1,7 @@
 {
   "name": "dogequest-1989",
-  "version": "2.0.0",
-  "description": "A neon browser platformer with ten themed worlds, score combos, golden bones, and speedrun ranks.",
+  "version": "3.0.0",
+  "description": "A cozy puppy platformer with five handcrafted trails, double jumps, hidden bones, and unlimited second chances.",
   "type": "module",
   "private": true,
   "license": "MIT",
