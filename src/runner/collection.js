@@ -18,6 +18,13 @@ export const PRIZES = [
   {id:'long-run',name:'Thousand-paw crown',description:'Reach 1,000 meters in one run.',metric:'distance',target:1000,costume:'royal',points:0},
   {id:'gift-hunter',name:'Party paws present',description:'Bank 3 gift boxes across your runs.',metric:'gifts',target:3,costume:'party',points:0},
 ];
+export function prizeProgress(profile, prize) {
+  const earned = profile.collection.prizes.includes(prize.id);
+  const value = prize.metric === 'gifts' ? profile.collection.gifts
+    : prize.metric === 'bones' ? profile.bestRunBones : profile.distance;
+  return {earned, current: earned ? prize.target : Math.min(prize.target,
+    Math.max(0, Math.floor(Number.isFinite(value) ? value : 0))), target: prize.target};
+}
 export function collectionFrom(value={}) {
   const puppies=['biscuit','mochi',...(Array.isArray(value?.puppies)?value.puppies:[])].filter((id,i,list)=>Object.hasOwn(PUPPIES,id)&&list.indexOf(id)===i);
   const costumes=['scarf',...(Array.isArray(value?.costumes)?value.costumes:[])].filter((id,i,list)=>Object.hasOwn(COSTUMES,id)&&list.indexOf(id)===i);

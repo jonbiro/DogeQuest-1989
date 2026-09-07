@@ -6,7 +6,7 @@ import {REGIONS,regionAt} from "./regions.js";
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound} from "./sound.js";
-import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, awardPrizes } from "./collection.js";
+import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, awardPrizes, prizeProgress } from "./collection.js";
 const $ = (id) => document.getElementById(id);
 let run = createRun(),
   state = "menu",
@@ -25,6 +25,7 @@ let reducedMotion = window.matchMedia(
 let saved = {
   best: 0,
   bones: 0,
+  bestRunBones: 0,
   distance: 0,
   credits: 0,
   challenges: 0,
@@ -91,9 +92,16 @@ function kennel() {
   }
   const heading = document.createElement("h3"); heading.textContent = "Your prize cabinet"; content.append(heading);
   for (const prize of PRIZES) {
+    const progress = prizeProgress(saved, prize);
     const copy = document.createElement("p");
     copy.textContent = `${saved.collection.prizes.includes(prize.id) ? "✓ Earned" : "◇ To discover"} · ${prize.name} — ${prize.description}${prize.points ? ` +${prize.points} pts.` : " Unlocks an outfit."}`;
-    content.append(copy);
+    const meter = document.createElement("progress");
+    meter.max = progress.target; meter.value = progress.current;
+    meter.setAttribute("aria-label", `${prize.name}: ${progress.current} of ${progress.target}`);
+    meter.style.cssText = "width:100%;accent-color:#d8a641";
+    const status = document.createElement("small");
+    status.textContent = progress.earned ? "Collected — yours to keep" : `${progress.current} / ${progress.target} ${prize.metric === 'gifts' ? 'banked gifts' : prize.metric === 'bones' ? 'bones in your best run' : 'meters in your best run'}`;
+    content.append(copy, meter, status);
   }
 }
 function persist() {
@@ -232,6 +240,7 @@ function finish() {
   saved.best = Math.max(saved.best, run.score);
   saved.distance = Math.max(saved.distance, run.distance);
   saved.bones += run.bones;
+  saved.bestRunBones = Math.max(saved.bestRunBones, run.bones);
   saved.credits += run.score;
   const reward = claimMission(saved, run, currentMission);
   const prizes = awardPrizes(saved, run);
