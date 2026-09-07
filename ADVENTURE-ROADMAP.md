@@ -4,6 +4,9 @@ Build an original, polished Temple Run 2-style puppy runner. Keep Puppy Quest av
 
 ## Required product areas and completion evidence
 
+See `COMPLETION-AUDIT.md` for the current requirement-by-requirement assessment,
+the evidence behind each area and the explicit remaining completion checks.
+
 - Expressive, selectable puppy characters: distinct 3D appearance, selection and persistence verified in browser.
 - Costumes: visible equipped accessories, earn/unlock/equip flow, ownership and reload tests.
 - Puppy-themed powers: distinct models and useful mechanics, durations and interactions verified in simulation and browser.
