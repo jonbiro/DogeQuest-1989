@@ -15,6 +15,8 @@ Build an original, polished Temple Run 2-style puppy runner. Keep Puppy Quest av
 
 ## Current iteration
 
+Authored full-width jump/duck sequences now interrupt random rows after 600 meters, alternating log–gate–log and gate–log–gate with a gift finish. The 48-meter beat spacing supports top-speed base and upgraded movement; Scenic sections and decision-gate approaches are excluded. These improve obstacle rhythm, but do not yet fulfill the larger traversal-set-piece requirement.
+
 The clubhouse, four puppies, six outfits, one-time prizes, and gift banking are published. Purchases, persistence and mobile-sized rendering were checked in browser; collection rules have regression tests.
 
 Zoomies adds a tennis-ball pickup, six-second speed burst, obstacle-smash rewards, a visible speed trail, and protected deceleration. Automated tests cover speed ramps, every hazard, exactly-once rewards, shield preservation, expiry and power combinations. A local-only visual fixture exercises the real renderer with normal and reduced motion; it is excluded from the production build.

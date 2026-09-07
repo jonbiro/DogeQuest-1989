@@ -72,6 +72,23 @@ export function fillTrack(run) {
       break;
     }
     const route=run.route && run.nextRow<run.route.until ? run.route.kind : null;
+    // Authored jump/duck runs break up random rows. Keep the entire sequence
+    // clear of decision gates and within its selected difficulty section.
+    const sequenceEnd = run.nextRow + 144;
+    if (run.nextRow > 600 && run.row % 16 === 12 && route !== "scenic" &&
+        sequenceEnd < run.nextChoice - 45 &&
+        (!run.route || run.nextRow >= run.route.until || sequenceEnd < run.route.until)) {
+      const types = Math.floor(run.row / 16) % 2 ? ["gate", "log", "gate"] : ["log", "gate", "log"];
+      for (let beat = 0; beat < types.length; beat++) {
+        const at = run.nextRow + beat * 48;
+        for (let lane = 0; lane < 3; lane++) add(run, types[beat], lane, at);
+        for (let i = 1; i <= 4; i++) add(run, "bone", 1, at + i * 4);
+      }
+      add(run, "gift", 1, run.nextRow + 116);
+      run.nextRow = sequenceEnd;
+      run.row++;
+      continue;
+    }
     const gapRow = run.row > 5 && run.row % 12 === 10;
     const at = gapRow ? Math.round(run.nextRow/5)*5 : run.nextRow;
     const safe = Math.floor(run.random() * 3);
