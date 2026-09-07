@@ -4,6 +4,7 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Made the game start reliably with Enter, Space, the start button, or a tap/click anywhere on the opening panel.
 - Rebuilt the opening screen, HUD, level-select grid, mission briefing, and results flow with a more cohesive responsive arcade presentation.
 - Added ten named world themes with individual palettes, taglines, par times, and tempo variations.
 - Added real event scoring, capped combo multipliers, time/combo completion bonuses, C-to-S speedrun ranks, and saved per-world records.

@@ -33,9 +33,29 @@ const game = new Game(GAME_LEVELS);
 const startScreen = document.getElementById('start-screen');
 const startBtn = document.getElementById('start-btn');
 
-startBtn.addEventListener('click', () => {
+function startGame(event) {
+    if (startScreen.classList.contains('hidden')) return;
+    event?.preventDefault();
     startScreen.classList.add('hidden');
-    game.audio.resume().then(() => game.updateSoundButton());
-
+    game.input.reset();
+    game.audio.resume()
+        .then(() => game.updateSoundButton())
+        .catch(() => game.updateSoundButton());
     game.startNewGame();
+}
+
+startBtn.addEventListener('click', startGame);
+
+// Make the arcade-style start screen forgiving: tap/click anywhere on it.
+startScreen.addEventListener('click', (event) => {
+    if (!event.target.closest('#start-btn')) startGame(event);
 });
+
+// Enter and Space start the game even before a control has received focus.
+window.addEventListener('keydown', (event) => {
+    if ((event.key === 'Enter' || event.key === ' ') && !startScreen.classList.contains('hidden')) {
+        startGame(event);
+    }
+});
+
+requestAnimationFrame(() => startBtn.focus({ preventScroll: true }));
