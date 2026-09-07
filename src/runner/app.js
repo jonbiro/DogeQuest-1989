@@ -2,6 +2,7 @@ import { createRun, act, step } from "./world.js";
 import { createView } from "./render.js";
 import { UPGRADES, levels, price, purchase } from "./progression.js";
 import { missionFor, missionProgress, claimMission } from "./missions.js";
+import {REGIONS,regionAt} from "./regions.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, awardPrizes } from "./collection.js";
 const $ = (id) => document.getElementById(id);
 let run = createRun(),
@@ -454,6 +455,7 @@ function frame(now) {
     if (Math.floor(run.time * 10) !== lastHud || run.ended) {
       lastHud = Math.floor(run.time * 10);
       $("distance").innerHTML = `${Math.floor(run.distance)}<small> m</small>`;
+      $("region-name").textContent = REGIONS[regionAt(run.distance)].name;
       $("bones").textContent = run.bones;
       $("run-score").textContent =
         `${run.score.toLocaleString()} pts${run.combo >= 2 ? ` · ${run.combo} bone streak` : ""}`;

@@ -4,6 +4,7 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
 import { LANES, PICKUPS, seededRandom } from "./world.js";
 import { routeOffset, routeHeading } from "./route.js";
 import { PUPPIES } from "./collection.js";
+import { REGIONS, regionAt, regionBlend } from "./regions.js";
 
 // Shared low-poly geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -53,7 +54,9 @@ export function createView(canvas) {
     mesh(parent, sphereGeometry, color, x, y, z, sx, sy, sz);
   const cone = (parent, color, x, y, z, sx, sy, sz) =>
     mesh(parent, coneGeometry, color, x, y, z, sx, sy, sz);
-  box(scene, "#397d6e", 0, -1.4, -60, 200, 0.3, 220);
+  const ground = box(scene, "#397d6e", 0, -1.4, -60, 200, 0.3, 220);
+  ground.material = ground.material.clone();
+  const regionColors = REGIONS.map(region => ({sky:new THREE.Color(region.sky),ground:new THREE.Color(region.ground),stone:new THREE.Color(region.stone)}));
   // Recycled slabs, lane inlays, and scenery are translated rather than rebuilt.
   const scenery = new THREE.Group();
   scene.add(scenery);
@@ -103,8 +106,33 @@ export function createView(canvas) {
     ball(group, "#5c8857", 1, 0.5, 1, 1.5, 1, 1.2);
     group.position.x = x;
     group.userData.offset = i * 3.8;
+    group.userData.region = 0;
     scenery.add(group);
     decorations.push(group);
+  }
+  // Region-specific silhouettes, pooled with the rest of the scenery.
+  for (let region=1;region<3;region++) for(let i=0;i<40;i++) {
+    const group=new THREE.Group();
+    group.position.x=(i%2?1:-1)*(6+random()*13);
+    group.userData.offset=i*4.7;
+    group.userData.region=region;
+    if(region===1) {
+      const height=2+random()*5;
+      box(group,"#b97750",0,height/2,0,2+random()*2,height,2.5);
+      box(group,"#dfa376",0,height+.2,0,3,.4,3);
+      if(i%3===0) {
+        box(group,"#709567",2,1.6,0,.5,3.2,.5);
+        box(group,"#709567",2.6,2,0,1.2,.35,.4);
+        box(group,"#709567",3,2.4,0,.35,1,.4);
+      }
+    } else {
+      for(let j=0;j<3;j++) {
+        const shard=cone(group,["#80bdd1","#bbb1e7","#85ded1"][j],j*.65,1.8,0,.65,3+random()*3,.7);
+        shard.rotation.z=(j-1)*.22;
+      }
+      ball(group,"#ddd8f4",0,.4,0,1.8,.5,1.4);
+    }
+    scenery.add(group);decorations.push(group);
   }
   for (let i = 0; i < 12; i++) {
     const group = new THREE.Group();
@@ -128,6 +156,7 @@ export function createView(canvas) {
     scenery.add(group);
     decorations.push(group);
   }
+  const mountains = [];
   for (let i = 0; i < 8; i++) {
     const mountain = cone(
       scene,
@@ -140,6 +169,8 @@ export function createView(canvas) {
       22,
     );
     mountain.rotation.y = random();
+    mountain.material = mountain.material.clone();
+    mountains.push(mountain);
   }
   // Batch hundreds of trees, paving stones, and ruin pieces into three draws.
   const batches = [];
@@ -159,6 +190,7 @@ export function createView(canvas) {
             offset: i * 5,
             period: 175,
             start: 10,
+            road: true,
           });
       });
     for (const group of decorations)
@@ -170,6 +202,7 @@ export function createView(canvas) {
             offset: group.userData.offset,
             period: 190,
             start: 14,
+            region: group.userData.region,
           });
       });
     const instanced = new THREE.InstancedMesh(
@@ -178,7 +211,10 @@ export function createView(canvas) {
       entries.length,
     );
     instanced.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    entries.forEach((entry, i) => instanced.setColorAt(i, entry.color));
+    entries.forEach((entry, i) => {
+      entry.colors = regionColors.map((palette,index) => index===0 ? entry.color : entry.color.clone().lerp(palette.stone,.72));
+      instanced.setColorAt(i, entry.color);
+    });
     instanced.frustumCulled = false;
     scene.add(instanced);
     batches.push({ instanced, entries });
@@ -492,6 +528,11 @@ export function createView(canvas) {
         ? time * (reducedMotion ? 0 : 2)
         : THREE.MathUtils.lerp(run.previous.distance, run.distance, blend);
       const smooth = 1 - Math.exp(-18 * dt);
+      const atmosphere = regionBlend(menu ? 0 : distance);
+      scene.background.copy(regionColors[atmosphere.previous].sky).lerp(regionColors[atmosphere.index].sky,atmosphere.blend);
+      scene.fog.color.copy(scene.background);
+      ground.material.color.copy(regionColors[atmosphere.previous].ground).lerp(regionColors[atmosphere.index].ground,atmosphere.blend);
+      for(const mountain of mountains) mountain.material.color.copy(ground.material.color).lerp(scene.background,.3);
       if (state === "playing" || menu) {
         pose += ((menu || run.slide === 0 ? 1 : 0.46) - pose) * smooth;
         lean += ((menu ? 0 : -(LANES[run.lane] - x) * 0.12) - lean) * smooth;
@@ -508,9 +549,13 @@ export function createView(canvas) {
           );
           bendMatrix.setPosition(routeOffset(distance, z), 0, z);
           instanceMatrix.multiplyMatrices(bendMatrix, entry.matrix);
+          const region = regionAt(menu ? 0 : distance-z);
+          if(entry.region !== undefined && entry.region !== region) instanceMatrix.scale(bendScale.set(0,0,0));
+          if(entry.road || entry.region === undefined) instanced.setColorAt(i,entry.colors[region]);
           instanced.setMatrixAt(i, instanceMatrix);
         });
         instanced.instanceMatrix.needsUpdate = true;
+        instanced.instanceColor.needsUpdate = true;
       }
       dog.position.set(
         menu ? 0 : x,

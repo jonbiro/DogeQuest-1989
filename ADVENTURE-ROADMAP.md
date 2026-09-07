@@ -19,4 +19,6 @@ The clubhouse, four puppies, six outfits, one-time prizes, and gift banking are 
 
 Zoomies adds a tennis-ball pickup, six-second speed burst, obstacle-smash rewards, a visible speed trail, and protected deceleration. Automated tests cover speed ramps, every hazard, exactly-once rewards, shield preservation, expiry and power combinations. A local-only visual fixture exercises the real renderer with normal and reduced motion; it is excluded from the production build.
 
-Still required: distinct environments, meaningful route decisions and traversal set pieces, more expressive character animation, richer puppy-themed art/audio, and comprehensive final-state gameplay and performance QA. Do not mark the overall goal complete from the existing narrower checks.
+Three visual regions now cycle every 450 meters: Whispering Jungle, Biscuit Canyon (rock stacks and cacti), and Moonpaw Glade (crystal clusters). Track sections show their destination region ahead; atmosphere blends over 65 meters. Region boundaries have unit tests and each region was inspected through the local real-renderer fixture at phone size. This does not yet prove a complete uninterrupted browser run through all regions.
+
+Still required: meaningful route decisions and traversal set pieces, more expressive character animation, richer puppy-themed art/audio, and comprehensive final-state gameplay and performance QA. Do not mark the overall goal complete from the existing narrower checks.
