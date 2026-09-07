@@ -59,12 +59,12 @@
           behind.
         </p>
         <div class="start-actions">
-          <button id="shop" class="text-button">Paw upgrades ↗</button>
           <button id="play" class="primary" disabled>
             Preparing the trail…</button
           ><button id="help" class="text-button">
             How to play <span>↗</span>
           </button>
+          <button id="shop" class="text-button">Paw upgrades ↗</button>
         </div>
         <div class="menu-stats">
           <div>
@@ -76,7 +76,9 @@
         <div class="trail-tag">
           <i>01</i>
           <div>
-            THE EMERALD TRAIL<span>Jungle ruins · Endless discovery</span>
+            YOUR NEXT CHALLENGE<span id="mission-preview"
+              >Explore the trail for bonus points.</span
+            >
           </div>
           <b>↗</b>
         </div>
@@ -88,12 +90,23 @@
       <section id="hud" aria-label="Run statistics" hidden>
         <div class="score">
           <span>DISTANCE</span><strong id="distance">0<small> m</small></strong>
+          <small id="run-score">0 pts</small>
         </div>
         <div class="run-stats">
           <span class="bones">🦴 <b id="bones">0</b></span
           ><span id="hearts" aria-label="3 hearts remaining">♥ ♥ ♥</span>
         </div>
         <div id="power"></div>
+        <div id="cue" aria-live="polite"></div>
+      </section>
+      <section id="mission-hud" aria-label="Current run challenge">
+        <span id="mission-label"></span
+        ><progress
+          id="mission-progress"
+          aria-label="Challenge progress"
+          max="300"
+          value="0"
+        ></progress>
       </section>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
       <section
@@ -117,6 +130,11 @@
           </div>
           <div id="instructions" hidden>
             <p>
+              Ten bones in a row earn +100 points. Clean jumps and slides earn
+              +20. Finish the run to bank your score and any completed challenge
+              reward for Paw upgrades.
+            </p>
+            <p>
               Jump logs and low stone blocks. Slide under arches, branches, and
               hanging gates. Purple gems give 250 points; gold tokens double
               bone points for 10 seconds; hearts heal.
@@ -130,8 +148,8 @@
             </p>
             <p><kbd>↓</kbd> Slide under arches <span>Swipe down</span></p>
             <p>
-              Follow the bones for a clear lane. Magnets
-              collect nearby bones; shields absorb one hit.
+              Follow the bones for a clear lane. Magnets collect nearby bones;
+              shields absorb one hit.
             </p>
           </div>
           <section

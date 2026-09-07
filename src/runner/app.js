@@ -1,6 +1,7 @@
 import { createRun, act, step } from "./world.js";
 import { createView } from "./render.js";
 import { UPGRADES, levels, price, purchase } from "./progression.js";
+import { missionFor, missionProgress, claimMission } from "./missions.js";
 const $ = (id) => document.getElementById(id);
 let run = createRun(),
   state = "menu",
@@ -13,13 +14,21 @@ let run = createRun(),
 let reducedMotion = window.matchMedia(
   "(prefers-reduced-motion: reduce)",
 ).matches;
-let saved = { best: 0, bones: 0, distance: 0, credits: 0, upgrades: levels() };
+let saved = {
+  best: 0,
+  bones: 0,
+  distance: 0,
+  credits: 0,
+  challenges: 0,
+  upgrades: levels(),
+};
 try {
   const value = JSON.parse(localStorage.getItem("biscuit-dash-v1"));
   for (const key of Object.keys(saved))
     if (key !== "upgrades" && Number.isFinite(value?.[key]) && value[key] >= 0)
       saved[key] = value[key];
   saved.upgrades = levels(value?.upgrades);
+  saved.challenges = Math.floor(saved.challenges);
 } catch {
   /* A run works without storage. */
 }
@@ -27,6 +36,11 @@ function updateRecords() {
   $("best").innerHTML =
     `${Math.floor(saved.best).toLocaleString()}<span> pts</span>`;
   $("bank").textContent = Math.floor(saved.bones).toLocaleString();
+  $("shop").textContent =
+    `Paw upgrades · ${Math.floor(saved.credits).toLocaleString()} pts ↗`;
+  const mission = missionFor(saved.challenges);
+  $("mission-preview").textContent =
+    `${mission.title}: ${mission.target} ${mission.unit} in one run · +${mission.reward} pts`;
 }
 function persist() {
   try {
@@ -60,6 +74,7 @@ function shop() {
     button.onclick = () => {
       if (purchase(saved, key)) {
         persist();
+        updateRecords();
         shop();
         tone(880, 0.2);
       }
@@ -115,6 +130,8 @@ function setState(next) {
 }
 function start() {
   run = createRun(Date.now(), saved.upgrades);
+  currentMission = missionFor(saved.challenges);
+  missionAnnounced = false;
   taughtObstacles = false;
   setState("playing");
   $("scene").focus({ preventScroll: true });
@@ -166,8 +183,12 @@ function finish() {
   saved.distance = Math.max(saved.distance, run.distance);
   saved.bones += run.bones;
   saved.credits += run.score;
+  const reward = claimMission(saved, run, currentMission);
   $("overlay-copy").textContent +=
     ` +${run.score.toLocaleString()} upgrade points earned. Spend them at camp.`;
+  if (reward)
+    $("overlay-copy").textContent +=
+      ` Challenge complete: +${reward} extra points!`;
   persist();
   updateRecords();
   tone(180, 0.3);
@@ -328,6 +349,8 @@ try {
 }
 let milestone = 0,
   taughtObstacles = false;
+let currentMission = missionFor(saved.challenges),
+  missionAnnounced = false;
 let lastHud = -1;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000 || 0);
@@ -341,6 +364,11 @@ function frame(now) {
     }
     for (const event of run.events) {
       if (event === "bone") tone(740 + Math.min(run.combo, 12) * 28, 0.055);
+      if (event === "streak") {
+        toast(`${run.combo} bones in a row! +100 points`);
+        tone(1000, 0.2);
+      }
+      if (event === "clear") tone(540, 0.08);
       if (event === "jump") tone(400, 0.06);
       if (event === "magnet") {
         toast(
@@ -378,6 +406,35 @@ function frame(now) {
       lastHud = Math.floor(run.time * 10);
       $("distance").innerHTML = `${Math.floor(run.distance)}<small> m</small>`;
       $("bones").textContent = run.bones;
+      $("run-score").textContent =
+        `${run.score.toLocaleString()} pts${run.combo >= 2 ? ` · ${run.combo} bone streak` : ""}`;
+      const progress = missionProgress(run, currentMission);
+      $("mission-label").textContent =
+        `${currentMission.title} · ${progress}/${currentMission.target} ${currentMission.unit}`;
+      $("mission-progress").max = currentMission.target;
+      $("mission-progress").value = progress;
+      if (progress === currentMission.target && !missionAnnounced) {
+        missionAnnounced = true;
+        toast(
+          `Challenge complete! +${currentMission.reward} points when this run ends.`,
+          4,
+        );
+      }
+      const danger = run.objects.find(
+        (object) =>
+          !object.used &&
+          !object.passed &&
+          object.lane === run.lane &&
+          ["rock", "log", "arch", "branch", "gate"].includes(object.type) &&
+          object.at - run.distance > 0 &&
+          object.at - run.distance < run.speed * 0.8,
+      );
+      const duck = danger && ["arch", "branch", "gate"].includes(danger.type);
+      $("cue").textContent = danger
+        ? duck
+          ? "↓ SLIDE under"
+          : "↑ JUMP over"
+        : "";
       $("hearts").textContent =
         "♥ ".repeat(Math.max(0, run.hearts)) + "♡ ".repeat(3 - run.hearts);
       $("hearts").setAttribute("aria-label", `${run.hearts} hearts remaining`);

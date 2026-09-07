@@ -6,6 +6,67 @@
   --lime: #dcf78c;
   --muted: #b6cbc0;
 }
+#run-score {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0;
+  margin-top: 4px;
+  color: #ecffdc;
+}
+#cue {
+  position: fixed;
+  left: 50%;
+  top: 42%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-weight: bold;
+  color: #173c32;
+  background: #efffc9;
+  border-radius: 24px;
+  padding: 10px 18px;
+  box-shadow: 0 4px 18px #102a2844;
+}
+#cue:empty {
+  display: none;
+}
+#mission-hud {
+  display: none;
+  position: absolute;
+  bottom: calc(92px + env(safe-area-inset-bottom));
+  left: 5%;
+  right: 5%;
+  z-index: 2;
+  padding: 9px 12px;
+  background: #102a28cb;
+  border: 1px solid #d5edb633;
+  border-radius: 12px;
+  font-size: 10px;
+  pointer-events: none;
+  max-width: 420px;
+  margin: auto;
+  color: #e9f5da;
+}
+#game[data-state="playing"] #mission-hud {
+  display: block;
+}
+#mission-progress {
+  display: block;
+  width: 100%;
+  height: 3px;
+  margin-top: 7px;
+  border: 0;
+  appearance: none;
+  background: #ffffff22;
+}
+#mission-progress::-webkit-progress-bar {
+  background: #ffffff22;
+}
+#mission-progress::-webkit-progress-value {
+  background: #dcf78c;
+}
+#mission-progress::-moz-progress-bar {
+  background: #dcf78c;
+}
 * {
   box-sizing: border-box;
 }
@@ -477,6 +538,9 @@ footer .text-button {
   overflow-y: auto;
 }
 .modal {
+  max-height: calc(100svh - 44px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: #173c32;
   border: 1px solid #c9e9b82e;
   box-shadow: 0 35px 100px #0004;

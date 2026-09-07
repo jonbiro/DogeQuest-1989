@@ -4,6 +4,9 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Added rotating, increasingly challenging run goals with one-time earned upgrade-point rewards and live progress.
+- Added bone-streak and clean-clear score bonuses, live score/streak display, and contextual jump/slide warnings. Fixed repeated streak resets from already-missed bones and aligned menu keyboard order with its visual layout.
+
 - Smoothed runner rendering with fixed-step interpolation, frame-rate-independent lane easing, eased camera and slide poses, and non-teleporting airborne slides. Rounded models, softened lighting/shadows, and reduced HUD churn.
 - Rebuilt magnets with visible all-lane bone attraction, arrival-based scoring, larger readable horseshoe pickups, field rings, pickup halos, sparkles, and active power-up timer bars. Added expiry, range, high-speed attraction, and motion regressions.
 

@@ -36,6 +36,7 @@ export function createRun(seed = Date.now(), upgrades = {}) {
     bones: 0,
     combo: 0,
     bestCombo: 0,
+    clears: 0,
     score: 0,
     ended: false,
     objects: [],
@@ -144,6 +145,10 @@ export function step(run, dt) {
         run.combo++;
         run.bestCombo = Math.max(run.combo, run.bestCombo);
         run.events.push("bone");
+        if (run.combo % 10 === 0) {
+          run.bonusPoints += 100;
+          run.events.push("streak");
+        }
         run.effects.push({
           id: object.id,
           type: "bone",
@@ -151,7 +156,10 @@ export function step(run, dt) {
           x: run.x,
           y: run.y + 1,
         });
-      } else if (dz < -2) run.combo = 0;
+      } else if (dz < -2 && !object.pull && !object.missed) {
+        object.missed = true;
+        run.combo = 0;
+      }
     } else if (
       Math.abs(dz) < 1.05 &&
       sameLane &&
@@ -179,6 +187,11 @@ export function step(run, dt) {
         (["arch", "branch", "gate"].includes(object.type) &&
           run.slide > 0 &&
           run.y < 0.2);
+      if (sameLane && cleared) {
+        run.clears++;
+        run.bonusPoints += 20;
+        run.events.push("clear");
+      }
       if (sameLane && !cleared && run.invulnerable === 0) {
         object.used = true;
         if (run.shield) {
