@@ -54,6 +54,7 @@ export function createRun(seed = Date.now(), upgrades = {}) {
     zipline: null,
     ziplines: 0,
     row: 0,
+    lastSafeLane: 1,
     id: 0,
     events: [],
     effects: [],
@@ -111,7 +112,11 @@ export function fillTrack(run) {
     }
     const gapRow = run.row > 5 && run.row % 12 === 10;
     const at = gapRow ? Math.round(run.nextRow/5)*5 : run.nextRow;
-    const safe = Math.floor(run.random() * 3);
+    // Later rows force a lane decision instead of rewarding camping in one lane.
+    const safe = run.row > 5 && route !== "scenic"
+      ? (run.lastSafeLane + 1 + Math.floor(run.random() * 2)) % 3
+      : Math.floor(run.random() * 3);
+    run.lastSafeLane = safe;
     const blocked = (safe + 1 + Math.floor(run.random() * 2)) % 3;
     const actionRow = route!=="scenic" && run.row > 5 && (route==="challenge" ? run.row%2===0 : run.row % 4 === 2);
     if (actionRow) {
@@ -119,7 +124,7 @@ export function fillTrack(run) {
       for (let lane = 0; lane < 3; lane++) add(run, type, lane, at);
     } else if (run.row > 0) {
       add(run, SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)], blocked, at);
-      if (route!=="scenic" && run.row > 2 && run.random() > 0.15)
+      if (route!=="scenic" && run.row > 2 && (run.random() > 0.15 || at > 600))
         add(
           run,
           SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)],
@@ -138,7 +143,10 @@ export function fillTrack(run) {
       );
     run.row++;
     if (run.row % 9 === 0) add(run,'gift',safe,at+19);
-    run.nextRow += (actionRow ? 42 : 26) + run.random() * 6;
+    // Keep full-width actions far enough apart for an unupgraded jump to land.
+    // Lane rows tighten gradually; Scenic remains the gentler alternative.
+    const pressure = route === "scenic" ? 0 : Math.min(1, at / 1200);
+    run.nextRow += (actionRow ? 42 : 26 - pressure * 4) + run.random() * 6;
   }
 }
 export function act(run, action) {

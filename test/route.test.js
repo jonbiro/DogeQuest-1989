@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { routeOffset, routeHeading } from "../src/runner/route.js";
+test("opening trail has a visible bend rather than a straight horizon", () => {
+  assert.ok(Math.abs(routeOffset(0, -60)) > 12);
+});
 test("winding track remains centered and tangent-aligned at the player", () => {
   for (let distance = 0; distance < 10000; distance += 13) {
     assert.equal(routeOffset(distance, 0), 0);

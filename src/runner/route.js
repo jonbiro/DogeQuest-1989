@@ -1,9 +1,9 @@
 // A continuous centerline, viewed in the runner's local tangent frame.
 export function centerline(s) {
-  return 18 * Math.sin(s / 64) + 28 * Math.sin(s / 143);
+  return 26 * Math.sin(s / 52 + 0.8) + 34 * Math.sin(s / 117);
 }
 export function tangent(s) {
-  return (18 / 64) * Math.cos(s / 64) + (28 / 143) * Math.cos(s / 143);
+  return (26 / 52) * Math.cos(s / 52 + 0.8) + (34 / 117) * Math.cos(s / 117);
 }
 export function routeOffset(distance, z) {
   const ahead = -z;
