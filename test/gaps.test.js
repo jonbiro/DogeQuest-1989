@@ -24,6 +24,7 @@ test("generated gaps align to paving tiles and preserve full-width jump rows",()
   let count=0;
   for(let seed=0;seed<20;seed++){
     const r=createRun(seed);
+    r.nextChoice=Infinity;
     for(let distance=0;distance<2000;distance+=150){r.distance=distance;fillTrack(r);
       for(const gap of r.objects.filter(o=>o.type==="gap")){
         assert.equal(gap.at%5,0);assert.equal(r.objects.filter(o=>o.at===gap.at&&o.type==="gap").length,3);count++;

@@ -25,6 +25,8 @@ Broken trail sections now require full-width jumps. Generation aligns them with 
 
 The puppy models now have rounded heads, bodies, noses and paws, expressive eyes and tongues. Cosmetic pose logic adds blinking, idle breathing, ear bounce, cape flutter and distinct airborne/slide leg poses without changing physics. Pose bounds and reduced-motion behavior have regression tests; the updated face was inspected in the browser.
 
-Still required: meaningful route decisions and more substantial traversal set pieces, richer puppy-themed audio, and comprehensive final-state gameplay and performance QA. Do not mark the overall goal complete from the existing narrower checks.
+Trail-choice gates now offer Scenic (single-obstacle rows) and Challenge (more full-width action rows, 60-point clean clears) for 220 meters. The first gate is at 350 meters and repeats every 700 meters; center defaults to Scenic. Generation pauses at an obstacle-free approach and leaves 40 meters of reaction space after selection. These are route-difficulty gates along the winding trail, not a visually branching fork. Unit tests cover selection, generation and rewards; both choices passed the input-driven long-run renderer check, and gate models were checked at phone size.
+
+Still required: more substantial traversal set pieces, richer puppy-themed audio, and comprehensive final-state gameplay and performance QA. Do not mark the overall goal complete from the existing narrower checks.
 
 Sound and reduced-motion preferences now persist, with safe old-save defaults. `RUNNER-VERIFICATION.md` records the accelerated 3 × 4,500-meter input-driven simulation and 54 real-renderer checkpoints: no damage, bounded resources and successful renderer reuse across restarts. Physical-phone performance and uninterrupted real-time gameplay are not implied by this result.

@@ -234,6 +234,8 @@ h1 em {
   order: 3;
   color: var(--lime);
 }
+#route-choice { margin-bottom:8px; padding:8px 12px; border-radius:12px; background:#173c32ed; color:#efffc9; font-size:12px; line-height:1.5; }
+#route-choice:empty { display:none; }
 #upgrades, #collection {
   max-height: 42svh;
   overflow-y: auto;

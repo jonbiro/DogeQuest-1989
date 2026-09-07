@@ -1,7 +1,7 @@
 // Local-only visual fixture. Bundle separately into dist for browser checks;
 // the production build never includes this file or exposes mutable run state.
 import {createView} from "../src/runner/render.js";
-import {createRun,step,act,HAZARDS} from "../src/runner/world.js";
+import {createRun,step,act,fillTrack,HAZARDS} from "../src/runner/world.js";
 export function previewZoomies(reducedMotion=false,distance=0,gap=false) {
   const canvas=document.createElement("canvas");
   canvas.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;z-index:9999";
@@ -27,6 +27,7 @@ export function longRunCheck() {
     run.appearance={puppy:["biscuit","mochi","pepper"][attempt],costume:["scarf","hero","explorer"][attempt]};
     let nextSample=250;
     while(run.distance<4500 && !run.ended) {
+      if(run.choicePending!==null && run.choicePending-run.distance<35)act(run,attempt===1?"right":"left");
       const next=run.objects.find(o=>HAZARDS.includes(o.type)&&o.at>run.distance&&o.at-run.distance<24);
       if(next) {
         const blocked=new Set(run.objects.filter(o=>o.at===next.at&&HAZARDS.includes(o.type)).map(o=>o.lane));
@@ -47,4 +48,11 @@ export function longRunCheck() {
   const summary={runs:3,metersPerRun:4500,renderedCheckpoints:samples.length,minimumHearts:Math.min(...samples.map(sample=>sample.hearts)),peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),final:samples.at(-1)};
   if(summary.peakGeometries>32||summary.peakTextures>4||summary.peakObjects>200)throw new Error(`Renderer resource regression: ${JSON.stringify(summary)}`);
   return summary;
+}
+export function previewGates() {
+  const canvas=document.createElement("canvas");
+  canvas.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;z-index:9999";document.body.append(canvas);
+  const run=createRun(1989);run.distance=325;run.previous.distance=325;fillTrack(run);
+  createView(canvas).draw(run,1,"playing",true,1/60,1);
+  return {gateAt:run.choicePending};
 }

@@ -45,6 +45,10 @@ export function createRun(seed = Date.now(), upgrades = {}) {
     ended: false,
     objects: [],
     nextRow: 45,
+    nextChoice: 350,
+    choicePending: null,
+    route: null,
+    routeChoices: 0,
     row: 0,
     id: 0,
     events: [],
@@ -55,21 +59,30 @@ export function createRun(seed = Date.now(), upgrades = {}) {
   return run;
 }
 function add(run, type, lane, at) {
-  run.objects.push({ id: run.id++, type, lane, at, used: false });
+  run.objects.push({ id: run.id++, type, lane, at, used: false, skillReward:run.route?.kind==="challenge"&&at<run.route.until?60:20 });
 }
 export function fillTrack(run) {
+  if(run.choicePending!==null)return;
   while (run.nextRow < run.distance + 170) {
+    if(run.nextRow>=run.nextChoice-45) {
+      add(run,"choice-left",0,run.nextChoice);
+      add(run,"choice-right",2,run.nextChoice);
+      run.choicePending=run.nextChoice;
+      run.nextRow=run.nextChoice+40;
+      break;
+    }
+    const route=run.route && run.nextRow<run.route.until ? run.route.kind : null;
     const gapRow = run.row > 5 && run.row % 12 === 10;
     const at = gapRow ? Math.round(run.nextRow/5)*5 : run.nextRow;
     const safe = Math.floor(run.random() * 3);
     const blocked = (safe + 1 + Math.floor(run.random() * 2)) % 3;
-    const actionRow = run.row > 5 && run.row % 4 === 2;
+    const actionRow = route!=="scenic" && run.row > 5 && (route==="challenge" ? run.row%2===0 : run.row % 4 === 2);
     if (actionRow) {
-      const type = gapRow ? "gap" : run.row % 8 === 2 ? "log" : "gate";
+      const type = gapRow ? "gap" : (route==="challenge" ? Math.floor(run.row/2)%2===0 : run.row % 8 === 2) ? "log" : "gate";
       for (let lane = 0; lane < 3; lane++) add(run, type, lane, at);
     } else if (run.row > 0) {
       add(run, SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)], blocked, at);
-      if (run.row > 2 && run.random() > 0.15)
+      if (route!=="scenic" && run.row > 2 && run.random() > 0.15)
         add(
           run,
           SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)],
@@ -125,6 +138,14 @@ export function step(run, dt) {
   run.distance += run.speed * dt;
   if(run.zoomies>0 && run.y===0 && run.objects.some(object=>object.type==="gap" && object.at-run.distance>0 && object.at-run.distance<run.speed*.45)) act(run,"jump");
   run.x += (LANES[run.lane] - run.x) * (1 - Math.exp(-15 * dt));
+  if(run.choicePending!==null && run.distance>=run.choicePending) {
+    const kind=run.x>1.2?"challenge":"scenic";
+    run.route={kind,until:run.choicePending+220};
+    run.routeChoices++;
+    run.nextChoice=run.choicePending+700;
+    run.choicePending=null;
+    run.events.push(`route-${kind}`);
+  }
   run.y = Math.max(0, run.y + run.vy * dt - 11 * dt * dt);
   run.vy -= 22 * dt;
   if (!run.y) run.vy = Math.max(0, run.vy);
@@ -220,7 +241,7 @@ export function step(run, dt) {
           run.y < 0.2);
       if (sameLane && cleared) {
         run.clears++;
-        run.bonusPoints += 20;
+        run.bonusPoints += object.skillReward || 20;
         run.events.push("clear");
       }
       if (sameLane && !cleared && run.invulnerable === 0) {

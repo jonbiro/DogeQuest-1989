@@ -491,6 +491,17 @@ export function createView(canvas) {
     box(templates.gap,"#efae45",0,.12,z,2.4,.22,.22);
     for(const x of [-.8,0,.8]) box(templates.gap,"#5d422c",x,.25,z,.3,.04,.24);
   }
+  for(const [type,color] of [["choice-left","#a7e59e"],["choice-right","#f0b762"]]) {
+    const gate=new THREE.Group();templates[type]=gate;
+    for(const x of [-1,1])box(gate,"#66795f",x,1.8,0,.12,3.6,.18);
+    box(gate,color,0,3.3,0,2.1,.65,.18);
+    if(type==="choice-left") {
+      ball(gate,"#315c43",0,3.3,.12,.27,.2,.055);
+      for(const x of [-.2,0,.2])ball(gate,"#315c43",x,3.55,.12,.08,.08,.055);
+    } else {
+      const diamond=box(gate,"#7d4e2b",0,3.3,.12,.34,.34,.08);diamond.rotation.z=Math.PI/4;
+    }
+  }
   const active = new Map(),
     pools = Object.fromEntries(
       Object.keys(templates).map((type) => [type, []]),

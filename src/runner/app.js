@@ -447,6 +447,8 @@ function frame(now) {
       if (event === "zoomies") { toast("ZOOMIES! 6 seconds of speed. Smash obstacles for +40 points!"); tone(1180,.25); }
       if (event === "smash") tone(260,.08);
       if (event === "zoomies-end") toast("Zoomies finished. Back to jumping and sliding!",2);
+      if(event==="route-scenic")toast("Scenic trail: fewer obstacles for the next 220 meters.",4);
+      if(event==="route-challenge")toast("Challenge trail! More jump/slide rows. Clean clears earn +60 points.",4);
       if (event === "double") {
         toast("Golden bonus! Double bone points for 10 seconds.");
         tone(880, 0.2);
@@ -468,6 +470,9 @@ function frame(now) {
       lastHud = Math.floor(run.time * 10);
       $("distance").innerHTML = `${Math.floor(run.distance)}<small> m</small>`;
       $("region-name").textContent = REGIONS[regionAt(run.distance)].name;
+      $("route-choice").textContent = run.choicePending!==null && run.choicePending-run.distance<100
+        ? `GATES IN ${Math.max(0,Math.ceil(run.choicePending-run.distance))}m · ← Scenic · Challenge +60 → (center: scenic)`
+        : run.route && run.distance<run.route.until ? `${run.route.kind==="challenge"?"CHALLENGE · +60 per clear":"SCENIC · Fewer obstacles"} · ${Math.ceil(run.route.until-run.distance)}m` : "";
       $("bones").textContent = run.bones;
       $("run-score").textContent =
         `${run.score.toLocaleString()} pts${run.combo >= 2 ? ` · ${run.combo} bone streak` : ""}`;
