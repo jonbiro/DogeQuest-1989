@@ -308,10 +308,16 @@ window.addEventListener("keydown", (event) => {
     }
   }
   if (event.code === "Escape") {
+    event.preventDefault();
+    if (event.repeat) return;
     if (state === "playing") pause();
     else if (state === "paused") {
       setState("playing");
       $("scene").focus();
+    } else if (["help", "shop", "kennel"].includes(state)) {
+      const opener = state;
+      setState("menu");
+      $(opener).focus({preventScroll:true});
     }
     return;
   }

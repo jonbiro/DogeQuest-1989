@@ -120,6 +120,30 @@ export function startUiPlayCheck(seconds=34) {
   return uiCheckStatus;
 }
 export function readUiPlayCheck() { return uiCheckStatus; }
+export function keyboardCheck() {
+  const state=()=>document.querySelector("#game").dataset.state;
+  const press=(code,repeat=false)=>window.dispatchEvent(new window.KeyboardEvent("keydown",{code,key:code,repeat,bubbles:true,cancelable:true}));
+  const restored=[];
+  for(const id of ["help","shop","kennel"]){
+    document.getElementById(id).click();
+    if(state()!==id)throw new Error(`Could not open ${id}`);
+    press("Escape",true);
+    if(state()!==id)throw new Error(`Repeated Escape closed ${id}`);
+    press("Escape");
+    if(state()!=="menu"||document.activeElement.id!==id)throw new Error(`Focus did not return to ${id}`);
+    restored.push(id);
+  }
+  document.querySelector("#play").click();
+  press("Escape");
+  for(let i=0;i<10;i++)press("Escape",true);
+  if(state()!=="paused")throw new Error("Held Escape resumed a paused game");
+  press("Escape");
+  if(state()!=="playing"||document.activeElement.id!=="scene")throw new Error("Resume did not focus the trail");
+  for(let i=0;i<10;i++)press("Escape",true);
+  if(state()!=="playing")throw new Error("Held Escape paused a resumed game");
+  press("Escape");
+  return {restored,heldEscapeIgnored:true,finalState:state()};
+}
 export function dialogLayoutCheck() {
   const content=document.querySelector(".modal-content");
   const actions=[...document.querySelectorAll(".modal-actions button")].filter(button=>!button.hidden).map(button=>{
