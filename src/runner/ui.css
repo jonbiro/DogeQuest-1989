@@ -817,19 +817,27 @@ kbd {
     bottom: 16%;
   }
 }
+@media (max-width:700px) and (min-height:521px) and (max-height:700px) {
+  .menu { top:90px; }
+  h1 { font-size:min(52px,16vw); margin:12px 0; }
+  .intro, #buddy { display:none; }
+  .start-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:110px; }
+  .start-actions button { padding:8px; font-size:11px; }
+  .menu-stats { margin-top:16px; }
+}
 @media (max-height: 520px) {
   #game {
-    min-height: 340px;
+    min-height: 0;
   }
   header {
     padding: 12px 4%;
   }
   .menu {
-    top: 24%;
+    top: 20%;
     left: 6%;
   }
   h1 {
-    font-size: 52px;
+    font-size: 48px;
     margin: 14px 0;
   }
   .intro,
@@ -841,7 +849,12 @@ kbd {
   }
   .start-actions {
     margin-top: 12px;
+    gap: 8px;
   }
+  .start-actions button { min-height:44px; padding:8px 14px; font-size:12px; }
+  footer { display:flex; justify-content:flex-end; pointer-events:none; }
+  footer > span { display:none; }
+  footer button { pointer-events:auto; }
   .eyebrow {
     font-size: 7px;
   }

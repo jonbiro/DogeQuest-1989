@@ -690,7 +690,8 @@ export function createView(canvas) {
       if (menu) {
         const mobile = camera.aspect < 0.85;
         camera.position.set(6, mobile ? 4 : 3.3, mobile ? 11 : 7.7);
-        camera.lookAt(mobile ? -1 : -3.5, mobile ? 2.2 : 1.25, 0);
+        const compact = mobile && canvas.clientHeight<=700 && canvas.clientHeight>520;
+        camera.lookAt(mobile ? -1 : -3.5, mobile ? compact ? .5 : 2.2 : 1.25, 0);
       } else {
         if (state === "playing")
           cameraX += (x - cameraX) * (1 - Math.exp(-5 * dt));

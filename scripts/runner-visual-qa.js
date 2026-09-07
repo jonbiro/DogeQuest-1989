@@ -70,3 +70,31 @@ export async function audioCheck() {
   }
   return results;
 }
+export function uiPlayCheck(seconds=22) {
+  return new Promise(resolve=>{
+    document.querySelector("#pause-button").click();
+    document.querySelector("#home").click();
+    document.querySelector("#play").click();
+    const started=performance.now(),frames=[];
+    let last=started,lastAction=0,gate=false,challenge=false;
+    function tick(now) {
+      frames.push(now-last);last=now;
+      const state=document.querySelector("#game").dataset.state;
+      const route=document.querySelector("#route-choice").textContent;
+      const cue=document.querySelector("#cue").textContent;
+      gate ||= route.includes("GATES IN");challenge ||= route.includes("CHALLENGE");
+      if(now-lastAction>250) {
+        const code=cue.includes("SLIDE")?"ArrowDown":cue.includes("JUMP")?"ArrowUp":route.includes("GATES IN")?"ArrowRight":null;
+        if(code){window.dispatchEvent(new window.KeyboardEvent("keydown",{code,key:code,bubbles:true}));lastAction=now;}
+      }
+      if(now-started>=seconds*1000||state!=="playing") {
+        document.querySelector("#pause-button").click();
+        const sorted=[...frames].sort((a,b)=>a-b);
+        resolve({state,viewport:[window.innerWidth,window.innerHeight],endDistance:document.querySelector("#distance").textContent,frames:frames.length,meanMs:frames.reduce((a,b)=>a+b,0)/frames.length,p95Ms:sorted[Math.floor(sorted.length*.95)],gatePromptSeen:gate,challengeSelected:challenge,hearts:document.querySelector("#hearts").getAttribute("aria-label")});
+        return;
+      }
+      window.requestAnimationFrame(tick);
+    }
+    window.requestAnimationFrame(tick);
+  });
+}
