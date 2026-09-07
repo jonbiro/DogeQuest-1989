@@ -47,3 +47,23 @@ test("gift pickups award points once without activating a magnet or shield", () 
   assert.equal(r.gifts,1); assert.equal(r.bonusPoints,100);
   assert.equal(r.shield,0); assert.equal(r.magnet,0);
 });
+test("claimed costume prizes repair incomplete saves without replaying rewards",()=>{
+  const original={prizes:["long-run","gift-hunter"],costumes:["scarf"],costume:"royal",gifts:3};
+  const before=JSON.stringify(original);
+  const collection=collectionFrom(original);
+  assert.deepEqual(collection.costumes,["scarf","royal","party"]);
+  assert.equal(collection.costume,"royal");
+  assert.equal(JSON.stringify(original),before);
+  assert.deepEqual(collectionFrom(collection),collection);
+  const profile={credits:200,collection};
+  assert.ok(equipOrBuy(profile,"costume","party"));
+  assert.equal(profile.credits,200);
+  assert.deepEqual(awardPrizes(profile,{ended:true,distance:0,bones:0,gifts:0}),[]);
+  assert.equal(profile.credits,200);
+});
+test("unclaimed or unknown prize records never unlock prize costumes",()=>{
+  const collection=collectionFrom({prizes:["fake-crown","first-trail"],costume:"royal"});
+  assert.deepEqual(collection.costumes,["scarf"]);
+  assert.equal(collection.costume,"scarf");
+  assert.equal(equipOrBuy({credits:99999,collection},"costume","royal"),false);
+});

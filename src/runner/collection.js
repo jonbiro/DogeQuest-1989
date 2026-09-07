@@ -21,7 +21,12 @@ export const PRIZES = [
 export function collectionFrom(value={}) {
   const puppies=['biscuit','mochi',...(Array.isArray(value?.puppies)?value.puppies:[])].filter((id,i,list)=>Object.hasOwn(PUPPIES,id)&&list.indexOf(id)===i);
   const costumes=['scarf',...(Array.isArray(value?.costumes)?value.costumes:[])].filter((id,i,list)=>Object.hasOwn(COSTUMES,id)&&list.indexOf(id)===i);
-  return {puppies,costumes,puppy:puppies.includes(value?.puppy)?value.puppy:'biscuit',costume:costumes.includes(value?.costume)?value.costume:'scarf',prizes:(Array.isArray(value?.prizes)?value.prizes:[]).filter((id,i,list)=>PRIZES.some(p=>p.id===id)&&list.indexOf(id)===i),gifts:Math.max(0,Math.floor(Number.isFinite(value?.gifts)?value.gifts:0))};
+  const prizes=(Array.isArray(value?.prizes)?value.prizes:[]).filter((id,i,list)=>PRIZES.some(p=>p.id===id)&&list.indexOf(id)===i);
+  // Claimed prizes are permanent entitlements. Repair incomplete outfit lists
+  // during loading without replaying rewards or modifying the supplied save.
+  for(const prize of PRIZES)
+    if(prize.costume&&prizes.includes(prize.id)&&!costumes.includes(prize.costume))costumes.push(prize.costume);
+  return {puppies,costumes,puppy:puppies.includes(value?.puppy)?value.puppy:'biscuit',costume:costumes.includes(value?.costume)?value.costume:'scarf',prizes,gifts:Math.max(0,Math.floor(Number.isFinite(value?.gifts)?value.gifts:0))};
 }
 export function equipOrBuy(profile,kind,id) {
   const catalog=kind==='puppy'?PUPPIES:kind==='costume'?COSTUMES:null;

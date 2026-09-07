@@ -86,3 +86,7 @@ Broader device/viewport coverage, longer worst-case frame-time profiling and phy
 - Corrected airborne leg pairing to match the renderer's left-front, left-rear, right-front, right-rear ordering. Running, jumping, sliding and zipline targets now blend with time-based exponential easing; collision physics are unchanged.
 - 69 tests pass, including front/rear symmetry, bounded transitions, zero-time stability and equivalent 30/120 Hz transition results.
 - Real-renderer phone-sized jump and reduced-motion zipline screenshots inspected. `posePauseCheck()` verified identical leg angles over 60 paused draw calls and continued easing after resume.
+# Incomplete collection recovery
+
+- Claimed costume prizes now restore missing outfit entries during save normalization, without replaying points, changing the supplied object, or unlocking unknown/unclaimed prizes. Repeated normalization is idempotent; 71 tests pass.
+- An isolated browser loaded a deliberately incomplete test save: 200 credits, claimed crown/party prizes, but only the scarf in its outfit list. The crown was restored as equipped; the party outfit could be equipped. Reload retained both restored outfits and the party selection, with credits still exactly 200. This verifies recovery, not natural prize earning (covered separately above).
