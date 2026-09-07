@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { LANES, PICKUPS, seededRandom } from "./world.js";
 
 // Shared low-poly geometry and materials keep the mobile scene inexpensive.
@@ -12,7 +13,7 @@ export function createView(canvas) {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.25;
+  renderer.toneMappingExposure = 1.05;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#8ec5aa");
   scene.fog = new THREE.Fog("#8ec5aa", 35, 145);
@@ -29,13 +30,13 @@ export function createView(canvas) {
         new THREE.MeshStandardMaterial({
           color,
           roughness: 0.88,
-          flatShading: true,
+          flatShading: false,
         }),
       );
     return materialCache.get(color);
   };
-  const boxGeometry = new THREE.BoxGeometry(1, 1, 1);
-  const sphereGeometry = new THREE.IcosahedronGeometry(1, 0);
+  const boxGeometry = new RoundedBoxGeometry(1, 1, 1, 2, 0.055);
+  const sphereGeometry = new THREE.SphereGeometry(1, 12, 8);
   const coneGeometry = new THREE.ConeGeometry(1, 1, 5);
   function mesh(parent, geometry, color, x, y, z, sx, sy, sz) {
     const item = new THREE.Mesh(geometry, mat(color));
@@ -214,30 +215,68 @@ export function createView(canvas) {
   box(tail, "#db994e", 0, 0.24, 0.16, 0.25, 0.55, 0.3);
   box(tail, "#ffe3b1", 0, 0.57, 0.16, 0.27, 0.2, 0.3);
   dog.add(tail);
+  const shadowCanvas = document.createElement("canvas");
+  shadowCanvas.width = shadowCanvas.height = 64;
+  const shadowContext = shadowCanvas.getContext("2d");
+  const gradient = shadowContext.createRadialGradient(32, 32, 4, 32, 32, 32);
+  gradient.addColorStop(0, "rgba(255,255,255,1)");
+  gradient.addColorStop(1, "rgba(255,255,255,0)");
+  shadowContext.fillStyle = gradient;
+  shadowContext.fillRect(0, 0, 64, 64);
   const shadow = new THREE.Mesh(
-    new THREE.CircleGeometry(0.75, 20),
+    new THREE.PlaneGeometry(1.8, 2.5),
     new THREE.MeshBasicMaterial({
       color: "#364c35",
       transparent: true,
       opacity: 0.25,
       depthWrite: false,
+      map: new THREE.CanvasTexture(shadowCanvas),
     }),
   );
   shadow.rotation.x = -Math.PI / 2;
-  shadow.scale.set(1, 1.5, 1);
   shadow.position.y = 0.13;
   scene.add(shadow);
   const aura = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(1.4, 1),
+    new THREE.SphereGeometry(1.4, 20, 12),
     new THREE.MeshBasicMaterial({
       color: "#bcecff",
-      wireframe: true,
+      wireframe: false,
       transparent: true,
-      opacity: 0.28,
+      opacity: 0.12,
+      depthWrite: false,
     }),
   );
   aura.position.y = 0.9;
   dog.add(aura);
+  const magnetField = new THREE.Group();
+  scene.add(magnetField);
+  const ringGeometry = new THREE.TorusGeometry(1, 0.025, 6, 48);
+  for (let i = 0; i < 3; i++) {
+    const ring = new THREE.Mesh(
+      ringGeometry,
+      new THREE.MeshBasicMaterial({
+        color: "#85f8ed",
+        transparent: true,
+        opacity: 0.5,
+        depthWrite: false,
+      }),
+    );
+    ring.rotation.x = -Math.PI / 2;
+    magnetField.add(ring);
+  }
+  const flashes = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(1, 6, 4),
+    new THREE.MeshBasicMaterial({
+      color: "#fff0a6",
+      transparent: true,
+      opacity: 0.8,
+      depthWrite: false,
+    }),
+    192,
+  );
+  flashes.frustumCulled = false;
+  scene.add(flashes);
+  const flashMatrix = new THREE.Matrix4();
   const templates = {};
   templates.bone = new THREE.Group();
   box(templates.bone, "#ffd66e", 0, 0, 0, 0.6, 0.14, 0.14);
@@ -273,6 +312,24 @@ export function createView(canvas) {
     box(templates.magnet, "#fff1d6", x, 0.35, 0, 0.21, 0.2, 0.21);
   }
   box(templates.magnet, "#ff8d83", 0, -0.37, 0, 0.75, 0.2, 0.2);
+  // Rounded horseshoe with contrasting poles, readable even at a distance.
+  templates.magnet.clear();
+  const horseshoe = new THREE.Mesh(
+    new THREE.TorusGeometry(0.38, 0.14, 10, 24, Math.PI),
+    new THREE.MeshStandardMaterial({
+      color: "#ff6389",
+      roughness: 0.3,
+      metalness: 0.25,
+      emissive: "#74112c",
+      emissiveIntensity: 0.3,
+    }),
+  );
+  horseshoe.rotation.z = Math.PI;
+  templates.magnet.add(horseshoe);
+  for (const x of [-0.38, 0.38]) {
+    box(templates.magnet, "#ff6389", x, 0.17, 0, 0.28, 0.35, 0.28);
+    box(templates.magnet, "#c4fffa", x, 0.4, 0, 0.28, 0.15, 0.28);
+  }
   templates.shield = new THREE.Group();
   ball(templates.shield, "#a5e8ee", 0, 0, 0, 0.45, 0.6, 0.2);
   box(templates.shield, "#effff0", 0, 0, 0.19, 0.09, 0.6, 0.04);
@@ -308,6 +365,20 @@ export function createView(canvas) {
     0.25,
   );
   heartTip.rotation.z = Math.PI / 4;
+  const haloGeometry = new THREE.TorusGeometry(0.86, 0.022, 6, 40);
+  for (const type of PICKUPS.filter((type) => type !== "bone")) {
+    const halo = new THREE.Mesh(
+      haloGeometry,
+      new THREE.MeshBasicMaterial({
+        color: type === "magnet" ? "#85f8ed" : "#fff1bb",
+        transparent: true,
+        opacity: 0.7,
+        depthWrite: false,
+      }),
+    );
+    templates[type].add(halo);
+    templates[type].scale.multiplyScalar(1.2);
+  }
   const active = new Map(),
     pools = Object.fromEntries(
       Object.keys(templates).map((type) => [type, []]),
@@ -323,10 +394,39 @@ export function createView(canvas) {
   window.addEventListener("resize", resize);
   let slowFrames = 0,
     qualityReduced = false;
+  let visualRun = null,
+    pose = 1,
+    lean = 0,
+    cameraX = 0,
+    animationTime = 0;
   return {
-    draw(run, time, state, reducedMotion, dt) {
+    draw(run, time, state, reducedMotion, dt, alpha = 1) {
       const menu = ["menu", "help", "shop"].includes(state);
-      const distance = menu ? time * (reducedMotion ? 0 : 2) : run.distance;
+      if (visualRun !== run) {
+        // IDs restart on a new route; never reuse an old obstacle under a new type.
+        for (const item of active.values()) {
+          scene.remove(item);
+          pools[item.userData.type].push(item);
+        }
+        active.clear();
+        visualRun = run;
+        pose = 1;
+        lean = 0;
+        cameraX = run.x;
+      }
+      if (state === "playing" || menu) animationTime += dt;
+      time = animationTime;
+      const blend = state === "playing" ? alpha : 1;
+      const x = THREE.MathUtils.lerp(run.previous.x, run.x, blend),
+        y = THREE.MathUtils.lerp(run.previous.y, run.y, blend);
+      const distance = menu
+        ? time * (reducedMotion ? 0 : 2)
+        : THREE.MathUtils.lerp(run.previous.distance, run.distance, blend);
+      const smooth = 1 - Math.exp(-18 * dt);
+      if (state === "playing" || menu) {
+        pose += ((menu || run.slide === 0 ? 1 : 0.46) - pose) * smooth;
+        lean += ((menu ? 0 : -(LANES[run.lane] - x) * 0.12) - lean) * smooth;
+      }
       for (const { instanced, entries } of batches) {
         entries.forEach((entry, i) => {
           const originalZ = entry.matrix.elements[14];
@@ -341,31 +441,58 @@ export function createView(canvas) {
         instanced.instanceMatrix.needsUpdate = true;
       }
       dog.position.set(
-        menu ? 0 : run.x,
-        (menu ? 0 : run.y) +
+        menu ? 0 : x,
+        (menu ? 0 : y) +
           Math.abs(Math.sin(time * 12)) *
             (reducedMotion || (!menu && state !== "playing") ? 0 : 0.045),
         0,
       );
-      dog.rotation.y = menu ? -2.35 : -(LANES[run.lane] - run.x) * 0.12;
+      dog.rotation.y = menu ? -2.35 : lean;
+      dog.rotation.z = menu || reducedMotion ? 0 : lean * 0.3;
       dog.scale.setScalar(1);
-      dog.scale.y = !menu && run.slide > 0 ? 0.46 : 1;
-      dog.visible = !(
-        state === "playing" &&
-        run.invulnerable > 0 &&
-        !reducedMotion &&
-        Math.sin(time * 28) < -0.25
-      );
+      dog.scale.y = pose;
+      dog.visible = true;
       for (let i = 0; i < legs.length; i++)
-        legs[i].rotation.x =
-          state === "playing"
-            ? Math.sin(time * 17 + (i === 0 || i === 3 ? 0 : Math.PI)) * 0.8
-            : 0;
+        legs[i].rotation.x = !menu
+          ? y > 0.1
+            ? -0.3
+            : Math.sin(distance * 0.82 + (i === 0 || i === 3 ? 0 : Math.PI)) *
+              0.7
+          : 0;
       tail.rotation.z = reducedMotion ? 0 : Math.sin(time * 9) * 0.3;
       scarf.rotation.x = reducedMotion ? 0 : Math.sin(time * 12) * 0.15;
       shadow.position.x = dog.position.x;
-      shadow.scale.setScalar(Math.max(0.45, 1 - run.y * 0.12));
+      shadow.scale.setScalar(Math.max(0.45, 1 - y * 0.12));
+      shadow.material.opacity = 0.35 / (1 + y * 0.3);
       aura.visible = !menu && run.shield > 0;
+      magnetField.visible = !menu && run.magnet > 0;
+      magnetField.position.set(x, 0.18, 0);
+      magnetField.children.forEach((ring, i) => {
+        const phase = reducedMotion ? i / 3 : (time * 0.7 + i / 3) % 1;
+        ring.scale.setScalar(1 + phase * 3.2);
+        ring.material.opacity = 0.55 * (1 - phase);
+      });
+      let sparkCount = 0;
+      if (!menu && !reducedMotion)
+        for (const effect of run.effects) {
+          const age = run.time - effect.time;
+          for (let i = 0; i < 6 && sparkCount < 192; i++) {
+            const angle = (i * Math.PI) / 3;
+            flashMatrix.makeScale(
+              0.07 * (1 - age / 0.45),
+              0.07 * (1 - age / 0.45),
+              0.07 * (1 - age / 0.45),
+            );
+            flashMatrix.setPosition(
+              effect.x + Math.cos(angle) * age * 3,
+              effect.y + Math.sin(angle) * age * 2,
+              age * 2,
+            );
+            flashes.setMatrixAt(sparkCount++, flashMatrix);
+          }
+        }
+      flashes.count = sparkCount;
+      flashes.instanceMatrix.needsUpdate = true;
       const visibleIds = new Set();
       if (!menu)
         for (const object of run.objects) {
@@ -385,9 +512,23 @@ export function createView(canvas) {
               ? 1.1 +
                   (reducedMotion ? 0 : Math.sin(time * 3 + object.id) * 0.12)
               : 0,
-            -(object.at - run.distance),
+            -(object.at - distance),
           );
-          item.rotation.y = pickup ? time * (reducedMotion ? 0 : 1.8) : 0;
+          if (object.pull) {
+            const p = Math.min(1, object.pull.elapsed / object.pull.duration),
+              eased = p * p * (3 - 2 * p);
+            item.position.set(
+              THREE.MathUtils.lerp(object.pull.fromX, x, eased),
+              THREE.MathUtils.lerp(object.pull.fromY, y + 1, eased) +
+                Math.sin(p * Math.PI) * 0.7,
+              THREE.MathUtils.lerp(-(object.pull.fromAt - distance), 0, eased),
+            );
+          }
+          item.rotation.y = pickup
+            ? object.type === "bone"
+              ? time * (reducedMotion ? 0 : 1.8)
+              : Math.sin(time * 1.5) * 0.25
+            : 0;
         }
       for (const [id, item] of active)
         if (!visibleIds.has(id)) {
@@ -400,8 +541,14 @@ export function createView(canvas) {
         camera.position.set(6, mobile ? 4 : 3.3, mobile ? 11 : 7.7);
         camera.lookAt(mobile ? -1 : -3.5, mobile ? 2.2 : 1.25, 0);
       } else {
-        camera.position.set(run.x * 0.13, 4.5, camera.aspect < 0.85 ? 10.8 : 9);
-        camera.lookAt(run.x * 0.12, 0.75, -13);
+        if (state === "playing")
+          cameraX += (x - cameraX) * (1 - Math.exp(-5 * dt));
+        camera.position.set(
+          cameraX * 0.13,
+          4.5,
+          camera.aspect < 0.85 ? 10.8 : 9,
+        );
+        camera.lookAt(cameraX * 0.12, 0.75, -13);
       }
       if (state === "playing" && dt > 0.025) slowFrames++;
       else slowFrames = Math.max(0, slowFrames - 1);

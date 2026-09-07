@@ -4,6 +4,9 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Smoothed runner rendering with fixed-step interpolation, frame-rate-independent lane easing, eased camera and slide poses, and non-teleporting airborne slides. Rounded models, softened lighting/shadows, and reduced HUD churn.
+- Rebuilt magnets with visible all-lane bone attraction, arrival-based scoring, larger readable horseshoe pickups, field rings, pickup halos, sparkles, and active power-up timer bars. Added expiry, range, high-speed attraction, and motion regressions.
+
 - Made Biscuit Dash faster (18–32 m/s), with higher/longer jumps, jump buffering, instant slides, earlier swipe response, and more forgiving collision timing. Low stone blocks can now be jumped.
 - Added slide-under branches and hanging gates, treasure gems, double-bone-point tokens, healing hearts, and more frequent bonus pickups.
 - Added earned upgrade points and a permanent four-track Paw upgrades shop, preserving existing records. Added timing, new obstacle, bonus, and upgrade-economy regression tests.

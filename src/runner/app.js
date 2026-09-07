@@ -328,6 +328,7 @@ try {
 }
 let milestone = 0,
   taughtObstacles = false;
+let lastHud = -1;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000 || 0);
   last = now;
@@ -370,21 +371,30 @@ function frame(now) {
       }
     }
     run.events = [];
-    $("distance").innerHTML = `${Math.floor(run.distance)}<small> m</small>`;
     $("scene").dataset.lane = String(run.lane + 1);
     $("scene").dataset.posture =
       run.y > 0.05 ? "jump" : run.slide > 0 ? "slide" : "run";
-    $("bones").textContent = run.bones;
-    $("hearts").textContent =
-      "♥ ".repeat(Math.max(0, run.hearts)) + "♡ ".repeat(3 - run.hearts);
-    $("hearts").setAttribute("aria-label", `${run.hearts} hearts remaining`);
-    $("power").textContent = [
-      run.shield ? "◇ Shield ready" : "",
-      run.magnet > 0 ? `↗ Magnet ${Math.ceil(run.magnet)}s` : "",
-      run.double > 0 ? `×2 Bones ${Math.ceil(run.double)}s` : "",
-    ]
-      .filter(Boolean)
-      .join(" · ");
+    if (Math.floor(run.time * 10) !== lastHud || run.ended) {
+      lastHud = Math.floor(run.time * 10);
+      $("distance").innerHTML = `${Math.floor(run.distance)}<small> m</small>`;
+      $("bones").textContent = run.bones;
+      $("hearts").textContent =
+        "♥ ".repeat(Math.max(0, run.hearts)) + "♡ ".repeat(3 - run.hearts);
+      $("hearts").setAttribute("aria-label", `${run.hearts} hearts remaining`);
+      $("power").innerHTML = [
+        run.shield
+          ? '<span class="power-chip shield">◇ SHIELD · One hit protected</span>'
+          : "",
+        run.magnet > 0
+          ? `<span class="power-chip magnet">🧲 MAGNET · ${Math.ceil(run.magnet)}s <small>Pulling bones from all lanes</small><progress aria-label="Magnet time remaining" max="${10 + run.upgrades.magnet * 3}" value="${run.magnet}"></progress></span>`
+          : "",
+        run.double > 0
+          ? `<span class="power-chip double">×2 BONE POINTS · ${Math.ceil(run.double)}s<progress aria-label="Double points time remaining" max="10" value="${run.double}"></progress></span>`
+          : "",
+      ]
+        .filter(Boolean)
+        .join("");
+    }
     const currentMilestone = Math.floor(run.distance / 250);
     if (!taughtObstacles && run.distance > 65) {
       taughtObstacles = true;
@@ -398,7 +408,8 @@ function frame(now) {
     if (run.ended) finish();
   }
   if (time > toastUntil) $("toast").textContent = "";
-  if (view) view.draw(run, time, state, reducedMotion, dt);
+  if (view)
+    view.draw(run, time, state, reducedMotion, dt, accumulator / (1 / 120));
   requestAnimationFrame(frame);
 }
 $("play").focus({ preventScroll: true });

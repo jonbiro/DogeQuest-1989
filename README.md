@@ -6,6 +6,8 @@ Meet Biscuit: a small golden dog with a red scarf and five handcrafted trails to
 
 ## New companion: Biscuit Dash
 
+Movement now uses interpolated rendering, smooth lane easing and camera follow, gradual airborne dives and slide poses, rounded models, and a soft contact shadow. Magnet bones curve toward Biscuit from all three lanes within 16 meters ahead; points are credited on arrival, once per bone. Already-attracted bones finish their trip if the magnet expires. Magnetic field rings, pickup halos, collection sparkles, and timer bars make power-up states visible; decorative effects respect reduced-motion mode.
+
 [Play Biscuit Dash in 3D](https://jonbiro.github.io/DogeQuest-1989/runner/)
 
 A separate mobile-first endless runner through low-poly jungle ruins. Puppy Quest is still available unchanged at the main address.

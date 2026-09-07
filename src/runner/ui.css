@@ -399,6 +399,52 @@ footer .text-button {
 #power:empty {
   display: none;
 }
+#power {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+  max-width: 240px;
+}
+.power-chip {
+  display: block;
+  padding: 9px 12px;
+  border-radius: 12px;
+  background: #102a28e8;
+  border: 1px solid #bcece966;
+  font-size: 10px;
+  color: #d9fff4;
+}
+.power-chip small {
+  display: block;
+  font-size: 9px;
+  margin-top: 5px;
+  color: #b5d7cc;
+}
+.power-chip progress {
+  display: block;
+  width: 100%;
+  height: 4px;
+  margin-top: 8px;
+  border: 0;
+  appearance: none;
+  background: #ffffff25;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.power-chip progress::-webkit-progress-bar {
+  background: #ffffff25;
+}
+.power-chip progress::-webkit-progress-value {
+  background: #85f8ed;
+}
+.power-chip progress::-moz-progress-bar {
+  background: #85f8ed;
+}
+.power-chip.double {
+  color: #ffe39a;
+}
 .toast {
   position: absolute;
   z-index: 5;

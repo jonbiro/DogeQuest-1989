@@ -74,11 +74,71 @@ test("magnet collects off-lane bones once and expires", () => {
   run.objects[0].lane = 0;
   run.magnet = 0.3;
   advance(run, 0.2);
+  assert.equal(run.bones, 0, "Bone flies toward the dog before it is credited");
+  assert.ok(run.objects[0].pull);
+  advance(run, 0.1);
   assert.equal(run.bones, 1);
   advance(run, 0.4);
   assert.equal(run.bones, 1);
   assert.equal(run.magnet, 0);
   assert.equal(run.score, Math.floor(run.distance) + 25);
+});
+test("magnet attracts every lane at full speed and finishes pulls after expiry", () => {
+  const run = createRun(4);
+  run.distance = 3000;
+  run.magnet = 0.08;
+  run.y = 2;
+  run.objects = [0, 1, 2].map((lane) => ({
+    id: lane,
+    type: "bone",
+    lane,
+    at: 3014,
+  }));
+  run.nextRow = 9999;
+  advance(run, 0.1);
+  assert.equal(run.magnet, 0);
+  assert.equal(run.bones, 0);
+  assert.ok(run.objects.every((object) => object.pull));
+  act(run, "right");
+  advance(run, 0.2);
+  assert.equal(run.bones, 3);
+  assert.equal(run.bonePoints, 75);
+  advance(run, 0.5);
+  assert.equal(run.bones, 3);
+  assert.equal(run.effects.length, 0);
+});
+test("magnet does not pull distant bones or activate without a pickup", () => {
+  const run = createRun(4);
+  run.nextRow = 9999;
+  run.objects = [
+    { id: 1, type: "bone", lane: 0, at: 14 },
+    { id: 2, type: "bone", lane: 2, at: 50 },
+  ];
+  advance(run, 0.1);
+  assert.ok(run.objects.every((object) => !object.pull));
+  run.magnet = 1;
+  advance(run, 0.1);
+  assert.ok(run.objects[0].pull);
+  assert.equal(run.objects[1].pull, undefined);
+});
+test("airborne slides descend instead of teleporting; lane motion is timestep-independent", () => {
+  const run = createRun(1);
+  act(run, "jump");
+  advance(run, 0.3);
+  const y = run.y;
+  act(run, "slide");
+  assert.equal(run.y, y);
+  advance(run, 0.025);
+  assert.ok(run.y < y && run.y > 0);
+  advance(run, 0.2);
+  assert.equal(run.y, 0);
+  const a = createRun(1),
+    b = createRun(1);
+  act(a, "left");
+  act(b, "left");
+  for (let i = 0; i < 30; i++) step(a, 1 / 60);
+  for (let i = 0; i < 60; i++) step(b, 1 / 120);
+  assert.ok(Math.abs(a.x - b.x) < 1e-9);
 });
 test("third collision ends the run and input and time stop", () => {
   const run = obstacle("rock");
