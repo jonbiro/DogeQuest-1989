@@ -544,11 +544,11 @@ export function createView(canvas) {
         if (state === "playing")
           cameraX += (x - cameraX) * (1 - Math.exp(-5 * dt));
         camera.position.set(
-          cameraX * 0.13,
+          cameraX * (camera.aspect < 0.85 ? 0.45 : 0.13),
           4.5,
           camera.aspect < 0.85 ? 10.8 : 9,
         );
-        camera.lookAt(cameraX * 0.12, 0.75, -13);
+        camera.lookAt(cameraX * (camera.aspect < 0.85 ? 0.4 : 0.12), 0.75, -13);
       }
       if (state === "playing" && dt > 0.025) slowFrames++;
       else slowFrames = Math.max(0, slowFrames - 1);
