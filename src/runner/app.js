@@ -1,12 +1,13 @@
 import { createRun, act, step } from "./world.js";
 import { createView } from "./render.js";
 import { UPGRADES, levels, price, purchase } from "./progression.js";
-import { missionFor, missionProgress, claimMission } from "./missions.js";
+import { missionFor, missionProgress } from "./missions.js";
+import { bankRun } from "./rewards.js";
 import {REGIONS,regionAt} from "./regions.js";
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound} from "./sound.js";
-import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, awardPrizes, prizeProgress } from "./collection.js";
+import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
 const $ = (id) => document.getElementById(id);
 let run = createRun(),
   state = "menu",
@@ -233,17 +234,15 @@ function pause() {
   if (state === "playing") showOverlay("paused");
 }
 function finish() {
+  const receipt = bankRun(saved, run, currentMission);
+  if (!receipt) return;
   showOverlay("ended");
+  $("overlay-copy").textContent = receipt.personalBest
+    ? "New personal best. Very good dog!" : "The next great run is one tap away.";
   $("final-score").textContent = run.score.toLocaleString();
   $("final-distance").textContent = `${Math.floor(run.distance)} m`;
   $("final-bones").textContent = run.bones;
-  saved.best = Math.max(saved.best, run.score);
-  saved.distance = Math.max(saved.distance, run.distance);
-  saved.bones += run.bones;
-  saved.bestRunBones = Math.max(saved.bestRunBones, run.bones);
-  saved.credits += run.score;
-  const reward = claimMission(saved, run, currentMission);
-  const prizes = awardPrizes(saved, run);
+  const {missionPoints: reward, prizes} = receipt;
   $("overlay-copy").textContent +=
     ` +${run.score.toLocaleString()} upgrade points earned. Spend them at camp.`;
   if (reward)

@@ -115,3 +115,9 @@ Broader device/viewport coverage, longer worst-case frame-time profiling and phy
 - Cabinet rewards now show labeled progress meters and exact counts. Best-run bones are tracked separately from lifetime bones; banked gifts and best distance use their existing records. Already-claimed prizes always display complete, including older saves without the new bone record.
 - All 75 tests pass. New tests distinguish lifetime totals from single-run records, cap progress, preserve earned state and confirm that display calculation does not grant prizes.
 - At 320×568 the cabinet's bottom meters and both main actions were visually inspected. A separate injected browser save with 900 lifetime bones, 23 best-run bones, 450 meters and two gifts reloaded to meter values 300/300, 23/50, 450/1000 and 2/3. This is save-loading/display evidence, not a natural earning test.
+
+# Unified run banking
+
+- Completion now uses one guarded `bankRun()` operation for score, lifetime bones, best-run records, mission points, gifts and prizes. A repeated completion returns the same receipt without paying any component again; unfinished runs cannot bank.
+- All 77 tests pass. Integrated reward tests cover ten repeated completions, an unfinished run and a second completed run that earns another mission and the cumulative-gift outfit without reducing previous records.
+- A fresh browser run ended naturally at 212 meters: 662 score, eight bones, no mission or prize. Results announced a personal best; saved credits were exactly 662 and both lifetime and best-run bones were eight. Reload retained those values and returned to camp without browser errors.
