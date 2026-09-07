@@ -11,12 +11,14 @@ test("sound cues use finite, bounded pitches, durations and supported voices",()
 test("sound bursts are voice-limited, muted voices stop and finished nodes disconnect",()=>{
   const nodes=[],gains=[];
   const param={setValueAtTime(){},exponentialRampToValueAtTime(){},linearRampToValueAtTime(){}};
-  const context={currentTime:0,destination:{},createOscillator(){const node={frequency:param,stops:[],connect(){},start(){},stop(time){this.stops.push(time);},disconnect(){this.disconnected=true;}};nodes.push(node);return node;},createGain(){const gain={gain:param,connect(){},disconnect(){this.disconnected=true;}};gains.push(gain);return gain;}};
+  const context={currentTime:0,state:"running",suspends:0,destination:{},suspend(){this.state="suspended";this.suspends++;return Promise.resolve();},createOscillator(){const node={frequency:param,stops:[],connect(){},start(){},stop(time){this.stops.push(time);},disconnect(){this.disconnects=(this.disconnects||0)+1;}};nodes.push(node);return node;},createGain(){const gain={gain:param,connect(){},disconnect(){this.disconnects=(this.disconnects||0)+1;}};gains.push(gain);return gain;}};
   for(let i=0;i<20;i++)playNotes(context,CUES.reward);
   assert.equal(nodes.length,12);
   assert.ok(nodes.every(n=>n.stops.length===1&&n.stops[0]>0));
   stopSound(context);assert.ok(nodes.every(n=>n.stops.length===2&&n.stops[1]===undefined));
+  assert.equal(context.suspends,1);
+  assert.ok(nodes.every(n=>n.disconnects===1));assert.ok(gains.every(g=>g.disconnects===1));
   for(const node of nodes)node.onended();
-  assert.ok(nodes.every(n=>n.disconnected));assert.ok(gains.every(g=>g.disconnected));
+  assert.ok(nodes.every(n=>n.disconnects===1));assert.ok(gains.every(g=>g.disconnects===1));
   playNotes(context,CUES.yip);assert.equal(nodes.length,14);
 });

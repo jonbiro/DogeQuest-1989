@@ -12,7 +12,11 @@ Movement now uses interpolated rendering, smooth lane easing and camera follow, 
 
 [Play Biscuit Dash in 3D](https://jonbiro.github.io/DogeQuest-1989/runner/)
 
-A separate mobile-first endless runner through low-poly jungle ruins. Puppy Quest is still available unchanged at the main address.
+A separate mobile-first endless runner through jungle ruins, a sunlit canyon and a moonlit crystal glade. Puppy Quest is still available unchanged at the main address.
+
+- Choose Biscuit, Mochi, Pepper or Luna in **Puppies & outfits**. Six visible outfits include an explorer hat/backpack, superhero cape, raincoat and prize-only crown/party hat. Puppies and outfits are cosmetic; upgrades work with every puppy.
+- Earn four permanent prizes by reaching distance and bone goals or banking presents. The prize cabinet shows exact progress. The crown unlocks at 1,000 meters in one run; three banked gifts unlock the party hat. No reward is granted twice.
+- Cross wooden bridges, jump broken trail sections, and choose gentler **Scenic** or tougher **Challenge** sections. Challenge clears pay 60 points. Jump into a turquoise **Sky Paws** handle to ride a 140-meter zipline, steer for airborne bones and land for a 250-point bonus.
 
 - Swipe left/right to switch among three lanes; swipe up to jump logs and down to slide under arches. A tap on the trail also jumps.
 - Arrow keys or WASD do the same on desktop; Space jumps and Escape pauses. On-screen buttons support touch and keyboard activation.
@@ -20,11 +24,12 @@ A separate mobile-first endless runner through low-poly jungle ruins. Puppy Ques
 - Jump logs and low stone blocks; slide under arches, branches, and gates. Most rows leave an open lane, but occasional full-width log/gate rows demand a jump/slide. Bone trails can lead into hazards, so they are no longer a safe-lane guide.
 - Three hearts per run. A shield absorbs one hit; magnets collect nearby bones for ten seconds.
 - Purple gems award 250 points; gold tokens double bone points for ten seconds; pink hearts restore one heart (up to three). Magnets and shields still appear along the trail.
+- Tennis balls trigger six seconds of **Zoomies**: faster running, protected obstacle smashes and automatic gap jumps. Presents give 100 points and count toward the party outfit when the run ends.
 - Score is distance in meters plus bone points and treasure bonuses. Bones start at 25 points. Completed runs bank their full score as upgrade points; spend them in **Paw upgrades** at camp. Four permanent upgrades improve jump lift, slide duration, magnet duration, and bone value. Each has three levels costing 500, 1,000, and 1,800 points. Purchases apply to the next run and save in this browser. No real money is involved.
 - Personal best, lifetime bones, points, and upgrades save locally after completed runs or purchases. Existing records are preserved; upgrade points begin accruing with this update. Leaving an unfinished run does not bank its bones or score.
 - The pace starts at 22 meters/second and reaches 36, with earlier hazards, more two-lane blockages, and denser ordinary rows. Full-width action rows have extra space afterward for recovery. Backgrounding the page pauses the run. Sound is opt-in; reduced-motion mode removes decorative movement, though running remains a visual motion-based game.
 
-Requires WebGL2. If 3D is unavailable, the page explains the requirement and links back to Puppy Quest. No accounts, purchases, analytics, or remote asset requests.
+Requires WebGL2. If 3D is unavailable, the page explains the requirement and links back to Puppy Quest. No accounts, real-money purchases, analytics, or remote artwork/font requests.
 
 ## Play
 

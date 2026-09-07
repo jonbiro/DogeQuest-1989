@@ -22,13 +22,26 @@ export function playNotes(context,notes) {
     gain.gain.exponentialRampToValueAtTime(.0001,end);
     osc.connect(gain);gain.connect(context.destination);
     active.add(osc);
-    osc.onended=()=>{osc.disconnect();gain.disconnect();active.delete(osc);};
+    let cleaned=false;
+    osc.cleanup=()=>{
+      if(cleaned)return;
+      cleaned=true;
+      osc.disconnect();gain.disconnect();active.delete(osc);
+    };
+    osc.onended=osc.cleanup;
     osc.start(start);osc.stop(end);
   }
 }
 export function stopSound(context) {
   const active=voices.get(context);
-  if(!active)return;
-  for(const osc of active)osc.stop();
-  active.clear();
+  if(active){
+    for(const osc of active){
+      try{osc.stop();}catch{/* The browser may have already ended this voice. */}
+      osc.cleanup?.();
+    }
+    active.clear();
+  }
+  if(context.state==="running"&&typeof context.suspend==="function"){
+    try{context.suspend().catch(()=>{});}catch{/* Sound remains optional. */}
+  }
 }
