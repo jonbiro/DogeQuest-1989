@@ -4,6 +4,10 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Added Biscuit Dash, a separate original 3D endless-runner companion at `/runner/`, without replacing Puppy Quest.
+- Added swipe/keyboard/button controls, seeded fair-lane track generation, logs and slide arches, bone magnets, shields, three-heart runs, local records, pause-on-background, and reduced decorative motion.
+- Added an articulated low-poly Biscuit, jungle ruins, batched scenery, pooled obstacles, and local Three.js bundling. Added eight runner simulation tests, including long-run survival and generation bounds.
+
 - Rebuilt the game from scratch around Biscuit, five handcrafted outdoor courses, double jumps, beetles, optional bones, checkpoint flags, unlimited retries, and doghouse goals.
 - Replaced the neon presentation with original puppy artwork, layered outdoor scenery, a cream-and-green interface, and touch controls below the game.
 - Retired the previous runtime and replaced its tests with simulation regressions for the new engine. Removed external font requests.

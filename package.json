@@ -28,7 +28,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "esbuild": "0.28.2",
     "eslint": "^10.9.1",
     "serve": "^14.2.4"
+  },
+  "dependencies": {
+    "three": "0.185.1"
   }
 }

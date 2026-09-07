@@ -1,0 +1,310 @@
+import { createRun, act, step } from "./world.js";
+import { createView } from "./render.js";
+const $ = (id) => document.getElementById(id);
+let run = createRun(),
+  state = "menu",
+  last = 0,
+  time = 0,
+  accumulator = 0,
+  toastUntil = 0,
+  sound = false,
+  audio = null;
+let reducedMotion = window.matchMedia(
+  "(prefers-reduced-motion: reduce)",
+).matches;
+let saved = { best: 0, bones: 0, distance: 0 };
+try {
+  const value = JSON.parse(localStorage.getItem("biscuit-dash-v1"));
+  for (const key of Object.keys(saved))
+    if (Number.isFinite(value?.[key]) && value[key] >= 0)
+      saved[key] = value[key];
+} catch {
+  /* A run works without storage. */
+}
+function updateRecords() {
+  $("best").innerHTML =
+    `${Math.floor(saved.best).toLocaleString()}<span> pts</span>`;
+  $("bank").textContent = Math.floor(saved.bones).toLocaleString();
+}
+updateRecords();
+function tone(frequency, duration = 0.08) {
+  if (!sound) return;
+  try {
+    audio ??= new (window.AudioContext || window.webkitAudioContext)();
+    audio.resume().catch(() => {});
+    const osc = audio.createOscillator(),
+      gain = audio.createGain();
+    osc.type = "sine";
+    osc.frequency.value = frequency;
+    gain.gain.setValueAtTime(0.06, audio.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audio.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audio.destination);
+    osc.start();
+    osc.stop(audio.currentTime + duration);
+    osc.onended = () => {
+      osc.disconnect();
+      gain.disconnect();
+    };
+  } catch {
+    /* Sound is optional. */
+  }
+}
+function toast(message, duration = 3) {
+  $("toast").textContent = message;
+  toastUntil = time + duration;
+}
+function setState(next) {
+  state = next;
+  $("game").dataset.state = state;
+  $("menu").hidden = state !== "menu";
+  $("buddy").hidden = state !== "menu";
+  $("footer").hidden = state !== "menu";
+  $("hud").hidden = ["menu", "help"].includes(state);
+  $("controls").hidden = state !== "playing";
+  $("pause-button").hidden = state !== "playing";
+  $("overlay").hidden = !["paused", "ended", "help"].includes(state);
+  const modal = !$("overlay").hidden;
+  $("scene").inert = state !== "playing";
+  document.querySelector("header").inert = modal;
+  if (modal) $("overlay-primary").focus();
+  accumulator = 0;
+  pointer = null;
+}
+function start() {
+  run = createRun();
+  taughtObstacles = false;
+  setState("playing");
+  $("scene").focus({ preventScroll: true });
+  toast("Swipe ← → to change lanes. Follow the bones.", 5);
+  tone(440);
+}
+function showOverlay(kind) {
+  $("results").hidden = kind !== "ended";
+  $("instructions").hidden = kind !== "help";
+  $("overlay-label").textContent =
+    kind === "ended"
+      ? "EVERY GOOD DOG GETS ANOTHER GO"
+      : kind === "help"
+        ? "FOUR MOVES. ENDLESS POSSIBILITIES."
+        : "TAKE A BREATHER";
+  $("overlay-title").textContent =
+    kind === "ended"
+      ? "That was a good run."
+      : kind === "help"
+        ? "Trust your paws."
+        : "Paws for a moment.";
+  $("overlay-copy").textContent =
+    kind === "ended"
+      ? run.score > saved.best
+        ? "New personal best. Very good dog!"
+        : "The next great run is one tap away."
+      : kind === "help"
+        ? "Swipe anywhere on the trail, or use the buttons."
+        : "The jungle can wait.";
+  $("overlay-primary").textContent =
+    kind === "ended"
+      ? "Run it back ↗"
+      : kind === "help"
+        ? "Let’s run ↗"
+        : "Keep running →";
+  $("toast").textContent = "";
+  setState(kind);
+}
+function pause() {
+  if (state === "playing") showOverlay("paused");
+}
+function finish() {
+  showOverlay("ended");
+  $("final-score").textContent = run.score.toLocaleString();
+  $("final-distance").textContent = `${Math.floor(run.distance)} m`;
+  $("final-bones").textContent = run.bones;
+  saved.best = Math.max(saved.best, run.score);
+  saved.distance = Math.max(saved.distance, run.distance);
+  saved.bones += run.bones;
+  try {
+    localStorage.setItem("biscuit-dash-v1", JSON.stringify(saved));
+  } catch {
+    /* Private browsing still works. */
+  }
+  updateRecords();
+  tone(180, 0.3);
+}
+$("play").onclick = start;
+$("help").onclick = () => showOverlay("help");
+$("pause-button").onclick = pause;
+$("home").onclick = () => {
+  setState("menu");
+  $("play").focus();
+};
+$("overlay-primary").onclick = () => {
+  if (state === "paused") {
+    setState("playing");
+    $("scene").focus();
+  } else start();
+};
+$("audio").onclick = () => {
+  sound = !sound;
+  $("audio").setAttribute("aria-pressed", String(sound));
+  $("audio").setAttribute("aria-label", sound ? "Mute sound" : "Enable sound");
+  tone(660);
+};
+$("motion").setAttribute("aria-pressed", String(reducedMotion));
+$("motion").onclick = () => {
+  reducedMotion = !reducedMotion;
+  $("motion").setAttribute("aria-pressed", String(reducedMotion));
+  $("motion").textContent = reducedMotion ? "Less motion: on" : "Less motion";
+};
+const keyActions = {
+  ArrowLeft: "left",
+  KeyA: "left",
+  ArrowRight: "right",
+  KeyD: "right",
+  ArrowUp: "jump",
+  KeyW: "jump",
+  Space: "jump",
+  ArrowDown: "slide",
+  KeyS: "slide",
+};
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Tab" && !$("overlay").hidden) {
+    const buttons = [$("overlay-primary"), $("home")];
+    if (event.shiftKey && document.activeElement === buttons[0]) {
+      event.preventDefault();
+      buttons[1].focus();
+    }
+    if (!event.shiftKey && document.activeElement === buttons[1]) {
+      event.preventDefault();
+      buttons[0].focus();
+    }
+  }
+  if (event.code === "Escape") {
+    if (state === "playing") pause();
+    else if (state === "paused") {
+      setState("playing");
+      $("scene").focus();
+    }
+    return;
+  }
+  if (state === "playing" && keyActions[event.code]) {
+    event.preventDefault();
+    if (!event.repeat) act(run, keyActions[event.code]);
+  }
+  if (
+    state === "menu" &&
+    event.code === "Enter" &&
+    document.activeElement?.tagName !== "BUTTON" &&
+    document.activeElement?.tagName !== "A" &&
+    !$("play").disabled
+  )
+    start();
+});
+let pointer = null;
+$("scene").addEventListener("pointerdown", (event) => {
+  if (state !== "playing" || pointer) return;
+  pointer = { x: event.clientX, y: event.clientY, id: event.pointerId };
+  $("scene").setPointerCapture(event.pointerId);
+});
+$("scene").addEventListener("pointerup", (event) => {
+  if (!pointer || pointer.id !== event.pointerId) return;
+  const dx = event.clientX - pointer.x,
+    dy = event.clientY - pointer.y;
+  pointer = null;
+  if (state !== "playing") return;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) act(run, "jump");
+  else if (Math.abs(dx) > Math.abs(dy)) act(run, dx > 0 ? "right" : "left");
+  else act(run, dy < 0 ? "jump" : "slide");
+});
+$("scene").addEventListener("pointercancel", () => {
+  pointer = null;
+});
+for (const button of document.querySelectorAll("[data-action]"))
+  button.onclick = () => {
+    if (state === "playing") act(run, button.dataset.action);
+  };
+window.addEventListener("blur", pause);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) pause();
+});
+$("scene").addEventListener("webglcontextlost", (event) => {
+  event.preventDefault();
+  pause();
+  $("overlay-copy").textContent =
+    "The graphics connection was interrupted. Reload this page to restore the trail.";
+  $("overlay-primary").textContent = "Reload trail";
+  $("overlay-primary").onclick = () => window.location.reload();
+});
+let view;
+try {
+  view = createView($("scene"));
+  $("play").disabled = false;
+  $("play").textContent = "Let’s run ↗";
+} catch {
+  $("play").textContent = "3D unavailable";
+  $("help").hidden = true;
+  $("title").textContent = "This trail needs 3D.";
+  document.querySelector(".intro").textContent =
+    "WebGL could not start. Try a browser with hardware acceleration, or return to Puppy Quest above.";
+}
+let milestone = 0,
+  taughtObstacles = false;
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000 || 0);
+  last = now;
+  time += dt;
+  if (state === "playing") {
+    accumulator += dt;
+    while (accumulator >= 1 / 120 && !run.ended) {
+      step(run, 1 / 120);
+      accumulator -= 1 / 120;
+    }
+    for (const event of run.events) {
+      if (event === "bone") tone(740 + Math.min(run.combo, 12) * 28, 0.055);
+      if (event === "jump") tone(400, 0.06);
+      if (event === "magnet") {
+        toast("Bone magnet! Ten seconds of snack magic.");
+        tone(900, 0.25);
+      }
+      if (event === "shield") {
+        toast("Shield ready. Your next bump is covered.");
+        tone(650, 0.25);
+      }
+      if (event === "shield-break") toast("Shield saved you. Keep running!");
+      if (event === "hit") {
+        toast("Oof! Switch lanes, jump logs, slide under arches.");
+        tone(120, 0.2);
+      }
+    }
+    run.events = [];
+    $("distance").innerHTML = `${Math.floor(run.distance)}<small> m</small>`;
+    $("scene").dataset.lane = String(run.lane + 1);
+    $("scene").dataset.posture =
+      run.y > 0.05 ? "jump" : run.slide > 0 ? "slide" : "run";
+    $("bones").textContent = run.bones;
+    $("hearts").textContent =
+      "♥ ".repeat(Math.max(0, run.hearts)) + "♡ ".repeat(3 - run.hearts);
+    $("hearts").setAttribute("aria-label", `${run.hearts} hearts remaining`);
+    $("power").textContent = [
+      run.shield ? "◇ Shield ready" : "",
+      run.magnet > 0 ? `↗ Magnet ${Math.ceil(run.magnet)}s` : "",
+    ]
+      .filter(Boolean)
+      .join(" · ");
+    const currentMilestone = Math.floor(run.distance / 250);
+    if (!taughtObstacles && run.distance > 65) {
+      taughtObstacles = true;
+      toast("Jump logs ↑ · Slide under arches ↓ · Dodge stone blocks", 5);
+    }
+    if (currentMilestone > milestone) {
+      milestone = currentMilestone;
+      toast(`${milestone * 250} meters. Unstoppable paws!`);
+    }
+    if (run.distance < 1) milestone = 0;
+    if (run.ended) finish();
+  }
+  if (time > toastUntil) $("toast").textContent = "";
+  if (view) view.draw(run, time, state, reducedMotion, dt);
+  requestAnimationFrame(frame);
+}
+$("play").focus({ preventScroll: true });
+requestAnimationFrame(frame);

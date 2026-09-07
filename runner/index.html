@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <title>Biscuit Dash — Run wild. Fetch gold.</title>
+    <meta
+      name="description"
+      content="An original 3D endless runner starring Biscuit. Swipe through jungle ruins, jump fallen logs, duck arches, and chase golden bones. A Puppy Quest companion."
+    />
+    <meta name="theme-color" content="#102a28" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'"
+    />
+    <link rel="icon" href="../favicon.svg" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main id="game" data-state="menu">
+      <canvas
+        id="scene"
+        inert
+        tabindex="0"
+        aria-label="3D running trail. Left and right arrows change lanes. Up or Space jumps. Down slides. Escape pauses."
+      ></canvas>
+      <div class="vignette" aria-hidden="true"></div>
+      <header>
+        <a class="wordmark" href="./"
+          ><span class="paw">✦</span> BISCUIT<span class="thin">DASH</span
+          ><small>A PUPPY QUEST ORIGINAL</small></a
+        >
+        <div class="top-actions">
+          <button
+            id="audio"
+            class="icon-button"
+            aria-label="Enable sound"
+            aria-pressed="false"
+          >
+            ♫</button
+          ><button
+            id="pause-button"
+            class="icon-button"
+            aria-label="Pause run"
+            hidden
+          >
+            Ⅱ</button
+          ><a class="back-link" href="../">Puppy Quest ↗</a>
+        </div>
+      </header>
+      <section id="menu" class="menu" aria-labelledby="title">
+        <div class="eyebrow"><span></span> SMALL DOG. UNLIMITED ADVENTURE.</div>
+        <h1 id="title">Run wild.<br />Fetch <em>gold.</em></h1>
+        <p class="intro">
+          One fearless pup. A forgotten jungle.<br />And absolutely no bone left
+          behind.
+        </p>
+        <div class="start-actions">
+          <button id="play" class="primary" disabled>
+            Preparing the trail…</button
+          ><button id="help" class="text-button">
+            How to play <span>↗</span>
+          </button>
+        </div>
+        <div class="menu-stats">
+          <div>
+            <span>PERSONAL BEST</span
+            ><strong id="best">0<span> pts</span></strong>
+          </div>
+          <div><span>LIFETIME BONES</span><strong id="bank">0</strong></div>
+        </div>
+        <div class="trail-tag">
+          <i>01</i>
+          <div>
+            THE EMERALD TRAIL<span>Jungle ruins · Endless discovery</span>
+          </div>
+          <b>↗</b>
+        </div>
+      </section>
+      <aside id="buddy" aria-hidden="true">
+        <span>MEET YOUR RUNNING BUDDY</span><strong>Biscuit.</strong>
+        <p>Fast paws. Zero plans.</p>
+      </aside>
+      <section id="hud" aria-label="Run statistics" hidden>
+        <div class="score">
+          <span>DISTANCE</span><strong id="distance">0<small> m</small></strong>
+        </div>
+        <div class="run-stats">
+          <span class="bones">🦴 <b id="bones">0</b></span
+          ><span id="hearts" aria-label="3 hearts remaining">♥ ♥ ♥</span>
+        </div>
+        <div id="power"></div>
+      </section>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+      <section
+        id="overlay"
+        class="overlay"
+        hidden
+        aria-labelledby="overlay-title"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div class="modal">
+          <p class="eyebrow" id="overlay-label">TAKE A BREATHER</p>
+          <h2 id="overlay-title">Paws for a moment.</h2>
+          <p id="overlay-copy">The jungle can wait.</p>
+          <div id="results" hidden>
+            <div><span>SCORE</span><strong id="final-score"></strong></div>
+            <div>
+              <span>DISTANCE</span><strong id="final-distance"></strong>
+            </div>
+            <div><span>BONES</span><strong id="final-bones"></strong></div>
+          </div>
+          <div id="instructions" hidden>
+            <p>
+              <kbd>←</kbd><kbd>→</kbd> Switch lanes
+              <span>Swipe left / right</span>
+            </p>
+            <p>
+              <kbd>↑</kbd> / <kbd>SPACE</kbd> Jump logs <span>Swipe up</span>
+            </p>
+            <p><kbd>↓</kbd> Slide under arches <span>Swipe down</span></p>
+            <p>
+              Sidestep stone blocks. Follow the bones for a clear lane. Magnets
+              collect nearby bones; shields absorb one hit.
+            </p>
+          </div>
+          <button id="overlay-primary" class="primary">Keep running →</button
+          ><button id="home" class="text-button">Back to camp</button>
+        </div>
+      </section>
+      <nav id="controls" aria-label="Touch controls" hidden>
+        <button data-action="left" aria-label="Move left">←</button
+        ><button data-action="right" aria-label="Move right">→</button
+        ><button data-action="slide" aria-label="Slide">
+          ↓ <small>SLIDE</small></button
+        ><button data-action="jump" class="jump" aria-label="Jump">
+          ↑ <small>JUMP</small>
+        </button>
+      </nav>
+      <footer id="footer">
+        <span><i></i> REAL 3D. REALLY GOOD DOG.</span
+        ><span>SWIPE TO EXPLORE <b>↔</b> ARROW KEYS WORK TOO</span
+        ><button id="motion" class="text-button" aria-pressed="false">
+          Less motion
+        </button>
+      </footer>
+      <noscript
+        ><div class="fallback">
+          Enable JavaScript to play Biscuit Dash.
+          <a href="../">Back to Puppy Quest</a>
+        </div></noscript
+      >
+    </main>
+    <script type="module" src="game.js"></script>
+  </body>
+</html>

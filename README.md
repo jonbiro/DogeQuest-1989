@@ -4,6 +4,21 @@
 
 Meet Biscuit: a small golden dog with a red scarf and five handcrafted trails to explore. Reach the doghouse to finish each trail. Bones are optional; elevated routes reward exploration. Checkpoint flags save your place, and retries are unlimited.
 
+## New companion: Biscuit Dash
+
+[Play Biscuit Dash in 3D](https://jonbiro.github.io/DogeQuest-1989/runner/)
+
+A separate mobile-first endless runner through low-poly jungle ruins. Puppy Quest is still available unchanged at the main address.
+
+- Swipe left/right to switch among three lanes; swipe up to jump logs and down to slide under arches. A tap on the trail also jumps.
+- Arrow keys or WASD do the same on desktop; Space jumps and Escape pauses. On-screen buttons support touch and keyboard activation.
+- Sidestep stone blocks. Each generated obstacle row leaves at least one lane unobstructed. Bone trails mark that lane.
+- Three hearts per run. A shield absorbs one hit; magnets collect nearby bones for ten seconds.
+- Score is distance in meters plus 25 points per bone. Personal best and lifetime bones save locally after completed runs. Leaving an unfinished run does not bank its bones.
+- The pace gradually increases. Backgrounding the page pauses the run. Sound is opt-in; reduced-motion mode removes decorative movement, though running remains a visual motion-based game.
+
+Requires WebGL2. If 3D is unavailable, the page explains the requirement and links back to Puppy Quest. No accounts, purchases, analytics, or remote asset requests.
+
 ## Play
 
 Click **Let’s go outside** or press Enter with the start button focused.
@@ -35,8 +50,12 @@ Open http://127.0.0.1:3000. Run `npm run build` again after changes; the server 
 - `src/rebuild/app.js`: input, audio, UI states, progression, and persistence.
 - `index.html`, `css.css`: responsive game shell and accessible HTML controls.
 - `test/rebuild.test.js`: movement, checkpoints, completion, and collision regression checks.
+- `src/runner/world.js`: seeded endless-track generation and fixed-step runner simulation.
+- `src/runner/render.js`: original articulated 3D dog, instanced scenery, and recycled obstacle meshes.
+- `src/runner/app.js`, `src/runner/ui.css`, `runner/index.html`: runner controls, states, saved records, and mobile interface.
+- `test/runner.test.js`: route fairness, bounded object counts, movement, power-ups, collision, and a two-minute survival simulation.
 
-The simulation advances at 120 Hz independently of display refresh rate. Audio is generated locally and enabled by a user gesture. No external fonts, artwork, or runtime libraries are requested. The retired neon engine remains recoverable through Git history.
+Both simulations advance at 120 Hz independently of display refresh rate. Audio is generated locally and enabled by a user gesture. No external fonts or artwork are requested. Biscuit Dash uses Three.js bundled locally by esbuild; the original game does not load this bundle. The retired neon engine remains recoverable through Git history. Three.js attribution is retained in the generated bundle's linked legal notices, with its full MIT license in `runner/THREE-LICENSE.txt` in the built output.
 
 ## Deployment and verification
 

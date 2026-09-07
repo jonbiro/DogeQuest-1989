@@ -152,7 +152,7 @@ $("sound").onclick = () => {
   if (sound) tone(500);
 };
 window.addEventListener("keydown", (e) => {
-  if (e.key === "Tab" && state !== "playing") {
+  if (e.key === "Tab" && (state === "paused" || state === "result")) {
     const panel = state === "paused" ? $("pause") : $(state);
     const buttons = [...panel.querySelectorAll("button")];
     if (e.shiftKey && document.activeElement === buttons[0]) {
