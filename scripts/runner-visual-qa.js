@@ -3,6 +3,28 @@
 import {createView} from "../src/runner/render.js";
 import {createRun,step,act,fillTrack,HAZARDS} from "../src/runner/world.js";
 import {CUES,playNotes} from "../src/runner/sound.js";
+import {PUPPIES,COSTUMES} from "../src/runner/collection.js";
+export function wardrobePreview(puppy="biscuit") {
+  if(!Object.hasOwn(PUPPIES,puppy))throw new Error("Unknown puppy");
+  const source=document.createElement("canvas");
+  source.style.cssText="position:fixed;left:-1000px;width:360px;height:480px";
+  document.body.append(source);
+  const view=createView(source),run=createRun(1989);
+  const gallery=document.createElement("section");
+  gallery.style.cssText="position:fixed;inset:0;z-index:9999;overflow:auto;background:#102a28;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:12px;color:white";
+  document.body.append(gallery);
+  for(const [costume,details] of Object.entries(COSTUMES)) {
+    // Exercise shared-model resets, not just fresh-renderer appearances.
+    view.draw(run,0,"menu",true,1/60,1,{puppy:puppy==="pepper"?"luna":"pepper",costume:"party"});
+    view.draw(run,0,"menu",true,1/60,1,{puppy,costume});
+    const figure=document.createElement("figure"),canvas=document.createElement("canvas"),caption=document.createElement("figcaption");
+    figure.style.margin="0";canvas.width=320;canvas.height=320;canvas.style.cssText="width:100%;max-height:320px;object-fit:contain";
+    canvas.getContext("2d").drawImage(source,source.width*.25,source.height*.4,source.width*2/3,source.height*.5,0,0,320,320);
+    caption.textContent=`${PUPPIES[puppy].name} · ${details.name}`;caption.style.cssText="text-align:center;padding:8px;font:14px Arial";
+    figure.append(canvas,caption);gallery.append(figure);
+  }
+  return {puppy,outfits:Object.keys(COSTUMES),...view.diagnostics()};
+}
 export function previewZoomies(reducedMotion=false,distance=0,gap=false) {
   const canvas=document.createElement("canvas");
   canvas.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;z-index:9999";

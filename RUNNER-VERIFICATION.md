@@ -94,3 +94,18 @@ Broader device/viewport coverage, longer worst-case frame-time profiling and phy
 
 - Escape now dismisses Help, Upgrades and Clubhouse to their opener buttons. Held/repeating Escape is ignored, preventing repeated pause/resume toggles. Graphics recovery and results behavior are unchanged.
 - Browser `keyboardCheck()` verified all three opener-focus returns, ten repeated Escape events while paused, normal resume with trail focus, and ten repeated events while playing. Native browser Shift+Tab from the first available clubhouse selection wrapped to Back to camp; Tab wrapped back to that selection. No browser errors.
+
+# Stronger bends and escalating trail pressure
+
+- Opening and later centerline bends are stronger while remaining continuous and tangent-aligned at the puppy. Ordinary late rows block two lanes and change the escape lane; spacing tightens gradually without reducing full-width action spacing. Scenic retains its gentler generation.
+- All 73 tests pass, including opening-bend visibility, smooth route transitions, 100 seeded late-row checks and existing input-driven survival, jump, slide and zipline coverage.
+- Accelerated browser simulation: three 4,500-meter runs, 54 rendered checkpoints, minimum three hearts and nine completed ziplines. Peaks: 11 geometries, two textures, 117 active-plus-pooled objects and 164 draw calls. This is not real-time frame profiling.
+- Release `3921be8` passed CI and Pages deployment. Live HTML loaded the matching `15fe054f6c505a4f` game revision; Play, jump input and Escape reached a paused run at 17 meters without browser errors.
+- Updated 60-second, 390×844 prompt-driven run with reduced motion: 1,886 meters, three hearts, all three regions, Challenge selected, zipline caught and landed, no detected HUD overlap. 3,602 frames, mean 16.66 ms and p95 16.80 ms. Desktop-browser viewport emulation, not physical-phone validation.
+- Updated 120-second, 320×568 prompt-driven run with full decorative animation enabled (`aria-pressed=false` on Less motion): 4,046 meters, three hearts, all three regions, Challenge selected, zipline caught and landed, no detected HUD overlap or browser errors. 7,202 frames, mean 16.66 ms and p95 16.70 ms. This is a real-time desktop-browser sample, not a worst-case guarantee across devices.
+
+# Full wardrobe rendering matrix
+
+- Inspected all six outfits on each of Biscuit, Mochi, Pepper and Luna in four 1080×800 browser galleries, using the production renderer. Before each target appearance, the same renderer drew a contrasting puppy in the party outfit, exercising palette, ear, spot and accessory reset paths.
+- All 24 combinations showed the expected puppy identity and distinct scarf, explorer hat, cape, raincoat, crown or party hat, with no visible accessory carryover. Each gallery retained five geometries and two textures; final draw calls ranged from 33 to 38.
+- `wardrobePreview()` is a local-only visual fixture, not evidence of natural earning or purchase flows. Those have separate checks above. The production build excludes this fixture.
