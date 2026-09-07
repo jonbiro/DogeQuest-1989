@@ -163,10 +163,47 @@ h1 em {
   color: #c2d3c8;
 }
 .start-actions {
+  flex-wrap: wrap;
   display: flex;
   align-items: center;
   gap: 22px;
   margin-top: 28px;
+}
+#shop {
+  order: 3;
+  color: var(--lime);
+}
+#upgrades {
+  max-height: 42svh;
+  overflow-y: auto;
+  text-align: left;
+}
+#upgrades > div {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid #ffffff22;
+  padding: 10px 0;
+}
+#upgrades p {
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.6;
+}
+#upgrades button {
+  min-width: 95px;
+  min-height: 44px;
+  border: 1px solid #dcf78c66;
+  border-radius: 12px;
+  background: #dcf78c;
+  color: #173c32;
+  padding: 8px;
+  font-size: 12px;
+}
+#upgrades button:disabled {
+  background: transparent;
+  color: #b6cbc0;
+  cursor: default;
 }
 .primary {
   background: var(--lime);

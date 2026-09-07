@@ -59,6 +59,7 @@
           behind.
         </p>
         <div class="start-actions">
+          <button id="shop" class="text-button">Paw upgrades ↗</button>
           <button id="play" class="primary" disabled>
             Preparing the trail…</button
           ><button id="help" class="text-button">
@@ -116,6 +117,11 @@
           </div>
           <div id="instructions" hidden>
             <p>
+              Jump logs and low stone blocks. Slide under arches, branches, and
+              hanging gates. Purple gems give 250 points; gold tokens double
+              bone points for 10 seconds; hearts heal.
+            </p>
+            <p>
               <kbd>←</kbd><kbd>→</kbd> Switch lanes
               <span>Swipe left / right</span>
             </p>
@@ -124,10 +130,15 @@
             </p>
             <p><kbd>↓</kbd> Slide under arches <span>Swipe down</span></p>
             <p>
-              Sidestep stone blocks. Follow the bones for a clear lane. Magnets
+              Follow the bones for a clear lane. Magnets
               collect nearby bones; shields absorb one hit.
             </p>
           </div>
+          <section
+            id="upgrades"
+            hidden
+            aria-label="Permanent upgrades"
+          ></section>
           <button id="overlay-primary" class="primary">Keep running →</button
           ><button id="home" class="text-button">Back to camp</button>
         </div>

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
-import { LANES, seededRandom } from "./world.js";
+import { LANES, PICKUPS, seededRandom } from "./world.js";
 
 // Shared low-poly geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -276,6 +276,38 @@ export function createView(canvas) {
   templates.shield = new THREE.Group();
   ball(templates.shield, "#a5e8ee", 0, 0, 0, 0.45, 0.6, 0.2);
   box(templates.shield, "#effff0", 0, 0, 0.19, 0.09, 0.6, 0.04);
+  templates.rock.scale.y = 0.72;
+  templates.branch = new THREE.Group();
+  box(templates.branch, "#6c4b2e", 0, 1.7, 0, 2.3, 0.8, 0.8);
+  for (const x of [-0.9, 0.6])
+    ball(templates.branch, "#4e944f", x, 2.2, 0, 0.7, 0.5, 0.6);
+  box(templates.branch, "#e7bc70", 0, 1.28, 0.43, 1.8, 0.13, 0.06);
+  templates.gate = new THREE.Group();
+  for (const x of [-1, 1])
+    box(templates.gate, "#6a808a", x, 1.5, 0, 0.2, 3, 0.4);
+  for (const x of [-0.65, 0, 0.65])
+    box(templates.gate, "#bac7bd", x, 2.1, 0, 0.16, 1.55, 0.3);
+  box(templates.gate, "#ecc36f", 0, 1.33, 0, 2.1, 0.15, 0.4);
+  templates.gem = new THREE.Group();
+  ball(templates.gem, "#bf8bff", 0, 0, 0, 0.5, 0.65, 0.4);
+  templates.double = new THREE.Group();
+  ball(templates.double, "#ffce4f", 0, 0, 0, 0.65, 0.65, 0.22);
+  for (const x of [-0.18, 0.18])
+    box(templates.double, "#784e22", x, 0, 0.24, 0.1, 0.65, 0.07);
+  templates.heart = new THREE.Group();
+  for (const x of [-0.19, 0.19])
+    ball(templates.heart, "#ff7b95", x, 0.14, 0, 0.3, 0.3, 0.2);
+  const heartTip = box(
+    templates.heart,
+    "#ff7b95",
+    0,
+    -0.08,
+    0,
+    0.48,
+    0.48,
+    0.25,
+  );
+  heartTip.rotation.z = Math.PI / 4;
   const active = new Map(),
     pools = Object.fromEntries(
       Object.keys(templates).map((type) => [type, []]),
@@ -293,7 +325,7 @@ export function createView(canvas) {
     qualityReduced = false;
   return {
     draw(run, time, state, reducedMotion, dt) {
-      const menu = state === "menu" || state === "help";
+      const menu = ["menu", "help", "shop"].includes(state);
       const distance = menu ? time * (reducedMotion ? 0 : 2) : run.distance;
       for (const { instanced, entries } of batches) {
         entries.forEach((entry, i) => {
@@ -346,7 +378,7 @@ export function createView(canvas) {
             active.set(object.id, item);
             scene.add(item);
           }
-          const pickup = ["bone", "shield", "magnet"].includes(object.type);
+          const pickup = PICKUPS.includes(object.type);
           item.position.set(
             LANES[object.lane],
             pickup

@@ -1,5 +1,6 @@
 import { createRun, act, step } from "./world.js";
 import { createView } from "./render.js";
+import { UPGRADES, levels, price, purchase } from "./progression.js";
 const $ = (id) => document.getElementById(id);
 let run = createRun(),
   state = "menu",
@@ -12,12 +13,13 @@ let run = createRun(),
 let reducedMotion = window.matchMedia(
   "(prefers-reduced-motion: reduce)",
 ).matches;
-let saved = { best: 0, bones: 0, distance: 0 };
+let saved = { best: 0, bones: 0, distance: 0, credits: 0, upgrades: levels() };
 try {
   const value = JSON.parse(localStorage.getItem("biscuit-dash-v1"));
   for (const key of Object.keys(saved))
-    if (Number.isFinite(value?.[key]) && value[key] >= 0)
+    if (key !== "upgrades" && Number.isFinite(value?.[key]) && value[key] >= 0)
       saved[key] = value[key];
+  saved.upgrades = levels(value?.upgrades);
 } catch {
   /* A run works without storage. */
 }
@@ -25,6 +27,46 @@ function updateRecords() {
   $("best").innerHTML =
     `${Math.floor(saved.best).toLocaleString()}<span> pts</span>`;
   $("bank").textContent = Math.floor(saved.bones).toLocaleString();
+}
+function persist() {
+  try {
+    localStorage.setItem("biscuit-dash-v1", JSON.stringify(saved));
+  } catch {
+    toast(
+      "Progress is saved for this visit only; browser storage is unavailable.",
+      5,
+    );
+  }
+}
+function shop() {
+  showOverlay("shop");
+  $("overlay-label").textContent = "EARNED ON THE TRAIL. YOURS TO KEEP.";
+  $("overlay-title").textContent = "Upgrade your paws.";
+  $("overlay-copy").textContent =
+    `${Math.floor(saved.credits).toLocaleString()} points to spend · Earn your full score after each completed run.`;
+  $("overlay-primary").textContent = "Run with your upgrades ↗";
+  $("upgrades").replaceChildren();
+  for (const [key, upgrade] of Object.entries(UPGRADES)) {
+    const level = saved.upgrades[key],
+      cost = price(level);
+    const row = document.createElement("div"),
+      copy = document.createElement("p"),
+      button = document.createElement("button");
+    copy.textContent = `${upgrade.name} · ${level}/3 — ${upgrade.description}`;
+    button.textContent =
+      cost === null ? "Maxed" : `${cost.toLocaleString()} pts`;
+    button.disabled = cost === null || saved.credits < cost;
+    button.dataset.upgrade = key;
+    button.onclick = () => {
+      if (purchase(saved, key)) {
+        persist();
+        shop();
+        tone(880, 0.2);
+      }
+    };
+    row.append(copy, button);
+    $("upgrades").append(row);
+  }
 }
 updateRecords();
 function tone(frequency, duration = 0.08) {
@@ -60,10 +102,10 @@ function setState(next) {
   $("menu").hidden = state !== "menu";
   $("buddy").hidden = state !== "menu";
   $("footer").hidden = state !== "menu";
-  $("hud").hidden = ["menu", "help"].includes(state);
+  $("hud").hidden = ["menu", "help", "shop"].includes(state);
   $("controls").hidden = state !== "playing";
   $("pause-button").hidden = state !== "playing";
-  $("overlay").hidden = !["paused", "ended", "help"].includes(state);
+  $("overlay").hidden = !["paused", "ended", "help", "shop"].includes(state);
   const modal = !$("overlay").hidden;
   $("scene").inert = state !== "playing";
   document.querySelector("header").inert = modal;
@@ -72,7 +114,7 @@ function setState(next) {
   pointer = null;
 }
 function start() {
-  run = createRun();
+  run = createRun(Date.now(), saved.upgrades);
   taughtObstacles = false;
   setState("playing");
   $("scene").focus({ preventScroll: true });
@@ -80,6 +122,7 @@ function start() {
   tone(440);
 }
 function showOverlay(kind) {
+  $("upgrades").hidden = kind !== "shop";
   $("results").hidden = kind !== "ended";
   $("instructions").hidden = kind !== "help";
   $("overlay-label").textContent =
@@ -122,16 +165,16 @@ function finish() {
   saved.best = Math.max(saved.best, run.score);
   saved.distance = Math.max(saved.distance, run.distance);
   saved.bones += run.bones;
-  try {
-    localStorage.setItem("biscuit-dash-v1", JSON.stringify(saved));
-  } catch {
-    /* Private browsing still works. */
-  }
+  saved.credits += run.score;
+  $("overlay-copy").textContent +=
+    ` +${run.score.toLocaleString()} upgrade points earned. Spend them at camp.`;
+  persist();
   updateRecords();
   tone(180, 0.3);
 }
 $("play").onclick = start;
 $("help").onclick = () => showOverlay("help");
+$("shop").onclick = shop;
 $("pause-button").onclick = pause;
 $("home").onclick = () => {
   setState("menu");
@@ -168,12 +211,14 @@ const keyActions = {
 };
 window.addEventListener("keydown", (event) => {
   if (event.key === "Tab" && !$("overlay").hidden) {
-    const buttons = [$("overlay-primary"), $("home")];
+    const buttons = [
+      ...$("overlay").querySelectorAll("button:not(:disabled)"),
+    ].filter((button) => !button.closest("[hidden]"));
     if (event.shiftKey && document.activeElement === buttons[0]) {
       event.preventDefault();
-      buttons[1].focus();
+      buttons.at(-1).focus();
     }
-    if (!event.shiftKey && document.activeElement === buttons[1]) {
+    if (!event.shiftKey && document.activeElement === buttons.at(-1)) {
       event.preventDefault();
       buttons[0].focus();
     }
@@ -205,8 +250,35 @@ $("scene").addEventListener("pointerdown", (event) => {
   pointer = { x: event.clientX, y: event.clientY, id: event.pointerId };
   $("scene").setPointerCapture(event.pointerId);
 });
+$("scene").addEventListener("pointermove", (event) => {
+  if (
+    !pointer ||
+    pointer.id !== event.pointerId ||
+    pointer.consumed ||
+    state !== "playing"
+  )
+    return;
+  const dx = event.clientX - pointer.x,
+    dy = event.clientY - pointer.y;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+  pointer.consumed = true;
+  act(
+    run,
+    Math.abs(dx) > Math.abs(dy)
+      ? dx > 0
+        ? "right"
+        : "left"
+      : dy < 0
+        ? "jump"
+        : "slide",
+  );
+});
 $("scene").addEventListener("pointerup", (event) => {
   if (!pointer || pointer.id !== event.pointerId) return;
+  if (pointer.consumed) {
+    pointer = null;
+    return;
+  }
   const dx = event.clientX - pointer.x,
     dy = event.clientY - pointer.y;
   pointer = null;
@@ -218,10 +290,18 @@ $("scene").addEventListener("pointerup", (event) => {
 $("scene").addEventListener("pointercancel", () => {
   pointer = null;
 });
-for (const button of document.querySelectorAll("[data-action]"))
-  button.onclick = () => {
-    if (state === "playing") act(run, button.dataset.action);
+for (const button of document.querySelectorAll("[data-action]")) {
+  button.onpointerdown = (event) => {
+    if (state === "playing") {
+      event.preventDefault();
+      act(run, button.dataset.action);
+    }
   };
+  button.onclick = (event) => {
+    if (state === "playing" && event.detail === 0)
+      act(run, button.dataset.action);
+  };
+}
 window.addEventListener("blur", pause);
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) pause();
@@ -262,7 +342,9 @@ function frame(now) {
       if (event === "bone") tone(740 + Math.min(run.combo, 12) * 28, 0.055);
       if (event === "jump") tone(400, 0.06);
       if (event === "magnet") {
-        toast("Bone magnet! Ten seconds of snack magic.");
+        toast(
+          `Bone magnet! ${10 + run.upgrades.magnet * 3} seconds of snack magic.`,
+        );
         tone(900, 0.25);
       }
       if (event === "shield") {
@@ -270,8 +352,20 @@ function frame(now) {
         tone(650, 0.25);
       }
       if (event === "shield-break") toast("Shield saved you. Keep running!");
+      if (event === "gem") {
+        toast("Treasure gem! +250 points");
+        tone(990, 0.2);
+      }
+      if (event === "double") {
+        toast("Golden bonus! Double bone points for 10 seconds.");
+        tone(880, 0.2);
+      }
+      if (event === "heart") {
+        toast("A little love! Heart restored (maximum 3).");
+        tone(660, 0.2);
+      }
       if (event === "hit") {
-        toast("Oof! Switch lanes, jump logs, slide under arches.");
+        toast("Jump logs and blocks. Slide under overhead obstacles.");
         tone(120, 0.2);
       }
     }
@@ -287,13 +381,14 @@ function frame(now) {
     $("power").textContent = [
       run.shield ? "◇ Shield ready" : "",
       run.magnet > 0 ? `↗ Magnet ${Math.ceil(run.magnet)}s` : "",
+      run.double > 0 ? `×2 Bones ${Math.ceil(run.double)}s` : "",
     ]
       .filter(Boolean)
       .join(" · ");
     const currentMilestone = Math.floor(run.distance / 250);
     if (!taughtObstacles && run.distance > 65) {
       taughtObstacles = true;
-      toast("Jump logs ↑ · Slide under arches ↓ · Dodge stone blocks", 5);
+      toast("Jump logs & blocks ↑ · Slide under arches, branches & gates ↓", 5);
     }
     if (currentMilestone > milestone) {
       milestone = currentMilestone;

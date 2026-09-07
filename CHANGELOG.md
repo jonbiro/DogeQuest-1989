@@ -4,6 +4,10 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Made Biscuit Dash faster (18–32 m/s), with higher/longer jumps, jump buffering, instant slides, earlier swipe response, and more forgiving collision timing. Low stone blocks can now be jumped.
+- Added slide-under branches and hanging gates, treasure gems, double-bone-point tokens, healing hearts, and more frequent bonus pickups.
+- Added earned upgrade points and a permanent four-track Paw upgrades shop, preserving existing records. Added timing, new obstacle, bonus, and upgrade-economy regression tests.
+
 - Added Biscuit Dash, a separate original 3D endless-runner companion at `/runner/`, without replacing Puppy Quest.
 - Added swipe/keyboard/button controls, seeded fair-lane track generation, logs and slide arches, bone magnets, shields, three-heart runs, local records, pause-on-background, and reduced decorative motion.
 - Added an articulated low-poly Biscuit, jungle ruins, batched scenery, pooled obstacles, and local Three.js bundling. Added eight runner simulation tests, including long-run survival and generation bounds.

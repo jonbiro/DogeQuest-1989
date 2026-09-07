@@ -9,13 +9,21 @@ export function seededRandom(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-export function createRun(seed = Date.now()) {
+import { levels } from "./progression.js";
+export const HAZARDS = ["rock", "log", "arch", "branch", "gate"];
+export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart"];
+export function createRun(seed = Date.now(), upgrades = {}) {
   const run = {
     seed,
     random: seededRandom(seed),
     distance: 0,
     time: 0,
-    speed: 13,
+    speed: 18,
+    upgrades: levels(upgrades),
+    jumpBuffer: 0,
+    double: 0,
+    bonusPoints: 0,
+    bonePoints: 0,
     lane: 1,
     x: 0,
     y: 0,
@@ -48,25 +56,25 @@ export function fillTrack(run) {
     const safe = Math.floor(run.random() * 3);
     const blocked = (safe + 1 + Math.floor(run.random() * 2)) % 3;
     if (run.row > 1) {
-      add(
-        run,
-        ["rock", "log", "arch"][Math.floor(run.random() * 3)],
-        blocked,
-        at,
-      );
+      add(run, HAZARDS[Math.floor(run.random() * HAZARDS.length)], blocked, at);
       if (run.row > 8 && run.random() > 0.45)
         add(
           run,
-          ["rock", "log", "arch"][Math.floor(run.random() * 3)],
+          HAZARDS[Math.floor(run.random() * HAZARDS.length)],
           3 - safe - blocked,
           at,
         );
     }
     for (let i = 0; i < 4; i++) add(run, "bone", safe, at + i * 3);
-    if (run.row > 0 && run.row % 6 === 0)
-      add(run, run.row % 12 === 0 ? "shield" : "magnet", safe, at + 13);
+    if (run.row > 0 && run.row % 3 === 0)
+      add(
+        run,
+        ["gem", "magnet", "double", "shield", "heart"][(run.row / 3 - 1) % 5],
+        safe,
+        at + 15,
+      );
     run.row++;
-    run.nextRow += 25 + run.random() * 8;
+    run.nextRow += 32 + run.random() * 8;
   }
 }
 export function act(run, action) {
@@ -75,73 +83,94 @@ export function act(run, action) {
   if (action === "right") run.lane = Math.min(2, run.lane + 1);
   if (action === "jump" && run.y <= 0.001) {
     run.slide = 0;
-    run.vy = 9.5;
+    run.vy = 12.5 * (1 + run.upgrades.leap * 0.08);
     run.events.push("jump");
   }
+  if (action === "jump" && run.y > 0 && run.y < 0.6 && run.vy < 0)
+    run.jumpBuffer = 0.18;
   if (action === "slide") {
-    run.slide = 0.85;
-    if (run.y > 0) run.vy = -14;
+    run.slide = 1.15 + run.upgrades.slide * 0.2;
+    run.y = 0;
+    run.vy = 0;
+    run.jumpBuffer = 0;
   }
 }
 export function step(run, dt) {
   if (run.ended) return;
   dt = Math.min(dt, 1 / 30);
   run.time += dt;
-  run.speed = Math.min(25, 13 + run.distance / 180);
+  run.speed = Math.min(32, 18 + run.distance / 140);
   run.distance += run.speed * dt;
   run.x += (LANES[run.lane] - run.x) * Math.min(1, dt * 15);
-  run.vy -= 24 * dt;
+  run.vy -= 22 * dt;
   run.y = Math.max(0, run.y + run.vy * dt);
   if (!run.y) run.vy = Math.max(0, run.vy);
+  if (!run.y && run.jumpBuffer > 0) {
+    run.jumpBuffer = 0;
+    act(run, "jump");
+  }
+  run.jumpBuffer = Math.max(0, run.jumpBuffer - dt);
   run.slide = Math.max(0, run.slide - dt);
   run.invulnerable = Math.max(0, run.invulnerable - dt);
   run.magnet = Math.max(0, run.magnet - dt);
+  run.double = Math.max(0, run.double - dt);
   for (const object of run.objects) {
     if (object.used) continue;
     const dz = object.at - run.distance;
     const sameLane = Math.abs(LANES[object.lane] - run.x) < 0.95;
     if (object.type === "bone") {
       if (
-        (Math.abs(dz) < 1.4 && sameLane && run.y < 2.7) ||
+        (Math.abs(dz) < 1.8 && sameLane) ||
         (run.magnet > 0 && Math.abs(dz) < 8)
       ) {
         object.used = true;
         run.bones++;
+        run.bonePoints +=
+          (25 + run.upgrades.value * 5) * (run.double > 0 ? 2 : 1);
         run.combo++;
         run.bestCombo = Math.max(run.combo, run.bestCombo);
         run.events.push("bone");
       } else if (dz < -2) run.combo = 0;
-    } else if (Math.abs(dz) < 1.05 && sameLane) {
-      if (object.type === "magnet" || object.type === "shield") {
+    } else if (
+      Math.abs(dz) < 1.05 &&
+      sameLane &&
+      PICKUPS.includes(object.type)
+    ) {
+      object.used = true;
+      if (object.type === "magnet") run.magnet = 10 + run.upgrades.magnet * 3;
+      if (object.type === "shield") run.shield = 1;
+      if (object.type === "gem") run.bonusPoints += 250;
+      if (object.type === "double") run.double = 10;
+      if (object.type === "heart") run.hearts = Math.min(3, run.hearts + 1);
+      run.events.push(object.type);
+    } else if (HAZARDS.includes(object.type) && dz < -0.4 && !object.passed) {
+      object.passed = true;
+      const cleared =
+        (object.type === "log" && run.y > 0.65) ||
+        (object.type === "rock" && run.y > 1.25) ||
+        (["arch", "branch", "gate"].includes(object.type) &&
+          run.slide > 0 &&
+          run.y < 0.2);
+      if (sameLane && !cleared && run.invulnerable === 0) {
         object.used = true;
-        if (object.type === "magnet") run.magnet = 10;
-        else run.shield = 1;
-        run.events.push(object.type);
-      } else {
-        const cleared =
-          (object.type === "log" && run.y > 1.05) ||
-          (object.type === "arch" && run.slide > 0 && run.y < 0.2);
-        if (!cleared && run.invulnerable === 0) {
-          object.used = true;
-          if (run.shield) {
-            run.shield = 0;
-            run.events.push("shield-break");
-          } else {
-            run.hearts--;
-            run.events.push("hit");
-          }
-          run.combo = 0;
-          run.invulnerable = 1.8;
-          if (run.hearts <= 0) {
-            run.ended = true;
-            run.events.push("end");
-            break;
-          }
+        if (run.shield) {
+          run.shield = 0;
+          run.events.push("shield-break");
+        } else {
+          run.hearts--;
+          run.events.push("hit");
+        }
+        run.combo = 0;
+        run.invulnerable = 1.8;
+        if (run.hearts <= 0) {
+          run.ended = true;
+          run.events.push("end");
+          break;
         }
       }
     }
   }
   run.objects = run.objects.filter((object) => object.at > run.distance - 8);
-  run.score = Math.floor(run.distance) + run.bones * 25;
+  run.score = Math.floor(run.distance) + run.bonePoints + run.bonusPoints;
   fillTrack(run);
 }

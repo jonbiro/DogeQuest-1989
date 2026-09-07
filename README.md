@@ -12,10 +12,12 @@ A separate mobile-first endless runner through low-poly jungle ruins. Puppy Ques
 
 - Swipe left/right to switch among three lanes; swipe up to jump logs and down to slide under arches. A tap on the trail also jumps.
 - Arrow keys or WASD do the same on desktop; Space jumps and Escape pauses. On-screen buttons support touch and keyboard activation.
-- Sidestep stone blocks. Each generated obstacle row leaves at least one lane unobstructed. Bone trails mark that lane.
+- Jump logs and low stone blocks; slide under stone arches, branches, and hanging gates. Higher, longer jumps, landing input buffering, and forgiving collision timing make clearance easier. Each generated obstacle row leaves at least one lane unobstructed. Bone trails mark that lane.
 - Three hearts per run. A shield absorbs one hit; magnets collect nearby bones for ten seconds.
-- Score is distance in meters plus 25 points per bone. Personal best and lifetime bones save locally after completed runs. Leaving an unfinished run does not bank its bones.
-- The pace gradually increases. Backgrounding the page pauses the run. Sound is opt-in; reduced-motion mode removes decorative movement, though running remains a visual motion-based game.
+- Purple gems award 250 points; gold tokens double bone points for ten seconds; pink hearts restore one heart (up to three). Magnets and shields still appear along the trail.
+- Score is distance in meters plus bone points and treasure bonuses. Bones start at 25 points. Completed runs bank their full score as upgrade points; spend them in **Paw upgrades** at camp. Four permanent upgrades improve jump lift, slide duration, magnet duration, and bone value. Each has three levels costing 500, 1,000, and 1,800 points. Purchases apply to the next run and save in this browser. No real money is involved.
+- Personal best, lifetime bones, points, and upgrades save locally after completed runs or purchases. Existing records are preserved; upgrade points begin accruing with this update. Leaving an unfinished run does not bank its bones or score.
+- The faster pace starts at 18 meters/second and gradually reaches 32. Obstacle rows are spaced farther apart to retain reaction time. Backgrounding the page pauses the run. Sound is opt-in; reduced-motion mode removes decorative movement, though running remains a visual motion-based game.
 
 Requires WebGL2. If 3D is unavailable, the page explains the requirement and links back to Puppy Quest. No accounts, purchases, analytics, or remote asset requests.
 
