@@ -241,6 +241,7 @@ function finish() {
     $("overlay-copy").textContent +=
       ` Challenge complete: +${reward} extra points!`;
   if (run.gifts) $("overlay-copy").textContent += ` ${run.gifts} gift boxes banked.`;
+  if (run.ziplines) $("overlay-copy").textContent += ` ${run.ziplines} zipline rides completed (+${run.ziplines * 250} points included in your score).`;
   if (prizes.length) $("overlay-copy").textContent += ` Prizes earned: ${prizes.map(p => p.name).join(", ")}! Visit the clubhouse.`;
   persist();
   updateRecords();
@@ -458,6 +459,8 @@ function frame(now) {
       if (event === "zoomies-end") toast("Zoomies finished. Back to jumping and sliding!",2);
       if(event==="route-scenic")toast("Scenic trail: fewer obstacles for the next 220 meters.",4);
       if(event==="route-challenge")toast("Challenge trail! More jump/slide rows. Clean clears earn +60 points.",4);
+      if(event==="zipline-start") { toast("Sky paws! Steer left and right to fetch airborne bones.",3); tone("zoomies"); }
+      if(event==="zipline-end") { toast("Perfect delivery! Zipline complete · +250 points.",3); tone("reward"); }
       if (event === "double") {
         toast("Golden bonus! Double bone points for 10 seconds.");
         tone(880, 0.2);
@@ -474,7 +477,7 @@ function frame(now) {
     run.events = [];
     $("scene").dataset.lane = String(run.lane + 1);
     $("scene").dataset.posture =
-      run.y > 0.05 ? "jump" : run.slide > 0 ? "slide" : "run";
+      run.zipline ? "zipline" : run.y > 0.05 ? "jump" : run.slide > 0 ? "slide" : "run";
     if (Math.floor(run.time * 10) !== lastHud || run.ended) {
       lastHud = Math.floor(run.time * 10);
       $("distance").innerHTML = `${Math.floor(run.distance)}<small> m</small>`;
@@ -507,7 +510,8 @@ function frame(now) {
           object.at - run.distance < run.speed * 0.8,
       );
       const duck = danger && ["arch", "branch", "gate"].includes(danger.type);
-      $("cue").textContent = danger && run.zoomies === 0
+      const cable = run.objects.find(object => object.type === "zipline-start" && !object.caught && object.at - run.distance > 0 && object.at - run.distance < run.speed * .65);
+      $("cue").textContent = run.zipline ? "← SWING for bones →" : cable ? "↑ JUMP to grab the zipline" : danger && run.zoomies === 0
         ? duck
           ? "↓ SLIDE under"
           : danger.type === "gap" ? "↑ JUMP the gap" : "↑ JUMP over"
@@ -516,6 +520,9 @@ function frame(now) {
         "♥ ".repeat(Math.max(0, run.hearts)) + "♡ ".repeat(3 - run.hearts);
       $("hearts").setAttribute("aria-label", `${run.hearts} hearts remaining`);
       $("power").innerHTML = [
+        run.zipline
+          ? `<span class="power-chip shield">🐾 SKY PAWS · ${Math.ceil(run.zipline.end-run.distance)}m <small>Ride to the end · +250 points</small><progress aria-label="Zipline distance remaining" max="140" value="${Math.max(0,run.zipline.end-run.distance)}"></progress></span>`
+          : "",
         run.zoomies > 0
           ? `<span class="power-chip double">🎾 ZOOMIES · ${Math.ceil(run.zoomies)}s <small>Smash obstacles · +40 points</small><progress aria-label="Zoomies time remaining" max="6" value="${run.zoomies}"></progress></span>`
           : "",

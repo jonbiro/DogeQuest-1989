@@ -10,6 +10,7 @@ export function seededRandom(seed) {
   };
 }
 import { levels } from "./progression.js";
+import { ZIPLINE_FIRST, ZIPLINE_PERIOD, ZIPLINE_LENGTH, ZIPLINE_HEIGHT } from "./ziplines.js";
 const SOLID_HAZARDS = ["rock", "log", "arch", "branch", "gate"];
 export const HAZARDS = [...SOLID_HAZARDS,"gap"];
 export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart", 'gift', 'zoomies'];
@@ -49,6 +50,9 @@ export function createRun(seed = Date.now(), upgrades = {}) {
     choicePending: null,
     route: null,
     routeChoices: 0,
+    nextZipline: ZIPLINE_FIRST,
+    zipline: null,
+    ziplines: 0,
     row: 0,
     id: 0,
     events: [],
@@ -59,11 +63,27 @@ export function createRun(seed = Date.now(), upgrades = {}) {
   return run;
 }
 function add(run, type, lane, at) {
-  run.objects.push({ id: run.id++, type, lane, at, used: false, skillReward:run.route?.kind==="challenge"&&at<run.route.until?60:20 });
+  const object = { id: run.id++, type, lane, at, used: false, skillReward:run.route?.kind==="challenge"&&at<run.route.until?60:20 };
+  run.objects.push(object);
+  return object;
 }
 export function fillTrack(run) {
   if(run.choicePending!==null)return;
   while (run.nextRow < run.distance + 170) {
+    if (run.nextRow >= run.nextZipline - 45) {
+      const start = run.nextZipline;
+      add(run, "zipline-start", 1, start);
+      add(run, "zipline-end", 1, start + ZIPLINE_LENGTH);
+      // Long groups allow a deliberate left/center/right swing, even at Zoomies speed.
+      for (let i = 0; i < 18; i++) {
+        const lane = [1, 0, 1, 2, 1, 0][Math.floor(i / 3)];
+        add(run, "bone", lane, start + 16 + i * 6).airborne = true;
+      }
+      add(run, "gift", 1, start + 128).airborne = true;
+      run.nextRow = start + ZIPLINE_LENGTH + 45;
+      run.nextZipline += ZIPLINE_PERIOD;
+      continue;
+    }
     if(run.nextRow>=run.nextChoice-45) {
       add(run,"choice-left",0,run.nextChoice);
       add(run,"choice-right",2,run.nextChoice);
@@ -76,7 +96,7 @@ export function fillTrack(run) {
     // clear of decision gates and within its selected difficulty section.
     const sequenceEnd = run.nextRow + 144;
     if (run.nextRow > 600 && run.row % 16 === 12 && route !== "scenic" &&
-        sequenceEnd < run.nextChoice - 45 &&
+        sequenceEnd < Math.min(run.nextChoice, run.nextZipline) - 45 &&
         (!run.route || run.nextRow >= run.route.until || sequenceEnd < run.route.until)) {
       const types = Math.floor(run.row / 16) % 2 ? ["gate", "log", "gate"] : ["log", "gate", "log"];
       for (let beat = 0; beat < types.length; beat++) {
@@ -125,6 +145,7 @@ export function act(run, action) {
   if (run.ended) return;
   if (action === "left") run.lane = Math.max(0, run.lane - 1);
   if (action === "right") run.lane = Math.min(2, run.lane + 1);
+  if (run.zipline) return;
   if (action === "jump" && run.y <= 0.001) {
     run.slide = 0;
     run.vy = 12.5 * (1 + run.upgrades.leap * 0.08);
@@ -163,8 +184,22 @@ export function step(run, dt) {
     run.choicePending=null;
     run.events.push(`route-${kind}`);
   }
-  run.y = Math.max(0, run.y + run.vy * dt - 11 * dt * dt);
-  run.vy -= 22 * dt;
+  if (run.zipline) {
+    run.y += (ZIPLINE_HEIGHT - run.y) * (1 - Math.exp(-8 * dt));
+    run.vy = 0;
+    run.slide = 0;
+    run.jumpBuffer = 0;
+    if (run.distance >= run.zipline.end) {
+      run.zipline = null;
+      run.ziplines++;
+      run.bonusPoints += 250;
+      run.invulnerable = Math.max(run.invulnerable, 1.2);
+      run.events.push("zipline-end");
+    }
+  } else {
+    run.y = Math.max(0, run.y + run.vy * dt - 11 * dt * dt);
+    run.vy -= 22 * dt;
+  }
   if (!run.y) run.vy = Math.max(0, run.vy);
   if (!run.y && run.jumpBuffer > 0) {
     run.jumpBuffer = 0;
@@ -180,21 +215,30 @@ export function step(run, dt) {
     if (object.used) continue;
     const dz = object.at - run.distance;
     const sameLane = Math.abs(LANES[object.lane] - run.x) < 0.95;
+    if (object.type === "zipline-start" && !object.caught && Math.abs(dz) < 3 && run.y > .65 && !run.zipline) {
+      object.caught = true;
+      run.zipline = {start: object.at, end: object.at + ZIPLINE_LENGTH};
+      run.slide = 0;
+      run.jumpBuffer = 0;
+      run.events.push("zipline-start");
+    }
+    // Airborne treats belong to the cable route, not to runners underneath it.
+    const reachable = !object.airborne || Boolean(run.zipline);
     if (object.type === "bone") {
-      if (!object.pull && run.magnet > 0 && dz > -3 && dz < 16) {
+      if (!object.pull && reachable && run.magnet > 0 && dz > -3 && dz < 16) {
         object.pull = {
           elapsed: 0,
           duration: 0.24,
           fromX: LANES[object.lane],
           fromAt: object.at,
-          fromY: 1.1,
+          fromY: object.airborne ? ZIPLINE_HEIGHT + 1.1 : 1.1,
         };
       }
       if (object.pull) object.pull.elapsed += dt;
       if (
         object.pull
           ? object.pull.elapsed >= object.pull.duration
-          : Math.abs(dz) < 1.8 && sameLane
+          : reachable && Math.abs(dz) < 1.8 && sameLane
       ) {
         object.used = true;
         run.bones++;
@@ -220,6 +264,7 @@ export function step(run, dt) {
       }
     } else if (
       Math.abs(dz) < 1.05 &&
+      reachable &&
       sameLane &&
       PICKUPS.includes(object.type)
     ) {

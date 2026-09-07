@@ -13,6 +13,7 @@ test("reduced motion disables decorative movement while keeping action silhouett
   assert.deepEqual(p,{blink:1,breathe:0,ears:0,tail:0,cape:0,legs:[0,0,0,0]});
   assert.deepEqual(puppyPose(4,200,{reducedMotion:true,airborne:true}).legs,[-.65,-.65,.5,.5]);
   assert.deepEqual(puppyPose(4,200,{sliding:true}).legs,[-.9,-.9,-.9,-.9]);
+  assert.deepEqual(puppyPose(4,200,{ziplining:true,reducedMotion:true}).legs,[-2.65,.25,-2.65,.25]);
 });
 test("pose is deterministic so frozen animation time stays frozen on pause",()=>{
   assert.deepEqual(puppyPose(12,345),puppyPose(12,345));

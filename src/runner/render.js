@@ -7,6 +7,7 @@ import { PUPPIES } from "./collection.js";
 import { REGIONS, regionAt, regionBlend } from "./regions.js";
 import { puppyPose } from "./puppy-pose.js";
 import { isBridge } from "./bridges.js";
+import { ziplineAt, ZIPLINE_HEIGHT } from "./ziplines.js";
 
 // Shared low-poly geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -99,6 +100,8 @@ export function createView(canvas) {
       bridgeBox("#64472e", x, -.45, 0, .22, .22, 5.4);
     }
     tile.add(bridge);
+    const cable = box(tile, "#e7c978", 0, 6.5, 0, .075, .075, 5.4);
+    cable.userData.cable = true;
     scenery.add(tile);
     tiles.push(tile);
   }
@@ -211,6 +214,7 @@ export function createView(canvas) {
             road: true,
             bridge: item.userData.bridge === true,
             water: item.userData.water === true,
+            cable: item.userData.cable === true,
           });
       });
     for (const group of decorations)
@@ -521,6 +525,26 @@ export function createView(canvas) {
       const diamond=box(gate,"#7d4e2b",0,3.3,.12,.34,.34,.08);diamond.rotation.z=Math.PI/4;
     }
   }
+  for (const type of ["zipline-start", "zipline-end"]) {
+    const station = new THREE.Group();
+    templates[type] = station;
+    for (const x of [-4.5, 4.5]) {
+      box(station, "#765036", x, 3.3, 0, .5, 6.6, .6);
+      box(station, "#efd6a0", x, .35, 0, .75, .7, .9);
+    }
+    box(station, "#cf9e61", 0, 6.5, 0, 9.5, .4, .6);
+    if (type === "zipline-start") {
+      box(station, "#e7c978", 0, 4.75, 0, .08, 3.5, .08);
+      box(station, "#8bf0da", 0, 3, 0, 6.5, .22, .22);
+      // Paw badge marks the optional aerial route, with a broad catch bar.
+      box(station, "#225c60", 0, 5.6, .4, 2, 1.1, .12);
+      ball(station, "#a6f0d7", 0, 5.5, .5, .28, .23, .07);
+      for (const x of [-.3, 0, .3]) ball(station, "#a6f0d7", x, 5.85, .5, .1, .12, .07);
+    }
+  }
+  const zipHandle = new THREE.Group(); scene.add(zipHandle);
+  box(zipHandle, "#8bf0da", 0, 0, 0, 1.5, .15, .15);
+  const zipTether = box(scene, "#e7c978", 0, 0, 0, .06, 1, .06);
   const active = new Map(),
     pools = Object.fromEntries(
       Object.keys(templates).map((type) => [type, []]),
@@ -540,6 +564,7 @@ export function createView(canvas) {
     pose = 1,
     lean = 0,
     cameraX = 0,
+    cameraLift = 0,
     animationTime = 0;
   const bendMatrix = new THREE.Matrix4(),
     instanceMatrix = new THREE.Matrix4();
@@ -559,6 +584,7 @@ export function createView(canvas) {
         pose = 1;
         lean = 0;
         cameraX = run.x;
+        cameraLift = 0;
       }
       if (state === "playing" || menu) animationTime += dt;
       time = animationTime;
@@ -593,10 +619,11 @@ export function createView(canvas) {
           instanceMatrix.multiplyMatrices(bendMatrix, entry.matrix);
           const region = regionAt(menu ? 0 : distance-z);
           const bridge = !menu && isBridge(distance-z);
-          if ((entry.road && entry.bridge !== bridge) || (!entry.road && bridge)) instanceMatrix.scale(bendScale.set(0,0,0));
+          const cableSection = !menu && ziplineAt(distance-z);
+          if (entry.cable ? !cableSection : (entry.road && entry.bridge !== bridge) || (!entry.road && (bridge || cableSection))) instanceMatrix.scale(bendScale.set(0,0,0));
           if(entry.region !== undefined && entry.region !== region) instanceMatrix.scale(bendScale.set(0,0,0));
-          if(entry.road && !entry.water && gaps.some(gap => Math.abs(distance-z-gap.at)<.1)) instanceMatrix.scale(bendScale.set(0,0,0));
-          if(entry.road || entry.region === undefined) instanced.setColorAt(i,entry.bridge ? entry.color : entry.colors[region]);
+          if(entry.road && !entry.water && !entry.cable && gaps.some(gap => Math.abs(distance-z-gap.at)<.1)) instanceMatrix.scale(bendScale.set(0,0,0));
+          if(entry.road || entry.region === undefined) instanced.setColorAt(i,entry.bridge || entry.cable ? entry.color : entry.colors[region]);
           instanced.setMatrixAt(i, instanceMatrix);
         });
         instanced.instanceMatrix.needsUpdate = true;
@@ -612,7 +639,7 @@ export function createView(canvas) {
       dog.rotation.y = menu ? -2.35 : lean;
       dog.rotation.z = menu || reducedMotion ? 0 : lean * 0.3;
       dog.scale.setScalar(1);
-      const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:y>.1,sliding:run.slide>0});
+      const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:y>.1,sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline)});
       dog.scale.y = pose + personality.breathe;
       dog.visible = true;
       for (let i = 0; i < legs.length; i++) legs[i].rotation.x = personality.legs[i];
@@ -620,6 +647,12 @@ export function createView(canvas) {
       for (const {ear,side} of ears) ear.rotation.x = personality.ears*side;
       cape.rotation.x = -.14 + personality.cape;
       tail.rotation.z = personality.tail;
+      zipHandle.visible = zipTether.visible = !menu && Boolean(run.zipline);
+      zipHandle.position.set(x, y + 1.15, -.15);
+      const tetherHeight = 6.5 - (y + 1.15);
+      zipTether.position.set(x / 2, (6.5 + y + 1.15) / 2, -.15);
+      zipTether.scale.y = Math.hypot(x, tetherHeight);
+      zipTether.rotation.z = Math.atan2(x, tetherHeight);
       scarf.rotation.x = reducedMotion ? 0 : Math.sin(time * 12) * 0.15;
       shadow.position.x = dog.position.x;
       shadow.scale.setScalar(Math.max(0.45, 1 - y * 0.12));
@@ -674,7 +707,7 @@ export function createView(canvas) {
           item.position.set(
             LANES[object.lane],
             pickup
-              ? 1.1 +
+              ? (object.airborne ? ZIPLINE_HEIGHT + 1.1 : 1.1) +
                   (reducedMotion ? 0 : Math.sin(time * 3 + object.id) * 0.12)
               : 0,
             -(object.at - distance),
@@ -714,14 +747,16 @@ export function createView(canvas) {
         const compact = mobile && canvas.clientHeight<=700 && canvas.clientHeight>520;
         camera.lookAt(mobile ? -1 : -3.5, mobile ? compact ? .5 : 2.2 : 1.25, 0);
       } else {
-        if (state === "playing")
+        if (state === "playing") {
           cameraX += (x - cameraX) * (1 - Math.exp(-5 * dt));
+          cameraLift += ((run.zipline ? y * .7 : 0) - cameraLift) * (1 - Math.exp(-4 * dt));
+        }
         camera.position.set(
           cameraX * (camera.aspect < 0.85 ? 0.45 : 0.13),
-          4.5,
+          4.5 + cameraLift,
           camera.aspect < 0.85 ? 10.8 : 9,
         );
-        camera.lookAt(cameraX * (camera.aspect < 0.85 ? 0.4 : 0.12), 0.75, -13);
+        camera.lookAt(cameraX * (camera.aspect < 0.85 ? 0.4 : 0.12), 0.75 + cameraLift, -13);
       }
       if (state === "playing" && dt > 0.025) slowFrames++;
       else slowFrames = Math.max(0, slowFrames - 1);

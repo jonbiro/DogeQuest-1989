@@ -15,6 +15,8 @@ Build an original, polished Temple Run 2-style puppy runner. Keep Puppy Quest av
 
 ## Current iteration
 
+Sky Paws ziplines add a distinct aerial traversal mode: jump into the turquoise catch bar, swing between lanes for 18 airborne bones and a gift, and finish the 140-meter ride for 250 points. The first starts at 650 meters and repeats every 1,400 meters between difficulty gates. A missed catch leaves a safe ground route; landing has a clear recovery stretch. Airborne prizes require the ride, and magnets work at the correct height. The camera rises smoothly, the puppy holds a tethered bar, and decorative ruins are cleared from the cable route.
+
 Wooden river crossings now replace the stone trail from 180–280 meters of each 900-meter cycle. Planks and rope rails follow the same curved route; nearby scenery gives way to water, then returns on the far bank. They use the existing instanced batches and preserve obstacle physics. This is environmental variety, not a new traversal mechanic or completion of the remaining set-piece requirement.
 
 Authored full-width jump/duck sequences now interrupt random rows after 600 meters, alternating log–gate–log and gate–log–gate with a gift finish. The 48-meter beat spacing supports top-speed base and upgraded movement; Scenic sections and decision-gate approaches are excluded. These improve obstacle rhythm, but do not yet fulfill the larger traversal-set-piece requirement.
@@ -35,7 +37,7 @@ Puppy-style synthesized greeting, jump/Zoomies sweeps, reward chimes and a finis
 
 Runner script and bundled stylesheet references now carry content hashes, verified during the build, so page reloads fetch matched assets after a release.
 
-Still required: more substantial traversal set pieces and comprehensive final-state gameplay and performance QA. Do not mark the overall goal complete from the existing narrower checks.
+The aerial zipline now supplies a traversal mechanic beyond running, jumping and sliding. Still required: comprehensive final-state gameplay and performance QA and a requirement-by-requirement completion audit. Do not mark the overall goal complete from the existing narrower checks.
 
 Recovery now has a dedicated graphics-error screen, safe start guard, keyboard-accessible 2D fallback and reload path. Storage failures display persistent session-only warnings, and unreadable startup saves cannot be overwritten. Actual context loss, injected startup failure and blocked-storage flows were checked in isolated browser sessions; see the verification record.
 

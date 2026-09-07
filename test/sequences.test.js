@@ -4,7 +4,7 @@ import {createRun, fillTrack, step, act, HAZARDS} from "../src/runner/world.js";
 
 function sequence(row = 12, route = null, nextChoice = 2000) {
   const run = createRun(17);
-  Object.assign(run, {distance: 700, nextRow: 720, row, objects: [], route, nextChoice, choicePending: null});
+  Object.assign(run, {distance: 700, nextRow: 720, row, objects: [], route, nextChoice, nextZipline: 3000, choicePending: null});
   fillTrack(run);
   return run;
 }
