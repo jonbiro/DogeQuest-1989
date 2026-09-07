@@ -33,6 +33,8 @@ Runner script and bundled stylesheet references now carry content hashes, verifi
 
 Still required: more substantial traversal set pieces and comprehensive final-state gameplay and performance QA. Do not mark the overall goal complete from the existing narrower checks.
 
+Recovery now has a dedicated graphics-error screen, safe start guard, keyboard-accessible 2D fallback and reload path. Storage failures display persistent session-only warnings, and unreadable startup saves cannot be overwritten. Actual context loss, injected startup failure and blocked-storage flows were checked in isolated browser sessions; see the verification record.
+
 Compact portrait and short landscape layouts were repaired after screenshot checks. Actual pointer drag, on-screen slide, pause stability and two real-time prompt-driven browser runs were checked. The reusable 1280×800 run reached 558 meters with Challenge selected and three hearts, averaging about 60 fps. See `RUNNER-VERIFICATION.md` for exact scope and remaining evidence gaps.
 
 Sound and reduced-motion preferences now persist, with safe old-save defaults. `RUNNER-VERIFICATION.md` records the accelerated 3 × 4,500-meter input-driven simulation and 54 real-renderer checkpoints: no damage, bounded resources and successful renderer reuse across restarts. Physical-phone performance and uninterrupted real-time gameplay are not implied by this result.

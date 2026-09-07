@@ -31,6 +31,9 @@ export async function verifyDist() {
   }
 
   await assertNoSymlinks(distDirectory);
+  const runnerEntries=await readdir(path.join(distDirectory,"runner"));
+  for(const file of ["qa.js","recovery.html","recovery-init.js"])
+    if(runnerEntries.includes(file))throw new Error(`Local QA artifact must not ship: ${file}`);
   const runnerHtml=await readFile(path.join(distDirectory,"runner/index.html"),"utf8");
   for(const asset of ["game.js","style.css"]) {
     const contents=await readFile(path.join(distDirectory,"runner",asset));

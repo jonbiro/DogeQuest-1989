@@ -4,6 +4,7 @@ import { UPGRADES, levels, price, purchase } from "./progression.js";
 import { missionFor, missionProgress, claimMission } from "./missions.js";
 import {REGIONS,regionAt} from "./regions.js";
 import {preferencesFrom} from "./preferences.js";
+import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound} from "./sound.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, awardPrizes } from "./collection.js";
 const $ = (id) => document.getElementById(id);
@@ -15,6 +16,9 @@ let run = createRun(),
   toastUntil = 0,
   sound = false,
   audio = null;
+let graphicsReady = false;
+let storageAvailable = true;
+let profileReadable = true;
 let reducedMotion = window.matchMedia(
   "(prefers-reduced-motion: reduce)",
 ).matches;
@@ -29,7 +33,9 @@ let saved = {
   preferences: preferencesFrom(null,reducedMotion),
 };
 try {
-  const value = JSON.parse(localStorage.getItem("biscuit-dash-v1"));
+  const {value,available} = readStoredProfile(localStorage);
+  storageAvailable=available;
+  profileReadable=available;
   for (const key of Object.keys(saved))
     if (key !== "upgrades" && Number.isFinite(value?.[key]) && value[key] >= 0)
       saved[key] = value[key];
@@ -38,11 +44,13 @@ try {
   saved.preferences = preferencesFrom(value?.preferences,reducedMotion);
   saved.challenges = Math.floor(saved.challenges);
 } catch {
-  /* A run works without storage. */
+  storageAvailable=false;
+  profileReadable=false;
 }
 sound=saved.preferences.sound;
 reducedMotion=saved.preferences.reducedMotion;
 function updateRecords() {
+  updateSaveNotice();
   $("buddy").querySelector("strong").textContent = `${PUPPIES[saved.collection.puppy].name}.`;
   $("buddy").querySelector("p").textContent = PUPPIES[saved.collection.puppy].description;
   $("best").innerHTML =
@@ -89,14 +97,18 @@ function kennel() {
   }
 }
 function persist() {
+  // Never overwrite existing progress that was inaccessible at startup.
+  if(!profileReadable){updateSaveNotice();return;}
   try {
-    localStorage.setItem("biscuit-dash-v1", JSON.stringify(saved));
+    storageAvailable=writeStoredProfile(localStorage,saved,profileReadable);
   } catch {
-    toast(
-      "Progress is saved for this visit only; browser storage is unavailable.",
-      5,
-    );
+    storageAvailable=false;
   }
+  updateSaveNotice();
+}
+function updateSaveNotice() {
+  $("game").dataset.storage=storageAvailable?"available":"unavailable";
+  for(const id of ["menu-save-notice","overlay-save-notice"])$(id).hidden=storageAvailable;
 }
 function shop() {
   showOverlay("shop");
@@ -150,10 +162,10 @@ function setState(next) {
   $("menu").hidden = state !== "menu";
   $("buddy").hidden = state !== "menu";
   $("footer").hidden = state !== "menu";
-  $("hud").hidden = ["menu", "help", "shop", "kennel"].includes(state);
+  $("hud").hidden = ["menu", "help", "shop", "kennel", "graphics-error"].includes(state);
   $("controls").hidden = state !== "playing";
   $("pause-button").hidden = state !== "playing";
-  $("overlay").hidden = !["paused", "ended", "help", "shop", "kennel"].includes(state);
+  $("overlay").hidden = !["paused", "ended", "help", "shop", "kennel", "graphics-error"].includes(state);
   const modal = !$("overlay").hidden;
   $("scene").inert = state !== "playing";
   document.querySelector("header").inert = modal;
@@ -162,6 +174,7 @@ function setState(next) {
   pointer = null;
 }
 function start() {
+  if(!graphicsReady){graphicsError();return;}
   run = createRun(Date.now(), saved.upgrades);
   run.appearance = { ...saved.collection };
   currentMission = missionFor(saved.challenges);
@@ -173,6 +186,8 @@ function start() {
   tone("yip");
 }
 function showOverlay(kind) {
+  $("graphics-recovery").hidden = kind !== "graphics-error";
+  $("home").hidden = kind === "graphics-error";
   $("collection").hidden = kind !== "kennel";
   $("upgrades").hidden = kind !== "shop";
   $("results").hidden = kind !== "ended";
@@ -280,7 +295,7 @@ const keyActions = {
 window.addEventListener("keydown", (event) => {
   if (event.key === "Tab" && !$("overlay").hidden) {
     const buttons = [
-      ...$("overlay").querySelectorAll("button:not(:disabled)"),
+      ...$("overlay").querySelectorAll("button:not(:disabled), a[href]"),
     ].filter((button) => !button.closest("[hidden]"));
     if (event.shiftKey && document.activeElement === buttons[0]) {
       event.preventDefault();
@@ -376,23 +391,28 @@ document.addEventListener("visibilitychange", () => {
 });
 $("scene").addEventListener("webglcontextlost", (event) => {
   event.preventDefault();
-  pause();
+  graphicsError();
+});
+function graphicsError() {
+  if(audio)stopSound(audio);
+  graphicsReady=false;
+  $("play").disabled=true;
+  showOverlay("graphics-error");
+  $("overlay-label").textContent="LET’S GET YOUR PAWS BACK ON THE TRAIL";
+  $("overlay-title").textContent="The 3D trail needs a restart.";
   $("overlay-copy").textContent =
-    "The graphics connection was interrupted. Reload this page to restore the trail.";
+    "Graphics are unavailable or were interrupted. Reload to try again. Saved puppies, outfits and points stay in this browser; the unfinished run is not banked.";
   $("overlay-primary").textContent = "Reload trail";
   $("overlay-primary").onclick = () => window.location.reload();
-});
+}
 let view;
 try {
   view = createView($("scene"));
+  graphicsReady=true;
   $("play").disabled = false;
   $("play").textContent = "Let’s run ↗";
 } catch {
-  $("play").textContent = "3D unavailable";
-  $("help").hidden = true;
-  $("title").textContent = "This trail needs 3D.";
-  document.querySelector(".intro").textContent =
-    "WebGL could not start. Try a browser with hardware acceleration, or return to Puppy Quest above.";
+  graphicsError();
 }
 let milestone = 0,
   taughtObstacles = false;
@@ -525,9 +545,9 @@ function frame(now) {
     if (run.ended) finish();
   }
   if (time > toastUntil) $("toast").textContent = "";
-  if (view)
+  if (view && graphicsReady)
     view.draw(run, time, state, reducedMotion, dt, accumulator / (1 / 120), saved.collection);
   requestAnimationFrame(frame);
 }
-$("play").focus({ preventScroll: true });
+if(graphicsReady)$("play").focus({ preventScroll: true });
 requestAnimationFrame(frame);

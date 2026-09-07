@@ -236,6 +236,9 @@ h1 em {
 }
 #route-choice { margin-bottom:8px; padding:8px 12px; border-radius:12px; background:#173c32ed; color:#efffc9; font-size:12px; line-height:1.5; }
 #route-choice:empty { display:none; }
+.save-notice { flex-basis:100%; grid-column:1/-1; margin:0 0 6px; padding:8px 10px; background:#493c26; border:1px solid #edc47788; border-radius:10px; font-size:11px; line-height:1.4; color:#fff0cb; }
+#game[data-storage="unavailable"] .intro, #game[data-storage="unavailable"] .menu-stats { display:none; }
+@media (max-height:520px) { #game[data-storage="unavailable"] h1 { font-size:32px; } }
 #upgrades, #collection {
   max-height: 42svh;
   overflow-y: auto;
