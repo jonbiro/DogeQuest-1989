@@ -4,6 +4,9 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Replaced the straight runner corridor with a continuously winding track; road sections, scenery, pickups, and hazards share the curved centerline.
+- Raised difficulty with a 22–36 m/s pace, earlier/denser obstacles, frequent two-lane blockages, full-width jump/slide rows, and riskier bone trails. Kept readable cues, forgiving inputs, and recovery space after action rows.
+
 - Added rotating, increasingly challenging run goals with one-time earned upgrade-point rewards and live progress.
 - Added bone-streak and clean-clear score bonuses, live score/streak display, and contextual jump/slide warnings. Fixed repeated streak resets from already-missed bones and aligned menu keyboard order with its visual layout.
 

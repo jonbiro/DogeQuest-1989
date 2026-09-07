@@ -11,7 +11,7 @@ function obstacle(type) {
   run.nextRow = 500;
   return run;
 }
-test("runner seeds reproduce a route with an unobstructed lane in every row", () => {
+test("runner seeds reproduce solvable open-lane or uniform action rows", () => {
   for (let seed = 0; seed < 50; seed++) {
     const a = createRun(seed),
       b = createRun(seed);
@@ -25,7 +25,14 @@ test("runner seeds reproduce a route with an unobstructed lane in every row", ()
         if (!rows.has(object.at)) rows.set(object.at, new Set());
         rows.get(object.at).add(object.lane);
       }
-      for (const lanes of rows.values()) assert.ok(lanes.size <= 2);
+      for (const [at, lanes] of rows)
+        if (lanes.size === 3) {
+          const obstacles = a.objects.filter(
+            (o) => o.at === at && HAZARDS.includes(o.type),
+          );
+          assert.equal(new Set(obstacles.map((o) => o.type)).size, 1);
+          assert.ok(["log", "gate"].includes(obstacles[0].type));
+        }
       assert.ok(a.objects.length < 80, "The active track stays bounded");
     }
   }
@@ -167,14 +174,17 @@ test("a lane-following runner survives a long seeded route at maximum difficulty
           .filter((o) => o.at === next.at && HAZARDS.includes(o.type))
           .map((o) => o.lane),
       );
-      run.lane = [0, 1, 2].find((lane) => !blocked.has(lane));
+      const safe = [0, 1, 2].find((lane) => !blocked.has(lane));
+      if (safe !== undefined) run.lane = safe;
+      else if (next.at - run.distance < run.speed * 0.6)
+        act(run, next.type === "log" ? "jump" : "slide");
     }
     step(run, 1 / 120);
   }
   assert.equal(run.ended, false);
   assert.equal(run.hearts, 3);
   assert.ok(run.distance > 2000);
-  assert.equal(run.speed, 32);
+  assert.equal(run.speed, 36);
 });
 test("jump clears logs and blocks across a forgiving early-to-late input window", () => {
   for (const type of ["log", "rock"])

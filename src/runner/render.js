@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { LANES, PICKUPS, seededRandom } from "./world.js";
+import { routeOffset, routeHeading } from "./route.js";
 
 // Shared low-poly geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -52,16 +53,16 @@ export function createView(canvas) {
   const cone = (parent, color, x, y, z, sx, sy, sz) =>
     mesh(parent, coneGeometry, color, x, y, z, sx, sy, sz);
   box(scene, "#397d6e", 0, -1.4, -60, 200, 0.3, 220);
-  box(scene, "#526d49", 0, -0.55, -65, 9.2, 1, 175);
-  box(scene, "#c1ba88", 0, -0.04, -65, 7.8, 0.15, 175);
-  for (const x of [-4.25, 4.25])
-    box(scene, "#ddd1a0", x, 0.08, -65, 0.45, 0.3, 175);
   // Recycled slabs, lane inlays, and scenery are translated rather than rebuilt.
   const scenery = new THREE.Group();
   scene.add(scenery);
   const tiles = [];
   for (let i = 0; i < 35; i++) {
     const tile = new THREE.Group();
+    box(tile, "#526d49", 0, -0.55, 0, 9.2, 1, 5.4);
+    box(tile, "#c1ba88", 0, -0.04, 0, 7.8, 0.15, 5.4);
+    for (const x of [-4.25, 4.25])
+      box(tile, "#ddd1a0", x, 0.08, 0, 0.45, 0.3, 5.4);
     for (let lane = 0; lane < 3; lane++) {
       box(
         tile,
@@ -399,6 +400,9 @@ export function createView(canvas) {
     lean = 0,
     cameraX = 0,
     animationTime = 0;
+  const bendMatrix = new THREE.Matrix4(),
+    instanceMatrix = new THREE.Matrix4();
+  const bendScale = new THREE.Vector3();
   return {
     draw(run, time, state, reducedMotion, dt, alpha = 1) {
       const menu = ["menu", "help", "shop"].includes(state);
@@ -429,14 +433,17 @@ export function createView(canvas) {
       }
       for (const { instanced, entries } of batches) {
         entries.forEach((entry, i) => {
-          const originalZ = entry.matrix.elements[14];
-          entry.matrix.elements[14] =
-            originalZ +
+          const z =
             entry.start -
             ((entry.offset - (distance % entry.period) + entry.period) %
               entry.period);
-          instanced.setMatrixAt(i, entry.matrix);
-          entry.matrix.elements[14] = originalZ;
+          bendMatrix.makeRotationY(routeHeading(distance, z));
+          bendMatrix.scale(
+            bendScale.set(1, 1, 1 / Math.cos(routeHeading(distance, z))),
+          );
+          bendMatrix.setPosition(routeOffset(distance, z), 0, z);
+          instanceMatrix.multiplyMatrices(bendMatrix, entry.matrix);
+          instanced.setMatrixAt(i, instanceMatrix);
         });
         instanced.instanceMatrix.needsUpdate = true;
       }
@@ -529,6 +536,13 @@ export function createView(canvas) {
               ? time * (reducedMotion ? 0 : 1.8)
               : Math.sin(time * 1.5) * 0.25
             : 0;
+          const z = item.position.z;
+          const heading = routeHeading(distance, z),
+            across = item.position.x;
+          item.position.x =
+            routeOffset(distance, z) + across * Math.cos(heading);
+          item.position.z = z - across * Math.sin(heading);
+          item.rotation.y += heading;
         }
       for (const [id, item] of active)
         if (!visibleIds.has(id)) {

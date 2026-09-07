@@ -18,7 +18,7 @@ export function createRun(seed = Date.now(), upgrades = {}) {
     random: seededRandom(seed),
     distance: 0,
     time: 0,
-    speed: 18,
+    speed: 22,
     upgrades: levels(upgrades),
     jumpBuffer: 0,
     double: 0,
@@ -58,9 +58,13 @@ export function fillTrack(run) {
     const at = run.nextRow;
     const safe = Math.floor(run.random() * 3);
     const blocked = (safe + 1 + Math.floor(run.random() * 2)) % 3;
-    if (run.row > 1) {
+    const actionRow = run.row > 5 && run.row % 4 === 2;
+    if (actionRow) {
+      const type = run.row % 8 === 2 ? "log" : "gate";
+      for (let lane = 0; lane < 3; lane++) add(run, type, lane, at);
+    } else if (run.row > 0) {
       add(run, HAZARDS[Math.floor(run.random() * HAZARDS.length)], blocked, at);
-      if (run.row > 8 && run.random() > 0.45)
+      if (run.row > 2 && run.random() > 0.15)
         add(
           run,
           HAZARDS[Math.floor(run.random() * HAZARDS.length)],
@@ -68,7 +72,8 @@ export function fillTrack(run) {
           at,
         );
     }
-    for (let i = 0; i < 4; i++) add(run, "bone", safe, at + i * 3);
+    const boneLane = run.row < 3 || run.random() < 0.4 ? safe : blocked;
+    for (let i = 0; i < 4; i++) add(run, "bone", boneLane, at + i * 3);
     if (run.row > 0 && run.row % 3 === 0)
       add(
         run,
@@ -77,7 +82,7 @@ export function fillTrack(run) {
         at + 15,
       );
     run.row++;
-    run.nextRow += 32 + run.random() * 8;
+    run.nextRow += (actionRow ? 42 : 26) + run.random() * 6;
   }
 }
 export function act(run, action) {
@@ -102,7 +107,7 @@ export function step(run, dt) {
   dt = Math.min(dt, 1 / 30);
   run.previous = { x: run.x, y: run.y, distance: run.distance };
   run.time += dt;
-  run.speed = Math.min(32, 18 + run.distance / 140);
+  run.speed = Math.min(36, 22 + run.distance / 90);
   run.distance += run.speed * dt;
   run.x += (LANES[run.lane] - run.x) * (1 - Math.exp(-15 * dt));
   run.y = Math.max(0, run.y + run.vy * dt - 11 * dt * dt);

@@ -135,7 +135,7 @@ function start() {
   taughtObstacles = false;
   setState("playing");
   $("scene").focus({ preventScroll: true });
-  toast("Swipe ← → to change lanes. Follow the bones.", 5);
+  toast("Stay sharp: bones can lead into obstacles. Watch the trail.", 5);
   tone(440);
 }
 function showOverlay(kind) {
