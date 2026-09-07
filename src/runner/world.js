@@ -11,7 +11,7 @@ export function seededRandom(seed) {
 }
 import { levels } from "./progression.js";
 export const HAZARDS = ["rock", "log", "arch", "branch", "gate"];
-export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart", 'gift'];
+export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart", 'gift', 'zoomies'];
 export function createRun(seed = Date.now(), upgrades = {}) {
   const run = {
     seed,
@@ -22,6 +22,8 @@ export function createRun(seed = Date.now(), upgrades = {}) {
     upgrades: levels(upgrades),
     jumpBuffer: 0,
     double: 0,
+    zoomies: 0,
+    smashes: 0,
     bonusPoints: 0,
     bonePoints: 0,
     lane: 1,
@@ -78,7 +80,7 @@ export function fillTrack(run) {
     if (run.row > 0 && run.row % 3 === 0)
       add(
         run,
-        ["gem", "magnet", "double", "shield", "heart"][(run.row / 3 - 1) % 5],
+        ["gem", "magnet", "double", "zoomies", "shield", "heart"][(run.row / 3 - 1) % 6],
         safe,
         at + 15,
       );
@@ -109,7 +111,15 @@ export function step(run, dt) {
   dt = Math.min(dt, 1 / 30);
   run.previous = { x: run.x, y: run.y, distance: run.distance };
   run.time += dt;
-  run.speed = Math.min(36, 22 + run.distance / 90);
+  const wasZooming = run.zoomies > 0;
+  run.zoomies = Math.max(0, run.zoomies - dt);
+  // Ease in and out; expiry cannot leave the puppy unprotected inside a row.
+  const targetSpeed = Math.min(36, 22 + run.distance / 90) * (run.zoomies > 0 ? 1.3 : 1);
+  run.speed += (targetSpeed - run.speed) * (1 - Math.exp(-6 * dt));
+  if (wasZooming && run.zoomies === 0) {
+    run.invulnerable = Math.max(run.invulnerable, 1.2);
+    run.events.push("zoomies-end");
+  }
   run.distance += run.speed * dt;
   run.x += (LANES[run.lane] - run.x) * (1 - Math.exp(-15 * dt));
   run.y = Math.max(0, run.y + run.vy * dt - 11 * dt * dt);
@@ -177,6 +187,7 @@ export function step(run, dt) {
       if (object.type === "shield") run.shield = 1;
       if (object.type === "gem") run.bonusPoints += 250;
       if (object.type === "double") run.double = 10;
+      if (object.type === "zoomies") run.zoomies = 6;
       if (object.type === "heart") run.hearts = Math.min(3, run.hearts + 1);
       if (object.type === 'gift') { run.gifts++;run.bonusPoints+=100; }
       run.events.push(object.type);
@@ -189,6 +200,14 @@ export function step(run, dt) {
       });
     } else if (HAZARDS.includes(object.type) && dz < -0.4 && !object.passed) {
       object.passed = true;
+      if (sameLane && run.zoomies > 0) {
+        object.used = true;
+        run.smashes++;
+        run.bonusPoints += 40;
+        run.events.push("smash");
+        run.effects.push({id:object.id,type:"smash",time:run.time,x:run.x,y:1});
+        continue;
+      }
       const cleared =
         (object.type === "log" && run.y > 0.65) ||
         (object.type === "rock" && run.y > 1.25) ||

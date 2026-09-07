@@ -184,7 +184,7 @@ test("a lane-following runner survives a long seeded route at maximum difficulty
   assert.equal(run.ended, false);
   assert.equal(run.hearts, 3);
   assert.ok(run.distance > 2000);
-  assert.equal(run.speed, 36);
+  assert.ok(run.speed >= 35.9 && run.speed <= 46.8);
 });
 test("jump clears logs and blocks across a forgiving early-to-late input window", () => {
   for (const type of ["log", "rock"])

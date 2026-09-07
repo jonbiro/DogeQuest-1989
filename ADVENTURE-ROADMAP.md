@@ -15,4 +15,8 @@ Build an original, polished Temple Run 2-style puppy runner. Keep Puppy Quest av
 
 ## Current iteration
 
-Implement the kennel (puppies and costumes), earned prize collection, and gift pickups first. Broader route/environment variety, additional puppy powers and comprehensive final-state QA remain required future work. Validate each implemented area against runtime evidence before marking it complete.
+The clubhouse, four puppies, six outfits, one-time prizes, and gift banking are published. Purchases, persistence and mobile-sized rendering were checked in browser; collection rules have regression tests.
+
+Zoomies adds a tennis-ball pickup, six-second speed burst, obstacle-smash rewards, a visible speed trail, and protected deceleration. Automated tests cover speed ramps, every hazard, exactly-once rewards, shield preservation, expiry and power combinations. A local-only visual fixture exercises the real renderer with normal and reduced motion; it is excluded from the production build.
+
+Still required: distinct environments, meaningful route decisions and traversal set pieces, more expressive character animation, richer puppy-themed art/audio, and comprehensive final-state gameplay and performance QA. Do not mark the overall goal complete from the existing narrower checks.

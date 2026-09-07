@@ -431,6 +431,9 @@ function frame(now) {
         tone(990, 0.2);
       }
       if (event === "gift") { toast("Puppy present! +100 points. Finish this run to bank your gift."); tone(1040, .2); }
+      if (event === "zoomies") { toast("ZOOMIES! 6 seconds of speed. Smash obstacles for +40 points!"); tone(1180,.25); }
+      if (event === "smash") tone(260,.08);
+      if (event === "zoomies-end") toast("Zoomies finished. Back to jumping and sliding!",2);
       if (event === "double") {
         toast("Golden bonus! Double bone points for 10 seconds.");
         tone(880, 0.2);
@@ -476,7 +479,7 @@ function frame(now) {
           object.at - run.distance < run.speed * 0.8,
       );
       const duck = danger && ["arch", "branch", "gate"].includes(danger.type);
-      $("cue").textContent = danger
+      $("cue").textContent = danger && run.zoomies === 0
         ? duck
           ? "↓ SLIDE under"
           : "↑ JUMP over"
@@ -485,6 +488,9 @@ function frame(now) {
         "♥ ".repeat(Math.max(0, run.hearts)) + "♡ ".repeat(3 - run.hearts);
       $("hearts").setAttribute("aria-label", `${run.hearts} hearts remaining`);
       $("power").innerHTML = [
+        run.zoomies > 0
+          ? `<span class="power-chip double">🎾 ZOOMIES · ${Math.ceil(run.zoomies)}s <small>Smash obstacles · +40 points</small><progress aria-label="Zoomies time remaining" max="6" value="${run.zoomies}"></progress></span>`
+          : "",
         run.shield
           ? '<span class="power-chip shield">◇ SHIELD · One hit protected</span>'
           : "",

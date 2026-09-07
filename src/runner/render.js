@@ -419,6 +419,18 @@ export function createView(canvas) {
   box(templates.gift, "#fff0a1", 0, .08, 0, .88, .15, .78);
   for (const side of [-1,1]) ball(templates.gift, "#ffe89b", side * .19, .48, 0, .23, .14, .13);
   const haloGeometry = new THREE.TorusGeometry(0.86, 0.022, 6, 40);
+  templates.zoomies = new THREE.Group();
+  ball(templates.zoomies, "#cdf546", 0, 0, 0, .55, .55, .55);
+  const tennisSeam = new THREE.TorusGeometry(.548,.023,6,32);
+  for (const tilt of [-.7,.7]) {
+    const seam = new THREE.Mesh(tennisSeam,mat("#fffbd9"));
+    seam.rotation.y = tilt; templates.zoomies.add(seam);
+  }
+  const speedTrail = new THREE.Group(); scene.add(speedTrail);
+  for (let i=0;i<8;i++) {
+    const streak = box(speedTrail,"#dcf78c",(i%2 ? 1 : -1)*(.65+(i%3)*.2),.3+(i%3)*.3,.6+i*.4,.035,.035,.8);
+    streak.userData.phase=i/8;
+  }
   for (const type of PICKUPS.filter((type) => type !== "bone")) {
     const halo = new THREE.Mesh(
       haloGeometry,
@@ -526,6 +538,11 @@ export function createView(canvas) {
       shadow.material.opacity = 0.35 / (1 + y * 0.3);
       aura.visible = !menu && run.shield > 0;
       magnetField.visible = !menu && run.magnet > 0;
+      speedTrail.visible = !menu && run.zoomies > 0;
+      speedTrail.position.set(x,y,0);
+      speedTrail.children.forEach(streak => {
+        streak.position.z = .6 + (reducedMotion ? streak.userData.phase : (animationTime * 2 + streak.userData.phase) % 1) * 3;
+      });
       magnetField.position.set(x, 0.18, 0);
       magnetField.children.forEach((ring, i) => {
         const phase = reducedMotion ? i / 3 : (time * 0.7 + i / 3) % 1;
