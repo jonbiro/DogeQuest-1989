@@ -5,7 +5,7 @@ import { LANES, PICKUPS, seededRandom } from "./world.js";
 import { routeOffset, routeHeading } from "./route.js";
 import { PUPPIES } from "./collection.js";
 import { REGIONS, regionAt, regionBlend } from "./regions.js";
-import { puppyPose, smoothLegAngles } from "./puppy-pose.js";
+import { puppyPose, smoothLegAngles, bodyMotion } from "./puppy-pose.js";
 import { createMochiModel } from "./mochi-model.js";
 import { isBridge } from "./bridges.js";
 import { ziplineAt, ZIPLINE_HEIGHT } from "./ziplines.js";
@@ -587,6 +587,7 @@ export function createView(canvas) {
   let visualRun = null,
     pose = 1,
     lean = 0,
+    pitch = 0,
     cameraX = 0,
     cameraLift = 0,
     animationTime = 0;
@@ -607,6 +608,7 @@ export function createView(canvas) {
         visualRun = run;
         pose = 1;
         lean = 0;
+        pitch = 0;
         cameraX = run.x;
         cameraLift = 0;
         for (const leg of [...legs, ...mochi.legs]) leg.rotation.x = 0;
@@ -620,6 +622,8 @@ export function createView(canvas) {
         ? time * (reducedMotion ? 0 : 2)
         : THREE.MathUtils.lerp(run.previous.distance, run.distance, blend);
       const smooth = 1 - Math.exp(-18 * dt);
+      const weight = bodyMotion({vx:run.vx,vy:run.vy,y,time:run.time,landing:run.landing,
+        ziplining:Boolean(run.zipline),reducedMotion:reducedMotion||menu});
       const atmosphere = regionBlend(menu ? 0 : distance);
       scene.background.copy(regionColors[atmosphere.previous].sky).lerp(regionColors[atmosphere.index].sky,atmosphere.blend);
       scene.fog.color.copy(scene.background);
@@ -628,7 +632,8 @@ export function createView(canvas) {
       const gaps = menu ? [] : run.objects.filter(object => object.type === "gap" && object.lane === 1);
       if (state === "playing" || menu) {
         pose += ((menu || run.slide === 0 ? 1 : 0.46) - pose) * smooth;
-        lean += ((menu ? 0 : -(LANES[run.lane] - x) * 0.12) - lean) * smooth;
+        lean += (weight.lean - lean) * smooth;
+        pitch += (weight.pitch - pitch) * smooth;
       }
       for (const { instanced, entries } of batches) {
         entries.forEach((entry, i) => {
@@ -658,14 +663,16 @@ export function createView(canvas) {
         menu ? 0 : x,
         (menu ? 0 : y) +
           Math.abs(Math.sin(time * 12)) *
-            (reducedMotion || (!menu && state !== "playing") ? 0 : 0.045),
+            (reducedMotion || (!menu && (state !== "playing" || y>.05 || run.slide>0 || run.zipline)) ? 0 : 0.045),
         0,
       );
       dog.rotation.y = menu ? -2.35 : lean;
       dog.rotation.z = menu || reducedMotion ? 0 : lean * 0.3;
+      dog.rotation.x = menu || reducedMotion ? 0 : pitch;
       dog.scale.setScalar(1);
       const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:y>.1,sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline)});
-      dog.scale.y = pose + personality.breathe;
+      dog.scale.y = (pose + personality.breathe) * (1-weight.compression);
+      dog.scale.x = dog.scale.z = 1+weight.compression*.4;
       dog.visible = true;
       if (state === "playing" || menu) {
         const angles=smoothLegAngles(activeRig.legs.map(leg=>leg.rotation.x),personality.legs,dt);
@@ -796,7 +803,7 @@ export function createView(canvas) {
       renderer.render(scene, camera);
     },
     diagnostics() {
-      return {geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,activeObjects:active.size,pooledObjects:Object.values(pools).reduce((sum,items)=>sum+items.length,0),legAngles:activeRig.legs.map(leg=>leg.rotation.x)};
+      return {geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,activeObjects:active.size,pooledObjects:Object.values(pools).reduce((sum,items)=>sum+items.length,0),legAngles:activeRig.legs.map(leg=>leg.rotation.x),bodyTransform:[...dog.position.toArray(),dog.rotation.x,dog.rotation.y,dog.rotation.z,...dog.scale.toArray()]};
     },
   };
 }

@@ -133,10 +133,13 @@ test("airborne slides descend instead of teleporting; lane motion is timestep-in
   act(run, "jump");
   advance(run, 0.3);
   const y = run.y;
+  const vy = run.vy;
   act(run, "slide");
   assert.equal(run.y, y);
+  assert.equal(run.vy, vy, "a dive accelerates instead of snapping velocity");
   advance(run, 0.025);
-  assert.ok(run.y < y && run.y > 0);
+  assert.ok(run.vy < vy && run.y > 0);
+  assert.ok(Math.abs(run.y - y) < .2, "initial dive movement remains continuous");
   advance(run, 0.2);
   assert.equal(run.y, 0);
   const a = createRun(1),

@@ -1,5 +1,14 @@
 # Runner verification
 
+## Momentum, air slides and landing weight
+
+- Replaced instantaneous sideways velocity changes with an exactly integrated damped spring. Jump presses use a 180 ms time window instead of a fixed near-ground height cutoff. Air slides accelerate into a capped dive, and their full ground duration starts at touchdown; basic jump height, gravity, obstacle thresholds and progression remain unchanged.
+- Landing integration records the exact impact time/speed and preserves the remaining part of a simulation step for a buffered rebound. Decorative banking follows sideways velocity; nose pitch follows vertical velocity; a small impact-weighted compression settles after landing. In-air and sliding poses no longer receive the unrelated running bob. Reduced motion disables these decorative weight cues.
+- New tests cover 30/60/120 Hz steering and reversal equivalence, standard/upgraded late jump buffers, expiry without midair jump stacking, continuous dives, full slide duration, exact landing time/impact, a rebound precisely on a step boundary, invalid delta no-ops and bounded/reduced-motion body poses. Existing obstacle-clearance, difficulty, gap, upgrade and zipline regressions continue to pass.
+- Local 390×844 real-time run with Mochi and full motion: 60 seconds, 1,821 meters, 3,600 frames, mean 16.67 ms and p95 16.70 ms. Three hearts remained; all three regions, Challenge, and zipline catch/landing were observed, with no detected HUD overlaps. This is desktop-browser viewport emulation, not a physical-phone performance guarantee.
+- Accelerated production-renderer check: three 4,500-meter runs, 54 checkpoints, nine ziplines and minimum three hearts. Peaks: 14 geometries, four textures, 117 active-plus-pooled objects and 182 draw calls. Local-only movement galleries isolate takeoff, dive, touchdown, slide and lane reversal on an empty practice strip; real obstacles are covered by the separate run checks.
+- Full build, release-artifact validation, lint and all 87 tests pass. Normal/reduced-motion galleries were visually inspected; `posePauseCheck('mochi')` verified the entire body transform and leg angles remain identical over 60 paused draws, then leg easing resumes. No browser errors were reported.
+
 ## Photo-inspired Mochi character
 
 - Mochi now uses dedicated smooth anatomy, a silver crown, charcoal coat, longer dark floppy ears, brown eyes and cream eyebrows/beard/paws. The supplied photograph was used as a visual reference only and is not a repository asset. Two deterministic 128×128 procedural textures and instanced hair cards create the coat; no external artwork request or per-frame fur allocation is needed.

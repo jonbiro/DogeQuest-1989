@@ -22,6 +22,38 @@ export function mochiPortraitPreview() {
   renderer.render(scene,camera);
   return {geometries:renderer.info.memory.geometries,drawCalls:renderer.info.render.calls};
 }
+export function movementPreview(reducedMotion=false) {
+  const source=document.createElement('canvas');
+  source.style.cssText='position:fixed;left:-1000px;width:360px;height:480px';document.body.append(source);
+  const view=createView(source),run=createRun(1989),samples=[];
+  run.appearance={puppy:'mochi',costume:'scarf'};
+  // Empty practice strip isolates movement; the long-run fixture separately
+  // verifies real generated obstacles and rewards with the same physics.
+  run.objects=[];run.nextRow=Infinity;run.nextChoice=Infinity;run.nextZipline=Infinity;
+  const gallery=document.createElement('section');
+  gallery.style.cssText='position:fixed;inset:0;z-index:9999;overflow:auto;background:#102a28;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:12px;color:white';document.body.append(gallery);
+  function advance(seconds) {
+    for(let i=0;i<Math.round(seconds*120);i++) {
+      step(run,1/120);view.draw(run,run.time,'playing',reducedMotion,1/120,1);
+    }
+  }
+  function capture(label) {
+    const figure=document.createElement('figure'),canvas=document.createElement('canvas'),caption=document.createElement('figcaption');
+    figure.style.margin='0';canvas.width=300;canvas.height=360;canvas.style.width='100%';
+    canvas.getContext('2d').drawImage(source,0,0,300,360);
+    caption.textContent=reducedMotion?`${label.split(' · ')[0]} · reduced motion`:label;
+    caption.style.cssText='text-align:center;font:14px Arial;padding:6px';
+    figure.append(canvas,caption);gallery.append(figure);
+    samples.push({label,y:run.y,vy:run.vy,vx:run.vx,slide:run.slide,landing:run.landing});
+  }
+  act(run,'jump');advance(.3);capture('Takeoff · nose lifts with the jump');
+  act(run,'slide');advance(.075);capture('Dive · smooth downward acceleration');
+  advance(.175);capture('Touchdown · soft compression');
+  advance(.2);capture('Ground slide · full duration retained');
+  act(run,'jump');act(run,'right');advance(.1);capture('Steer · bank into the lane');
+  act(run,'left');advance(.1);capture('Reverse · controlled momentum');
+  return {reducedMotion,samples,...view.diagnostics()};
+}
 export function wardrobePreview(puppy="biscuit") {
   if(!Object.hasOwn(PUPPIES,puppy))throw new Error("Unknown puppy");
   const source=document.createElement("canvas");
@@ -160,13 +192,15 @@ export function posePauseCheck(puppy="biscuit") {
   act(run,"jump");
   for(let i=0;i<20;i++){step(run,1/120);view.draw(run,run.time,"playing",false,1/120,1);}
   const before=view.diagnostics().legAngles;
+  const bodyBefore=view.diagnostics().bodyTransform;
   for(let i=0;i<60;i++)view.draw(run,run.time,"paused",false,1/60,1);
   const paused=view.diagnostics().legAngles;
+  if(JSON.stringify(bodyBefore)!==JSON.stringify(view.diagnostics().bodyTransform))throw new Error("Body weight continued during pause");
   if(JSON.stringify(before)!==JSON.stringify(paused))throw new Error("Leg transitions continued during pause");
   view.draw(run,run.time,"playing",false,1/60,1);
   const resumed=view.diagnostics().legAngles;
   if(JSON.stringify(paused)===JSON.stringify(resumed))throw new Error("Leg transition did not resume");
-  return {before,paused,resumed};
+  return {before,paused,resumed,bodyFrozen:true};
 }
 export async function audioCheck() {
   const results=[];

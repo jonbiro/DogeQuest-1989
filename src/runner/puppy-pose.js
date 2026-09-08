@@ -16,3 +16,14 @@ export function smoothLegAngles(current,target,dt) {
   const weight=1-Math.exp(-24*Math.max(0,dt));
   return target.map((angle,index)=>current[index]+(angle-current[index])*weight);
 }
+
+// Weight cues are driven by real velocity and touchdown, not a looping bounce.
+// They remain cosmetic, bounded and frozen when simulation time is paused.
+export function bodyMotion({vx=0,vy=0,y=0,time=0,landing=null,ziplining=false,reducedMotion=false}={}) {
+  if(reducedMotion)return {lean:0,pitch:0,compression:0};
+  const clamp=(value,min,max)=>Math.max(min,Math.min(max,value));
+  const age=landing?time-landing.time:Infinity;
+  const compression=y<.05&&!ziplining&&age>=0&&age<.28
+    ? Math.sin(Math.PI*age/.28)*Math.exp(-10*age)*clamp(landing.speed/22,0,1)*.22 : 0;
+  return {lean:clamp(-vx*.012,-.23,.23),pitch:ziplining?0:clamp(vy*.011,-.16,.14),compression};
+}

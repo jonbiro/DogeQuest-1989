@@ -10,6 +10,7 @@ export function seededRandom(seed) {
   };
 }
 import { levels } from "./progression.js";
+import { jump, steer, moveVertical, JUMP_BUFFER } from "./motion.js";
 import { ZIPLINE_FIRST, ZIPLINE_PERIOD, ZIPLINE_LENGTH, ZIPLINE_HEIGHT } from "./ziplines.js";
 const SOLID_HAZARDS = ["rock", "log", "arch", "branch", "gate"];
 export const HAZARDS = [...SOLID_HAZARDS,"gap"];
@@ -30,8 +31,11 @@ export function createRun(seed = Date.now(), upgrades = {}) {
     bonePoints: 0,
     lane: 1,
     x: 0,
+    vx: 0,
     y: 0,
     vy: 0,
+    diving: false,
+    landing: null,
     slide: 0,
     hearts: 3,
     invulnerable: 0,
@@ -154,21 +158,19 @@ export function act(run, action) {
   if (action === "left") run.lane = Math.max(0, run.lane - 1);
   if (action === "right") run.lane = Math.min(2, run.lane + 1);
   if (run.zipline) return;
-  if (action === "jump" && run.y <= 0.001) {
-    run.slide = 0;
-    run.vy = 12.5 * (1 + run.upgrades.leap * 0.08);
-    run.events.push("jump");
+  if (action === "jump") {
+    if (run.y === 0 && run.vy === 0) jump(run);
+    else run.jumpBuffer = JUMP_BUFFER;
   }
-  if (action === "jump" && run.y > 0 && run.y < 0.6 && run.vy < 0)
-    run.jumpBuffer = 0.18;
   if (action === "slide") {
     run.slide = 1.15 + run.upgrades.slide * 0.2;
-    run.vy = run.y > 0 ? -22 : 0;
+    run.diving = run.y > 0;
+    if (!run.diving) run.vy = 0;
     run.jumpBuffer = 0;
   }
 }
 export function step(run, dt) {
-  if (run.ended) return;
+  if (run.ended || !Number.isFinite(dt) || dt <= 0) return;
   dt = Math.min(dt, 1 / 30);
   run.previous = { x: run.x, y: run.y, distance: run.distance };
   run.time += dt;
@@ -183,7 +185,7 @@ export function step(run, dt) {
   }
   run.distance += run.speed * dt;
   if(run.zoomies>0 && run.y===0 && run.objects.some(object=>object.type==="gap" && object.at-run.distance>0 && object.at-run.distance<run.speed*.45)) act(run,"jump");
-  run.x += (LANES[run.lane] - run.x) * (1 - Math.exp(-15 * dt));
+  steer(run, LANES[run.lane], dt);
   if(run.choicePending!==null && run.distance>=run.choicePending) {
     const kind=run.x>1.2?"challenge":"scenic";
     run.route={kind,until:run.choicePending+220};
@@ -195,6 +197,7 @@ export function step(run, dt) {
   if (run.zipline) {
     run.y += (ZIPLINE_HEIGHT - run.y) * (1 - Math.exp(-8 * dt));
     run.vy = 0;
+    run.diving = false;
     run.slide = 0;
     run.jumpBuffer = 0;
     if (run.distance >= run.zipline.end) {
@@ -205,16 +208,8 @@ export function step(run, dt) {
       run.events.push("zipline-end");
     }
   } else {
-    run.y = Math.max(0, run.y + run.vy * dt - 11 * dt * dt);
-    run.vy -= 22 * dt;
+    moveVertical(run, dt);
   }
-  if (!run.y) run.vy = Math.max(0, run.vy);
-  if (!run.y && run.jumpBuffer > 0) {
-    run.jumpBuffer = 0;
-    act(run, "jump");
-  }
-  run.jumpBuffer = Math.max(0, run.jumpBuffer - dt);
-  run.slide = Math.max(0, run.slide - dt);
   run.invulnerable = Math.max(0, run.invulnerable - dt);
   run.magnet = Math.max(0, run.magnet - dt);
   run.double = Math.max(0, run.double - dt);

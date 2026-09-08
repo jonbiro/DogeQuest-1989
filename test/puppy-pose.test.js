@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {puppyPose,smoothLegAngles} from "../src/runner/puppy-pose.js";
+import {puppyPose,smoothLegAngles,bodyMotion} from "../src/runner/puppy-pose.js";
 test("cosmetic poses stay finite and bounded during long runs",()=>{
   for(let t=0;t<300;t+=.037){
     const p=puppyPose(t,t*46.8);
@@ -38,4 +38,24 @@ test("pose is deterministic so frozen animation time stays frozen on pause",()=>
   assert.deepEqual(puppyPose(12,345),puppyPose(12,345));
   assert.equal(puppyPose(.08,0).blink,.12);
   assert.equal(puppyPose(1,0).blink,1);
+});
+
+test("body weight follows velocity and landing impact without unbounded or reduced-motion bounce",()=>{
+  assert.ok(bodyMotion({vx:12}).lean<0);
+  assert.ok(bodyMotion({vx:-12}).lean>0);
+  assert.ok(bodyMotion({vy:12}).pitch>0);
+  assert.ok(bodyMotion({vy:-20}).pitch<0);
+  const landing={time:5,speed:22};
+  const options={time:5.08,landing};
+  const weight=bodyMotion(options);
+  assert.ok(weight.compression>0 && weight.compression<.1);
+  assert.deepEqual(bodyMotion(options),weight,'a frozen timestamp must keep the same pose');
+  assert.ok(bodyMotion({...options,landing:{...landing,speed:5}}).compression<weight.compression);
+  for(const extra of [{y:2},{time:5.3},{time:4.9},{ziplining:true}])
+    assert.equal(bodyMotion({...options,...extra}).compression,0);
+  assert.deepEqual(bodyMotion({...options,vx:20,vy:-28,reducedMotion:true}),{lean:0,pitch:0,compression:0});
+  for(const vx of [-100,0,100])for(const vy of [-100,0,100]) {
+    const pose=bodyMotion({vx,vy,...options});
+    assert.ok(Math.abs(pose.lean)<=.23 && Math.abs(pose.pitch)<=.16);
+  }
 });
