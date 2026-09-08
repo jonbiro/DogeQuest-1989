@@ -23,6 +23,26 @@ export function mochiPortraitPreview() {
   renderer.render(scene,camera);
   return {geometries:renderer.info.memory.geometries,drawCalls:renderer.info.render.calls};
 }
+export function collectionPortraitCheck(rear=false) {
+  const canvas=document.createElement('canvas');
+  canvas.style.cssText='position:fixed;left:-1000px;width:320px;height:480px';document.body.append(canvas);
+  const view=createView(canvas),run=createRun(1989),images=[];
+  const gallery=document.createElement('section');
+  gallery.style.cssText='position:fixed;inset:0;z-index:9999;overflow:auto;display:grid;grid-template-columns:repeat(6,1fr);align-content:start;gap:8px;padding:8px;background:#102a28;color:white';
+  document.body.append(gallery);
+  for(const puppy of Object.keys(PUPPIES))for(const costume of Object.keys(COSTUMES)) {
+    const src=view.portrait(run,{puppy,costume},rear);
+    if(!src.startsWith('data:image/png;base64,')||src.length<2000)throw Error(`Empty portrait: ${puppy}/${costume}`);
+    images.push(src);
+    const figure=document.createElement('figure');figure.style.margin='0';
+    const image=document.createElement('img');image.src=src;image.style.width='100%';
+    const caption=document.createElement('figcaption');caption.textContent=`${puppy} / ${costume}`;
+    figure.append(image,caption);gallery.append(figure);
+  }
+  if(new Set(images).size!==24)throw Error('Portrait appearances were duplicated');
+  view.draw(run,0,'playing',true,1/60,1);
+  return {portraits:images.length,rear,...view.diagnostics()};
+}
 export function movementPreview(reducedMotion=false) {
   const source=document.createElement('canvas');
   source.style.cssText='position:fixed;left:-1000px;width:360px;height:480px';document.body.append(source);

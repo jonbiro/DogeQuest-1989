@@ -72,6 +72,9 @@ function updateRecords() {
   $("mission-preview").textContent =
     `${mission.title}: ${mission.target} ${mission.unit} in one run · +${mission.reward} pts`;
 }
+let clubhouseCategory = 'puppy';
+let previewRear = false;
+const portraitCache = new Map();
 function kennel() {
   showOverlay("kennel");
   $("overlay-label").textContent = "YOUR VERY GOOD CREW";
@@ -80,15 +83,26 @@ function kennel() {
   $("overlay-primary").textContent = "Run with your puppy ↗";
   const content = $("collection");
   content.replaceChildren();
+  const categories=document.createElement('nav');
+  categories.className='clubhouse-categories';categories.setAttribute('aria-label','Clubhouse categories');
+  for(const [id,label] of [['puppy','Puppies'],['costume','Outfits'],['passport','Passport'],['prizes','Prizes']]) {
+    const button=document.createElement('button');button.textContent=label;
+    button.setAttribute('aria-pressed',String(clubhouseCategory===id));
+    button.onclick=()=>{clubhouseCategory=id;kennel();content.querySelector(`button[data-category="${id}"]`).focus();};
+    button.dataset.category=id;categories.append(button);
+  }
+  content.append(categories);
   const passport=document.createElement('details');
   passport.id='trail-passport';
   const cards=masteryCards(saved.mastery);
+  cards.sort((a,b)=>Number(b.id===`dog-${saved.collection.puppy}`)-Number(a.id===`dog-${saved.collection.puppy}`));
   const collected=cards.reduce((sum,card)=>sum+card.tiers.filter(tier=>card.current>=tier.target).length,0);
   const masteryHeading=document.createElement('summary');
   masteryHeading.textContent=`Trail passport · ${collected}/21 collected`;
   const masteryIntro=document.createElement('p');
   masteryIntro.textContent='Build a bond with each puppy and collect bronze, silver and gold region stamps. Progress banks at run end. No daily resets; rewards use your existing upgrade points.';
-  passport.append(masteryHeading,masteryIntro);content.append(passport);
+  passport.append(masteryHeading,masteryIntro);
+  if(clubhouseCategory==='passport'){passport.open=true;content.append(passport);}
   for(const card of cards) {
     const section=document.createElement('section');
     section.className='mastery-card';
@@ -112,12 +126,22 @@ function kennel() {
     section.append(title,badges,status,meter);passport.append(section);
   }
   for (const [kind, catalog, title] of [["puppy", PUPPIES, "Meet the puppies"], ["costume", COSTUMES, "Dress for adventure"]]) {
+    if(clubhouseCategory!==kind)continue;
     const heading = document.createElement("h3");
     heading.textContent = title;
     content.append(heading);
+    const angle=document.createElement('button');angle.className='preview-angle';
+    angle.textContent=previewRear?'Show faces':'Show running view';
+    angle.onclick=()=>{previewRear=!previewRear;kennel();content.querySelector('.preview-angle').focus();};content.append(angle);
     for (const [id, item] of Object.entries(catalog)) {
       const row = document.createElement("div"), copy = document.createElement("p"), button = document.createElement("button");
       const owned = saved.collection[kind === "puppy" ? "puppies" : "costumes"].includes(id);
+      row.className='collection-card';
+      const appearance={puppy:kind==='puppy'?id:saved.collection.puppy,costume:kind==='costume'?id:saved.collection.costume};
+      const cacheKey=`${appearance.puppy}:${appearance.costume}:${previewRear}`;
+      if(!portraitCache.has(cacheKey))portraitCache.set(cacheKey,view.portrait(run,appearance,previewRear));
+      const image=document.createElement('img');image.src=portraitCache.get(cacheKey);
+      image.alt=`${item.name}, ${previewRear?'running view':'front view'}`;image.width=image.height=96;
       copy.textContent = `${item.name}${item.breed ? ` · ${item.breed}` : ""} — ${item.description}`;
       button.dataset[kind] = id;
       button.textContent = saved.collection[kind] === id ? "Equipped" : owned ? "Equip" : item.prize ? "Prize locked" : `${item.cost.toLocaleString()} pts`;
@@ -127,9 +151,11 @@ function kennel() {
           persist(); updateRecords(); kennel(); tone(880, .15);
         }
       };
-      row.append(copy, button); content.append(row);
+      row.append(image,copy, button); content.append(row);
     }
   }
+  view.draw(run,time,state,reducedMotion,0,1,saved.collection);
+  if(clubhouseCategory!=='prizes')return;
   const heading = document.createElement("h3"); heading.textContent = "Your prize cabinet"; content.append(heading);
   for (const prize of PRIZES) {
     const progress = prizeProgress(saved, prize);
@@ -172,7 +198,12 @@ function shop() {
     const row = document.createElement("div"),
       copy = document.createElement("p"),
       button = document.createElement("button");
-    copy.textContent = `${upgrade.name} · ${level}/3 — ${upgrade.description}`;
+    const name=document.createElement('strong');name.textContent=upgrade.name;
+    const benefit=document.createElement('span');benefit.textContent=upgrade.description;
+    const meter=document.createElement('progress');meter.max=3;meter.value=level;
+    meter.setAttribute('aria-label',`${upgrade.name}: level ${level} of 3`);
+    const status=document.createElement('small');status.textContent=`Level ${level} / 3`;
+    copy.append(name,benefit,status,meter);copy.className='upgrade-copy';
     button.textContent =
       cost === null ? "Maxed" : `${cost.toLocaleString()} pts`;
     button.disabled = cost === null || saved.credits < cost;

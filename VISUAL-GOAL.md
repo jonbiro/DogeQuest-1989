@@ -7,9 +7,9 @@ Full goal remains active. Partial work is not completion.
 | --- | --- |
 | 1 Mobile camp | Pending: simplify competing labels |
 | 2 Help | Partial: moves first, advanced rules collapsed; obstacle illustrations pending |
-| 3 Upgrades | Pending: level/benefit/price hierarchy |
-| 4 Clubhouse | Pending: previews and category navigation |
-| 5 Passport | Pending: current-dog-first progress |
+| 3 Upgrades | Implemented name/benefit/level hierarchy, level meters and readable disabled prices; final accessibility checks remain |
+| 4 Clubhouse | Implemented separate category navigation and cached model previews; browsing preserves saved profile |
+| 5 Passport | Partial: separate Passport category, current dog first; richer badge presentation remains |
 | 6 Portrait gameplay | Partial: larger score/action text; dog contrast pending |
 | 7 Bridge approach | Pending: bones, lanes and overhead silhouette |
 | 8 Results | Partial: lesson before highlights; simplify highlights |
@@ -22,7 +22,7 @@ Full goal remains active. Partial work is not completion.
 | 15 Pickups | Partial: pointed shield, faceted gem and dark tennis seams implemented; bone contours and color-independent testing remain |
 | 16 Powers | Partial: compact darker magnet rings, stronger shield bubble and speed streaks; full stacked-HUD / motion checks remain |
 | 17 Movement | Pending: Mochi articulation without timing changes |
-| 18 Outfits | Pending: rear/three-quarter previews |
+| 18 Outfits | Implemented front and rear/three-quarter preview toggle; 24 combinations in each angle inspected |
 | 19 Zipline | Partial: dark cable/tether and contrasting grip; approach catch-zone work remains |
 | 20 Split rows | Pending: clearance edge |
 | 21 Route choices | Pending: explicit meaning |
@@ -32,6 +32,14 @@ Full goal remains active. Partial work is not completion.
 | 25 Desktop run | Partial: removed control fading; scenery/depth pending |
 
 ## Current evidence
+
+- Clubhouse follow-up: 24 front and 24 rear puppy/outfit thumbnails rendered
+  and inspected, with no duplicate/empty PNGs. Uses the existing GPU context,
+  caches by puppy/outfit/angle, restores scene visibility and viewport, then
+  redraws the equipped appearance. No new renderer or WebGL context per card.
+- Category switching passed, all four puppy images loaded, and the saved
+  profile was unchanged by browsing. Primary/Home actions remain reachable
+  at 320x568, 390x844, 844x390 and 1440x900. Full regression suite: 134 tests.
 
 - Pickup/effect follow-up: all 134 tests, lint, build and distribution checks
   passed. Fresh pickup, combined-effect and phone zipline previews inspected.

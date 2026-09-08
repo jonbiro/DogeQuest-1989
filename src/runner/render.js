@@ -651,6 +651,25 @@ export function createView(canvas) {
   const routeRotation = new THREE.Quaternion();
   const routePosition = new THREE.Vector3();
   return {
+    portrait(run, appearance, rear = false) {
+      // Reuse the existing GPU context; thumbnails never create another renderer.
+      this.draw(run, 0, "kennel", true, 0, 1, appearance);
+      const visibility = scene.children.map(item => [item, item.visible]);
+      const background = scene.background, fog = scene.fog;
+      try {
+        for (const item of scene.children) item.visible = item === dog || item.isLight === true;
+        scene.background = new THREE.Color('#24483f'); scene.fog = null;
+        dog.position.set(0,0,0); dog.rotation.set(0,rear ? .45 : -2.7,0);
+        camera.aspect = 1; camera.position.set(0,2.0,3.4); camera.lookAt(0,1.1,0);
+        camera.updateProjectionMatrix(); renderer.setSize(192,192,false);
+        renderer.render(scene,camera);
+        return canvas.toDataURL('image/png');
+      } finally {
+        for (const [item, visible] of visibility) item.visible = visible;
+        scene.background = background; scene.fog = fog;
+        resize();
+      }
+    },
     draw(run, time, state, reducedMotion, dt, alpha = 1, collection) {
       const menu = ["menu", "help", "shop", "kennel"].includes(state);
       dress(menu ? collection : run.appearance);

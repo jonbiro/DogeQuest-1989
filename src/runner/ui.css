@@ -262,10 +262,30 @@ h1 em {
   font-size: 12px;
 }
 #upgrades button:disabled, #collection button:disabled {
+  opacity: 1;
   background: transparent;
   color: #b6cbc0;
   cursor: default;
 }
+#collection .clubhouse-categories { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; }
+#collection .clubhouse-categories button { min-width: 0; background: #102a28; color: #f4f5e8; }
+#collection .clubhouse-categories button[aria-pressed="true"] { background: var(--lime); color: #173c32; }
+#collection .collection-card { display: grid; grid-template-columns: 88px 1fr; gap: 10px; padding: 16px 0; }
+#collection .collection-card img { width: 88px; height: 88px; border-radius: 14px; }
+#collection .collection-card p { margin: 0; font-size: 13px; }
+#collection .collection-card > button { grid-column: 2; justify-self: stretch; }
+#collection .preview-angle { background: #102a28; color: #e8f5dc; width: 100%; }
+#overlay[data-kind="kennel"] .eyebrow { display: none; }
+#overlay[data-kind="kennel"] h2 { font-size: 26px; margin: 4px 0 10px; }
+#overlay[data-kind="kennel"] #overlay-copy { margin: 6px 0 16px; }
+@media (min-width: 360px) {
+  #collection .clubhouse-categories { grid-template-columns: repeat(4,1fr); gap: 5px; }
+  #collection .clubhouse-categories button { padding: 6px 3px; font-size: 11px; }
+}
+.upgrade-copy strong, .upgrade-copy span, .upgrade-copy small { display: block; }
+.upgrade-copy strong { font-size: 15px; color: #f4f5e8; margin-bottom: 6px; }
+.upgrade-copy small { font-size: 12px; margin: 8px 0 4px; color: var(--lime); }
+.upgrade-copy progress { width: 100%; accent-color: #98f5e1; height: 7px; display: block; }
 .primary {
   background: var(--lime);
   border: 0;
