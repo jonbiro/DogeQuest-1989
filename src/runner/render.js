@@ -107,7 +107,7 @@ export function createView(canvas) {
       bridgeBox("#64472e", x, -.45, 0, .22, .22, 5.4);
     }
     tile.add(bridge);
-    const cable = box(tile, "#e7c978", 0, 6.5, 0, .075, .075, 5.4);
+    const cable = box(tile, "#25494d", 0, 6.5, 0, .075, .075, 5.4);
     cable.userData.cable = true;
     scenery.add(tile);
     tiles.push(tile);
@@ -372,7 +372,7 @@ export function createView(canvas) {
   const shadow = new THREE.Mesh(
     new THREE.PlaneGeometry(1.8, 2.5),
     new THREE.MeshBasicMaterial({
-      color: "#364c35",
+      color: "#172925",
       transparent: true,
       opacity: 0.25,
       depthWrite: false,
@@ -385,10 +385,10 @@ export function createView(canvas) {
   const aura = new THREE.Mesh(
     new THREE.SphereGeometry(1.4, 20, 12),
     new THREE.MeshBasicMaterial({
-      color: "#bcecff",
+      color: "#218dae",
       wireframe: false,
       transparent: true,
-      opacity: 0.12,
+      opacity: 0.18,
       depthWrite: false,
     }),
   );
@@ -396,12 +396,12 @@ export function createView(canvas) {
   dog.add(aura);
   const magnetField = new THREE.Group();
   scene.add(magnetField);
-  const ringGeometry = new THREE.TorusGeometry(1, 0.025, 6, 48);
+  const ringGeometry = new THREE.TorusGeometry(1, 0.045, 6, 48);
   for (let i = 0; i < 3; i++) {
     const ring = new THREE.Mesh(
       ringGeometry,
       new THREE.MeshBasicMaterial({
-        color: "#85f8ed",
+        color: "#136a66",
         transparent: true,
         opacity: 0.5,
         depthWrite: false,
@@ -480,8 +480,20 @@ export function createView(canvas) {
     box(templates.magnet, "#c4fffa", x, 0.4, 0, 0.28, 0.15, 0.28);
   }
   templates.shield = new THREE.Group();
-  ball(templates.shield, "#a5e8ee", 0, 0, 0, 0.45, 0.6, 0.2);
-  box(templates.shield, "#effff0", 0, 0, 0.19, 0.09, 0.6, 0.04);
+  const shieldShape = new THREE.Shape();
+  shieldShape.moveTo(-.5,.55);
+  shieldShape.lineTo(.5,.55);
+  shieldShape.lineTo(.45,-.1);
+  shieldShape.quadraticCurveTo(.3,-.45,0,-.65);
+  shieldShape.quadraticCurveTo(-.3,-.45,-.45,-.1);
+  shieldShape.closePath();
+  const shieldGeometry = new THREE.ExtrudeGeometry(shieldShape, {
+    depth: .16, bevelEnabled: true, bevelSize: .035, bevelThickness: .035, bevelSegments: 1, steps: 1, curveSegments: 4,
+  });
+  const shieldFace = new THREE.Mesh(shieldGeometry,mat("#126078"));
+  templates.shield.add(shieldFace);
+  box(templates.shield, "#d3fff3", 0, .02, .21, .12, .7, .05);
+  box(templates.shield, "#d3fff3", 0, .16, .21, .58, .12, .05);
   templates.rock.scale.y = 0.72;
   templates.branch = new THREE.Group();
   box(templates.branch, "#6c4b2e", 0, 1.7, 0, 2.3, 0.8, 0.8);
@@ -495,7 +507,10 @@ export function createView(canvas) {
     box(templates.gate, "#175c70", x, 2.1, 0, 0.16, 1.55, 0.3);
   box(templates.gate, "#86ffed", 0, 1.33, 0, 2.1, 0.15, 0.4);
   templates.gem = new THREE.Group();
-  ball(templates.gem, "#bf8bff", 0, 0, 0, 0.5, 0.65, 0.4);
+  const gem = new THREE.Mesh(new THREE.OctahedronGeometry(.66),
+    new THREE.MeshStandardMaterial({color:"#962ed4",roughness:.3,metalness:.15,flatShading:true}));
+  gem.scale.set(.8,1.15,.65);
+  templates.gem.add(gem);
   templates.double = new THREE.Group();
   ball(templates.double, "#ffce4f", 0, 0, 0, 0.65, 0.65, 0.22);
   // A readable ×2 stamp, not two vertical bars resembling Pause.
@@ -526,15 +541,15 @@ export function createView(canvas) {
   for (const side of [-1,1]) ball(templates.gift, "#ffe89b", side * .19, .48, 0, .23, .14, .13);
   const haloGeometry = new THREE.TorusGeometry(0.86, 0.022, 6, 40);
   templates.zoomies = new THREE.Group();
-  ball(templates.zoomies, "#cdf546", 0, 0, 0, .55, .55, .55);
-  const tennisSeam = new THREE.TorusGeometry(.548,.023,6,32);
+  ball(templates.zoomies, "#a4d329", 0, 0, 0, .55, .55, .55);
+  const tennisSeam = new THREE.TorusGeometry(.55,.045,6,32);
   for (const tilt of [-.7,.7]) {
-    const seam = new THREE.Mesh(tennisSeam,mat("#fffbd9"));
+    const seam = new THREE.Mesh(tennisSeam,mat("#244c2b"));
     seam.rotation.y = tilt; templates.zoomies.add(seam);
   }
   const speedTrail = new THREE.Group(); scene.add(speedTrail);
   for (let i=0;i<8;i++) {
-    const streak = box(speedTrail,"#dcf78c",(i%2 ? 1 : -1)*(.65+(i%3)*.2),.3+(i%3)*.3,.6+i*.4,.035,.035,.8);
+    const streak = box(speedTrail,"#386326",(i%2 ? 1 : -1)*(.65+(i%3)*.2),.3+(i%3)*.3,.6+i*.4,.055,.055,.8);
     streak.userData.phase=i/8;
   }
   for (const type of PICKUPS.filter((type) => type !== "bone")) {
@@ -604,8 +619,9 @@ export function createView(canvas) {
     }
   }
   const zipHandle = new THREE.Group(); scene.add(zipHandle);
-  box(zipHandle, "#8bf0da", 0, 0, 0, 1.5, .15, .15);
-  const zipTether = box(scene, "#e7c978", 0, 0, 0, .06, 1, .06);
+  box(zipHandle, "#185965", 0, 0, 0, 1.6, .22, .22);
+  for(const side of [-1,1]) box(zipHandle, "#a2ffde", side*.65, 0, .03, .3, .24, .24);
+  const zipTether = box(scene, "#25494d", 0, 0, 0, .065, 1, .065);
   const active = new Map(),
     pools = Object.fromEntries(
       Object.keys(templates).map((type) => [type, []]),
@@ -750,7 +766,7 @@ export function createView(canvas) {
       shadow.position.x = dog.position.x;
       shadow.rotation.x = -Math.PI / 2 + (menu ? 0 : groundFrame.pitch);
       shadow.scale.setScalar(Math.max(0.45, 1 - y * 0.12));
-      shadow.material.opacity = 0.35 / (1 + y * 0.3);
+      shadow.material.opacity = 0.46 / (1 + y * 0.3);
       aura.visible = !menu && run.shield > 0;
       magnetField.visible = !menu && run.magnet > 0;
       speedTrail.visible = !menu && run.zoomies > 0;
@@ -761,8 +777,8 @@ export function createView(canvas) {
       magnetField.position.set(x, 0.18, 0);
       magnetField.children.forEach((ring, i) => {
         const phase = reducedMotion ? i / 3 : (time * 0.7 + i / 3) % 1;
-        ring.scale.setScalar(1 + phase * 3.2);
-        ring.material.opacity = 0.55 * (1 - phase);
+        ring.scale.setScalar(1 + phase * 1.8);
+        ring.material.opacity = 0.8 * (1 - phase);
       });
       let sparkCount = 0;
       if (!menu && !reducedMotion)

@@ -19,11 +19,11 @@ Full goal remains active. Partial work is not completion.
 | 12 Landscape gameplay | Implemented corner controls and side guidance; camera center stays unobscured in inspected 844x390 screenshot; physical/coarse-pointer verification pending |
 | 13 Pause | Preserve; regression checks remain |
 | 14 Regions | Pending: depth and visual language |
-| 15 Pickups | Pending: distinct silhouettes and outlines |
-| 16 Powers | Pending: contrasting effects and clear state |
+| 15 Pickups | Partial: pointed shield, faceted gem and dark tennis seams implemented; bone contours and color-independent testing remain |
+| 16 Powers | Partial: compact darker magnet rings, stronger shield bubble and speed streaks; full stacked-HUD / motion checks remain |
 | 17 Movement | Pending: Mochi articulation without timing changes |
 | 18 Outfits | Pending: rear/three-quarter previews |
-| 19 Zipline | Pending: cable, handle and catch-zone readability |
+| 19 Zipline | Partial: dark cable/tether and contrasting grip; approach catch-zone work remains |
 | 20 Split rows | Pending: clearance edge |
 | 21 Route choices | Pending: explicit meaning |
 | 22 Mochi | Pending: fur, brow and muzzle refinement |
@@ -32,6 +32,15 @@ Full goal remains active. Partial work is not completion.
 | 25 Desktop run | Partial: removed control fading; scenery/depth pending |
 
 ## Current evidence
+
+- Pickup/effect follow-up: all 134 tests, lint, build and distribution checks
+  passed. Fresh pickup, combined-effect and phone zipline previews inspected.
+  Three 4,500m renderer runs retain three hearts, with 21 turns, nine ziplines
+  and 13 split rows. Resource peaks remain below budget (17 geometries,
+  four textures, 121 objects). Phone input run reached 1,132m with all hearts,
+  two correct turns, zipline catch/landing and no reported HUD overlaps.
+  Cable thickness was reduced again after the close-up showed excessive width;
+  its stronger color contrast is retained. No movement or collection rules changed.
 
 - All 134 tests, build, distribution validation and lint passed after the first
   help/results changes. Subsequent compact-help CSS gets fresh visual checks.
