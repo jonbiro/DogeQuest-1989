@@ -10,13 +10,13 @@ Full goal remains active. Partial work is not completion.
 | 3 Upgrades | Implemented name/benefit/level hierarchy, level meters and readable disabled prices; final accessibility checks remain |
 | 4 Clubhouse | Implemented separate category navigation and cached model previews; browsing preserves saved profile |
 | 5 Passport | Implemented current puppy and next milestone first, other six cards collapsed, larger numbered/checked badges with explicit earned state; all seven cards and 21 badges retained |
-| 6 Portrait gameplay | Partial: larger score/action text; dog contrast pending |
+| 6 Portrait gameplay | Larger score/action/region/power labels and backed hearts; conservative CSS contrast checks added for powers, hearts and region name; full scene contrast disposition remains |
 | 7 Bridge approach | Partial: continuous cream bone silhouette with dark sides, darker lane inlays, consistent overhead clearance edges and reduced branch foliage; final motion/non-color checks remain |
 | 8 Results | Implemented: one next puppy milestone, full rewards/stats behind an expandable section; score and failure advice stay prominent |
 | 9 Small results | Implemented: 320x568 screenshot confirms score, lesson, next milestone and retry visible; expanded rewards retain fixed actions |
 | 10 Small camp | Implemented grouped 44px-or-larger controls and visible challenge instead of secondary records; 320x568 screenshot inspected |
 | 11 Landscape camp | Implemented grouped left-hand actions and clear right-hand dog display; 844x390 screenshot with 44px side safe areas inspected |
-| 12 Landscape gameplay | Implemented corner controls and side guidance; stacked HUD and trusted coarse-pointer gestures pass at 844x390 with side/bottom safe areas; physical-phone testing remains external |
+| 12 Landscape gameplay | Upper-right guidance now keeps every near-track lane clear (200% zoom exposed right-lane overlap in the earlier side dock); stacked HUD and trusted coarse-pointer checks pass with safe areas; physical-phone testing remains external |
 | 13 Pause | Preserved; keyboard focus/held-Escape and trusted touch pause pass; background HUD now inert while modal is open |
 | 14 Regions | Partial: restrained scenery scale/setback and region-resistant curb contrast; complete recognition/accessibility checks remain |
 | 15 Pickups | Partial: pointed shield, faceted gem, dark tennis seams and dark-edged continuous bone silhouette implemented; color-independent testing remains |
@@ -32,6 +32,32 @@ Full goal remains active. Partial work is not completion.
 | 25 Desktop run | Partial: removed control fading, reduced nearby scenery scale and increased setback; final motion coverage remains |
 
 ## Current evidence
+
+- HUD/zoom follow-up: removed remaining 8px/9px mobile power-label overrides;
+  power labels are now 11px, region label 10px, hearts have a dark backing.
+  Four-size stacked HUD checks include minimum label sizes and conservative
+  CSS text contrast against a white scene behind the translucent backings:
+  power labels 7.44:1, hearts 6.80:1, region label 11.20:1. These measurements
+  do not establish canvas contrast, all UI contrast or user recognition.
+- Actual native Chrome page zoom now verified through the dedicated test
+  browser's Appearance > Page zoom setting, selected at 200%. A 1440x900 test
+  viewport reports 720x450 CSS pixels, DPR2 and pinch scale1. Camp, help,
+  upgrades, passport and stacked HUD checks pass. Fresh camp/passport renders
+  inspected. Unlike previous unsuccessful shortcut/extension attempts, this
+  changes browser layout zoom and requires no access to the locked desktop.
+- Zoomed gameplay exposed a right-lane dog/guidance overlap missed by the old
+  central-20% check. Moved landscape guidance to the upper-right status area,
+  restricted powers to its left, and added a near-track boundary check. Hid the
+  decorative wordmark subtitle during landscape play to separate header/stats.
+  Coarse-pointer/safe-area portrait and landscape gestures pass after the HUD
+  sizing change; landscape stress fixture retains all five power indicators.
+- A further live capture exposed power/score overlap, also present by two
+  pixels on desktop. Added explicit score-to-power checks to both fixture and
+  input-run verification; reserved additional vertical space under the score.
+  Final native-200% input run reached 1,132m, three hearts, both turns, all
+  regions and zipline catch/landing, with no reported HUD overlaps. Fresh
+  canyon screenshot shows upper guidance clear of the right-lane dog and
+  magnet status separated from the score. All 136 tests/build/lint pass.
 
 - Compact-UI/zipline slice: camp targets, three decoded help illustrations,
   current-puppy-first passport (seven cards / 21 badges), fixed dialog actions
@@ -57,10 +83,11 @@ Full goal remains active. Partial work is not completion.
   split rows over 54 rendered checkpoints. Peak resources: 20 geometries,
   five textures, 121 objects, 204 draw calls. The one shared sign atlas is now
   1024x512; no per-sign textures or physics/save changes were introduced.
-- Native 200% browser zoom remains unverified: shortcut and test-extension
+- Earlier native 200% browser zoom attempts were unverified: shortcut and test-extension
   attempts did not change the measured browser zoom. Native UI access reported
   the Mac locked; user was asked to unlock it. Resizing, DPR and pinch scaling
-  are not substituted for native browser zoom. Other verification continues.
+  were not substituted for native browser zoom. The native Settings test above
+  now supersedes this blocker.
 - Fresh 844x390 full-motion browser input run reached 1,105m with all three
   hearts, both turns, all three regions, a zipline catch/landing and no reported
   HUD collisions. Desktop timing sample: mean 16.66ms / p95 16.70ms; this is

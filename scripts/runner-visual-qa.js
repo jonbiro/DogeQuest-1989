@@ -423,7 +423,23 @@ export function hudStressCheck() {
     document.querySelector("#power").innerHTML=["🐾 140m","🎾 6s","◇ SHIELD","🧲 19s","×2 10s"].map(label=>`<span class="power-chip">${label}<progress max="10" value="8"></progress></span>`).join("");
     const rect=id=>document.querySelector(id).getBoundingClientRect();
     const issues=[];
-    for(const [first,second] of [["#power","#mission-hud"],["#power","#controls"],["#mission-hud","#controls"]]){
+    // A white scene is the worst case behind these dark, translucent backings.
+    // This checks CSS text/backing contrast, not WebGL object recognition.
+    const luminance=rgb=>rgb.map(value=>value/255).map(value=>value<=.04045?value/12.92:((value+.055)/1.055)**2.4).reduce((sum,value,index)=>sum+value*[.2126,.7152,.0722][index],0);
+    const channels=color=>color.match(/[\d.]+/g).map(Number);
+    const textChecks=[['.power-chip','.power-chip',11],['#hearts','#hearts',15],['#region-name','.score',10]].map(([text,backing,minimum])=>{
+      const style=window.getComputedStyle(document.querySelector(text));
+      const background=channels(window.getComputedStyle(document.querySelector(backing)).backgroundColor);
+      const foreground=channels(style.color),alpha=background[3]??1;
+      const backLight=luminance(background.slice(0,3).map(value=>value*alpha+255*(1-alpha)));
+      const frontLight=luminance(foreground.slice(0,3));
+      const ratio=(Math.max(frontLight,backLight)+.05)/(Math.min(frontLight,backLight)+.05);
+      const fontSize=parseFloat(style.fontSize);
+      if(fontSize<minimum)issues.push(`${text} label too small: ${fontSize}px`);
+      if(ratio<4.5)issues.push(`${text} worst-case text contrast below 4.5: ${ratio}`);
+      return {text,fontSize,minimumContrast:Number(ratio.toFixed(2))};
+    });
+    for(const [first,second] of [["#power",".score"],["#power","#mission-hud"],["#power","#controls"],["#mission-hud","#controls"]]){
       const a=rect(first),b=rect(second);
       if(a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top)issues.push(`${first} overlaps ${second}`);
     }
@@ -439,8 +455,9 @@ export function hudStressCheck() {
       if(r.left<guidance.right&&r.right>guidance.left&&r.top<guidance.bottom&&r.bottom>guidance.top)issues.push(`${button.textContent} overlaps guidance`);
     }
     if(landscape){const r=rect('#mission-hud');if(r.left<window.innerWidth*.6&&r.right>window.innerWidth*.4)issues.push('Guidance covers puppy corridor');}
-    if(rect('#cue').top<window.innerHeight*.65)issues.push('Cue covers the center of the trail');
-    return {viewport:[window.innerWidth,window.innerHeight],issues,powerBottom:rect("#power").bottom,cueTop:rect("#cue").top};
+    if(landscape){if(rect('#mission-hud').bottom>window.innerHeight*.48)issues.push('Guidance enters the near-track area');}
+    else if(rect('#cue').top<window.innerHeight*.65)issues.push('Cue covers the center of the trail');
+    return {viewport:[window.innerWidth,window.innerHeight],issues,textChecks,powerBottom:rect("#power").bottom,cueTop:rect("#cue").top};
   } finally {
     game.dataset.state=state;hud.hidden=hidden;hud.className=classes;
     for(const {element,html,hidden:wasHidden} of saved){if(!['controls','mission-hud','mission-summary'].includes(element.id))element.innerHTML=html;element.hidden=wasHidden;}
@@ -474,7 +491,7 @@ export function uiPlayCheck(seconds=22) {
       if(cue.includes("TURN RIGHT"))turnDirections.add("right");
       turnAccepted ||= cue.includes("TURN SET");
       if(now-lastAction>250) {
-        for (const [first, second] of [["#power","#mission-hud"],["#power","#controls"],["#mission-hud","#controls"],["#fetch","#mission-hud"],["#fetch","#power"]]) {
+        for (const [first, second] of [["#power",".score"],["#power","#mission-hud"],["#power","#controls"],["#mission-hud","#controls"],["#fetch","#mission-hud"],["#fetch","#power"]]) {
           const a=document.querySelector(first).getBoundingClientRect(),b=document.querySelector(second).getBoundingClientRect();
           if(a.width && a.height && b.width && b.height && a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top)layoutIssues.add(`${first} overlaps ${second}`);
         }

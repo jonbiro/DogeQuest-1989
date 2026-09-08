@@ -445,7 +445,7 @@ footer .text-button {
   pointer-events: none;
 }
 .score > span {
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: 2px;
 }
 .score {
@@ -479,15 +479,16 @@ footer .text-button {
   margin-left: 8px;
 }
 #hearts {
-  text-shadow: 0 1px 3px #102a28, 0 0 5px #102a28;
+  background: #102a28ed;
+  border-radius: 10px;
+  padding: 4px 7px;
   color: #ffad86;
   font-size: 19px;
   letter-spacing: 3px;
-  text-shadow: 0 2px 8px #0008;
 }
 #power {
   position: absolute;
-  top: 82px;
+  top: 96px;
   left: 0;
   right: 0;
   color: var(--lime);
@@ -505,7 +506,7 @@ footer .text-button {
   border-radius: 9px;
   background: #102a28cc;
   border: 1px solid #bcece944;
-  font-size: 10px;
+  font-size: 11px;
   color: #d9fff4;
   white-space: nowrap;
 }
@@ -1002,18 +1003,20 @@ kbd {
   }
   .power-chip {
     padding: 6px 8px;
-    font-size: 9px;
+    font-size: 11px;
   }
   .power-chip small { display: none; }
   .power-chip progress { margin-top: 3px; height: 2px; }
 }
 @media (orientation: landscape) and (max-height: 520px) {
   #hud { top: 58px; }
+  #game[data-state="playing"] .wordmark small { display:none; }
   .score strong { font-size: 24px; }
   #power {
-    top: 56px;
+    top: 80px;
+    right: 36vw;
   }
-  .power-chip { padding: 5px 6px; font-size: 8px; }
+  .power-chip { padding: 5px 6px; font-size: 11px; }
   .power-chip small { display: none; }
   .power-chip progress { margin-top: 3px; height: 2px; }
   .run-stats { flex-direction: row; align-items: center; gap: 8px; }
@@ -1023,7 +1026,8 @@ kbd {
     left: auto;
     right: max(5%, var(--safe-right));
     width: min(32vw, 280px);
-    bottom: calc(88px + var(--safe-bottom));
+    top: calc(114px + var(--safe-top));
+    bottom: auto;
     padding: 7px 10px;
     font-size: 11px;
   }
