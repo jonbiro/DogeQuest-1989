@@ -1,6 +1,23 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {puppyPose,smoothLegAngles,bodyMotion} from "../src/runner/puppy-pose.js";
+import {puppyPose,smoothLegAngles,bodyMotion,mochiCrouch} from "../src/runner/puppy-pose.js";
+
+test('Mochi crouches with folded paired legs and preserves body volume',()=>{
+  const standing=mochiCrouch(0),sliding=mochiCrouch(1);
+  assert.equal(standing.scaleY,1);assert.equal(standing.lowering,0);
+  assert.equal(sliding.scaleY,.65);assert.equal(sliding.lowering,.24);
+  assert.ok(sliding.scaleZ>1);
+  assert.equal(sliding.legs[0],sliding.legs[2]);
+  assert.equal(sliding.legs[1],sliding.legs[3]);
+  assert.ok(sliding.legs[0]<0&&sliding.legs[1]>0);
+  for(const value of [-10,0,.25,.5,1,10,NaN,Infinity]) {
+    const p=mochiCrouch(value);
+    assert.ok(p.amount>=0&&p.amount<=1);
+    assert.ok(p.scaleY>=.65&&p.scaleY<=1);
+    assert.ok(p.lowering>=0&&p.lowering<=.24);
+    assert.deepEqual(p,mochiCrouch(value));
+  }
+});
 test("cosmetic poses stay finite and bounded during long runs",()=>{
   for(let t=0;t<300;t+=.037){
     const p=puppyPose(t,t*46.8);

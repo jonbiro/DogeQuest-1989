@@ -17,6 +17,14 @@ export function smoothLegAngles(current,target,dt) {
   return target.map((angle,index)=>current[index]+(angle-current[index])*weight);
 }
 
+// Lower the torso and fold the legs instead of flattening Mochi's whole body.
+// The blend comes from the existing visual transition, never collision timing.
+export function mochiCrouch(blend) {
+  const amount=Math.max(0,Math.min(1,Number.isFinite(blend)?blend:0));
+  return {amount,scaleY:1-.35*amount,scaleZ:1+.08*amount,lowering:.24*amount,
+    legs:[-1.3,1.05,-1.3,1.05]};
+}
+
 // Weight cues are driven by real velocity and touchdown, not a looping bounce.
 // They remain cosmetic, bounded and frozen when simulation time is paused.
 export function bodyMotion({vx=0,vy=0,y=0,time=0,landing=null,ziplining=false,reducedMotion=false}={}) {

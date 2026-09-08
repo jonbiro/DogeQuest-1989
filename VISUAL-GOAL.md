@@ -21,17 +21,32 @@ Full goal remains active. Partial work is not completion.
 | 14 Regions | Partial: restrained scenery scale/setback and region-resistant curb contrast; complete recognition/accessibility checks remain |
 | 15 Pickups | Partial: pointed shield, faceted gem, dark tennis seams and dark-edged continuous bone silhouette implemented; color-independent testing remains |
 | 16 Powers | Partial: compact darker magnet rings, stronger shield bubble and speed streaks; full stacked-HUD / motion checks remain |
-| 17 Movement | Pending: Mochi articulation without timing changes |
+| 17 Movement | Implemented Mochi-specific lowered torso and opposing front/rear leg folds, preserving short slide timing; six outfits checked in both motion modes |
 | 18 Outfits | Implemented front and rear/three-quarter preview toggle; 24 combinations in each angle inspected |
 | 19 Zipline | Partial: dark cable/tether and contrasting grip; approach catch-zone work remains |
 | 20 Split rows | Implemented dark underside edges, light endpoint markers and stronger uprights across gate/arch/branch vocabulary; final motion checks remain |
 | 21 Route choices | Implemented: Scenic / Fewer obstacles and Challenge / More points signs; final motion and non-color recognition checks remain |
-| 22 Mochi | Pending: fur, brow and muzzle refinement |
+| 22 Mochi | Partial: neutral charcoal palette, quieter undercoat, finer strands, recessed brows and narrower overlapping cheeks; model remains stylized/photo-inspired, not a photorealistic replica |
 | 23 Turns/hills | Partial: darker curbs and alternating river-corner plank bands; all seven terrain panels now captured and inspected, including later river; water polish remains |
 | 24 Desktop camp | Partial: dark name/description backing and larger companion label verified at 1440x900; secondary hierarchy remains |
 | 25 Desktop run | Partial: removed control fading, reduced nearby scenery scale and increased setback; final motion coverage remains |
 
 ## Current evidence
+
+- Mochi slice: compared fresh close-ups with the previous model. Rejected opaque
+  clumps, ring meshes and hard alpha-cut strands because previews looked like
+  scales/rings or pixelated patches. Retained the strand renderer with subtler
+  palette/undercoat, finer locks, integrated brows and closer cheek transitions.
+  Photo is reference-only; no external image dependency was introduced.
+- Model remains deterministic and bounded: 64,288 triangles, 2,920 strand
+  instances, 61 meshes, three shared geometries and two 128x128 textures.
+  136 tests pass, including new finite/bounded cosmetic-crouch tests. Movement
+  timing, collision logic, banking and other puppies' pose rules are unchanged.
+- Six Mochi outfit slide previews inspected in full and reduced motion. Normal
+  clubhouse selection followed by a 390x844 full-motion input run reached 1,105m,
+  all three hearts, both turns accepted, all regions and zipline catch/landing,
+  with no reported HUD overlaps. Longer renderer gate remains at 19 geometries,
+  five textures, 121 objects and 204 draw calls across three 4,500m runs.
 
 - Trail-clarity slice: redesigned the bone as one continuous beveled shape with
   baked cream faces and dark sides. Replaced the initial multi-lobe attempt after

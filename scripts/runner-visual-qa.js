@@ -96,6 +96,25 @@ export function wardrobePreview(puppy="biscuit") {
   }
   return {puppy,outfits:Object.keys(COSTUMES),...view.diagnostics()};
 }
+export function mochiOutfitSlideCheck(reducedMotion=false) {
+  const source=document.createElement('canvas');
+  source.style.cssText='position:fixed;left:-1000px;width:360px;height:480px';document.body.append(source);
+  const view=createView(source),gallery=document.createElement('section'),samples=[];
+  gallery.style.cssText='position:fixed;inset:0;z-index:9999;overflow:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:12px;background:#102a28;color:white';
+  document.body.append(gallery);
+  for(const costume of Object.keys(COSTUMES)) {
+    const run=createRun(1989);run.appearance={puppy:'mochi',costume};
+    run.objects=[];run.nextRow=Infinity;run.nextChoice=Infinity;run.nextZipline=Infinity;
+    act(run,'slide');
+    for(let frame=0;frame<36;frame++){step(run,1/120);view.draw(run,run.time,'playing',reducedMotion,1/120,1);}
+    const result=view.diagnostics();
+    if(run.slide<=0||result.bodyTransform[7]<.64||result.bodyTransform[7]>.75)throw Error(`Invalid crouch for ${costume}`);
+    const figure=document.createElement('figure'),image=document.createElement('img'),caption=document.createElement('figcaption');
+    figure.style.margin='0';image.src=source.toDataURL();image.style.width='100%';caption.textContent=`Mochi / ${costume} / slide`;
+    figure.append(image,caption);gallery.append(figure);samples.push({costume,slide:run.slide,...result});
+  }
+  return {reducedMotion,samples};
+}
 export function previewZoomies(reducedMotion=false,distance=0,gap=false) {
   const canvas=document.createElement("canvas");
   canvas.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;z-index:9999";
@@ -279,12 +298,13 @@ export function previewZipline(distance=700,reducedMotion=false) {
   }
   return {distance:run.distance,zipline:run.zipline,y:run.y,hearts:run.hearts,...view.diagnostics()};
 }
-export function posePauseCheck(puppy="biscuit") {
+export function posePauseCheck(puppy="biscuit",action="jump") {
+  if(!['jump','slide'].includes(action))throw Error('Unsupported pause-check action');
   const canvas=document.createElement("canvas");
   canvas.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;z-index:9999";document.body.append(canvas);
   const run=createRun(1989),view=createView(canvas);
   run.appearance={puppy,costume:"scarf"};
-  act(run,"jump");
+  act(run,action);
   for(let i=0;i<20;i++){step(run,1/120);view.draw(run,run.time,"playing",false,1/120,1);}
   const before=view.diagnostics().legAngles;
   const bodyBefore=view.diagnostics().bodyTransform;
@@ -295,7 +315,7 @@ export function posePauseCheck(puppy="biscuit") {
   view.draw(run,run.time,"playing",false,1/60,1);
   const resumed=view.diagnostics().legAngles;
   if(JSON.stringify(paused)===JSON.stringify(resumed))throw new Error("Leg transition did not resume");
-  return {before,paused,resumed,bodyFrozen:true};
+  return {action,before,paused,resumed,bodyFrozen:true};
 }
 export async function audioCheck() {
   const results=[];

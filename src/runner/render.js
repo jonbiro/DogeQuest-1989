@@ -7,7 +7,7 @@ import { objectVisible } from "./visibility.js";
 import { createCornerRoad } from "./corner-road.js";
 import { PUPPIES } from "./collection.js";
 import { REGIONS, regionAt, regionBlend } from "./regions.js";
-import { puppyPose, smoothLegAngles, bodyMotion } from "./puppy-pose.js";
+import { puppyPose, smoothLegAngles, bodyMotion, mochiCrouch } from "./puppy-pose.js";
 import { createMochiModel } from "./mochi-model.js";
 import { isBridge } from "./bridges.js";
 import { ziplineAt, ZIPLINE_HEIGHT } from "./ziplines.js";
@@ -813,8 +813,14 @@ export function createView(canvas) {
       dog.rotation.x = menu ? 0 : groundFrame.pitch + (reducedMotion ? 0 : pitch);
       dog.scale.setScalar(1);
       const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:y>.1,sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline)});
-      dog.scale.y = (pose + personality.breathe) * (1-weight.compression);
+      const crouch=activeRig===mochi?mochiCrouch((1-pose)/.54):null;
+      dog.scale.y = ((crouch?.scaleY ?? pose) + personality.breathe) * (1-weight.compression);
       dog.scale.x = dog.scale.z = 1+weight.compression*.4;
+      if(crouch) {
+        dog.position.y-=crouch.lowering;
+        dog.scale.z*=crouch.scaleZ;
+        if(y<=.1&&!run.zipline)personality.legs=personality.legs.map((angle,i)=>THREE.MathUtils.lerp(angle,crouch.legs[i],crouch.amount));
+      }
       dog.visible = true;
       if (state === "playing" || menu) {
         const angles=smoothLegAngles(activeRig.legs.map(leg=>leg.rotation.x),personality.legs,dt);
