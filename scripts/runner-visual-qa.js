@@ -194,7 +194,8 @@ export function longRunCheck() {
   }
   const peak=key=>Math.max(...samples.map(sample=>sample[key]));
   const summary={runs:3,metersPerRun:4500,completedZiplines,turns,missedTurns,renderedCheckpoints:samples.length,minimumHearts:Math.min(...samples.map(sample=>sample.hearts)),peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),final:samples.at(-1)};
-  if(summary.peakGeometries>32||summary.peakTextures>4||summary.peakObjects>200||summary.peakDrawCalls>220)throw new Error(`Renderer resource regression: ${JSON.stringify(summary)}`);
+  // One shared route-label atlas adds one fixed texture, never one per sign.
+  if(summary.peakGeometries>32||summary.peakTextures>5||summary.peakObjects>200||summary.peakDrawCalls>220)throw new Error(`Renderer resource regression: ${JSON.stringify(summary)}`);
   summary.regionalCourses=regionalCourses;
   summary.splitRowsSeen=splitRows.size;
   if(!splitRows.size)throw new Error('Missing split-decision coverage');
@@ -352,6 +353,18 @@ export function dialogLayoutCheck() {
     return {id:button.id,top:rect.top,bottom:rect.bottom};
   });
   return {viewport:[window.innerWidth,window.innerHeight],scrollable:content.scrollHeight>content.clientHeight,actions};
+}
+export function instructionLayoutCheck() {
+  if(document.querySelector('#game').dataset.state!=='help')throw new Error('Open help before checking illustrations');
+  const content=document.querySelector('.modal-content').getBoundingClientRect();
+  const images=[...document.querySelectorAll('[data-guide]')].map(image=>{
+    const rect=image.getBoundingClientRect();
+    if(!image.complete||!image.naturalWidth||!image.alt)throw new Error(`Missing guide: ${image.dataset.guide}`);
+    if(rect.left<content.left||rect.right>content.right)throw new Error(`Clipped guide: ${image.dataset.guide}`);
+    return {action:image.dataset.guide,width:rect.width,height:rect.height};
+  });
+  if(images.length!==3)throw new Error('Expected three basic movement illustrations');
+  return {images,...dialogLayoutCheck()};
 }
 // UI-only stress case: maximum simultaneous indicators, not an earned game state.
 export function hudStressCheck() {

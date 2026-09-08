@@ -372,9 +372,12 @@ h1 em {
   bottom: 23%;
   text-align: right;
   text-shadow: 0 2px 10px #102a28;
+  padding: 12px 16px;
+  background: #102a28ed;
+  border-radius: 16px;
 }
 #buddy > span {
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 2px;
   color: #e0eddd;
 }
@@ -627,7 +630,13 @@ footer .text-button {
   margin-top: 7px;
 }
 #instructions summary { padding: 14px 0; color: var(--lime); cursor: pointer; font-weight: bold; }
+#run-breakdown { text-align: left; font-size: 13px; line-height: 1.6; }
+#run-breakdown summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--lime); }
+#run-breakdown summary::before { content: '+ '; margin-right: 8px; }
+#run-breakdown[open] summary::before { content: '− '; }
 .basic-moves strong { font-size: 15px; }
+.basic-moves img { float: right; width: 72px; height: 42px; object-fit: contain; margin: 0 0 4px 8px; border-radius: 8px; }
+.basic-moves p { display: flow-root; }
 @media (max-height: 700px) {
   #overlay[data-kind="ended"] .eyebrow { display: none; }
   #overlay[data-kind="ended"] h2 { font-size: 24px; margin: 4px 0 8px; }
@@ -813,8 +822,7 @@ kbd {
       linear-gradient(0deg, #102a28, transparent 28%);
   }
   #buddy {
-    right: 8%;
-    bottom: 11%;
+    display: none;
   }
   #buddy > span {
     display: none;

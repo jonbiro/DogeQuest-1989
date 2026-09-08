@@ -576,16 +576,27 @@ export function createView(canvas) {
     box(templates.gap,"#efae45",0,.12,z,2.4,.22,.22);
     for(const x of [-.8,0,.8]) box(templates.gap,"#5d422c",x,.25,z,.3,.04,.24);
   }
-  for(const [type,color] of [["choice-left","#a7e59e"],["choice-right","#f0b762"]]) {
+  const routeLabels=document.createElement('canvas');
+  routeLabels.width=1024;routeLabels.height=256;
+  const routeText=routeLabels.getContext('2d');
+  for(const [index,title,subtitle,color] of [[0,'SCENIC','Fewer obstacles','#a7e59e'],[1,'CHALLENGE','More points','#f0b762']]) {
+    const x=index*512;
+    routeText.fillStyle=color;routeText.fillRect(x,0,512,256);
+    routeText.fillStyle='#102a28';routeText.textAlign='center';
+    routeText.font='bold 58px Arial';routeText.fillText(title,x+256,110);
+    routeText.font='36px Arial';routeText.fillText(subtitle,x+256,174);
+  }
+  const routeLabelTexture=new THREE.CanvasTexture(routeLabels);
+  routeLabelTexture.colorSpace=THREE.SRGBColorSpace;
+  const routeLabelMaterial=new THREE.MeshBasicMaterial({map:routeLabelTexture,toneMapped:false});
+  for(const [index,type,color] of [[0,"choice-left","#a7e59e"],[1,"choice-right","#f0b762"]]) {
     const gate=new THREE.Group();templates[type]=gate;
     for(const x of [-1,1])box(gate,"#66795f",x,1.8,0,.12,3.6,.18);
-    box(gate,color,0,3.3,0,2.1,.65,.18);
-    if(type==="choice-left") {
-      ball(gate,"#315c43",0,3.3,.12,.27,.2,.055);
-      for(const x of [-.2,0,.2])ball(gate,"#315c43",x,3.55,.12,.08,.08,.055);
-    } else {
-      const diamond=box(gate,"#7d4e2b",0,3.3,.12,.34,.34,.08);diamond.rotation.z=Math.PI/4;
-    }
+    box(gate,color,0,3.3,0,2.1,1.05,.18);
+    const labelGeometry=new THREE.PlaneGeometry(2.05,1);
+    const uv=labelGeometry.attributes.uv;
+    for(let i=0;i<uv.count;i++)uv.setX(i,(uv.getX(i)+index)/2);
+    const label=new THREE.Mesh(labelGeometry,routeLabelMaterial);label.position.set(0,3.3,.105);gate.add(label);
   }
   // Roadside chevrons identify a deliberate corner without covering the trail.
   for (const direction of ['left', 'right']) {
@@ -651,6 +662,26 @@ export function createView(canvas) {
   const routeRotation = new THREE.Quaternion();
   const routePosition = new THREE.Vector3();
   return {
+    instructionImage(action) {
+      const subject=new THREE.Group();
+      if(action==='lanes') {
+        for(const x of [-1.2,1.2]){const item=templates.rock.clone(true);item.scale.setScalar(.7);item.position.x=x;subject.add(item);}
+      } else subject.add(templates[action==='jump'?'log':'arch'].clone(true));
+      scene.add(subject);
+      const visibility=scene.children.map(item=>[item,item.visible]);
+      const background=scene.background,fog=scene.fog;
+      try {
+        for(const item of scene.children)item.visible=item===subject||item.isLight===true;
+        scene.background=new THREE.Color('#24483f');scene.fog=null;
+        camera.aspect=192/112;camera.position.set(0,2.6,5.2);camera.lookAt(0,1.1,0);
+        camera.updateProjectionMatrix();renderer.setSize(192,112,false);renderer.render(scene,camera);
+        return canvas.toDataURL('image/png');
+      } finally {
+        scene.remove(subject);
+        for(const [item,visible] of visibility)item.visible=visible;
+        scene.background=background;scene.fog=fog;resize();
+      }
+    },
     portrait(run, appearance, rear = false) {
       // Reuse the existing GPU context; thumbnails never create another renderer.
       this.draw(run, 0, "kennel", true, 0, 1, appearance);

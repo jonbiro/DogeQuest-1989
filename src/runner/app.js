@@ -61,6 +61,7 @@ sound=saved.preferences.sound;
 reducedMotion=saved.preferences.reducedMotion;
 function updateRecords() {
   updateSaveNotice();
+  $("play").textContent = `Run with ${PUPPIES[saved.collection.puppy].name} ↗`;
   $("buddy").querySelector("strong").textContent = `${PUPPIES[saved.collection.puppy].name}.`;
   $("buddy").querySelector("p").textContent = PUPPIES[saved.collection.puppy].description;
   $("best").innerHTML =
@@ -287,6 +288,8 @@ function showOverlay(kind) {
   $("results").hidden = kind !== "ended";
   $("run-lesson").hidden = kind !== "ended";
   $("run-highlights").hidden = kind !== "ended";
+  $("run-breakdown").hidden = kind !== "ended";
+  $("run-breakdown").open = false;
   $("instructions").hidden = kind !== "help";
   $("overlay-label").textContent =
     kind === "ended"
@@ -350,12 +353,26 @@ function finish() {
     const next=dogCard.tiers.find(tier=>dogCard.current<tier.target);
     $("run-highlights").textContent += next ? ` · ${dogCard.name} bond: ${dogCard.current}/${next.target} toward ${next.name}` : ` · ${dogCard.name}: Trail legend`;
   }
+  $("run-breakdown-copy").textContent = `${$("overlay-copy").textContent} ${$("run-highlights").textContent}`;
+  $("overlay-copy").textContent = receipt.personalBest ? 'New personal best! Your score is banked.' : 'Your score is banked. Ready for another run?';
+  const nextBond=dogCard?.tiers.find(tier=>dogCard.current<tier.target);
+  $("run-highlights").textContent = nextBond
+    ? `Next: ${dogCard.name} · ${Math.max(0,nextBond.target-dogCard.current)} clean clears or turns to ${nextBond.name}`
+    : `${run.clears} obstacles cleared · Best bone streak: ${run.bestCombo}`;
   persist();
   updateRecords();
   tone("finish");
 }
 $("play").onclick = start;
-$("help").onclick = () => showOverlay("help");
+$("run-breakdown").addEventListener("toggle", () => {
+  if ($("run-breakdown").open) $("run-breakdown").scrollIntoView({block:"start"});
+});
+$("help").onclick = () => {
+  showOverlay("help");
+  for(const image of document.querySelectorAll('[data-guide]'))
+    if(!image.src)image.src=view.instructionImage(image.dataset.guide);
+  view.draw(run,time,state,reducedMotion,0,1,saved.collection);
+};
 $("shop").onclick = shop;
 $("kennel").onclick = kennel;
 $("pause-button").onclick = pause;
@@ -519,7 +536,7 @@ try {
   view = createView($("scene"));
   graphicsReady=true;
   $("play").disabled = false;
-  $("play").textContent = "Let’s run ↗";
+  $("play").textContent = `Run with ${PUPPIES[saved.collection.puppy].name} ↗`;
 } catch {
   graphicsError();
 }

@@ -5,15 +5,15 @@ Full goal remains active. Partial work is not completion.
 
 | Audit item | State / next work |
 | --- | --- |
-| 1 Mobile camp | Pending: simplify competing labels |
-| 2 Help | Partial: moves first, advanced rules collapsed; obstacle illustrations pending |
+| 1 Mobile camp | Partial: floating puppy card removed on phones; selected puppy named in Run action; challenge no longer covered at 390x844; secondary text hierarchy remains |
+| 2 Help | Implemented: actual obstacle illustrations for three basic moves, advanced rules collapsed; all illustrations load and actions remain reachable at four target sizes |
 | 3 Upgrades | Implemented name/benefit/level hierarchy, level meters and readable disabled prices; final accessibility checks remain |
 | 4 Clubhouse | Implemented separate category navigation and cached model previews; browsing preserves saved profile |
 | 5 Passport | Partial: separate Passport category, current dog first; richer badge presentation remains |
 | 6 Portrait gameplay | Partial: larger score/action text; dog contrast pending |
 | 7 Bridge approach | Pending: bones, lanes and overhead silhouette |
-| 8 Results | Partial: lesson before highlights; simplify highlights |
-| 9 Small results | Partial: compact heading and earlier advice; screenshot verification pending |
+| 8 Results | Implemented: one next puppy milestone, full rewards/stats behind an expandable section; score and failure advice stay prominent |
+| 9 Small results | Implemented: 320x568 screenshot confirms score, lesson, next milestone and retry visible; expanded rewards retain fixed actions |
 | 10 Small camp | Pending |
 | 11 Landscape camp | Pending |
 | 12 Landscape gameplay | Implemented corner controls and side guidance; camera center stays unobscured in inspected 844x390 screenshot; physical/coarse-pointer verification pending |
@@ -25,13 +25,27 @@ Full goal remains active. Partial work is not completion.
 | 18 Outfits | Implemented front and rear/three-quarter preview toggle; 24 combinations in each angle inspected |
 | 19 Zipline | Partial: dark cable/tether and contrasting grip; approach catch-zone work remains |
 | 20 Split rows | Pending: clearance edge |
-| 21 Route choices | Pending: explicit meaning |
+| 21 Route choices | Implemented: Scenic / Fewer obstacles and Challenge / More points signs; final motion and non-color recognition checks remain |
 | 22 Mochi | Pending: fur, brow and muzzle refinement |
 | 23 Turns/hills | Pending: depth; complete later-river visual coverage |
-| 24 Desktop camp | Pending: name backing / secondary hierarchy |
+| 24 Desktop camp | Partial: dark name/description backing and larger companion label verified at 1440x900; secondary hierarchy remains |
 | 25 Desktop run | Partial: removed control fading; scenery/depth pending |
 
 ## Current evidence
+
+- Guidance/results slice: illustrated help uses the actual obstacle meshes and
+  existing renderer, with three cached images and no new GPU context. Images
+  loaded and modal actions remained reachable at all four target sizes. Fresh
+  320x568 input run after opening help: 1,105m, three hearts, both turns accepted,
+  all regions, zipline catch/landing, no HUD overlaps. Keyboard focus restoration
+  for help/shop/clubhouse and pause/resume passed. Stacked HUD passed four sizes.
+- Three 4,500m rendering runs: 19 geometries, five textures, 121 objects, 200
+  draw calls maximum; three hearts throughout, 21 turns and nine ziplines.
+  Texture budget intentionally changed from four to five for one shared fixed
+  route-label atlas, not a texture per sign. Physics and reward banking unchanged.
+- Camp screenshots exposed a name/challenge overlap at 390x844, fixed by naming
+  the puppy in the primary Run action and hiding the floating phone card.
+  Desktop retains the new dark backing. All 134 regression tests pass.
 
 - Clubhouse follow-up: 24 front and 24 rear puppy/outfit thumbnails rendered
   and inspected, with no duplicate/empty PNGs. Uses the existing GPU context,
