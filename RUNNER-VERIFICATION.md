@@ -1,5 +1,13 @@
 # Runner verification
 
+## Photo-inspired Mochi character
+
+- Mochi now uses dedicated smooth anatomy, a silver crown, charcoal coat, longer dark floppy ears, brown eyes and cream eyebrows/beard/paws. The supplied photograph was used as a visual reference only and is not a repository asset. Two deterministic 128×128 procedural textures and instanced hair cards create the coat; no external artwork request or per-frame fur allocation is needed.
+- All 80 tests pass. New model coverage checks animation-joint ordering, deterministic finite transforms, independent instances, shared geometry, at most 64 meshes, fewer than 100,000 triangles and the two small generated textures. Running physics and saved progression are unchanged.
+- Inspected an enlarged portrait and all six Mochi outfits through the production renderer. The gallery switches a contrasting puppy/party outfit before every capture; a separate Pepper gallery checks the reverse Mochi-to-original-model transition. Hats are lifted for Mochi's crown, with separate coat/cape fitting and full transform resets for other puppies.
+- Real-time local run at 390×844 with Mochi/scarf selected through the clubhouse and full decorative motion enabled: 60 seconds, 1,886 meters, 3,602 frames, mean 16.66 ms and p95 16.70 ms. All three regions, Challenge, zipline catch and landing were observed; three hearts remained, with no detected HUD overlap or browser errors. This is desktop-browser viewport emulation, not a physical-phone performance claim.
+- Accelerated production-renderer check: three 4,500-meter runs, 54 checkpoints, nine completed ziplines, minimum three hearts. Peak resources: 14 geometries, four textures, 117 active-plus-pooled objects and 186 draw calls. A 220-draw-call regression ceiling supplements the existing resource checks. The normal production build removes all local-only visual fixtures.
+
 ## Automated checks
 
 Run `npm run check` for production build, artifact validation, lint and simulation/unit regressions.

@@ -15,6 +15,7 @@ Movement now uses interpolated rendering, smooth lane easing and camera follow, 
 A separate mobile-first endless runner through jungle ruins, a sunlit canyon and a moonlit crystal glade. Puppy Quest is still available unchanged at the main address.
 
 - Choose Biscuit, Mochi, Pepper or Luna in **Puppies & outfits**. Six visible outfits include an explorer hat/backpack, superhero cape, raincoat and prize-only crown/party hat. Puppies and outfits are cosmetic; upgrades work with every puppy.
+- Mochi has a dedicated, photo-inspired model: soft silver-and-charcoal curls, long dark ears, warm brown eyes and a cream beard, eyebrows and paws. The animated coat is generated locally; no reference photograph is included or downloaded.
 - Earn four permanent prizes by reaching distance and bone goals or banking presents. The prize cabinet shows exact progress. The crown unlocks at 1,000 meters in one run; three banked gifts unlock the party hat. No reward is granted twice.
 - Cross wooden bridges, jump broken trail sections, and choose gentler **Scenic** or tougher **Challenge** sections. Challenge clears pay 60 points. Jump into a turquoise **Sky Paws** handle to ride a 140-meter zipline, steer for airborne bones and land for a 250-point bonus.
 

@@ -1,6 +1,6 @@
 export const PUPPIES = {
   biscuit: { name:'Biscuit', breed:'Golden corgi', description:'Big ears. Bigger courage.', cost:0, fur:'#d89043', head:'#f2c67b', muzzle:'#ffe0a1', paws:'#ffe3b1', ears:'pointy' },
-  mochi: { name:'Mochi', breed:'Cream retriever', description:'Soft ears. Serious snack skills.', cost:0, fur:'#ded0ac', head:'#f3e3c0', muzzle:'#fff4dc', paws:'#fff9ea', ears:'floppy' },
+  mochi: { name:'Mochi', breed:'Silver-curled pup', description:'Soft curls. A familiar little face.', cost:0, fur:'#555853', head:'#8d9187', muzzle:'#d2c09c', paws:'#c9b48d', ears:'floppy' },
   pepper: { name:'Pepper', breed:'Spotted puppy', description:'A little chaos. A lot of spots.', cost:1500, fur:'#ecebe3', head:'#fffdf2', muzzle:'#e3dfcf', paws:'#f8f7ed', ears:'floppy', spots:true },
   luna: { name:'Luna', breed:'Moonlight husky', description:'Born to chase the horizon.', cost:2500, fur:'#6b8190', head:'#8fa6b1', muzzle:'#eff1e6', paws:'#f4f2e5', ears:'pointy' },
 };

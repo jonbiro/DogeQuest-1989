@@ -4,6 +4,24 @@ import {createView} from "../src/runner/render.js";
 import {createRun,step,act,fillTrack,HAZARDS} from "../src/runner/world.js";
 import {CUES,playNotes} from "../src/runner/sound.js";
 import {PUPPIES,COSTUMES} from "../src/runner/collection.js";
+import * as THREE from 'three';
+import {createMochiModel} from '../src/runner/mochi-model.js';
+export function mochiPortraitPreview() {
+  const canvas=document.createElement('canvas');
+  canvas.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;z-index:9999';document.body.append(canvas);
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));renderer.setSize(window.innerWidth,window.innerHeight,false);
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.05;
+  const scene=new THREE.Scene();scene.background=new THREE.Color('#d6ddd5');
+  scene.add(new THREE.HemisphereLight('#f4f1e6','#4e615a',3));
+  const key=new THREE.DirectionalLight('#fff1da',3);key.position.set(-3,5,-4);scene.add(key);
+  const fill=new THREE.DirectionalLight('#cce1ec',1);fill.position.set(3,2,1);scene.add(fill);
+  const model=createMochiModel();scene.add(model.group);
+  const camera=new THREE.PerspectiveCamera(31,window.innerWidth/window.innerHeight,.1,20);
+  camera.position.set(2.6,2.05,-4.5);camera.lookAt(0,1.02,-.22);
+  renderer.render(scene,camera);
+  return {geometries:renderer.info.memory.geometries,drawCalls:renderer.info.render.calls};
+}
 export function wardrobePreview(puppy="biscuit") {
   if(!Object.hasOwn(PUPPIES,puppy))throw new Error("Unknown puppy");
   const source=document.createElement("canvas");
@@ -15,7 +33,7 @@ export function wardrobePreview(puppy="biscuit") {
   document.body.append(gallery);
   for(const [costume,details] of Object.entries(COSTUMES)) {
     // Exercise shared-model resets, not just fresh-renderer appearances.
-    view.draw(run,0,"menu",true,1/60,1,{puppy:puppy==="pepper"?"luna":"pepper",costume:"party"});
+    view.draw(run,0,"menu",true,1/60,1,{puppy:puppy==="mochi"?"pepper":"mochi",costume:"party"});
     view.draw(run,0,"menu",true,1/60,1,{puppy,costume});
     const figure=document.createElement("figure"),canvas=document.createElement("canvas"),caption=document.createElement("figcaption");
     figure.style.margin="0";canvas.width=320;canvas.height=320;canvas.style.cssText="width:100%;max-height:320px;object-fit:contain";
@@ -108,7 +126,7 @@ export function longRunCheck() {
   }
   const peak=key=>Math.max(...samples.map(sample=>sample[key]));
   const summary={runs:3,metersPerRun:4500,completedZiplines,renderedCheckpoints:samples.length,minimumHearts:Math.min(...samples.map(sample=>sample.hearts)),peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),final:samples.at(-1)};
-  if(summary.peakGeometries>32||summary.peakTextures>4||summary.peakObjects>200)throw new Error(`Renderer resource regression: ${JSON.stringify(summary)}`);
+  if(summary.peakGeometries>32||summary.peakTextures>4||summary.peakObjects>200||summary.peakDrawCalls>220)throw new Error(`Renderer resource regression: ${JSON.stringify(summary)}`);
   return summary;
 }
 export function previewGates() {
@@ -134,10 +152,11 @@ export function previewZipline(distance=700,reducedMotion=false) {
   }
   return {distance:run.distance,zipline:run.zipline,y:run.y,hearts:run.hearts,...view.diagnostics()};
 }
-export function posePauseCheck() {
+export function posePauseCheck(puppy="biscuit") {
   const canvas=document.createElement("canvas");
   canvas.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;z-index:9999";document.body.append(canvas);
   const run=createRun(1989),view=createView(canvas);
+  run.appearance={puppy,costume:"scarf"};
   act(run,"jump");
   for(let i=0;i<20;i++){step(run,1/120);view.draw(run,run.time,"playing",false,1/120,1);}
   const before=view.diagnostics().legAngles;

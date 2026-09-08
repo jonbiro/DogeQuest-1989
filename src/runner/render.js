@@ -6,6 +6,7 @@ import { routeOffset, routeHeading } from "./route.js";
 import { PUPPIES } from "./collection.js";
 import { REGIONS, regionAt, regionBlend } from "./regions.js";
 import { puppyPose, smoothLegAngles } from "./puppy-pose.js";
+import { createMochiModel } from "./mochi-model.js";
 import { isBridge } from "./bridges.js";
 import { ziplineAt, ZIPLINE_HEIGHT } from "./ziplines.js";
 
@@ -282,6 +283,7 @@ export function createView(canvas) {
   box(tail, "#db994e", 0, 0.24, 0.16, 0.25, 0.55, 0.3);
   box(tail, "#ffe3b1", 0, 0.57, 0.16, 0.27, 0.2, 0.3);
   dog.add(tail);
+  const originalParts = dog.children.filter(part => part !== collar && part !== scarf);
   const furMeshes = [];
   dog.traverse(item => {
     if (item.isMesh) furMeshes.push({item, color: `#${item.material.color.getHexString()}`});
@@ -308,12 +310,20 @@ export function createView(canvas) {
   for (const x of [-.25, 0, .25]) cone(outfits.royal, "#ffe286", x, 1.9, -.65, .13, .38, .13);
   cone(outfits.party, "#d97cf1", 0, 1.97, -.55, .36, .72, .36);
   ball(outfits.party, "#fff0a0", 0, 2.34, -.55, .12, .12, .12);
+  const outfitPositions = Object.fromEntries(Object.entries(outfits).map(([id, group]) => [id, group.children.map(part => part.position.clone())]));
+  const mochi = createMochiModel(); dog.add(mochi.group); mochi.group.visible = false;
+  const classicRig = {legs, eyes, ears, tail};
+  let activeRig = classicRig;
   let appearanceKey = "";
   function dress(appearance = {}) {
     const key = `${appearance.puppy}:${appearance.costume}`;
     if (key === appearanceKey) return;
     appearanceKey = key;
     const puppy = PUPPIES[appearance.puppy] || PUPPIES.biscuit;
+    const isMochi = appearance.puppy === "mochi";
+    mochi.group.visible = isMochi;
+    for (const part of originalParts) part.visible = !isMochi;
+    activeRig = isMochi ? mochi : classicRig;
     const palette = {"#d89043":puppy.fur,"#e9ac59":puppy.fur,"#c7823d":puppy.fur,"#db994e":puppy.fur,"#f2c67b":puppy.head,"#ffe0a1":puppy.muzzle,"#ffe3b1":puppy.paws};
     for (const {item,color} of furMeshes) if (palette[color]) item.material = mat(palette[color]);
     for (const {ear,inner,side} of ears) {
@@ -323,9 +333,18 @@ export function createView(canvas) {
       ear.rotation.z = side * (floppy ? .15 : -.15);
       inner.visible = !floppy;
     }
-    spots.visible = !!puppy.spots;
+    spots.visible = !isMochi && !!puppy.spots;
     collar.visible = scarf.visible = !appearance.costume || appearance.costume === "scarf";
-    for (const [id, group] of Object.entries(outfits)) group.visible = appearance.costume === id;
+    for (const [id, group] of Object.entries(outfits)) {
+      group.visible = appearance.costume === id;
+      group.scale.set(1, 1, 1); group.position.set(0, 0, 0);
+      group.children.forEach((part, index) => {
+        part.position.copy(outfitPositions[id][index]);
+        if (isMochi && (id === "royal" || id === "party" || (id === "explorer" && index < 2))) part.position.y += .24;
+      });
+      if (isMochi && id === "raincoat") group.scale.set(1.05, 1.14, 1.08);
+      if (isMochi && id === "hero") group.position.y = .12;
+    }
   }
   const shadowCanvas = document.createElement("canvas");
   shadowCanvas.width = shadowCanvas.height = 64;
@@ -590,7 +609,7 @@ export function createView(canvas) {
         lean = 0;
         cameraX = run.x;
         cameraLift = 0;
-        for (const leg of legs) leg.rotation.x = 0;
+        for (const leg of [...legs, ...mochi.legs]) leg.rotation.x = 0;
       }
       if (state === "playing" || menu) animationTime += dt;
       time = animationTime;
@@ -649,13 +668,13 @@ export function createView(canvas) {
       dog.scale.y = pose + personality.breathe;
       dog.visible = true;
       if (state === "playing" || menu) {
-        const angles=smoothLegAngles(legs.map(leg=>leg.rotation.x),personality.legs,dt);
-        for (let i = 0; i < legs.length; i++) legs[i].rotation.x = angles[i];
+        const angles=smoothLegAngles(activeRig.legs.map(leg=>leg.rotation.x),personality.legs,dt);
+        for (let i = 0; i < activeRig.legs.length; i++) activeRig.legs[i].rotation.x = angles[i];
       }
-      for (const eye of eyes) eye.scale.y = personality.blink;
-      for (const {ear,side} of ears) ear.rotation.x = personality.ears*side;
+      for (const eye of activeRig.eyes) eye.scale.y = personality.blink;
+      for (const {ear,side} of activeRig.ears) ear.rotation.x = personality.ears*side;
       cape.rotation.x = -.14 + personality.cape;
-      tail.rotation.z = personality.tail;
+      activeRig.tail.rotation.z = personality.tail;
       zipHandle.visible = zipTether.visible = !menu && Boolean(run.zipline);
       zipHandle.position.set(x, y + 1.15, -.15);
       const tetherHeight = 6.5 - (y + 1.15);
@@ -777,7 +796,7 @@ export function createView(canvas) {
       renderer.render(scene, camera);
     },
     diagnostics() {
-      return {geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,activeObjects:active.size,pooledObjects:Object.values(pools).reduce((sum,items)=>sum+items.length,0),legAngles:legs.map(leg=>leg.rotation.x)};
+      return {geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,activeObjects:active.size,pooledObjects:Object.values(pools).reduce((sum,items)=>sum+items.length,0),legAngles:activeRig.legs.map(leg=>leg.rotation.x)};
     },
   };
 }
