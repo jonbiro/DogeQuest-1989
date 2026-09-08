@@ -169,7 +169,11 @@ export function fillTrack(run) {
     const actionRow = route!=="scenic" && run.row > 5 && (route==="challenge" ? run.row%2===0 : run.row % 4 === 2);
     if (actionRow) {
       const type = gapRow ? "gap" : (route==="challenge" ? Math.floor(run.row/2)%2===0 : run.row % 8 === 2) ? "log" : "gate";
-      for (let lane = 0; lane < 3; lane++) add(run, type, lane, at);
+      const split = at > 800 && !gapRow && run.row % 8 === 6;
+      for (let lane = 0; lane < 3; lane++) {
+        const obstacle=add(run, split ? lane === safe ? 'gate' : 'log' : type, lane, at);
+        if(split) obstacle.splitChoice=true;
+      }
     } else if (run.row > 0) {
       add(run, SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)], blocked, at);
       if (route!=="scenic" && run.row > 2 && (run.random() > 0.15 || at > 600))

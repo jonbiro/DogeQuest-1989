@@ -1,5 +1,26 @@
 # Runner verification
 
+## Split-decision obstacle rows
+
+- Later ordinary/Challenge action rows periodically offer one slide-under gate
+  beside two jumpable logs. The gate lane varies using the seeded route choice.
+  Introduction is after 800m; Scenic, full-width gaps and authored courses keep
+  their existing patterns. Full action-row spacing (at least 42m) is retained.
+- All 134 tests pass. New checks cover row composition, Scenic/opening exclusion,
+  reward preservation and recovery distance; every lane's correct cue/action at
+  22/36/46.8m/s; wrong-action damage with no free clear. The seeded-row invariant
+  now explicitly validates mixed rows instead of assuming uniform obstacle type.
+- Long-run QA now reads the obstacle in the occupied lane when an action row
+  has no open lane. Three seeded 4,500m runs encountered 13 split rows, completed
+  21 turns and nine ziplines, and retained three hearts throughout. At 54 renderer
+  checkpoints: peaks 15 geometries, four textures, 121 objects, 197 draw calls.
+- The real-renderer split-row fixture was inspected at 390x844 with Mochi:
+  low logs and overhead gate are distinct, with no new model or texture budget.
+- Input-driven 60-second 390x844 playtest: 1,821m, three hearts, all regions,
+  courses 2/1/1, three turns with zero misses, zipline catch/landing, no HUD
+  overlaps or browser errors. Mean frame interval 16.66ms, p95 16.80ms. This
+  is desktop browser emulation, not a physical-phone performance claim.
+
 ## Zipline collection guidance follow-up
 
 - The edge dock now points toward the nearest upcoming aerial bone or gift.

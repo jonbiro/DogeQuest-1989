@@ -61,6 +61,12 @@ Progress banks at run end; each milestone awards upgrade points once. Old saves
 retain their existing progress and begin this new tracking at zero; no historical
 mastery is invented. No daily resets, new currency, or dog-specific stat advantage.
 
+After 800 meters, some ordinary and Challenge action rows become **split
+decisions**: one lane has an overhead gate, the other two have jumpable logs.
+Choose a lane and use the matching move; the quiet action cue follows your
+approach. Scenic excludes these rows. Existing action-row recovery spacing,
+gap rows, course sequences and protected turn/zipline approaches are preserved.
+
 ## Development
 
 Requires Node.js 20.19+ and npm.

@@ -132,6 +132,7 @@ export function longRunCheck() {
   const view=createView(canvas),samples=[];
   let completedZiplines=0,turns=0,missedTurns=0;
   const regionalCourses=[0,0,0];
+  const splitRows=new Set();
   for(let attempt=0;attempt<3;attempt++) {
     const run=createRun(1989+attempt);
     run.appearance={puppy:["biscuit","mochi","pepper"][attempt],costume:["scarf","hero","explorer"][attempt]};
@@ -148,10 +149,14 @@ export function longRunCheck() {
       if(!turnLocked&&run.choicePending!==null&&run.choicePending-run.distance<35)act(run,attempt===1?"right":"left");
       const next=run.objects.find(o=>HAZARDS.includes(o.type)&&o.at>run.distance&&o.at-run.distance<24);
       if(next) {
+        if(next.splitChoice) splitRows.add(`${attempt}:${next.at}`);
         const blocked=new Set(run.objects.filter(o=>o.at===next.at&&HAZARDS.includes(o.type)).map(o=>o.lane));
         const safe=[0,1,2].find(lane=>!blocked.has(lane));
         if(!turnLocked&&safe!==undefined&&safe!==run.lane)act(run,safe<run.lane?"left":"right");
-        else if(safe===undefined&&next.at-run.distance<run.speed*.4)act(run,['gate','branch','arch'].includes(next.type)?"slide":"jump");
+        else if(safe===undefined&&next.at-run.distance<run.speed*.4) {
+          const occupied=run.objects.find(o=>o.at===next.at&&o.lane===run.lane&&HAZARDS.includes(o.type));
+          act(run,['gate','branch','arch'].includes(occupied.type)?"slide":"jump");
+        }
       }
       step(run,1/120);run.events=[];
       if(run.distance>=nextSample) {
@@ -171,6 +176,8 @@ export function longRunCheck() {
   const summary={runs:3,metersPerRun:4500,completedZiplines,turns,missedTurns,renderedCheckpoints:samples.length,minimumHearts:Math.min(...samples.map(sample=>sample.hearts)),peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),final:samples.at(-1)};
   if(summary.peakGeometries>32||summary.peakTextures>4||summary.peakObjects>200||summary.peakDrawCalls>220)throw new Error(`Renderer resource regression: ${JSON.stringify(summary)}`);
   summary.regionalCourses=regionalCourses;
+  summary.splitRowsSeen=splitRows.size;
+  if(!splitRows.size)throw new Error('Missing split-decision coverage');
   if(regionalCourses.some(count=>count===0))throw new Error(`Missing regional course coverage: ${regionalCourses}`);
   return summary;
 }
@@ -192,6 +199,18 @@ export function previewRegionalCourses() {
     samples.push({name:run.course.name,beats:run.course.beats,...view.diagnostics()});
   }
   return samples;
+}
+export function previewSplitDecision() {
+  const canvas=document.createElement('canvas');
+  canvas.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;z-index:9999';
+  document.body.append(canvas);
+  const run=createRun(11);
+  Object.assign(run,{distance:1232,nextRow:1250,row:14,objects:[],lastCourseVisit:2,
+    nextChoice:3000,nextZipline:4000,choicePending:null});
+  run.previous.distance=run.distance;run.appearance={puppy:'mochi',costume:'scarf'};
+  fillTrack(run);
+  const view=createView(canvas);view.draw(run,0,'playing',true,1/60,1);
+  return {row:run.objects.filter(o=>o.at===1250&&o.splitChoice).map(o=>({lane:o.lane,type:o.type})),...view.diagnostics()};
 }
 export function previewGates() {
   const canvas=document.createElement("canvas");
