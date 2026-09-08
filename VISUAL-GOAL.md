@@ -1,7 +1,52 @@
 # Visual audit implementation tracker
 
 Source: 2026-09-08 audit, 25 observations, baseline 043a063.
-Full goal remains active. Partial work is not completion.
+Final acceptance reconciled against published implementation 2a58d17.
+All 25 observations are resolved or explicitly dispositioned below. Historical
+slice notes retain the issues and intermediate gates found during the work;
+the final acceptance summary supersedes their pending/partial statuses.
+
+## Final acceptance summary
+
+- Items 1–5: grouped navigation, movement-first illustrated help, readable
+  upgrades with item-specific action names, actual collection previews, and
+  current-puppy-first passport. Four-size layouts and native 200% zoom pass.
+- Items 6–16: contact shadows and backed HUD, darker bones, clearer obstacle
+  vocabulary, simpler results/failure advice, landscape corner controls and
+  upper guidance, preserved pause, restrained regional scenery, eight distinct
+  pickup forms inspected in grayscale, and verified combined power lifecycles.
+- Items 17–21: articulated short movement poses, all 24 puppy/outfit pairs in
+  both preview angles, clear zipline attachment/catch cue and camera framing,
+  distinct mixed jump/slide rows, and explicit route meanings in the HUD.
+- Item 22: refined silver/charcoal Mochi remains intentionally stylized. The
+  close-up is not photorealistic; retain bounded strand/model complexity for
+  mobile readability and performance. This is an explicit art disposition.
+- Items 23–25: dark curbs, alternating wooden river-corner bands, all seven
+  terrain panels inspected, backed desktop companion text and less dominant
+  foreground scenery. Calm water is retained to avoid distracting reflections.
+- Final trusted-input runs cover 320x568, 390x844, 844x390 and 1440x900, including
+  all regions, both turns, zipline catch/landing and no HUD collisions. Final
+  live desktop run: 1,141m, three hearts, 52 trusted/zero synthetic key events.
+- Final renderer gate: three 4,500m runs, 54 framing checkpoints, 21 turns,
+  nine ziplines and 13 split rows. Peaks: 20 geometries, five textures,
+  121 objects and 204 draw calls, within existing limits.
+- Keyboard/focus and held Escape checks pass. Dedicated Chrome touch gestures
+  pass in portrait/landscape with verified coarse pointer and safe-area insets.
+  Actual 200% Chrome zoom passes camp, help, upgrades, passport, stacked HUD
+  and a 1,105m DOM-input run. Synthetic zoom inputs are not called trusted.
+- All 140 tests, lint, build and artifact checks pass. Published code 2a58d17
+  passed CI 34284090735 and Pages 34284090763; live assets byte-matched and
+  live landscape/desktop playthroughs passed. Original 2D source is unchanged
+  from the audit baseline; 0.72s jump, 0.58s base slide and 120Hz simulation remain.
+- Physical iOS/Android, sunlight/glare, low-end GPU, screen-reader usability
+  and human motion comfort require external devices/user sessions and are not
+  claimed verified. Grayscale review and named CSS contrast checks are not
+  universal recognition tests or blanket WCAG/canvas-contrast certification.
+
+Detailed numbered evidence and screenshots are retained locally in
+`../DogeQuest-1989-visual-audit-2026-09-08/final-acceptance/`, especially
+`ACCEPTANCE-MATRIX.md` and `FINAL-AUDIT.md`. External device/user validation is
+the explicit remaining validation boundary, not unimplemented audit work.
 
 | Audit item | State / next work |
 | --- | --- |
@@ -249,7 +294,7 @@ Full goal remains active. Partial work is not completion.
 - Small help keeps primary/home actions in view; first capture revealed the
   third move below the fold, prompting a compact-heading adjustment.
 
-## Required remaining gates
+## Historical gate list — superseded by final acceptance summary
 
 Fresh live publication verification for each slice; final full-motion and reduced-
 motion input runs, all outfits/puppies, stacked powers, complete terrain gallery,
