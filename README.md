@@ -54,6 +54,13 @@ button or press F for four seconds of magnet collection. Charge stays banked
 until used, cannot be spent over another magnet, and resets on retry. The burst
 does not recharge itself. It collects aerial bones only while riding a zipline.
 
+The clubhouse **Trail passport** tracks 21 permanent collectibles: three bond
+milestones for each of four dogs (10/40/100 clean clears plus correct turns),
+and bronze/silver/gold stamps for each region (3/10/25 clean regional courses).
+Progress banks at run end; each milestone awards upgrade points once. Old saves
+retain their existing progress and begin this new tracking at zero; no historical
+mastery is invented. No daily resets, new currency, or dog-specific stat advantage.
+
 ## Development
 
 Requires Node.js 20.19+ and npm.

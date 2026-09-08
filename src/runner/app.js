@@ -3,6 +3,7 @@ import { createView } from "./render.js";
 import { UPGRADES, levels, price, purchase } from "./progression.js";
 import { missionFor, missionProgress } from "./missions.js";
 import { bankRun } from "./rewards.js";
+import {masteryFrom,masteryCards} from './mastery.js';
 import {REGIONS,regionAt} from "./regions.js";
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
@@ -36,6 +37,7 @@ let saved = {
   challenges: 0,
   upgrades: levels(),
   collection: collectionFrom(),
+  mastery: masteryFrom(),
   preferences: preferencesFrom(null,reducedMotion),
 };
 try {
@@ -47,6 +49,7 @@ try {
       saved[key] = value[key];
   saved.upgrades = levels(value?.upgrades);
   saved.collection = collectionFrom(value?.collection);
+  saved.mastery = masteryFrom(value?.mastery);
   saved.preferences = preferencesFrom(value?.preferences,reducedMotion);
   saved.challenges = Math.floor(saved.challenges);
 } catch {
@@ -76,6 +79,37 @@ function kennel() {
   $("overlay-primary").textContent = "Run with your puppy ↗";
   const content = $("collection");
   content.replaceChildren();
+  const passport=document.createElement('details');
+  passport.id='trail-passport';
+  const cards=masteryCards(saved.mastery);
+  const collected=cards.reduce((sum,card)=>sum+card.tiers.filter(tier=>card.current>=tier.target).length,0);
+  const masteryHeading=document.createElement('summary');
+  masteryHeading.textContent=`Trail passport · ${collected}/21 collected`;
+  const masteryIntro=document.createElement('p');
+  masteryIntro.textContent='Build a bond with each puppy and collect bronze, silver and gold region stamps. Progress banks at run end. No daily resets; rewards use your existing upgrade points.';
+  passport.append(masteryHeading,masteryIntro);content.append(passport);
+  for(const card of cards) {
+    const section=document.createElement('section');
+    section.className='mastery-card';
+    const title=document.createElement('h4');title.textContent=card.name;
+    const badges=document.createElement('p');badges.className='mastery-badges';
+    for(const [index,tier] of card.tiers.entries()) {
+      const badge=document.createElement('span');
+      const earned=card.current>=tier.target;
+      badge.className=earned?'mastery-badge earned':'mastery-badge';
+      badge.dataset.tier=String(index);
+      badge.textContent=`${earned?'✓':'◇'} ${tier.name}`;
+      badge.title=`${tier.target} ${card.unit} · ${tier.points} pts${earned?' · collected':''}`;
+      badges.append(badge);
+    }
+    const next=card.tiers.find(tier=>card.current<tier.target);
+    const status=document.createElement('p');
+    status.textContent=next?`${card.current}/${next.target} ${card.unit} · next: +${next.points} pts`:`Complete collection · ${card.current} ${card.unit}`;
+    const meter=document.createElement('progress');
+    meter.max=next?.target||card.tiers.at(-1).target;meter.value=card.current;
+    meter.setAttribute('aria-label',`${card.name}: ${status.textContent}`);
+    section.append(title,badges,status,meter);passport.append(section);
+  }
   for (const [kind, catalog, title] of [["puppy", PUPPIES, "Meet the puppies"], ["costume", COSTUMES, "Dress for adventure"]]) {
     const heading = document.createElement("h3");
     heading.textContent = title;
@@ -200,6 +234,7 @@ function setState(next) {
 function start() {
   if(!graphicsReady){graphicsError();return;}
   run = createRun(Date.now(), saved.upgrades);
+  run.puppy = saved.collection.puppy;
   run.appearance = { ...saved.collection };
   currentMission = missionFor(saved.challenges);
   missionAnnounced = false;
@@ -275,6 +310,13 @@ function finish() {
   if (run.gifts) $("overlay-copy").textContent += ` ${run.gifts} gift boxes banked.`;
   if (run.ziplines) $("overlay-copy").textContent += ` ${run.ziplines} zipline ${run.ziplines === 1 ? "ride" : "rides"} completed (+${run.ziplines * 250} points included in your score).`;
   if (prizes.length) $("overlay-copy").textContent += ` Prizes earned: ${prizes.map(p => p.name).join(", ")}! Visit the clubhouse.`;
+  const mastery=receipt.mastery;
+  if(mastery.earned.length) $("overlay-copy").textContent += ` Passport rewards: ${mastery.earned.map(b=>b.name).join(', ')} (+${mastery.points} pts).`;
+  const dogCard=masteryCards(saved.mastery).find(card=>card.id===`dog-${run.puppy}`);
+  if(dogCard) {
+    const next=dogCard.tiers.find(tier=>dogCard.current<tier.target);
+    $("run-highlights").textContent += next ? ` · ${dogCard.name} bond: ${dogCard.current}/${next.target} toward ${next.name}` : ` · ${dogCard.name}: Trail legend`;
+  }
   persist();
   updateRecords();
   tone("finish");
@@ -329,7 +371,7 @@ const keyActions = {
 window.addEventListener("keydown", (event) => {
   if (event.key === "Tab" && !$("overlay").hidden) {
     const buttons = [
-      ...$("overlay").querySelectorAll("button:not(:disabled), a[href]"),
+      ...$("overlay").querySelectorAll("button:not(:disabled), a[href], summary"),
     ].filter((button) => !button.closest("[hidden]"));
     if (event.shiftKey && document.activeElement === buttons[0]) {
       event.preventDefault();

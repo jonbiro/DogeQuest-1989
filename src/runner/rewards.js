@@ -1,5 +1,6 @@
 import { claimMission } from './missions.js';
 import { awardPrizes } from './collection.js';
+import {bankMastery} from './mastery.js';
 
 // One completion transaction owns all record updates and earned currency.
 // Returning the original receipt also keeps repeated results renders stable.
@@ -14,6 +15,7 @@ export function bankRun(profile, run, mission) {
   profile.credits += run.score;
   const missionPoints = claimMission(profile, run, mission);
   const prizes = awardPrizes(profile, run);
-  run.receipt = {scorePoints: run.score, missionPoints, prizes, personalBest};
+  const mastery = bankMastery(profile, run);
+  run.receipt = {scorePoints: run.score, missionPoints, prizes, personalBest, mastery};
   return run.receipt;
 }

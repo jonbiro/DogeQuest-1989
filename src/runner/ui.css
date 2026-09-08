@@ -620,6 +620,15 @@ kbd {
   justify-content: center;
   touch-action: none;
 }
+.mastery-card { border: 1px solid #d5edb633; border-radius: 14px; padding: 12px; margin: 10px 0; background: #102a2840; }
+#trail-passport summary { cursor: pointer; padding: 14px 0; font-weight: 800; color: var(--lime); }
+.mastery-card h4 { margin: 0 0 8px; color: var(--lime); }
+.mastery-card progress { width: 100%; accent-color: #98f5e1; }
+.mastery-badges { display: flex; flex-wrap: wrap; gap: 5px; }
+.mastery-badge { padding: 4px 7px; border: 1px solid #d5edb633; border-radius: 20px; font-size: 10px; }
+.mastery-badge.earned { background: #b8844e; color: #102a28; border-color: #edc492; }
+.mastery-badge.earned[data-tier="1"] { background: #c4d6d9; border-color: #eaf4f5; }
+.mastery-badge.earned[data-tier="2"] { background: #f5d571; border-color: #fff0a0; }
 #controls button {
   height: 56px;
   min-width: 58px;

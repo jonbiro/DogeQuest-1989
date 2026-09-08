@@ -1,5 +1,33 @@
 # Runner verification
 
+## Persistent dog bonds and regional passport
+
+- Four dogs each have 10/40/100-clear-plus-turn milestones; three regions each
+  have 3/10/25-clean-course stamps. All 21 collectibles are persistent, with
+  one-time rewards in existing upgrade points. The chosen dog is captured at
+  run start, not inferred from the later equipped dog. No stat advantages,
+  daily requirements or additional currency. Old saves begin new counters at
+  zero without losing existing progress or inventing past achievements.
+- Build, artifact checks, lint and all 129 tests pass. Tests cover malformed
+  and old saves, isolated dog and regional progress, all tier crossings,
+  single payment, unfinished-run rejection, invalid dog IDs, stable banking
+  receipts and save roundtrips.
+- Local browser used a documented near-threshold fixture: Mochi bond 9,
+  regional counts 2/9/24, 123 credits and magnet upgrade 1. A real input-driven
+  60-second 390x844 Mochi run reached 1,821m, three clean turns, courses 2/1/1,
+  all regions, zipline catch/landing, three hearts, zero HUD overlaps or browser
+  errors. 3,602 frames; mean 16.66ms, p95 16.70ms (desktop emulation).
+- Continuing without controls ended naturally at 2,235m: 23 clears + 3 turns
+  increased Mochi to 35; other dogs remained zero. Regions became 4/10/25.
+  Four threshold crossings awarded exactly 1,850 points. Final credits 11,938
+  equal prior 123 + score 8,915 + mission 250 + existing prizes 800 + mastery
+  1,850. Retry started immediately at zero Fetch charge. Reload preserved all
+  counters and the same balance without replaying any milestone reward.
+- Final badge UI was inspected at 320x568: seven earned badges, no horizontal
+  overflow, scrollable cards and reachable persistent actions. Passport is
+  collapsible so dog/outfit selection remains near the top. This section is
+  slice evidence, not completion of the entire expanded-goal audit.
+
 ## Player-controlled Fetch ability
 
 - Fetch earns 2% per hand-collected bone, 12% per clean obstacle and 20% per

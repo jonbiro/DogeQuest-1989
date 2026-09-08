@@ -29,8 +29,10 @@ The expanded goal now includes implemented regional obstacle courses and their
 pressure/recovery pacing: jungle jump/duck timing, canyon gap crossings, and glade
 lane slaloms, with clean-course bonuses. Fetch adds a player-controlled charged
 magnet burst, earned from manual bone collection, clean clears and correct turns.
-Persistent dog/region mastery remains outstanding; this is not a full-goal
-completion claim.
+Persistent dog/region mastery now banks four dogs' bond milestones and three
+regions' bronze/silver/gold stamps, with 21 permanent collectibles and one-time
+upgrade-point rewards. The end-to-end completion audit of the expanded objective
+is still outstanding; this is not a full-goal completion claim.
 
 The earlier requested browser-game scope was delivered at baseline `52b02a1`.
 
