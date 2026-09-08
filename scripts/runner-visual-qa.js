@@ -357,8 +357,10 @@ export function keyboardCheck() {
   press("Escape");
   for(let i=0;i<10;i++)press("Escape",true);
   if(state()!=="paused")throw new Error("Held Escape resumed a paused game");
+  if(!document.querySelector('#hud').inert)throw new Error('Paused background HUD remains exposed');
   press("Escape");
   if(state()!=="playing"||document.activeElement.id!=="scene")throw new Error("Resume did not focus the trail");
+  if(document.querySelector('#hud').inert)throw new Error('Resumed HUD remains inert');
   for(let i=0;i<10;i++)press("Escape",true);
   if(state()!=="playing")throw new Error("Held Escape paused a resumed game");
   press("Escape");
@@ -373,6 +375,23 @@ export function dialogLayoutCheck() {
     return {id:button.id,top:rect.top,bottom:rect.bottom};
   });
   return {viewport:[window.innerWidth,window.innerHeight],scrollable:content.scrollHeight>content.clientHeight,actions};
+}
+export function menuLayoutCheck() {
+  if(document.querySelector('#game').dataset.state!=='menu')throw Error('Open camp before checking its layout');
+  const controls=['play','help','shop','kennel','audio','motion'].map(id=>{
+    const button=document.getElementById(id),rect=button.getBoundingClientRect();
+    if(rect.width<44||rect.height<44||rect.left<0||rect.right>window.innerWidth||rect.top<0||rect.bottom>window.innerHeight)throw Error(`Camp target out of bounds or too small: ${id}`);
+    if(!button.contains(document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2)))throw Error(`Covered camp target: ${id}`);
+    return {id,width:rect.width,height:rect.height};
+  });
+  return {viewport:[window.innerWidth,window.innerHeight],controls};
+}
+export function passportLayoutCheck() {
+  const passport=document.querySelector('#trail-passport');
+  const current=passport?.querySelector('[data-current="true"]');
+  if(!current||passport.querySelectorAll('.mastery-card').length!==7||passport.querySelectorAll('.mastery-badge').length!==21)throw Error('Missing passport entries');
+  if(passport.firstElementChild!==current||passport.querySelector('.other-passport-cards').open)throw Error('Passport should prioritize the current puppy');
+  return {cards:7,badges:21,current:current.querySelector('h3').textContent,...dialogLayoutCheck()};
 }
 export function instructionLayoutCheck() {
   if(document.querySelector('#game').dataset.state!=='help')throw new Error('Open help before checking illustrations');

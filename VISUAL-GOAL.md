@@ -5,33 +5,66 @@ Full goal remains active. Partial work is not completion.
 
 | Audit item | State / next work |
 | --- | --- |
-| 1 Mobile camp | Partial: floating puppy card removed on phones; selected puppy named in Run action; challenge no longer covered at 390x844; secondary text hierarchy remains |
+| 1 Mobile camp | Implemented grouped two-column actions below the dog, selected puppy named in Run action, restored compact challenge, removed phone tagline; four-size and safe-area checks pass |
 | 2 Help | Implemented: actual obstacle illustrations for three basic moves, advanced rules collapsed; all illustrations load and actions remain reachable at four target sizes |
 | 3 Upgrades | Implemented name/benefit/level hierarchy, level meters and readable disabled prices; final accessibility checks remain |
 | 4 Clubhouse | Implemented separate category navigation and cached model previews; browsing preserves saved profile |
-| 5 Passport | Partial: separate Passport category, current dog first; richer badge presentation remains |
+| 5 Passport | Implemented current puppy and next milestone first, other six cards collapsed, larger numbered/checked badges with explicit earned state; all seven cards and 21 badges retained |
 | 6 Portrait gameplay | Partial: larger score/action text; dog contrast pending |
 | 7 Bridge approach | Partial: continuous cream bone silhouette with dark sides, darker lane inlays, consistent overhead clearance edges and reduced branch foliage; final motion/non-color checks remain |
 | 8 Results | Implemented: one next puppy milestone, full rewards/stats behind an expandable section; score and failure advice stay prominent |
 | 9 Small results | Implemented: 320x568 screenshot confirms score, lesson, next milestone and retry visible; expanded rewards retain fixed actions |
-| 10 Small camp | Pending |
-| 11 Landscape camp | Pending |
-| 12 Landscape gameplay | Implemented corner controls and side guidance; camera center stays unobscured in inspected 844x390 screenshot; physical/coarse-pointer verification pending |
-| 13 Pause | Preserve; regression checks remain |
+| 10 Small camp | Implemented grouped 44px-or-larger controls and visible challenge instead of secondary records; 320x568 screenshot inspected |
+| 11 Landscape camp | Implemented grouped left-hand actions and clear right-hand dog display; 844x390 screenshot with 44px side safe areas inspected |
+| 12 Landscape gameplay | Implemented corner controls and side guidance; stacked HUD and trusted coarse-pointer gestures pass at 844x390 with side/bottom safe areas; physical-phone testing remains external |
+| 13 Pause | Preserved; keyboard focus/held-Escape and trusted touch pause pass; background HUD now inert while modal is open |
 | 14 Regions | Partial: restrained scenery scale/setback and region-resistant curb contrast; complete recognition/accessibility checks remain |
 | 15 Pickups | Partial: pointed shield, faceted gem, dark tennis seams and dark-edged continuous bone silhouette implemented; color-independent testing remains |
 | 16 Powers | Partial: compact darker magnet rings, stronger shield bubble and speed streaks; full stacked-HUD / motion checks remain |
 | 17 Movement | Implemented Mochi-specific lowered torso and opposing front/rear leg folds, preserving short slide timing; six outfits checked in both motion modes |
 | 18 Outfits | Implemented front and rear/three-quarter preview toggle; 24 combinations in each angle inspected |
-| 19 Zipline | Partial: dark cable/tether and contrasting grip; approach catch-zone work remains |
+| 19 Zipline | Implemented dark cable/tether, three contrasting lane grips and explicit Jump / Catch the zipline approach sign; catch timing and aerial reward rules unchanged |
 | 20 Split rows | Implemented dark underside edges, light endpoint markers and stronger uprights across gate/arch/branch vocabulary; final motion checks remain |
 | 21 Route choices | Implemented: Scenic / Fewer obstacles and Challenge / More points signs; final motion and non-color recognition checks remain |
 | 22 Mochi | Partial: neutral charcoal palette, quieter undercoat, finer strands, recessed brows and narrower overlapping cheeks; model remains stylized/photo-inspired, not a photorealistic replica |
 | 23 Turns/hills | Partial: darker curbs and alternating river-corner plank bands; all seven terrain panels now captured and inspected, including later river; water polish remains |
-| 24 Desktop camp | Partial: dark name/description backing and larger companion label verified at 1440x900; secondary hierarchy remains |
+| 24 Desktop camp | Implemented dark name/description backing, larger companion label and grouped secondary controls; 1440x900 screenshot inspected |
 | 25 Desktop run | Partial: removed control fading, reduced nearby scenery scale and increased setback; final motion coverage remains |
 
 ## Current evidence
+
+- Compact-UI/zipline slice: camp targets, three decoded help illustrations,
+  current-puppy-first passport (seven cards / 21 badges), fixed dialog actions
+  and stacked HUD pass at 320x568, 390x844, 844x390 and 1440x900. Fresh small,
+  desktop and safe-area camp screenshots inspected. Small passport exposes the
+  current puppy and next milestone above the fixed actions; remaining badges
+  are deliberately scrollable. Route-label atlas UVs rechecked visually for
+  Scenic, Challenge and the new zipline sign.
+- Added local-only `scripts/runner-device-qa.mjs`: actual browser touch input,
+  verified `(pointer:coarse)` and `maxTouchPoints:1`, and browser safe-area
+  environment overrides. Portrait 390x844 with top44/bottom34 and landscape
+  844x390 with left44/right44/bottom21 both pass right/left/jump/slide/pause,
+  camp hit targets and stacked-HUD checks. This is desktop browser emulation,
+  not physical iOS/Android evidence. The CLI device preset alone was found not
+  to enable coarse-pointer input and is not accepted as touch proof.
+- Automated axe 4.12.1: compact passport and pause have zero violations and
+  zero incomplete rules. Camp has zero violations but incomplete contrast
+  assessment over gradients/scenery; this is not a WCAG conformance claim.
+  Corrected the heart display's accessible role and made background HUD inert
+  during modals; keyboard regression checks both pause and resume exposure.
+- Build, distribution checks, lint and all 136 tests pass. Three 4,500m
+  renderer runs retain three hearts, 21 turns, nine completed ziplines and 13
+  split rows over 54 rendered checkpoints. Peak resources: 20 geometries,
+  five textures, 121 objects, 204 draw calls. The one shared sign atlas is now
+  1024x512; no per-sign textures or physics/save changes were introduced.
+- Native 200% browser zoom remains unverified: shortcut and test-extension
+  attempts did not change the measured browser zoom. Native UI access reported
+  the Mac locked; user was asked to unlock it. Resizing, DPR and pinch scaling
+  are not substituted for native browser zoom. Other verification continues.
+- Fresh 844x390 full-motion browser input run reached 1,105m with all three
+  hearts, both turns, all three regions, a zipline catch/landing and no reported
+  HUD collisions. Desktop timing sample: mean 16.66ms / p95 16.70ms; this is
+  one automated desktop run, not a low-end/mobile performance certification.
 
 - Mochi slice: compared fresh close-ups with the previous model. Rejected opaque
   clumps, ring meshes and hard alpha-cut strands because previews looked like

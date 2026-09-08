@@ -68,7 +68,7 @@ function updateRecords() {
     `${Math.floor(saved.best).toLocaleString()}<span> pts</span>`;
   $("bank").textContent = Math.floor(saved.bones).toLocaleString();
   $("shop").textContent =
-    `Paw upgrades · ${Math.floor(saved.credits).toLocaleString()} pts ↗`;
+    `Upgrades · ${Math.floor(saved.credits).toLocaleString()} pts ↗`;
   const mission = missionFor(saved.challenges);
   $("mission-preview").textContent =
     `${mission.title}: ${mission.target} ${mission.unit} in one run · +${mission.reward} pts`;
@@ -93,28 +93,36 @@ function kennel() {
     button.dataset.category=id;categories.append(button);
   }
   content.append(categories);
-  const passport=document.createElement('details');
+  const passport=document.createElement('section');
   passport.id='trail-passport';
   const cards=masteryCards(saved.mastery);
   cards.sort((a,b)=>Number(b.id===`dog-${saved.collection.puppy}`)-Number(a.id===`dog-${saved.collection.puppy}`));
   const collected=cards.reduce((sum,card)=>sum+card.tiers.filter(tier=>card.current>=tier.target).length,0);
-  const masteryHeading=document.createElement('summary');
-  masteryHeading.textContent=`Trail passport · ${collected}/21 collected`;
   const masteryIntro=document.createElement('p');
-  masteryIntro.textContent='Build a bond with each puppy and collect bronze, silver and gold region stamps. Progress banks at run end. No daily resets; rewards use your existing upgrade points.';
-  passport.append(masteryHeading,masteryIntro);
-  if(clubhouseCategory==='passport'){passport.open=true;content.append(passport);}
+  masteryIntro.textContent='Your next milestone comes first. Finish runs to bank progress and earn permanent stamps and upgrade points.';
+  const otherCards=document.createElement('details');otherCards.className='other-passport-cards';
+  const otherHeading=document.createElement('summary');otherHeading.textContent='Other puppies and regions';otherCards.append(otherHeading);
+  if(clubhouseCategory==='passport'){
+    $("overlay-title").textContent='Trail passport.';
+    $("overlay-copy").textContent=`${collected}/21 stamps collected`;
+    content.append(passport);
+  }
   for(const card of cards) {
     const section=document.createElement('section');
     section.className='mastery-card';
-    const title=document.createElement('h4');title.textContent=card.name;
+    const isCurrent=card.id===`dog-${saved.collection.puppy}`;
+    section.dataset.current=String(isCurrent);
+    const title=document.createElement('h3');title.textContent=`${card.name}${isCurrent?' · Your puppy':''}`;
     const badges=document.createElement('p');badges.className='mastery-badges';
     for(const [index,tier] of card.tiers.entries()) {
       const badge=document.createElement('span');
       const earned=card.current>=tier.target;
       badge.className=earned?'mastery-badge earned':'mastery-badge';
       badge.dataset.tier=String(index);
-      badge.textContent=`${earned?'✓':'◇'} ${tier.name}`;
+      const icon=document.createElement('b');icon.textContent=earned?'✓':['I','II','III'][index];icon.setAttribute('aria-hidden','true');
+      const label=document.createElement('span');label.textContent=tier.name;
+      const status=document.createElement('small');status.textContent=earned?'Collected':'Not yet earned';
+      badge.append(icon,label,status);
       badge.title=`${tier.target} ${card.unit} · ${tier.points} pts${earned?' · collected':''}`;
       badges.append(badge);
     }
@@ -124,8 +132,10 @@ function kennel() {
     const meter=document.createElement('progress');
     meter.max=next?.target||card.tiers.at(-1).target;meter.value=card.current;
     meter.setAttribute('aria-label',`${card.name}: ${status.textContent}`);
-    section.append(title,badges,status,meter);passport.append(section);
+    section.append(title,status,meter,badges);
+    (isCurrent?passport:otherCards).append(section);
   }
+  passport.append(otherCards,masteryIntro);
   for (const [kind, catalog, title] of [["puppy", PUPPIES, "Meet the puppies"], ["costume", COSTUMES, "Dress for adventure"]]) {
     if(clubhouseCategory!==kind)continue;
     const heading = document.createElement("h3");
@@ -260,6 +270,7 @@ function setState(next) {
   const modal = !$("overlay").hidden;
   $("scene").inert = state !== "playing";
   document.querySelector("header").inert = modal;
+  $("hud").inert = modal;
   if (modal) $("overlay-primary").focus();
   accumulator = 0;
   pointer = null;

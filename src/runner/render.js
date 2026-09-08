@@ -595,26 +595,28 @@ export function createView(canvas) {
     for(const x of [-.8,0,.8]) box(templates.gap,"#5d422c",x,.25,z,.3,.04,.24);
   }
   const routeLabels=document.createElement('canvas');
-  routeLabels.width=1024;routeLabels.height=256;
+  routeLabels.width=1024;routeLabels.height=512;
   const routeText=routeLabels.getContext('2d');
-  for(const [index,title,subtitle,color] of [[0,'SCENIC','Fewer obstacles','#a7e59e'],[1,'CHALLENGE','More points','#f0b762']]) {
-    const x=index*512;
-    routeText.fillStyle=color;routeText.fillRect(x,0,512,256);
+  for(const [index,title,subtitle,color] of [[0,'SCENIC','Fewer obstacles','#a7e59e'],[1,'CHALLENGE','More points','#f0b762'],[2,'↑ JUMP','Catch the zipline','#a2ffde']]) {
+    const x=(index%2)*512,y=Math.floor(index/2)*256;
+    routeText.fillStyle=color;routeText.fillRect(x,y,512,256);
     routeText.fillStyle='#102a28';routeText.textAlign='center';
-    routeText.font='bold 58px Arial';routeText.fillText(title,x+256,110);
-    routeText.font='36px Arial';routeText.fillText(subtitle,x+256,174);
+    routeText.font='bold 58px Arial';routeText.fillText(title,x+256,y+110);
+    routeText.font='36px Arial';routeText.fillText(subtitle,x+256,y+174);
   }
   const routeLabelTexture=new THREE.CanvasTexture(routeLabels);
   routeLabelTexture.colorSpace=THREE.SRGBColorSpace;
   const routeLabelMaterial=new THREE.MeshBasicMaterial({map:routeLabelTexture,toneMapped:false});
+  function routeLabel(width,height,index) {
+    const geometry=new THREE.PlaneGeometry(width,height),uv=geometry.attributes.uv;
+    for(let i=0;i<uv.count;i++)uv.setXY(i,(uv.getX(i)+index%2)/2,(uv.getY(i)+1-Math.floor(index/2))/2);
+    return new THREE.Mesh(geometry,routeLabelMaterial);
+  }
   for(const [index,type,color] of [[0,"choice-left","#a7e59e"],[1,"choice-right","#f0b762"]]) {
     const gate=new THREE.Group();templates[type]=gate;
     for(const x of [-1,1])box(gate,"#66795f",x,1.8,0,.12,3.6,.18);
     box(gate,color,0,3.3,0,2.1,1.05,.18);
-    const labelGeometry=new THREE.PlaneGeometry(2.05,1);
-    const uv=labelGeometry.attributes.uv;
-    for(let i=0;i<uv.count;i++)uv.setX(i,(uv.getX(i)+index)/2);
-    const label=new THREE.Mesh(labelGeometry,routeLabelMaterial);label.position.set(0,3.3,.105);gate.add(label);
+    const label=routeLabel(2.05,1,index);label.position.set(0,3.3,.105);gate.add(label);
   }
   // Roadside chevrons identify a deliberate corner without covering the trail.
   for (const direction of ['left', 'right']) {
@@ -639,12 +641,12 @@ export function createView(canvas) {
     }
     box(station, "#cf9e61", 0, 6.5, 0, 9.5, .4, .6);
     if (type === "zipline-start") {
-      box(station, "#e7c978", 0, 4.75, 0, .08, 3.5, .08);
-      box(station, "#8bf0da", 0, 3, 0, 6.5, .22, .22);
-      // Paw badge marks the optional aerial route, with a broad catch bar.
-      box(station, "#225c60", 0, 5.6, .4, 2, 1.1, .12);
-      ball(station, "#a6f0d7", 0, 5.5, .5, .28, .23, .07);
-      for (const x of [-.3, 0, .3]) ball(station, "#a6f0d7", x, 5.85, .5, .1, .12, .07);
+      box(station, "#25494d", 0, 4.75, 0, .08, 3.5, .08);
+      box(station, "#185965", 0, 3, 0, 6.5, .24, .24);
+      // Three visible grips show that jumping can catch from any lane.
+      for(const x of LANES)box(station,"#a2ffde",x,3,.03,.6,.3,.3);
+      box(station, "#225c60", 0, 5.4, .4, 3.6, 1.8, .12);
+      const label=routeLabel(3.5,1.7,2);label.position.set(0,5.4,.47);station.add(label);
     }
   }
   const zipHandle = new THREE.Group(); scene.add(zipHandle);

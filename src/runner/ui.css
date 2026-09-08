@@ -5,6 +5,10 @@
   color-scheme: dark;
   --lime: #dcf78c;
   --muted: #b6cbc0;
+  --safe-top: env(safe-area-inset-top,0px);
+  --safe-right: env(safe-area-inset-right,0px);
+  --safe-bottom: env(safe-area-inset-bottom,0px);
+  --safe-left: env(safe-area-inset-left,0px);
 }
 #run-score {
   display: block;
@@ -24,7 +28,7 @@
 #mission-hud {
   display: none;
   position: absolute;
-  bottom: calc(92px + env(safe-area-inset-bottom));
+  bottom: calc(92px + var(--safe-bottom));
   left: 5%;
   right: 5%;
   z-index: 2;
@@ -176,6 +180,9 @@ header {
   border-bottom: 1px solid #8ca49b;
   padding-bottom: 5px;
   margin-left: 12px;
+  min-height:44px;
+  display:inline-flex;
+  align-items:center;
 }
 .menu {
   position: absolute;
@@ -216,12 +223,14 @@ h1 em {
   color: #c2d3c8;
 }
 .start-actions {
-  flex-wrap: wrap;
-  display: flex;
-  align-items: center;
-  gap: 22px;
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  align-items: stretch;
+  gap: 10px;
+  max-width: 480px;
   margin-top: 28px;
 }
+.start-actions .text-button { background:#102a2878; border-radius:12px; padding:10px 12px; min-height:44px; }
 #shop {
   order: 3;
   color: var(--lime);
@@ -323,7 +332,7 @@ h1 em {
 }
 .menu-stats span {
   display: block;
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: 1.5px;
   color: var(--muted);
 }
@@ -421,7 +430,7 @@ footer b {
   color: var(--lime);
 }
 footer .text-button {
-  font-size: 10px;
+  font-size: 12px;
   padding: 0;
 }
 #hud {
@@ -658,7 +667,7 @@ kbd {
 }
 #controls {
   position: absolute;
-  bottom: max(22px, env(safe-area-inset-bottom));
+  bottom: max(22px, calc(var(--safe-bottom) + 12px));
   left: 5%;
   right: 5%;
   display: flex;
@@ -669,10 +678,15 @@ kbd {
 }
 .mastery-card { border: 1px solid #d5edb633; border-radius: 14px; padding: 12px; margin: 10px 0; background: #102a2840; }
 #trail-passport summary { cursor: pointer; padding: 14px 0; font-weight: 800; color: var(--lime); }
-.mastery-card h4 { margin: 0 0 8px; color: var(--lime); }
+.mastery-card h3 { margin: 0 0 8px; font-size:15px; color: var(--lime); }
 .mastery-card progress { width: 100%; accent-color: #98f5e1; }
-.mastery-badges { display: flex; flex-wrap: wrap; gap: 5px; }
-.mastery-badge { padding: 4px 7px; border: 1px solid #d5edb633; border-radius: 20px; font-size: 10px; }
+.mastery-badges { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+.mastery-badge { padding:8px 4px; border:1px solid #d5edb666; border-radius:10px; font-size:12px; text-align:center; overflow-wrap:anywhere; }
+.mastery-badge b { display:grid; place-items:center; width:26px; height:26px; border:1px solid currentColor; border-radius:50%; margin:0 auto 6px; }
+.mastery-badge span,.mastery-badge small { display:block; }
+.mastery-badge small { margin-top:5px; font-size:11px; }
+.mastery-card > p:not(.mastery-badges) { font-size:13px; line-height:1.5; }
+.other-passport-cards { border-top:1px solid #d5edb633; margin-top:12px; }
 .mastery-badge.earned { background: #b8844e; color: #102a28; border-color: #edc492; }
 .mastery-badge.earned[data-tier="1"] { background: #c4d6d9; border-color: #eaf4f5; }
 .mastery-badge.earned[data-tier="2"] { background: #f5d571; border-color: #fff0a0; }
@@ -762,6 +776,8 @@ kbd {
   }
   header {
     padding: 20px 22px;
+    --header-top:20px;
+    --header-side:22px;
   }
   .wordmark {
     font-size: 17px;
@@ -778,8 +794,8 @@ kbd {
     margin-left: 0;
   }
   .icon-button {
-    height: 38px;
-    width: 38px;
+    height: 44px;
+    width: 44px;
   }
   .menu {
     left: 7%;
@@ -834,7 +850,7 @@ kbd {
     font-size: 10px;
   }
   footer {
-    padding: 12px 7% calc(12px + env(safe-area-inset-bottom));
+    padding: 12px 7% calc(12px + var(--safe-bottom));
     font-size: 7px;
     gap: 8px;
   }
@@ -883,8 +899,23 @@ kbd {
   h1 { font-size:min(52px,16vw); margin:12px 0; }
   .intro, #buddy { display:none; }
   .start-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:110px; }
-  .start-actions button { padding:8px; font-size:11px; }
-  .menu-stats { margin-top:16px; }
+  .start-actions button { padding:8px; font-size:12px; }
+  .menu-stats { display:none; }
+  .trail-tag { display:flex; margin-top:12px; padding:10px; border-radius:12px; background:#102a28d9; font-size:11px; }
+  .trail-tag i,.trail-tag b { display:none; }
+  .trail-tag span { font-size:11px; line-height:1.4; margin-top:4px; }
+}
+@media (max-width:700px) and (min-height:701px) {
+  .start-actions { position:fixed; left:7%; right:7%; bottom:calc(15svh + var(--safe-bottom)); max-width:none; margin:0; gap:8px; }
+  .start-actions button { padding:12px 8px; font-size:12px; }
+  .menu-stats { display:none; }
+  .trail-tag { position:fixed; left:7%; right:7%; bottom:calc(5.5svh + var(--safe-bottom)); margin:0; padding:10px; border-radius:12px; background:#102a28d9; font-size:11px; }
+  .trail-tag i,.trail-tag b { display:none; }
+  .trail-tag span { font-size:11px; line-height:1.4; margin-top:4px; }
+}
+@media (max-width:700px) {
+  footer > span { display:none; }
+  footer { justify-content:flex-end; }
 }
 @media (max-height: 520px) {
   #game {
@@ -892,10 +923,13 @@ kbd {
   }
   header {
     padding: 12px 4%;
+    --header-top:12px;
+    --header-side:4%;
   }
   .menu {
     top: 20%;
     left: 6%;
+    max-width: 340px;
   }
   h1 {
     font-size: 48px;
@@ -987,15 +1021,15 @@ kbd {
   #hearts { font-size: 15px; }
   #mission-hud {
     left: auto;
-    right: max(5%, env(safe-area-inset-right));
+    right: max(5%, var(--safe-right));
     width: min(32vw, 280px);
-    bottom: calc(88px + env(safe-area-inset-bottom));
+    bottom: calc(88px + var(--safe-bottom));
     padding: 7px 10px;
     font-size: 11px;
   }
   #controls {
-    left: max(5%, env(safe-area-inset-left));
-    right: max(5%, env(safe-area-inset-right));
+    left: max(5%, var(--safe-left));
+    right: max(5%, var(--safe-right));
     display: grid;
     grid-template-columns: 58px 58px 1fr 58px 58px;
   }
@@ -1004,4 +1038,13 @@ kbd {
   #controls .jump { grid-column: 5; }
   #route-choice { font-size: 10px; line-height: 1.2; }
   #mission-progress { margin-top: 4px; }
+}
+header {
+  padding-top:calc(var(--header-top,32px) + var(--safe-top));
+  padding-left:max(var(--header-side,4.5%),calc(var(--safe-left) + 12px));
+  padding-right:max(var(--header-side,4.5%),calc(var(--safe-right) + 12px));
+}
+#hud { margin-top:var(--safe-top); }
+@media(max-height:520px) {
+  .menu { left:max(6%,calc(var(--safe-left) + 12px)); }
 }

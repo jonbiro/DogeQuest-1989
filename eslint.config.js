@@ -13,6 +13,7 @@ const browserGlobals = {
 };
 
 const nodeGlobals = {
+  WebSocket: 'readonly',
   Buffer: 'readonly',
   clearTimeout: 'readonly',
   console: 'readonly',
@@ -31,7 +32,7 @@ export default [
   },
   js.configs.recommended,
   {
-    files: ['**/*.js'],
+    files: ['**/*.{js,mjs}'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
