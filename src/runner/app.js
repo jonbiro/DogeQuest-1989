@@ -248,6 +248,7 @@ function start() {
   tone("yip");
 }
 function showOverlay(kind) {
+  $("overlay").dataset.kind = kind;
   $("graphics-recovery").hidden = kind !== "graphics-error";
   $("home").hidden = kind === "graphics-error";
   $("collection").hidden = kind !== "kennel";

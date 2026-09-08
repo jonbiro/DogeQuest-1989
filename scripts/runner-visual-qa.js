@@ -356,6 +356,17 @@ export function hudStressCheck() {
       if(a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top)issues.push(`${first} overlaps ${second}`);
     }
     for(const id of ["#power","#cue","#mission-hud","#controls"]){const r=rect(id);if(r.top<0||r.bottom>window.innerHeight||r.left<0||r.right>window.innerWidth)issues.push(`${id} outside viewport`);}
+    const buttons=[...document.querySelectorAll('#controls button')];
+    const landscape=window.innerWidth>window.innerHeight&&window.innerHeight<=520;
+    for(const button of buttons){
+      const r=button.getBoundingClientRect();
+      if(r.left<0||r.right>window.innerWidth||r.top<0||r.bottom>window.innerHeight)issues.push(`${button.textContent} outside viewport`);
+      if(r.width<44||r.height<44)issues.push(`${button.textContent} target too small`);
+      if(landscape&&r.left<window.innerWidth*.6&&r.right>window.innerWidth*.4)issues.push(`${button.textContent} covers puppy corridor`);
+      const guidance=rect('#mission-hud');
+      if(r.left<guidance.right&&r.right>guidance.left&&r.top<guidance.bottom&&r.bottom>guidance.top)issues.push(`${button.textContent} overlaps guidance`);
+    }
+    if(landscape){const r=rect('#mission-hud');if(r.left<window.innerWidth*.6&&r.right>window.innerWidth*.4)issues.push('Guidance covers puppy corridor');}
     if(rect('#cue').top<window.innerHeight*.65)issues.push('Cue covers the center of the trail');
     return {viewport:[window.innerWidth,window.innerHeight],issues,powerBottom:rect("#power").bottom,cueTop:rect("#cue").top};
   } finally {

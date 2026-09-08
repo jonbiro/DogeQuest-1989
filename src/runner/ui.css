@@ -8,7 +8,7 @@
 }
 #run-score {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0;
   margin-top: 4px;
   color: #ecffdc;
@@ -603,8 +603,20 @@ footer .text-button {
 #instructions span {
   display: block;
   color: var(--lime);
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 7px;
+}
+#instructions summary { padding: 14px 0; color: var(--lime); cursor: pointer; font-weight: bold; }
+.basic-moves strong { font-size: 15px; }
+@media (max-height: 700px) {
+  #overlay[data-kind="ended"] .eyebrow { display: none; }
+  #overlay[data-kind="ended"] h2 { font-size: 24px; margin: 4px 0 8px; }
+  #overlay[data-kind="ended"] #results { margin: 12px 0; }
+  #overlay[data-kind="ended"] #run-lesson { margin: 8px 0; padding: 8px; }
+  #overlay[data-kind="help"] .eyebrow { display: none; }
+  #overlay[data-kind="help"] h2 { font-size: 24px; margin: 4px 0 8px; }
+  #overlay[data-kind="help"] #overlay-copy { margin: 6px 0; }
+  #overlay[data-kind="help"] .basic-moves p { margin: 8px 0; padding-bottom: 8px; line-height: 1.4; }
 }
 kbd {
   display: inline-block;
@@ -654,21 +666,21 @@ kbd {
   width: 64px;
   height: 56px;
   padding: 0 4px;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   border-radius: 14px;
 }
-#controls #fetch:disabled { opacity: .75; }
+#controls #fetch:disabled { opacity: 1; color: #c9d6cd; }
 #controls #fetch.ready { background: #98f5e1; color: #123b32; border-color: #c5fff0; }
 @media (max-width: 380px) {
   #controls { gap: 7px; }
   #controls button, #controls #fetch { min-width: 48px; }
 }
 #controls small {
-  font-size: 8px;
+  font-size: 10px;
   display: block;
   font-weight: bold;
-  letter-spacing: 1px;
+  letter-spacing: .3px;
 }
 #controls .jump {
   background: var(--lime);
@@ -712,7 +724,7 @@ kbd {
   #controls {
     left: 38%;
     right: 38%;
-    opacity: 0.7;
+    opacity: 1;
   }
 }
 @media (max-width: 700px) {
@@ -945,7 +957,23 @@ kbd {
   .run-stats { flex-direction: row; align-items: center; gap: 8px; }
   .bones { padding: 6px 10px; font-size: 14px; }
   #hearts { font-size: 15px; }
-  #mission-hud { bottom: 84px; padding: 5px 8px; font-size: 9px; }
+  #mission-hud {
+    left: auto;
+    right: max(5%, env(safe-area-inset-right));
+    width: min(32vw, 280px);
+    bottom: calc(88px + env(safe-area-inset-bottom));
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+  #controls {
+    left: max(5%, env(safe-area-inset-left));
+    right: max(5%, env(safe-area-inset-right));
+    display: grid;
+    grid-template-columns: 58px 58px 1fr 58px 58px;
+  }
+  #controls #fetch { position: absolute; left: 0; bottom: 68px; }
+  #controls button[data-action="slide"] { grid-column: 4; margin-left: 0; }
+  #controls .jump { grid-column: 5; }
   #route-choice { font-size: 10px; line-height: 1.2; }
   #mission-progress { margin-top: 4px; }
 }
