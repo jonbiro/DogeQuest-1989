@@ -16,7 +16,14 @@ export function actionCue(run) {
     : turn.direction === 'left' ? '← TURN LEFT' : '→ TURN RIGHT';
   const weave = courseCue(run);
   if (weave) return weave;
-  if (run.zipline) return '';
+  if (run.zipline) {
+    const bone = run.objects.filter(object => object.airborne && ['bone','gift'].includes(object.type) &&
+      (object.type === 'gift' || run.magnet === 0) &&
+      !object.used && !object.pull && object.at > run.distance &&
+      object.at-run.distance < run.speed*.8).sort((a,b)=>a.at-b.at)[0];
+    return !bone || bone.lane === run.lane ? ''
+      : `${bone.lane < run.lane ? '←' : '→'} ${bone.type === 'gift' ? 'GIFT' : 'BONES'} ${bone.lane < run.lane ? 'LEFT' : 'RIGHT'}`;
+  }
   const cable = run.objects.find(object => object.type === 'zipline-start' && !object.caught &&
     object.at > run.distance && object.at - run.distance < run.speed * 1.6);
   if (cable) {

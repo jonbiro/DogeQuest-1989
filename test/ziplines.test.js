@@ -2,6 +2,27 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {createRun, fillTrack, step, act, LANES, HAZARDS} from "../src/runner/world.js";
 import {ziplineAt, ZIPLINE_HEIGHT} from "../src/runner/ziplines.js";
+import {actionCue} from '../src/runner/guidance.js';
+
+test('following zipline cues collects all eighteen bones and the gift without a magnet',()=>{
+  for(const start of [650,2050]) {
+    const run=approach({start});
+    let nextInput=0;
+    while(run.distance<start+140) {
+      if(run.time>=nextInput) {
+        const cue=actionCue(run);
+        if(cue==='↑ JUMP · ZIPLINE') act(run,'jump');
+        else if(/(BONES|GIFT) LEFT/.test(cue)) act(run,'left');
+        else if(/(BONES|GIFT) RIGHT/.test(cue)) act(run,'right');
+        nextInput=run.time+.15;
+      }
+      step(run,1/120);
+    }
+    assert.equal(run.bones,18,`all bones at ${start}`);
+    assert.equal(run.gifts,1,`gift at ${start}`);
+    assert.equal(run.ziplines,1);
+  }
+});
 
 function approach({start = 650, lane = 1, leap = 0, zoomies = 0} = {}) {
   const run = createRun(1989, {leap});

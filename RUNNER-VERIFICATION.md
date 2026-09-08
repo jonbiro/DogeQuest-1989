@@ -1,5 +1,21 @@
 # Runner verification
 
+## Zipline collection guidance follow-up
+
+- The edge dock now points toward the nearest upcoming aerial bone or gift.
+  Choosing the requested lane clears its cue while steering settles. Bone cues
+  disappear during magnetic attraction; gift cues remain because gifts require
+  physical lane alignment. No mid-screen banner or change to physics/rewards.
+- New simulation checks follow only these cues with 150ms input sampling and
+  collect all 18 bones plus the gift on both first and later ziplines. Cue tests
+  cover reward ordering, immediate quieting, used/pulled pickups, magnets and
+  the gift exception. Full suite: 131 tests.
+- 40-second 390x844 browser check saw left/right bone and gift guidance, caught
+  and landed the zipline, and reached 1,105m with three hearts, two correct turns
+  and no HUD overlaps or browser errors. Mean frame interval 16.65ms, p95 16.70ms.
+  The subsequent magnet/gift exception has a targeted regression assertion;
+  final published build receives a fresh live check.
+
 ## Persistent dog bonds and regional passport
 
 - Four dogs each have 10/40/100-clear-plus-turn milestones; three regions each

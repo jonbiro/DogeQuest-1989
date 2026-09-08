@@ -377,7 +377,7 @@ export function uiPlayCheck(seconds=22) {
           if(a.width && a.height && b.width && b.height && a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top)layoutIssues.add(`${first} overlaps ${second}`);
         }
         const turnLocked=cue.includes("TURN");
-        const code=cue.includes("TURN LEFT")||cue.includes("WEAVE LEFT")?"ArrowLeft":cue.includes("TURN RIGHT")||cue.includes("WEAVE RIGHT")?"ArrowRight":turnLocked?null:
+        const code=cue.includes("TURN LEFT")||cue.includes("WEAVE LEFT")||/(BONES|GIFT) LEFT/.test(cue)?"ArrowLeft":cue.includes("TURN RIGHT")||cue.includes("WEAVE RIGHT")||/(BONES|GIFT) RIGHT/.test(cue)?"ArrowRight":turnLocked?null:
           cue.includes("SLIDE")?"ArrowDown":cue.includes("JUMP")?"ArrowUp":route.includes("GATES IN")?"ArrowRight":null;
         if(code){window.dispatchEvent(new window.KeyboardEvent("keydown",{code,key:code,bubbles:true}));lastAction=now;}
       }

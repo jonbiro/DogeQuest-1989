@@ -111,6 +111,27 @@ test("action guidance stays quiet without an immediate on-path hazard", () => {
   }
 });
 
+test('aerial bone guidance follows the nearest reward and stops after steering or activating a magnet', () => {
+  const run=emptyRun();
+  run.zipline={start:0,end:140};
+  run.objects=[hazard(run,'bone',.6,{airborne:true,lane:2}),
+    hazard(run,'bone',.3,{airborne:true,lane:0})];
+  assert.equal(actionCue(run),'← BONES LEFT');
+  act(run,'left');
+  assert.equal(actionCue(run),'','no repeated input while steering settles');
+  run.objects[1].used=true;
+  assert.equal(actionCue(run),'→ BONES RIGHT');
+  run.magnet=4;
+  assert.equal(actionCue(run),'','active attraction needs no lane instruction');
+  run.magnet=0;run.objects[0].pull={};
+  assert.equal(actionCue(run),'','already-attracted bones need no instruction');
+  run.magnet=4;
+  run.objects=[hazard(run,'gift',.4,{airborne:true,lane:1})];
+  assert.equal(actionCue(run),'→ GIFT RIGHT','magnets do not collect gifts; steering is still needed');
+  run.objects=[];
+  assert.equal(actionCue(run),'','no idle chatter');
+});
+
 test("the short action hint leaves enough time to clear every hazard", () => {
   for (const [type, action] of Object.entries(HAZARD_ACTION)) {
     for (const speed of [22, 36, 46.8]) {
