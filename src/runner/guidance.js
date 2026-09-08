@@ -16,10 +16,14 @@ export function actionCue(run) {
     : turn.direction === 'left' ? '← TURN LEFT' : '→ TURN RIGHT';
   const weave = courseCue(run);
   if (weave) return weave;
-  if (run.zipline || run.y > .05 || run.vy > 0) return '';
+  if (run.zipline) return '';
   const cable = run.objects.find(object => object.type === 'zipline-start' && !object.caught &&
-    object.at > run.distance && object.at - run.distance < run.speed * .45);
-  if (cable) return '↑ JUMP · ZIPLINE';
+    object.at > run.distance && object.at - run.distance < run.speed * 1.6);
+  if (cable) {
+    if (cable.at - run.distance >= run.speed * .45) return 'ZIPLINE AHEAD · high bones';
+    return run.y > .05 || run.vy > 0 ? 'CATCH THE TURQUOISE HANDLE' : '↑ JUMP · ZIPLINE';
+  }
+  if (run.y > .05 || run.vy > 0) return '';
   if (run.zoomies > 0) return '';
   const danger = run.objects.find(object => !object.used && !object.passed &&
     ['rock', 'log', 'arch', 'branch', 'gate', 'gap'].includes(object.type) &&

@@ -77,6 +77,19 @@ function hazard(run, type, secondsAway = 0.449, overrides = {}) {
   };
 }
 
+test('zipline approach explains aerial bones before the jump deadline and keeps airborne guidance', () => {
+  const run = emptyRun();
+  run.objects = [hazard(run, 'zipline-start', 1.5)];
+  assert.equal(actionCue(run), 'ZIPLINE AHEAD · high bones');
+  run.objects[0].at = run.distance + run.speed * .44;
+  assert.equal(actionCue(run), '↑ JUMP · ZIPLINE');
+  act(run, 'jump');
+  assert.equal(actionCue(run), 'CATCH THE TURQUOISE HANDLE');
+  run.objects[0].caught = true;
+  run.zipline = {start:run.distance,end:run.distance+140};
+  assert.equal(actionCue(run), '', 'successful catch returns focus to steering');
+});
+
 test("action guidance stays quiet without an immediate on-path hazard", () => {
   assert.equal(actionCue(createRun(1989)), "", "the safe opening has no prompt");
 
