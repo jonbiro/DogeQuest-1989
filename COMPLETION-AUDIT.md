@@ -1,5 +1,42 @@
 # Puppy adventure completion audit
 
+## Expanded skill-based runner goal — current audit
+
+Audited against the full expanded objective, not the earlier scope below.
+Implementation baseline `579529d`, plus this audit's Fetch timer-scale correction.
+All required implementation areas pass the evidence checks below. Final release
+acceptance requires successful CI/Pages for the commit containing this audit and
+matching published script/CSS bytes; these are checked after push. A personal-best
+ghost is optional and has not been implemented.
+
+| Requirement | Current authoritative evidence | Assessment |
+| --- | --- | --- |
+| Deliberate turns | `turns.js` one-second commit window; `world.js` consumes the input, awards correct turns and penalizes misses once; `route.js`/`corner-road.js` render actual ninety-degree arcs. `turns.test.js` covers early/wrong/late input, correction, shield, pause and reservations. Final browser run: six correct turns, zero misses. | Pass |
+| Meaningful terrain/elevation | `terrain.js` real height/slope; route frames and renderer transform trail/scenery/camera, with level traversal approaches. `route.test.js` checks positive/negative elevation, bounded slopes and long-run continuity; `gaps.test.js` checks real broken-trail collisions, jump clearance and recovery. This changes the actual trail geometry; it deliberately does not lengthen jump timing. | Pass |
+| Region-specific traversal | `courses.js`/generator implement jungle jump/duck, canyon gap crossings and glade lane slaloms. Tests assert distinct generated obstacles, lane targets and outcomes at base/max upgrades and boosted speeds. Final real-time run completed three of each course. Ziplines additionally change posture, height and reachable pickups, with automatic landing. | Pass |
+| Pressure and recovery | Late ordinary rows shift safe lanes; authored three-beat courses have 35m spacing and 30m recovery, plus a gift. Corners reserve 45m approaches/recovery; gates offer Scenic/Challenge without overlapping corners or cables. Sequence, pressure, gate and turn tests cover these rules; seeded renderer check preserves three hearts over 13,500m. | Pass |
+| One charged player ability | `ability.js` and `app.js`: Fetch charges through hand collection, clean clears and turns; tap/F spends once for four-second attraction. It can be saved, cannot refill itself, preserves an existing magnet and respects aerial reachability. Ability tests exercise actual collection/expiry. Final browser run used it seven times through alternating keyboard/touch control paths; corrected timer max is four seconds. | Pass |
+| Dog/region mastery and collectibles | `mastery.js`, `rewards.js`, passport UI: four dog tracks and three regional tracks, 21 persistent badges/stamps, one-time upgrade-point rewards. Tests cover thresholds, wrong dog, incomplete runs, migration and repeated banking. Previous-slice real Mochi run crossed four thresholds for exactly 1,850 points; retry/reload retained 11,938 total credits and counters without replay. Those banking paths are unchanged in this audit. | Pass |
+| Post-run learning and immediate retry | `guidance.js` explains the actual last mistake (turn, overhead, gap or low obstacle); results show clears, turns, streak, courses and next dog milestone. `runner-guidance.test.js` checks advice. Mastery-slice browser check naturally ended and the results button immediately began a fresh run at zero Fetch charge. | Pass |
+| Short controls and quiet HUD | `.72s` jump, `.58s` base slide, bounded upgrades, dive/steering interpolation and 120Hz simulation remain intact. Motion tests check timing and timestep behavior. One edge dock arbitrates guidance. Final 320x568/844x390 maximum-power HUD checks found no overlaps, offscreen elements or center-trail cues; modal actions remain reachable. | Pass |
+| Preserve saves and original 2D game | Existing storage key/guards and collection repair remain. Old mastery defaults do not backfill invented history. Storage, collection and banking tests pass; real reload evidence retained upgrades/currency. `src/rebuild`, root HTML and CSS are unchanged from `52b02a1`; all five root trails still complete in simulation. Fresh live root start, pause and resume succeeded without browser errors. | Pass |
+| Mobile performance and reliability | Final production-renderer accelerated check: three 4,500m runs, 54 checkpoints, 21 turns, nine ziplines, courses 12/3/3, minimum three hearts; peaks 15 geometries, four textures, 123 objects and 203 draw calls. Final full-motion 844x390 real-time run: 120s, 4,046m, 7,202 frames, mean 16.66ms, p95 16.70ms, no browser errors or HUD overlaps. Keyboard/menu focus and held-Escape checks pass. | Pass within stated browser envelope |
+| No intrusive monetization or daily pressure | Source inspection: no runner network calls, ad SDKs, payment flow or calendar/reset dependency. Existing upgrade points fund rewards; bones are collectibles and Fetch charge is run-local. Mastery thresholds never expire. | Pass |
+| Regression and publishing workflow | `npm run check`: build, artifact verifier, lint and all 129 tests pass. Dependency audit reports zero vulnerabilities. Artifact verifier requires matched content hashes, excludes local QA and preserves the root game. Previous feature slices are committed/published; this audit's commit must pass the same CI/Pages and live-byte acceptance gate. | Local gate passed; release gate checked after push |
+
+The two-minute run used the real game UI and keyboard/touch-button dispatch, not
+direct state edits. The accelerated check uses deterministic simulated actions
+and actual rendering at checkpoints; it is not a frame-rate benchmark. Passport
+threshold testing began from a documented isolated save fixture, then earned new
+progress through real play. These distinct methods are not interchangeable.
+
+No required feature remains deferred. Limits: resized desktop browser tests do
+not establish physical-phone performance, human-perceived difficulty for every
+player, exhaustive hardware compatibility or subjective audio quality. The game
+is an original puppy runner, not a claim to reproduce every Temple Run 2 feature.
+
+## Historical earlier-scope audit
+
 Final code baseline: `52b02a1` (2026-09-07). **The requested browser-game scope is complete and released within the verified browser/device envelope below.**
 The objective remains an original, polished Temple Run 2-style puppy adventure,
 including characters, puppy-related powers, costumes, prizes, mobile play and

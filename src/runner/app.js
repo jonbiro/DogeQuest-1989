@@ -4,6 +4,7 @@ import { UPGRADES, levels, price, purchase } from "./progression.js";
 import { missionFor, missionProgress } from "./missions.js";
 import { bankRun } from "./rewards.js";
 import {masteryFrom,masteryCards} from './mastery.js';
+import {FETCH_DURATION} from './ability.js';
 import {REGIONS,regionAt} from "./regions.js";
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
@@ -601,7 +602,7 @@ function frame(now) {
           ? '<span class="power-chip shield" aria-label="Shield: one hit protected">◇ SHIELD</span>'
           : "",
         run.magnet > 0
-          ? `<span class="power-chip magnet">🧲 ${Math.ceil(run.magnet)}s<progress aria-label="Magnet time remaining" max="${10 + run.upgrades.magnet * 3}" value="${run.magnet}"></progress></span>`
+          ? `<span class="power-chip magnet">🧲 ${Math.ceil(run.magnet)}s<progress aria-label="Magnet time remaining" max="${run.fetchTime > 0 && run.magnet <= FETCH_DURATION ? FETCH_DURATION : 10 + run.upgrades.magnet * 3}" value="${run.magnet}"></progress></span>`
           : "",
         run.double > 0
           ? `<span class="power-chip double">×2 ${Math.ceil(run.double)}s<progress aria-label="Double points time remaining" max="10" value="${run.double}"></progress></span>`

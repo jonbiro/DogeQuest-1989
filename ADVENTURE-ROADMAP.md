@@ -1,12 +1,12 @@
 # Puppy adventure goal
 
-## Active research-led goal
+## Research-led goal
 
 Build a richer, skill-based adventure inspired by the Temple Run 2 research,
 without copying its branding, ads, excess currencies, or punitive daily demands.
 Keep Puppy Quest available, preserve saved progress, and publish verified playable
-increments. The expanded goal is active; the earlier completion evidence below
-describes the previous scope, not completion of this new work.
+increments. The current expanded-scope audit is at the top of
+`COMPLETION-AUDIT.md`; the historical evidence below describes the earlier scope.
 
 Priority order:
 
@@ -31,8 +31,8 @@ lane slaloms, with clean-course bonuses. Fetch adds a player-controlled charged
 magnet burst, earned from manual bone collection, clean clears and correct turns.
 Persistent dog/region mastery now banks four dogs' bond milestones and three
 regions' bronze/silver/gold stamps, with 21 permanent collectibles and one-time
-upgrade-point rewards. The end-to-end completion audit of the expanded objective
-is still outstanding; this is not a full-goal completion claim.
+upgrade-point rewards. The end-to-end expanded-objective audit now records the
+requirement evidence and final release gate in `COMPLETION-AUDIT.md`.
 
 The earlier requested browser-game scope was delivered at baseline `52b02a1`.
 
