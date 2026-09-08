@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createRun, act, step, LANES, HAZARDS } from "../src/runner/world.js";
 import { levels, purchase } from "../src/runner/progression.js";
+import {turnPrompt} from "../src/runner/turns.js";
 function advance(run, seconds) {
   for (let i = 0; i < Math.ceil(seconds * 120); i++) step(run, 1 / 120);
 }
@@ -165,6 +166,8 @@ test("third collision ends the run and input and time stop", () => {
 test("a lane-following runner survives a long seeded route at maximum difficulty", () => {
   const run = createRun(1989);
   for (let tick = 0; tick < 120 * 120; tick++) {
+    const turn = turnPrompt(run);
+    if (turn && turn.status !== 'accepted') act(run, turn.direction);
     const next = run.objects.find(
       (o) =>
         HAZARDS.includes(o.type) &&

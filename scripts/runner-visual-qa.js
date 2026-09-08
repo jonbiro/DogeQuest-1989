@@ -4,6 +4,7 @@ import {createView} from "../src/runner/render.js";
 import {createRun,step,act,fillTrack,HAZARDS} from "../src/runner/world.js";
 import {CUES,playNotes} from "../src/runner/sound.js";
 import {PUPPIES,COSTUMES} from "../src/runner/collection.js";
+import {turnPrompt,upcomingCorner,cornersBetween} from "../src/runner/turns.js";
 import * as THREE from 'three';
 import {createMochiModel} from '../src/runner/mochi-model.js';
 export function mochiPortraitPreview() {
@@ -113,7 +114,11 @@ export function powerPreview(reducedMotion=false,combined=false) {
     run.objects=['magnet','shield','zoomies','double'].map((type,id)=>({id,type,lane:1,at:.5,used:false}));
     for(let lane=0;lane<3;lane++)run.objects.push({id:10+lane,type:'bone',lane,at:12,used:false});
     for(const target of [.1,.4,6.5,10.5]) {
-      while(run.time<target)step(run,1/120);
+      while(run.time<target) {
+        const corner=turnPrompt(run);
+        if(corner&&corner.status!=="accepted")act(run,corner.direction);
+        step(run,1/120);
+      }
       capture(`${target}s · ${run.bones} bones`);
     }
     if(samples[0].pulling!==3||samples[0].bones!==0||samples[1].bones!==3||samples[2].zoomies!==0||samples[3].magnet!==0||samples[3].double!==0||samples.some(s=>s.shield!==1))throw new Error('Combined power lifecycle regression');
@@ -125,39 +130,43 @@ export function longRunCheck() {
   canvas.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;z-index:9999";
   document.body.append(canvas);
   const view=createView(canvas),samples=[];
-  let completedZiplines=0;
+  let completedZiplines=0,turns=0,missedTurns=0;
   for(let attempt=0;attempt<3;attempt++) {
     const run=createRun(1989+attempt);
     run.appearance={puppy:["biscuit","mochi","pepper"][attempt],costume:["scarf","hero","explorer"][attempt]};
     let nextSample=250;
     while(run.distance<4500 && !run.ended) {
+      const corner=turnPrompt(run),turnLocked=Boolean(corner);
+      if(corner&&corner.status!=="accepted")act(run,corner.direction);
       const cable=run.objects.find(o=>o.type==="zipline-start"&&!o.caught&&o.at>run.distance&&o.at-run.distance<run.speed*.4);
       if(cable)act(run,"jump");
-      if(run.zipline) {
+      if(run.zipline&&!turnLocked) {
         const treat=run.objects.find(o=>o.airborne&&!o.used&&o.at>run.distance-1.8);
         if(treat&&treat.at-run.distance<12&&treat.lane!==run.lane)act(run,treat.lane>run.lane?"right":"left");
       }
-      if(run.choicePending!==null && run.choicePending-run.distance<35)act(run,attempt===1?"right":"left");
+      if(!turnLocked&&run.choicePending!==null&&run.choicePending-run.distance<35)act(run,attempt===1?"right":"left");
       const next=run.objects.find(o=>HAZARDS.includes(o.type)&&o.at>run.distance&&o.at-run.distance<24);
       if(next) {
         const blocked=new Set(run.objects.filter(o=>o.at===next.at&&HAZARDS.includes(o.type)).map(o=>o.lane));
         const safe=[0,1,2].find(lane=>!blocked.has(lane));
-        if(safe!==undefined && safe!==run.lane)act(run,safe<run.lane?"left":"right");
+        if(!turnLocked&&safe!==undefined&&safe!==run.lane)act(run,safe<run.lane?"left":"right");
         else if(safe===undefined&&next.at-run.distance<run.speed*.4)act(run,next.type==="gate"?"slide":"jump");
       }
       step(run,1/120);run.events=[];
       if(run.distance>=nextSample) {
         view.draw(run,run.time,"playing",attempt===2,1/60,1);
-        samples.push({attempt,distance:Math.floor(run.distance),hearts:run.hearts,...view.diagnostics()});
+        samples.push({attempt,distance:Math.floor(run.distance),hearts:run.hearts,turns:run.turns,missedTurns:run.missedTurns,...view.diagnostics()});
         nextSample+=250;
       }
     }
     if(run.ended)throw new Error(`Input-driven run ended at ${run.distance} on seed ${run.seed}`);
     if(run.ziplines!==3)throw new Error(`Expected three zipline finishes, got ${run.ziplines}`);
+    if(run.turns===0||run.missedTurns!==0)throw new Error(`Corner bot regression: ${run.turns} accepted, ${run.missedTurns} missed on seed ${run.seed}`);
     completedZiplines+=run.ziplines;
+    turns+=run.turns;missedTurns+=run.missedTurns;
   }
   const peak=key=>Math.max(...samples.map(sample=>sample[key]));
-  const summary={runs:3,metersPerRun:4500,completedZiplines,renderedCheckpoints:samples.length,minimumHearts:Math.min(...samples.map(sample=>sample.hearts)),peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),final:samples.at(-1)};
+  const summary={runs:3,metersPerRun:4500,completedZiplines,turns,missedTurns,renderedCheckpoints:samples.length,minimumHearts:Math.min(...samples.map(sample=>sample.hearts)),peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),final:samples.at(-1)};
   if(summary.peakGeometries>32||summary.peakTextures>4||summary.peakObjects>200||summary.peakDrawCalls>220)throw new Error(`Renderer resource regression: ${JSON.stringify(summary)}`);
   return summary;
 }
@@ -167,6 +176,29 @@ export function previewGates() {
   const run=createRun(1989);run.distance=325;run.previous.distance=325;fillTrack(run);
   createView(canvas).draw(run,1,"playing",true,1/60,1);
   return {gateAt:run.choicePending};
+}
+export function previewTrailShape(reducedMotion=false) {
+  const source=document.createElement("canvas");
+  source.style.cssText="position:fixed;left:-1000px;width:390px;height:600px";document.body.append(source);
+  const view=createView(source),gallery=document.createElement("section"),samples=[];
+  gallery.style.cssText="position:fixed;inset:0;z-index:9999;overflow:auto;background:#102a28;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:12px;color:white";
+  document.body.append(gallery);
+  for(const [label,distance] of [["Left approach",135],["Midway through left",162.5],["Bridge recovery",180],["Right approach",935],["Midway through right",962.5],["Rolling trail",400],["Later river corner",2962.5]]) {
+    const run=createRun(1989);run.distance=distance;run.previous.distance=distance;
+    run.appearance={puppy:"mochi",costume:"scarf"};
+    // Isolate geometry and signs; the separate long run validates generation.
+    run.nextCorner=upcomingCorner(distance).index;
+    run.objects=cornersBetween(distance-8,distance+170).map(corner=>({id:corner.index,type:`corner-${corner.direction}`,lane:1,at:corner.at,turnIndex:corner.index}));
+    run.nextRow=Infinity;
+    view.draw(run,run.time,"playing",reducedMotion,1/60,1);
+    const figure=document.createElement("figure"),canvas=document.createElement("canvas"),caption=document.createElement("figcaption");
+    figure.style.margin="0";canvas.width=390;canvas.height=600;canvas.style.width="100%";
+    canvas.getContext("2d").drawImage(source,0,0,390,600);
+    caption.textContent=label;caption.style.cssText="text-align:center;padding:8px;font:14px Arial";
+    figure.append(canvas,caption);gallery.append(figure);
+    samples.push({label,distance,prompt:turnPrompt(run),...view.diagnostics()});
+  }
+  return {reducedMotion,samples};
 }
 export function previewZipline(distance=700,reducedMotion=false) {
   const canvas=document.createElement("canvas");
@@ -295,29 +327,35 @@ export function uiPlayCheck(seconds=22) {
     document.querySelector("#home").click();
     document.querySelector("#play").click();
     const started=performance.now(),frames=[];
-    const regions = new Set(), layoutIssues = new Set();
-    let last=started,lastAction=0,gate=false,challenge=false,zipline=false,landed=false;
+    const regions = new Set(), layoutIssues = new Set(),turnDirections=new Set();
+    let last=started,lastAction=0,gate=false,challenge=false,zipline=false,landed=false,turnAccepted=false;
     function tick(now) {
       frames.push(now-last);last=now;
       const state=document.querySelector("#game").dataset.state;
       const route=document.querySelector("#route-choice").textContent;
       const cue=document.querySelector("#cue").textContent;
+      const scene=document.querySelector("#scene");
       regions.add(document.querySelector("#region-name").textContent);
-      zipline ||= document.querySelector("#scene").dataset.posture === "zipline";
+      zipline ||= scene.dataset.posture === "zipline";
       landed ||= zipline && document.querySelector("#toast").textContent.includes("Zipline complete");
       gate ||= route.includes("GATES IN");challenge ||= document.querySelector('#run-score').textContent.includes("CHALLENGE");
+      if(cue.includes("TURN LEFT"))turnDirections.add("left");
+      if(cue.includes("TURN RIGHT"))turnDirections.add("right");
+      turnAccepted ||= cue.includes("TURN SET");
       if(now-lastAction>250) {
         for (const [first, second] of [["#power","#mission-hud"],["#power","#controls"],["#mission-hud","#controls"]]) {
           const a=document.querySelector(first).getBoundingClientRect(),b=document.querySelector(second).getBoundingClientRect();
           if(a.width && a.height && b.width && b.height && a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top)layoutIssues.add(`${first} overlaps ${second}`);
         }
-        const code=cue.includes("SLIDE")?"ArrowDown":cue.includes("JUMP")?"ArrowUp":route.includes("GATES IN")?"ArrowRight":null;
+        const turnLocked=cue.includes("TURN");
+        const code=cue.includes("TURN LEFT")?"ArrowLeft":cue.includes("TURN RIGHT")?"ArrowRight":turnLocked?null:
+          cue.includes("SLIDE")?"ArrowDown":cue.includes("JUMP")?"ArrowUp":route.includes("GATES IN")?"ArrowRight":null;
         if(code){window.dispatchEvent(new window.KeyboardEvent("keydown",{code,key:code,bubbles:true}));lastAction=now;}
       }
       if(now-started>=seconds*1000||state!=="playing") {
         document.querySelector("#pause-button").click();
         const sorted=[...frames].sort((a,b)=>a-b);
-        resolve({state,viewport:[window.innerWidth,window.innerHeight],endDistance:document.querySelector("#distance").textContent,frames:frames.length,meanMs:frames.reduce((a,b)=>a+b,0)/frames.length,p95Ms:sorted[Math.floor(sorted.length*.95)],regions:[...regions],layoutIssues:[...layoutIssues],gatePromptSeen:gate,challengeSelected:challenge,ziplineCaught:zipline,ziplineLanded:landed,hearts:document.querySelector("#hearts").getAttribute("aria-label")});
+        resolve({state,viewport:[window.innerWidth,window.innerHeight],endDistance:document.querySelector("#distance").textContent,frames:frames.length,meanMs:frames.reduce((a,b)=>a+b,0)/frames.length,p95Ms:sorted[Math.floor(sorted.length*.95)],regions:[...regions],layoutIssues:[...layoutIssues],gatePromptSeen:gate,challengeSelected:challenge,ziplineCaught:zipline,ziplineLanded:landed,turnDirections:[...turnDirections],turnAccepted,turns:Number(scene.dataset.turns||0),missedTurns:Number(scene.dataset.missedTurns||0),hearts:document.querySelector("#hearts").getAttribute("aria-label")});
         return;
       }
       window.requestAnimationFrame(tick);

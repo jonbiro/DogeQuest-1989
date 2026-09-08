@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {createRun, fillTrack, step, act, HAZARDS} from "../src/runner/world.js";
+import {turnPrompt} from "../src/runner/turns.js";
 
 function sequence(row = 12, route = null, nextChoice = 2000) {
   const run = createRun(17);
@@ -40,6 +41,8 @@ test("both sequences are clearable at maximum normal speed with base and upgrade
     run.choicePending = 99999;
     const acted = new Set();
     while (run.distance < 2350 && !run.ended) {
+      const turn = turnPrompt(run);
+      if (turn && turn.status !== 'accepted') act(run, turn.direction);
       const next = run.objects.find(o => HAZARDS.includes(o.type) && !o.passed && o.at > run.distance);
       if (next && next.at - run.distance < run.speed * .4 && !acted.has(next.at)) {
         act(run, next.type === "gate" ? "slide" : "jump");

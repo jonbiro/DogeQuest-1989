@@ -23,7 +23,8 @@ A separate mobile-first endless runner through jungle ruins, a sunlit canyon and
 
 - Swipe left/right to switch among three lanes; swipe up to jump logs and down to slide under arches. A tap on the trail also jumps.
 - Arrow keys or WASD do the same on desktop; Space jumps and Escape pauses. On-screen buttons support touch and keyboard activation.
-- The trail now bends left and right along a continuous centerline. The road, scenery, obstacles, and pickups follow the same bends. Biscuit follows the road automatically; swipes still switch lanes.
+- The trail has real 90° corners, gentle climbs and descents. At lime chevron signs, swipe in the displayed direction during the turn cue; one swipe commits the corner for +100 points. A wrong swipe can be corrected before the corner. Missing it costs one heart (or a shield) and recovers safely. Swipes switch lanes between marked turns; ordinary winding bends remain automatic. Turn approaches and recovery stretches stay free of hazards.
+- The finish screen shows clean turns, obstacle clears and best bone streak, with a brief tip explaining the final mistake. Retry remains one tap away.
 - Jump logs and low stone blocks; slide under arches, branches, and gates. Most rows leave an open lane, but occasional full-width log/gate rows demand a jump/slide. Bone trails can lead into hazards, so they are no longer a safe-lane guide.
 - Three hearts per run. A shield absorbs one hit; magnets collect nearby bones for ten seconds.
 - Purple gems award 250 points; gold tokens double bone points for ten seconds; pink hearts restore one heart (up to three). Magnets and shields still appear along the trail.
@@ -67,6 +68,7 @@ Open http://127.0.0.1:3000. Run `npm run build` again after changes; the server 
 - `test/rebuild.test.js`: movement, checkpoints, completion, and collision regression checks.
 - `src/runner/world.js`: seeded endless-track generation and fixed-step runner simulation.
 - `src/runner/render.js`: original articulated 3D dog, instanced scenery, and recycled obstacle meshes.
+- `src/runner/turns.js`, `route.js`, `terrain.js`: shared corner schedule/input windows, cached world-space centerline, and bounded hill profiles.
 - `src/runner/app.js`, `src/runner/ui.css`, `runner/index.html`: runner controls, states, saved records, and mobile interface.
 - `test/runner.test.js`: route fairness, bounded object counts, movement, power-ups, collision, and a two-minute survival simulation.
 

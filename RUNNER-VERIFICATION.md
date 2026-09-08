@@ -1,5 +1,51 @@
 # Runner verification
 
+## Research-led adventure: deliberate corners and real terrain
+
+This is the first verified slice of the expanded goal in `ADVENTURE-ROADMAP.md`,
+not completion of the remaining traversal, charged-ability and mastery work.
+
+- Marked 90-degree corners share one schedule between simulation and rendering.
+  Left/right input commits during a one-second cue window, does not also change
+  lanes, and can correct an initially wrong direction. A clean turn awards 100
+  points exactly once. Misses cost a heart or shield and recover; Zoomies does
+  not turn for the player. Generation reserves clear approaches and exits.
+- A cached, true world-space centerline replaces lateral-only bends. Gentle
+  hills change road, scenery, obstacle and puppy grade together without changing
+  jump airtime or slide duration. Corners and special traversal remain level.
+  Geometry tests cover continuity through 280 km, bounded grades and arc length.
+- Continuous corner ribbons replace intersecting slabs/rails, including later
+  corners on wooden river decks. Terrain banks follow the hills. Overhead meshes
+  and decorative archways leave the chase-camera corridor after passing, without
+  changing collisions or interrupting magnet pickups.
+- One quiet edge cue confirms turns, with a matching control highlight. Results
+  show clean turns, clears and best bone streak, plus advice based on the actual
+  final mistake. The retry action remains visible in the scrolling result dialog.
+- Build, artifact checks, lint and all 118 tests pass. New coverage includes turn
+  timing/correction/rewards/damage, reservation safety, route geometry, ribbon
+  buffer reuse, wooden corners, visibility and post-run guidance.
+- Final accelerated production-renderer check: three 4,500-meter seeded runs,
+  54 rendered checkpoints, 21 clean turns, zero missed turns, nine ziplines and
+  minimum three hearts. Peaks: 15 geometries, four textures, 108 active-plus-pooled
+  objects and 165 draw calls. This is simulation with rendered checkpoints, not FPS.
+- A 60-second local keyboard-driven run with Mochi and full motion at 390×844
+  reached 1,821 meters, completed three turns with zero misses, visited all three
+  regions and caught/landed the zipline. Three hearts remained; 3,601 frames,
+  mean 16.66 ms, p95 16.70 ms and no detected HUD overlap. A separate unadapted
+  driver missed the first three corners and ended at 1,550 meters; the resulting
+  right-turn advice and visible retry were checked on screen.
+- Normal/reduced-motion galleries were visually inspected at both corner
+  midpoints, bridge joins, a hillside and the later 2,950-meter river corner.
+  Combined powers retained their expected attraction/expiry/shield behavior when
+  the test driver handled turns; the previous driver incorrectly spent its
+  shield by ignoring a newly required turn and was updated, not the game rules.
+- Five-indicator layout fixtures pass at 320×568, 390×844, 568×320 and 844×390.
+  Keyboard menu focus, pause/resume, frozen Mochi body/leg poses and short-landscape
+  dialog actions were checked. No browser errors were reported. These checks are
+  desktop browser emulation; physical-phone performance is not claimed.
+- Normal builds exclude the local-only browser fixture. Existing saves and the
+  separate original 2D game are preserved; their regression tests remain green.
+
 ## Shorter actions and a quieter trail
 
 - Normal jump airtime is 0.72 seconds at all four leap levels; launch speed and gravity scale together so upgrades add height without extra float. Ground slides last 0.58 seconds, or 0.79 seconds at level three. The late-jump buffer is 120 ms; continuous dives, full slide duration on touchdown and momentum-aware steering remain intact.

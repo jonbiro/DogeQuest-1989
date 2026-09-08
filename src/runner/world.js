@@ -12,6 +12,13 @@ export function seededRandom(seed) {
 import { levels } from "./progression.js";
 import { jump, steer, moveVertical, JUMP_BUFFER } from "./motion.js";
 import { ZIPLINE_FIRST, ZIPLINE_PERIOD, ZIPLINE_LENGTH, ZIPLINE_HEIGHT } from "./ziplines.js";
+import {
+  TURN_SKILL_REWARD,
+  applyTurnInput,
+  cornerByIndex,
+  cornerIntersecting,
+  cornersBetween,
+} from "./turns.js";
 const SOLID_HAZARDS = ["rock", "log", "arch", "branch", "gate"];
 export const BASE_SLIDE_DURATION = .58;
 export const SLIDE_UPGRADE_DURATION = .07;
@@ -56,6 +63,10 @@ export function createRun(seed = Date.now(), upgrades = {}) {
     choicePending: null,
     route: null,
     routeChoices: 0,
+    nextCorner: 0,
+    turnAttempt: null,
+    turns: 0,
+    missedTurns: 0,
     nextZipline: ZIPLINE_FIRST,
     zipline: null,
     ziplines: 0,
@@ -64,6 +75,7 @@ export function createRun(seed = Date.now(), upgrades = {}) {
     id: 0,
     events: [],
     effects: [],
+    lastMistake: null,
     previous: { x: 0, y: 0, distance: 0 },
   };
   fillTrack(run);
@@ -76,7 +88,23 @@ function add(run, type, lane, at) {
 }
 export function fillTrack(run) {
   if(run.choicePending!==null)return;
+  // Mark upcoming turns independently from obstacle rows so the renderer can
+  // telegraph them early even when generation resumes after a route choice.
+  for (const corner of cornersBetween(run.distance - 8, run.distance + 170)) {
+    if (!run.objects.some((object) => object.turnIndex === corner.index)) {
+      const marker = add(run, `corner-${corner.direction}`, 1, corner.at);
+      marker.direction = corner.direction;
+      marker.turnIndex = corner.index;
+    }
+  }
   while (run.nextRow < run.distance + 170) {
+    // Include the row's furthest ordinary reward in the reservation. A turn
+    // approach should be readable, not hidden behind a bone or power-up trail.
+    const corner = cornerIntersecting(run.nextRow, run.nextRow + 19);
+    if (corner) {
+      run.nextRow = Math.ceil((corner.recovery + .001) / 5) * 5;
+      continue;
+    }
     if (run.nextRow >= run.nextZipline - 45) {
       const start = run.nextZipline;
       add(run, "zipline-start", 1, start);
@@ -104,6 +132,7 @@ export function fillTrack(run) {
     const sequenceEnd = run.nextRow + 144;
     if (run.nextRow > 600 && run.row % 16 === 12 && route !== "scenic" &&
         sequenceEnd < Math.min(run.nextChoice, run.nextZipline) - 45 &&
+        !cornerIntersecting(run.nextRow, sequenceEnd) &&
         (!run.route || run.nextRow >= run.route.until || sequenceEnd < run.route.until)) {
       const types = Math.floor(run.row / 16) % 2 ? ["gate", "log", "gate"] : ["log", "gate", "log"];
       for (let beat = 0; beat < types.length; beat++) {
@@ -157,8 +186,8 @@ export function fillTrack(run) {
 }
 export function act(run, action) {
   if (run.ended) return;
-  if (action === "left") run.lane = Math.max(0, run.lane - 1);
-  if (action === "right") run.lane = Math.min(2, run.lane + 1);
+  if (action === "left" && !applyTurnInput(run, action)) run.lane = Math.max(0, run.lane - 1);
+  if (action === "right" && !applyTurnInput(run, action)) run.lane = Math.min(2, run.lane + 1);
   if (run.zipline) return;
   if (action === "jump") {
     if (run.y === 0 && run.vy === 0) jump(run);
@@ -171,9 +200,61 @@ export function act(run, action) {
     run.jumpBuffer = 0;
   }
 }
+
+function syncUnvisitedCorners(run) {
+  // Test fixtures and restored sessions may begin far down-trail. Only a corner
+  // actually crossed by this simulation step can penalize the runner.
+  let corner = cornerByIndex(run.nextCorner);
+  while (corner && corner.at < run.distance - 1e-9) {
+    run.nextCorner++;
+    run.turnAttempt = null;
+    corner = cornerByIndex(run.nextCorner);
+  }
+}
+
+function harm(run, mistake) {
+  run.lastMistake = mistake;
+  if (run.invulnerable > 0) return false;
+  if (run.shield) {
+    run.shield = 0;
+    run.events.push("shield-break");
+  } else {
+    run.hearts--;
+    run.events.push("hit");
+  }
+  run.combo = 0;
+  run.invulnerable = 1.8;
+  if (run.hearts <= 0) {
+    run.ended = true;
+    run.events.push("end");
+  }
+  return true;
+}
+
+function resolveCorner(run, from, to) {
+  const corner = cornerByIndex(run.nextCorner);
+  if (!corner || from > corner.at || to < corner.at) return;
+  const marker = run.objects.find((object) => object.turnIndex === corner.index);
+  const success = run.turnAttempt?.index === corner.index && run.turnAttempt.correct;
+  if (success) {
+    run.turns++;
+    run.bonusPoints += TURN_SKILL_REWARD;
+    run.events.push(`turn-${corner.direction}`);
+    if (marker) marker.turnState = "accepted";
+  } else {
+    run.missedTurns++;
+    run.events.push(`missed-turn-${corner.direction}`);
+    if (marker) marker.turnState = "missed";
+    harm(run, {type: "corner", direction: corner.direction});
+  }
+  run.nextCorner++;
+  run.turnAttempt = null;
+}
+
 export function step(run, dt) {
   if (run.ended || !Number.isFinite(dt) || dt <= 0) return;
   dt = Math.min(dt, 1 / 30);
+  syncUnvisitedCorners(run);
   run.previous = { x: run.x, y: run.y, distance: run.distance };
   run.time += dt;
   const wasZooming = run.zoomies > 0;
@@ -186,6 +267,13 @@ export function step(run, dt) {
     run.events.push("zoomies-end");
   }
   run.distance += run.speed * dt;
+  // Zoomies can smash or vault physical hazards, but steering through a corner
+  // remains a player decision.
+  resolveCorner(run, run.previous.distance, run.distance);
+  if (run.ended) {
+    run.score = Math.floor(run.distance) + run.bonePoints + run.bonusPoints;
+    return;
+  }
   if(run.zoomies>0 && run.y===0 && run.objects.some(object=>object.type==="gap" && object.at-run.distance>0 && object.at-run.distance<run.speed*.45)) act(run,"jump");
   steer(run, LANES[run.lane], dt);
   if(run.choicePending!==null && run.distance>=run.choicePending) {
@@ -313,20 +401,8 @@ export function step(run, dt) {
       }
       if (sameLane && !cleared && run.invulnerable === 0) {
         object.used = true;
-        if (run.shield) {
-          run.shield = 0;
-          run.events.push("shield-break");
-        } else {
-          run.hearts--;
-          run.events.push("hit");
-        }
-        run.combo = 0;
-        run.invulnerable = 1.8;
-        if (run.hearts <= 0) {
-          run.ended = true;
-          run.events.push("end");
-          break;
-        }
+        harm(run, {type: object.type});
+        if (run.ended) break;
       }
     }
   }

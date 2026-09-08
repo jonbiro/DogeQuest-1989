@@ -1,6 +1,7 @@
 // One small, timely hint at the edge of the trail; never a stack of banners.
 import {LANES} from './world.js';
 import {steer} from './motion.js';
+import {turnPrompt} from './turns.js';
 
 function onApproach(run, object) {
   const projected = {x:run.x, vx:run.vx};
@@ -9,6 +10,9 @@ function onApproach(run, object) {
 }
 
 export function actionCue(run) {
+  const turn = turnPrompt(run);
+  if (turn) return turn.status === 'accepted' ? '✓ TURN SET'
+    : turn.direction === 'left' ? '← TURN LEFT' : '→ TURN RIGHT';
   if (run.zipline || run.y > .05 || run.vy > 0) return '';
   const cable = run.objects.find(object => object.type === 'zipline-start' && !object.caught &&
     object.at > run.distance && object.at - run.distance < run.speed * .45);
@@ -24,6 +28,8 @@ export function actionCue(run) {
 }
 
 export function eventNotice(event, run) {
+  if (event === 'hit' && run.lastMistake?.type === 'corner')
+    return {text:`Missed ${run.lastMistake.direction} turn · ${run.hearts} ${run.hearts === 1 ? 'heart' : 'hearts'} left`, priority:3};
   const notices = {
     hit: {text: `${run.hearts} ${run.hearts === 1 ? 'heart' : 'hearts'} left`, priority: 3},
     'shield-break': {text: 'Shield used', priority: 2},
@@ -32,6 +38,15 @@ export function eventNotice(event, run) {
     'zipline-end': {text: 'Zipline complete · +250', priority: 1},
   };
   return notices[event] || null;
+}
+
+export function runLesson(run) {
+  const mistake = run.lastMistake;
+  if (!mistake) return 'Keep an eye on the trail ahead. Your next run is one tap away.';
+  if (mistake.type === 'corner') return `Missed a ${mistake.direction} turn. Swipe ${mistake.direction} when the turn arrow appears; one swipe locks it in.`;
+  if (['arch', 'branch', 'gate'].includes(mistake.type)) return 'Caught an overhead obstacle. Slide as it approaches; a jump will not fit underneath.';
+  if (mistake.type === 'gap') return 'Missed a broken trail section. Jump at the striped edge, not far in advance.';
+  return 'Clipped a low obstacle. Jump shortly before it reaches your puppy, or take an open lane.';
 }
 
 export function dockMode({cue, route, notice, missionComplete}) {

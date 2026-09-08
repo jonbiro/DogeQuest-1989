@@ -2,7 +2,10 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { LANES, PICKUPS, seededRandom } from "./world.js";
-import { routeOffset, routeHeading } from "./route.js";
+import { routeFrame } from "./route.js";
+import { upcomingCorner } from "./turns.js";
+import { objectVisible } from "./visibility.js";
+import { createCornerRoad } from "./corner-road.js";
 import { PUPPIES } from "./collection.js";
 import { REGIONS, regionAt, regionBlend } from "./regions.js";
 import { puppyPose, smoothLegAngles, bodyMotion } from "./puppy-pose.js";
@@ -67,6 +70,9 @@ export function createView(canvas) {
   const tiles = [];
   for (let i = 0; i < 35; i++) {
     const tile = new THREE.Group();
+    // A thick, height-following bank anchors trees and paving on hills. It uses
+    // the existing box batch and gives way to water at river crossings.
+    box(tile, '#397d6e', 0, -7.05, 0, 60, 12, 5.4).userData.terrain = true;
     box(tile, "#526d49", 0, -0.55, 0, 9.2, 1, 5.4);
     box(tile, "#c1ba88", 0, -0.04, 0, 7.8, 0.15, 5.4);
     for (const x of [-4.25, 4.25])
@@ -175,6 +181,7 @@ export function createView(canvas) {
         box(group, "#8b9875", side * 5.3, 4.3, 0, 1.15, 2.2, 1.1);
     }
     group.userData.offset = i * 16;
+    group.userData.gateway = true;
     scenery.add(group);
     decorations.push(group);
   }
@@ -216,6 +223,7 @@ export function createView(canvas) {
             bridge: item.userData.bridge === true,
             water: item.userData.water === true,
             cable: item.userData.cable === true,
+            terrain: item.userData.terrain === true,
           });
       });
     for (const group of decorations)
@@ -228,6 +236,7 @@ export function createView(canvas) {
             period: 190,
             start: 14,
             region: group.userData.region,
+            gateway: group.userData.gateway === true,
           });
       });
     const instanced = new THREE.InstancedMesh(
@@ -237,7 +246,7 @@ export function createView(canvas) {
     );
     instanced.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     entries.forEach((entry, i) => {
-      entry.colors = regionColors.map((palette,index) => index===0 ? entry.color : entry.color.clone().lerp(palette.stone,.72));
+      entry.colors = regionColors.map((palette,index) => entry.terrain ? palette.ground : index===0 ? entry.color : entry.color.clone().lerp(palette.stone,.72));
       instanced.setColorAt(i, entry.color);
     });
     instanced.frustumCulled = false;
@@ -245,6 +254,7 @@ export function createView(canvas) {
     batches.push({ instanced, entries });
   }
   scene.remove(scenery);
+  const cornerRoad = createCornerRoad(scene);
   // Biscuit is an original articulated model, not a billboard.
   const dog = new THREE.Group();
   scene.add(dog);
@@ -549,6 +559,20 @@ export function createView(canvas) {
       const diamond=box(gate,"#7d4e2b",0,3.3,.12,.34,.34,.08);diamond.rotation.z=Math.PI/4;
     }
   }
+  // Roadside chevrons identify a deliberate corner without covering the trail.
+  for (const direction of ['left', 'right']) {
+    const marker = new THREE.Group();
+    templates[`corner-${direction}`] = marker;
+    const sign = direction === 'right' ? 1 : -1;
+    for (const x of [-5.05, 5.05]) {
+      box(marker, '#65543c', x, 1.15, 0, .18, 2.3, .2);
+      box(marker, '#efffc9', x, 2.15, 0, 1.7, 1, .2);
+      for (const offset of [-.38, .38]) for (const side of [-1, 1]) {
+        const stripe = box(marker, '#245745', x + offset + sign * .08, 2.15 + side * .17, .13, .52, .14, .06);
+        stripe.rotation.z = -sign * side * Math.PI / 4;
+      }
+    }
+  }
   for (const type of ["zipline-start", "zipline-end"]) {
     const station = new THREE.Group();
     templates[type] = station;
@@ -594,6 +618,9 @@ export function createView(canvas) {
   const bendMatrix = new THREE.Matrix4(),
     instanceMatrix = new THREE.Matrix4();
   const bendScale = new THREE.Vector3();
+  const bendEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+  const routeRotation = new THREE.Quaternion();
+  const routePosition = new THREE.Vector3();
   return {
     draw(run, time, state, reducedMotion, dt, alpha = 1, collection) {
       const menu = ["menu", "help", "shop", "kennel"].includes(state);
@@ -621,6 +648,15 @@ export function createView(canvas) {
       const distance = menu
         ? time * (reducedMotion ? 0 : 2)
         : THREE.MathUtils.lerp(run.previous.distance, run.distance, blend);
+      // Several hundred instanced pieces share fewer than 200 route frames.
+      const frames = new Map();
+      const frameAt = z => {
+        if (!frames.has(z)) frames.set(z, routeFrame(distance, z));
+        return frames.get(z);
+      };
+      const groundFrame = frameAt(0);
+      // The valley floor stays below the elevated trail instead of cutting it off.
+      ground.position.y = -12;
       const smooth = 1 - Math.exp(-18 * dt);
       const weight = bodyMotion({vx:run.vx,vy:run.vy,y,time:run.time,landing:run.landing,
         ziplining:Boolean(run.zipline),reducedMotion:reducedMotion||menu});
@@ -641,16 +677,23 @@ export function createView(canvas) {
             entry.start -
             ((entry.offset - (distance % entry.period) + entry.period) %
               entry.period);
-          bendMatrix.makeRotationY(routeHeading(distance, z));
-          bendMatrix.scale(
-            bendScale.set(1, 1, 1 / Math.cos(routeHeading(distance, z))),
-          );
-          bendMatrix.setPosition(routeOffset(distance, z), 0, z);
+          const frame = frameAt(z);
+          bendEuler.set(frame.pitch, frame.yaw, 0, 'YXZ');
+          routeRotation.setFromEuler(bendEuler);
+          // Extra overlap closes the outside edge of the short curved slabs.
+          const overlap = entry.road && !entry.water ? 1 + (entry.terrain ? 30 : 4.6) * Math.abs(frame.curvature) : 1;
+          bendMatrix.compose(routePosition.set(frame.x, frame.y, frame.z), routeRotation, bendScale.set(1, 1, overlap));
           instanceMatrix.multiplyMatrices(bendMatrix, entry.matrix);
           const region = regionAt(menu ? 0 : distance-z);
           const bridge = !menu && isBridge(distance-z);
           const cableSection = !menu && ziplineAt(distance-z);
+          const corner = upcomingCorner(distance-z-70);
+          const cornerSection = !menu && corner && distance-z > corner.at-45 && distance-z < corner.end+20;
           if (entry.cable ? !cableSection : (entry.road && entry.bridge !== bridge) || (!entry.road && (bridge || cableSection))) instanceMatrix.scale(bendScale.set(0,0,0));
+          if (entry.gateway && (cornerSection || z > 0)) instanceMatrix.scale(bendScale.set(0,0,0));
+          if (!menu && entry.road && !entry.terrain && !entry.water && !entry.cable &&
+              corner && distance-z >= corner.at && distance-z <= corner.end)
+            instanceMatrix.scale(bendScale.set(0,0,0));
           if(entry.region !== undefined && entry.region !== region) instanceMatrix.scale(bendScale.set(0,0,0));
           if(entry.road && !entry.water && !entry.cable && gaps.some(gap => Math.abs(distance-z-gap.at)<.1)) instanceMatrix.scale(bendScale.set(0,0,0));
           if(entry.road || entry.region === undefined) instanced.setColorAt(i,entry.bridge || entry.cable ? entry.color : entry.colors[region]);
@@ -659,6 +702,7 @@ export function createView(canvas) {
         instanced.instanceMatrix.needsUpdate = true;
         instanced.instanceColor.needsUpdate = true;
       }
+      cornerRoad.update(distance, frameAt, menu);
       dog.position.set(
         menu ? 0 : x,
         (menu ? 0 : y) +
@@ -668,7 +712,7 @@ export function createView(canvas) {
       );
       dog.rotation.y = menu ? -2.35 : lean;
       dog.rotation.z = menu || reducedMotion ? 0 : lean * 0.3;
-      dog.rotation.x = menu || reducedMotion ? 0 : pitch;
+      dog.rotation.x = menu ? 0 : groundFrame.pitch + (reducedMotion ? 0 : pitch);
       dog.scale.setScalar(1);
       const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:y>.1,sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline)});
       dog.scale.y = (pose + personality.breathe) * (1-weight.compression);
@@ -690,6 +734,7 @@ export function createView(canvas) {
       zipTether.rotation.z = Math.atan2(x, tetherHeight);
       scarf.rotation.x = reducedMotion ? 0 : Math.sin(time * 12) * 0.15;
       shadow.position.x = dog.position.x;
+      shadow.rotation.x = -Math.PI / 2 + (menu ? 0 : groundFrame.pitch);
       shadow.scale.setScalar(Math.max(0.45, 1 - y * 0.12));
       shadow.material.opacity = 0.35 / (1 + y * 0.3);
       aura.visible = !menu && run.shield > 0;
@@ -729,7 +774,7 @@ export function createView(canvas) {
       const visibleIds = new Set();
       if (!menu)
         for (const object of run.objects) {
-          if (object.used) continue;
+          if (!objectVisible(object, distance)) continue;
           visibleIds.add(object.id);
           let item = active.get(object.id);
           if (!item) {
@@ -762,13 +807,12 @@ export function createView(canvas) {
               ? time * (reducedMotion ? 0 : 1.8)
               : Math.sin(time * 1.5) * 0.25
             : 0;
-          const z = item.position.z;
-          const heading = routeHeading(distance, z),
-            across = item.position.x;
-          item.position.x =
-            routeOffset(distance, z) + across * Math.cos(heading);
-          item.position.z = z - across * Math.sin(heading);
-          item.rotation.y += heading;
+          const frame = frameAt(item.position.z), across = item.position.x;
+          item.position.set(frame.x + across * Math.cos(frame.yaw), item.position.y + frame.y,
+            frame.z - across * Math.sin(frame.yaw));
+          item.rotation.x = pickup ? 0 : frame.pitch;
+          item.rotation.y += frame.yaw;
+          item.rotation.order = 'YXZ';
         }
       for (const [id, item] of active)
         if (!visibleIds.has(id)) {
@@ -791,7 +835,8 @@ export function createView(canvas) {
           4.5 + cameraLift,
           camera.aspect < 0.85 ? 10.8 : 9,
         );
-        camera.lookAt(cameraX * (camera.aspect < 0.85 ? 0.4 : 0.12), 0.75 + cameraLift, -13);
+        const look = frameAt(-13);
+        camera.lookAt(cameraX * (camera.aspect < 0.85 ? 0.4 : 0.12) + look.x * .3, 0.75 + cameraLift + look.y * .65, -13);
       }
       if (state === "playing" && dt > 0.025) slowFrames++;
       else slowFrames = Math.max(0, slowFrames - 1);

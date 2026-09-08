@@ -7,7 +7,8 @@ import {REGIONS,regionAt} from "./regions.js";
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound} from "./sound.js";
-import {actionCue,eventNotice,dockMode} from "./guidance.js";
+import {actionCue,eventNotice,dockMode,runLesson} from "./guidance.js";
+import {turnPrompt} from "./turns.js";
 import {swipeAction} from "./gestures.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
 const $ = (id) => document.getElementById(id);
@@ -216,6 +217,8 @@ function showOverlay(kind) {
   $("collection").hidden = kind !== "kennel";
   $("upgrades").hidden = kind !== "shop";
   $("results").hidden = kind !== "ended";
+  $("run-lesson").hidden = kind !== "ended";
+  $("run-highlights").hidden = kind !== "ended";
   $("instructions").hidden = kind !== "help";
   $("overlay-label").textContent =
     kind === "ended"
@@ -259,6 +262,8 @@ function finish() {
   $("final-score").textContent = run.score.toLocaleString();
   $("final-distance").textContent = `${Math.floor(run.distance)} m`;
   $("final-bones").textContent = run.bones;
+  $("run-lesson").textContent = runLesson(run);
+  $("run-highlights").textContent = `${run.turns} clean ${run.turns === 1 ? 'turn' : 'turns'} · ${run.clears} obstacles cleared · Best bone streak: ${run.bestCombo}`;
   const {missionPoints: reward, prizes} = receipt;
   $("overlay-copy").textContent +=
     ` +${run.score.toLocaleString()} upgrade points earned. Spend them at camp.`;
@@ -461,6 +466,7 @@ function frame(now) {
         tone("reward");
       }
       if (event === "clear") tone(540, 0.08);
+      if (event === "turn-left" || event === "turn-right") tone(680, 0.1);
       if (event === "jump") tone("jump");
       if (event === "magnet") {
         tone(900, 0.25);
@@ -488,6 +494,8 @@ function frame(now) {
     }
     run.events = [];
     $("scene").dataset.lane = String(run.lane + 1);
+    $("scene").dataset.turns = String(run.turns);
+    $("scene").dataset.missedTurns = String(run.missedTurns);
     $("scene").dataset.posture =
       run.zipline ? "zipline" : run.y > 0.05 ? "jump" : run.slide > 0 ? "slide" : "run";
     if (Math.floor(run.time * 10) !== lastHud || run.ended) {
@@ -512,6 +520,14 @@ function frame(now) {
         );
       }
       setText('cue', actionCue(run));
+      const turn = turnPrompt(run);
+      $("scene").dataset.turn = turn ? `${turn.direction}-${turn.status}` : '';
+      for (const direction of ['left','right']) {
+        const button = document.querySelector(`[data-action="${direction}"]`);
+        const active = turn && turn.status !== 'accepted' && turn.direction === direction;
+        button.classList.toggle('turn-ready', Boolean(active));
+        button.setAttribute('aria-label', turn ? `Turn ${direction}` : `Move ${direction}`);
+      }
       $("hearts").textContent =
         "♥ ".repeat(Math.max(0, run.hearts)) + "♡ ".repeat(3 - run.hearts);
       $("hearts").setAttribute("aria-label", `${run.hearts} hearts remaining`);

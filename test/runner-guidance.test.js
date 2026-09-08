@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { actionCue, dockMode, eventNotice } from "../src/runner/guidance.js";
+import { actionCue, dockMode, eventNotice, runLesson } from "../src/runner/guidance.js";
 import { swipeAction } from "../src/runner/gestures.js";
 import { act, createRun, LANES, step } from "../src/runner/world.js";
 
@@ -12,6 +12,32 @@ const HAZARD_ACTION = {
   log: "jump",
   rock: "jump",
 };
+
+test('corner cues work in the air, confirm one accepted swipe and correct wrong input', () => {
+  const run = createRun(1989);
+  run.distance = 140;
+  run.y = 1;
+  assert.equal(actionCue(run), '← TURN LEFT');
+  act(run, 'right');
+  assert.equal(actionCue(run), '← TURN LEFT');
+  act(run, 'left');
+  assert.equal(actionCue(run), '✓ TURN SET');
+  run.nextCorner = 1;
+  run.distance = 940;
+  assert.equal(actionCue(run), '→ TURN RIGHT');
+  run.distance = 900;
+  assert.equal(actionCue(run), '', 'no early text banner');
+});
+
+test('post-run advice explains the actual mistake without inventing one', () => {
+  assert.match(runLesson({lastMistake:null}), /next run/i);
+  assert.match(runLesson({lastMistake:{type:'corner',direction:'right'}}), /Swipe right/);
+  for (const type of ['arch','branch','gate']) assert.match(runLesson({lastMistake:{type}}), /Slide/);
+  assert.match(runLesson({lastMistake:{type:'gap'}}), /striped edge/);
+  assert.match(runLesson({lastMistake:{type:'rock'}}), /open lane/);
+  assert.deepEqual(eventNotice('hit', {hearts:1,lastMistake:{type:'corner',direction:'left'}}),
+    {text:'Missed left turn · 1 heart left',priority:3});
+});
 
 function emptyRun() {
   const run = createRun(1989);

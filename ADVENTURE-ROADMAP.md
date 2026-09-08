@@ -1,6 +1,31 @@
 # Puppy adventure goal
 
-Build an original, polished Temple Run 2-style puppy runner. Keep Puppy Quest available, preserve saved progress, and publish verified playable increments. The requested browser-game scope is now delivered; the final code baseline is `52b02a1`.
+## Active research-led goal
+
+Build a richer, skill-based adventure inspired by the Temple Run 2 research,
+without copying its branding, ads, excess currencies, or punitive daily demands.
+Keep Puppy Quest available, preserve saved progress, and publish verified playable
+increments. The expanded goal is active; the earlier completion evidence below
+describes the previous scope, not completion of this new work.
+
+Priority order:
+
+1. Deliberate, readable corners and genuine climbs and descents. Preserve the
+   quick jump/slide timing and keep turn approaches free of conflicting hazards.
+2. Region-specific traversal and authored pressure/recovery stretches that make
+   the environments play differently, not merely look different.
+3. One player-activated charged ability with clear readiness and meaningful timing.
+4. Dog and region mastery, collection goals, and useful permanent progression.
+5. Clear post-run learning and one-tap retry; personal-best ghosts are optional
+   polish after the core loop is verified.
+
+Each slice must pass relevant simulation tests, real-renderer and input-driven
+browser checks, mobile-size layout/performance checks, and publication checks.
+No physical-phone performance claim follows from desktop browser emulation.
+
+## Previous scope and historical completion
+
+The earlier requested browser-game scope was delivered at baseline `52b02a1`.
 
 ## Required product areas and completion evidence
 
