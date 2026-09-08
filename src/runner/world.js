@@ -10,6 +10,7 @@ export function seededRandom(seed) {
   };
 }
 import { levels } from "./progression.js";
+import {chargeFetch, activateFetch} from './ability.js';
 import { jump, steer, moveVertical, JUMP_BUFFER } from "./motion.js";
 import { ZIPLINE_FIRST, ZIPLINE_PERIOD, ZIPLINE_LENGTH, ZIPLINE_HEIGHT } from "./ziplines.js";
 import {courseAt, COURSE_LENGTH, COURSE_RECOVERY, advanceCourse} from './courses.js';
@@ -37,6 +38,9 @@ export function createRun(seed = Date.now(), upgrades = {}) {
     jumpBuffer: 0,
     double: 0,
     zoomies: 0,
+    fetchCharge: 0,
+    fetchTime: 0,
+    fetchUses: 0,
     smashes: 0,
     bonusPoints: 0,
     bonePoints: 0,
@@ -195,6 +199,7 @@ export function fillTrack(run) {
 }
 export function act(run, action) {
   if (run.ended) return;
+  if (action === 'fetch') { activateFetch(run); return; }
   if (action === "left" && !applyTurnInput(run, action)) run.lane = Math.max(0, run.lane - 1);
   if (action === "right" && !applyTurnInput(run, action)) run.lane = Math.min(2, run.lane + 1);
   if (run.zipline) return;
@@ -247,6 +252,7 @@ function resolveCorner(run, from, to) {
   const success = run.turnAttempt?.index === corner.index && run.turnAttempt.correct;
   if (success) {
     run.turns++;
+    chargeFetch(run, 20);
     run.bonusPoints += TURN_SKILL_REWARD;
     run.events.push(`turn-${corner.direction}`);
     if (marker) marker.turnState = "accepted";
@@ -263,6 +269,7 @@ function resolveCorner(run, from, to) {
 export function step(run, dt) {
   if (run.ended || !Number.isFinite(dt) || dt <= 0) return;
   dt = Math.min(dt, 1 / 30);
+  run.fetchTime = Math.max(0, run.fetchTime - dt);
   syncUnvisitedCorners(run);
   run.previous = { x: run.x, y: run.y, distance: run.distance };
   run.time += dt;
@@ -344,6 +351,7 @@ export function step(run, dt) {
       ) {
         object.used = true;
         run.bones++;
+        if (!object.pull) chargeFetch(run, 2);
         run.bonePoints +=
           (25 + run.upgrades.value * 5) * (run.double > 0 ? 2 : 1);
         run.combo++;
@@ -405,6 +413,7 @@ export function step(run, dt) {
           run.y < 0.2);
       if (sameLane && cleared) {
         run.clears++;
+        if (run.zoomies === 0) chargeFetch(run, 12);
         run.bonusPoints += object.skillReward || 20;
         run.events.push("clear");
       }

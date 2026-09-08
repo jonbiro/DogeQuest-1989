@@ -358,6 +358,12 @@ export function uiPlayCheck(seconds=22) {
       const route=document.querySelector("#route-choice").textContent;
       const cue=document.querySelector("#cue").textContent;
       const scene=document.querySelector("#scene");
+      const fetchButton=document.querySelector('#fetch');
+      if (!fetchButton.disabled) {
+        const uses=Number(scene.dataset.fetchUses||0);
+        if(uses%2===0) window.dispatchEvent(new window.KeyboardEvent('keydown',{code:'KeyF',key:'f',bubbles:true}));
+        else fetchButton.dispatchEvent(new window.PointerEvent('pointerdown',{bubbles:true,pointerType:'touch'}));
+      }
       regions.add(document.querySelector("#region-name").textContent);
       zipline ||= scene.dataset.posture === "zipline";
       landed ||= zipline && document.querySelector("#toast").textContent.includes("Zipline complete");
@@ -366,7 +372,7 @@ export function uiPlayCheck(seconds=22) {
       if(cue.includes("TURN RIGHT"))turnDirections.add("right");
       turnAccepted ||= cue.includes("TURN SET");
       if(now-lastAction>250) {
-        for (const [first, second] of [["#power","#mission-hud"],["#power","#controls"],["#mission-hud","#controls"]]) {
+        for (const [first, second] of [["#power","#mission-hud"],["#power","#controls"],["#mission-hud","#controls"],["#fetch","#mission-hud"],["#fetch","#power"]]) {
           const a=document.querySelector(first).getBoundingClientRect(),b=document.querySelector(second).getBoundingClientRect();
           if(a.width && a.height && b.width && b.height && a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top)layoutIssues.add(`${first} overlaps ${second}`);
         }

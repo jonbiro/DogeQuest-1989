@@ -324,6 +324,7 @@ const keyActions = {
   Space: "jump",
   ArrowDown: "slide",
   KeyS: "slide",
+  KeyF: "fetch",
 };
 window.addEventListener("keydown", (event) => {
   if (event.key === "Tab" && !$("overlay").hidden) {
@@ -482,6 +483,7 @@ function frame(now) {
       }
       if (event === "gift") tone("reward");
       if (event === "zoomies") tone("zoomies");
+      if (event === "fetch") tone(900, .25);
       if (event === "smash") tone(260,.08);
       if(event==="zipline-start") tone("zoomies");
       if(event==="zipline-end") tone("reward");
@@ -525,6 +527,16 @@ function frame(now) {
         );
       }
       setText('cue', actionCue(run));
+      const fetchButton = $('fetch');
+      $('scene').dataset.fetchUses = String(run.fetchUses);
+      fetchButton.disabled = run.fetchCharge < 100 || run.magnet > 0;
+      fetchButton.classList.toggle('ready', !fetchButton.disabled);
+      setText('fetch', run.fetchTime > 0 ? `FETCH · ${Math.ceil(run.fetchTime)}s`
+        : run.magnet > 0 ? `MAGNET ACTIVE · ${run.fetchCharge}%`
+        : run.fetchCharge === 100 ? 'FETCH READY · F' : `FETCH · ${run.fetchCharge}%`);
+      fetchButton.setAttribute('aria-label', run.fetchTime > 0 ? 'Fetch active'
+        : run.magnet > 0 ? `Magnet active. Fetch charge ${run.fetchCharge} percent`
+        : `Fetch ${run.fetchCharge === 100 ? 'ready. Tap or press F to collect nearby bones for four seconds' : `${run.fetchCharge} percent charged`}`);
       const turn = turnPrompt(run);
       $("scene").dataset.turn = turn ? `${turn.direction}-${turn.status}` : '';
       for (const direction of ['left','right']) {

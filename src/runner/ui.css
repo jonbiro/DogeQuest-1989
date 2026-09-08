@@ -632,8 +632,23 @@ kbd {
   touch-action: none;
   user-select: none;
 }
-#controls button:nth-child(3) {
+#controls button[data-action="slide"] {
   margin-left: auto;
+}
+#controls #fetch {
+  min-width: 58px;
+  width: 64px;
+  height: 56px;
+  padding: 0 4px;
+  font-size: 9px;
+  font-weight: 800;
+  border-radius: 14px;
+}
+#controls #fetch:disabled { opacity: .75; }
+#controls #fetch.ready { background: #98f5e1; color: #123b32; border-color: #c5fff0; }
+@media (max-width: 380px) {
+  #controls { gap: 7px; }
+  #controls button, #controls #fetch { min-width: 48px; }
 }
 #controls small {
   font-size: 8px;

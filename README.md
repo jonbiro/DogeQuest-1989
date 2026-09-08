@@ -48,6 +48,12 @@ Click **Let’s go outside** or press Enter with the start button focused.
 
 Hop on beetles from above. Each trail awards one star for reaching home, one for finding at least 65% of bones, and one for finishing without retries. Best times and star counts are saved locally in this browser. No account is needed.
 
+Runner ability: **Fetch** charges from hand-collected bones (+2%), clean
+obstacle clears (+12%) and correct marked turns (+20%). At 100%, tap the Fetch
+button or press F for four seconds of magnet collection. Charge stays banked
+until used, cannot be spent over another magnet, and resets on retry. The burst
+does not recharge itself. It collects aerial bones only while riding a zipline.
+
 ## Development
 
 Requires Node.js 20.19+ and npm.

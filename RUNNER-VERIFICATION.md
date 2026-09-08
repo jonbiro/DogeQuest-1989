@@ -1,5 +1,25 @@
 # Runner verification
 
+## Player-controlled Fetch ability
+
+- Fetch earns 2% per hand-collected bone, 12% per clean obstacle and 20% per
+  correct marked turn. At 100%, F or the touch button starts a four-second
+  magnet. Active magnets preserve charge; Fetch cannot recharge itself.
+  Saves and jump/slide durations are unchanged; charge is run-local.
+- Build, artifact checks, lint and all 125 tests pass. Ability tests cover
+  charge/cap/single spend, correct skill rewards, assisted-smash exclusion,
+  actual side-lane collection, aerial exclusion on the ground, expiry, zipline
+  activation, ended-run rejection and fresh retry. An additional simulation
+  check confirmed aerial collection while riding.
+- Browser run at 390x844: 60 seconds, 1,821 meters, 3,602 frames, mean 16.66ms,
+  p95 16.70ms, three hearts, three correct turns, zero missed turns, all regions,
+  courses 2/1/1, zipline catch and landing. Three actual Fetch activations used
+  alternating keyboard and touch input. No HUD overlaps or browser errors.
+- A first layout overlapped the guidance dock; it was replaced before release.
+  Final 320x568 layout inspection confirmed five separate controls, each at
+  least 48x56 pixels and fully on screen. Desktop emulation, not physical-phone
+  performance verification. Persistent mastery remains unfinished.
+
 ## Regional courses and pressure/recovery pacing
 
 - Replaced the generic repeated sequence with three authored regional courses:
