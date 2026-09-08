@@ -1,5 +1,4 @@
 import * as THREE from "three";
-import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { LANES, PICKUPS, seededRandom } from "./world.js";
 import { routeFrame } from "./route.js";
@@ -76,7 +75,7 @@ export function createView(canvas) {
     box(tile, "#526d49", 0, -0.55, 0, 9.2, 1, 5.4);
     box(tile, "#c1ba88", 0, -0.04, 0, 7.8, 0.15, 5.4);
     for (const x of [-4.25, 4.25])
-      box(tile, "#ddd1a0", x, 0.08, 0, 0.45, 0.3, 5.4);
+      box(tile, "#526453", x, 0.08, 0, 0.45, 0.3, 5.4).userData.edge = true;
     for (let lane = 0; lane < 3; lane++) {
       box(
         tile,
@@ -90,7 +89,7 @@ export function createView(canvas) {
       );
     }
     for (const x of [-1.2, 1.2])
-      box(tile, "#e3d7a3", x, 0.11, 0, 0.045, 0.03, 2.8);
+      box(tile, "#667557", x, 0.11, 0, 0.065, 0.03, 2.8).userData.edge = true;
     // Alternative deck shares the road's recycled instances and curve transform.
     const bridge = new THREE.Group();
     const bridgeBox = (...args) => {
@@ -209,7 +208,10 @@ export function createView(canvas) {
   });
   // Keep a wider visual corridor around playable lanes without moving hazards.
   for (const group of decorations)
-    if (!group.userData.gateway) group.position.x *= 1.25;
+    if (!group.userData.gateway) {
+      group.position.x *= 1.4;
+      group.scale.setScalar(.82);
+    }
   scenery.updateMatrixWorld(true);
   for (const geometry of [boxGeometry, coneGeometry, sphereGeometry]) {
     const entries = [];
@@ -227,6 +229,7 @@ export function createView(canvas) {
             water: item.userData.water === true,
             cable: item.userData.cable === true,
             terrain: item.userData.terrain === true,
+            edge: item.userData.edge === true,
           });
       });
     for (const group of decorations.filter(
@@ -251,7 +254,7 @@ export function createView(canvas) {
     );
     instanced.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     entries.forEach((entry, i) => {
-      entry.colors = regionColors.map((palette,index) => entry.terrain ? palette.ground : index===0 ? entry.color : entry.color.clone().lerp(palette.stone,.72));
+      entry.colors = regionColors.map((palette,index) => entry.terrain ? palette.ground : index===0 ? entry.color : entry.color.clone().lerp(palette.stone,entry.edge ? .08 : .72));
       instanced.setColorAt(i, entry.color);
     });
     instanced.frustumCulled = false;
@@ -424,23 +427,32 @@ export function createView(canvas) {
   scene.add(flashes);
   const flashMatrix = new THREE.Matrix4();
   const templates = {};
-  templates.bone = new THREE.Group();
-  box(templates.bone, "#ffd66e", 0, 0, 0, 0.6, 0.14, 0.14);
-  for (const x of [-0.32, 0.32])
-    for (const y of [-0.09, 0.09])
-      ball(templates.bone, "#ffe39a", x, y, 0, 0.15, 0.15, 0.15);
-  templates.bone.updateMatrixWorld(true);
-  const boneParts = templates.bone.children.map((part) =>
-    (part.geometry.index
-      ? part.geometry.toNonIndexed()
-      : part.geometry.clone()
-    ).applyMatrix4(part.matrixWorld),
-  );
-  templates.bone = new THREE.Mesh(mergeGeometries(boneParts),
-    new THREE.MeshStandardMaterial({color:'#e58b08',roughness:.45,metalness:.25,
-      emissive:'#a35c00',emissiveIntensity:.25}));
+  const boneShape=new THREE.Shape();
+  boneShape.moveTo(-.22,.08);boneShape.lineTo(.22,.08);
+  boneShape.bezierCurveTo(.2,.25,.47,.28,.5,.14);
+  boneShape.bezierCurveTo(.58,.08,.56,.02,.48,0);
+  boneShape.bezierCurveTo(.56,-.02,.58,-.08,.5,-.14);
+  boneShape.bezierCurveTo(.47,-.28,.2,-.25,.22,-.08);
+  boneShape.lineTo(-.22,-.08);
+  boneShape.bezierCurveTo(-.2,-.25,-.47,-.28,-.5,-.14);
+  boneShape.bezierCurveTo(-.58,-.08,-.56,-.02,-.48,0);
+  boneShape.bezierCurveTo(-.56,.02,-.58,.08,-.5,.14);
+  boneShape.bezierCurveTo(-.47,.28,-.2,.25,-.22,.08);
+  const boneGeometry=new THREE.ExtrudeGeometry(boneShape,{depth:.14,bevelEnabled:true,bevelThickness:.035,bevelSize:.025,bevelSegments:2,steps:1,curveSegments:8});
+  boneGeometry.translate(0,0,-.07);
+  const boneNormals=boneGeometry.attributes.normal;
+  const boneColors=new Float32Array(boneNormals.count*3);
+  const boneFace=new THREE.Color('#ffe8aa'),boneEdge=new THREE.Color('#693714');
+  const boneColor=new THREE.Color();
+  // Baked side contrast keeps the bone readable without an outline draw per pickup.
+  for(let i=0;i<boneNormals.count;i++) {
+    const face=THREE.MathUtils.smoothstep(Math.abs(boneNormals.getZ(i)),.45,.85);
+    boneColor.copy(boneEdge).lerp(boneFace,face).toArray(boneColors,i*3);
+  }
+  boneGeometry.setAttribute('color',new THREE.BufferAttribute(boneColors,3));
+  templates.bone = new THREE.Mesh(boneGeometry,
+    new THREE.MeshStandardMaterial({vertexColors:true,roughness:.55,metalness:.1}));
   templates.bone.scale.setScalar(1.3);
-  boneParts.forEach((part) => part.dispose());
   templates.rock = new THREE.Group();
   box(templates.rock, "#293e49", 0, 1.05, 0, 1.75, 2.1, 1.4);
   box(templates.rock, "#aec191", 0, 2.13, 0, 1.9, 0.2, 1.5);
@@ -452,9 +464,11 @@ export function createView(canvas) {
     box(templates.log, "#ebc078", x, 0.5, 0.41, 0.18, 0.65, 0.04);
   templates.arch = new THREE.Group();
   for (const x of [-1, 1])
-    box(templates.arch, "#154052", x, 1.45, 0, 0.22, 2.9, 0.6);
+    box(templates.arch, "#154052", x, 1.45, 0, 0.3, 2.9, 0.6);
   box(templates.arch, "#175c70", 0, 1.95, 0, 2.2, 1.15, 0.7);
-  box(templates.arch, "#86ffed", 0, 1.46, 0.38, 1.85, 0.16, 0.04);
+  box(templates.arch, "#102b36", 0, 1.46, 0.38, 1.85, 0.22, 0.08);
+  for(const x of [-.72,.72])
+    box(templates.arch, "#b3ffe7", x, 1.48, .43, .2, .15, .04);
   templates.magnet = new THREE.Group();
   for (const x of [-0.28, 0.28]) {
     box(templates.magnet, "#ff8d83", x, 0, 0, 0.2, 0.75, 0.2);
@@ -498,14 +512,18 @@ export function createView(canvas) {
   templates.branch = new THREE.Group();
   box(templates.branch, "#6c4b2e", 0, 1.7, 0, 2.3, 0.8, 0.8);
   for (const x of [-0.9, 0.6])
-    ball(templates.branch, "#4e944f", x, 2.2, 0, 0.7, 0.5, 0.6);
-  box(templates.branch, "#86ffed", 0, 1.28, 0.43, 1.8, 0.13, 0.06);
+    ball(templates.branch, "#4e744f", x, 2.13, 0, 0.35, 0.22, 0.32);
+  box(templates.branch, "#102b36", 0, 1.28, 0.43, 1.8, 0.2, 0.08);
+  for(const x of [-.72,.72])
+    box(templates.branch, "#b3ffe7", x, 1.3, .48, .2, .15, .04);
   templates.gate = new THREE.Group();
   for (const x of [-1, 1])
-    box(templates.gate, "#154052", x, 1.5, 0, 0.2, 3, 0.4);
+    box(templates.gate, "#154052", x, 1.5, 0, 0.3, 3, 0.4);
   for (const x of [-0.65, 0, 0.65])
     box(templates.gate, "#175c70", x, 2.1, 0, 0.16, 1.55, 0.3);
-  box(templates.gate, "#86ffed", 0, 1.33, 0, 2.1, 0.15, 0.4);
+  box(templates.gate, "#102b36", 0, 1.33, 0, 2.1, 0.22, 0.4);
+  for(const x of [-.8,.8])
+    box(templates.gate, "#b3ffe7", x, 1.35, .23, .2, .15, .04);
   templates.gem = new THREE.Group();
   const gem = new THREE.Mesh(new THREE.OctahedronGeometry(.66),
     new THREE.MeshStandardMaterial({color:"#962ed4",roughness:.3,metalness:.15,flatShading:true}));

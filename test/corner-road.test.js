@@ -70,10 +70,34 @@ test('later corners preserve a wooden river deck instead of overlapping bridge r
   assert.equal(road.update(distance,z=>routeFrame(distance,z)).at,2950);
   const colors = road.geometry.getAttribute('color').array;
   const pavingOffset = 60 * 6 * 3;
-  const wood = new THREE.Color('#c9915e');
-  assert.ok(Math.abs(colors[pavingOffset]-wood.r)<1e-6);
-  assert.ok(Math.abs(colors[pavingOffset+1]-wood.g)<1e-6);
-  assert.ok(Math.abs(colors[pavingOffset+2]-wood.b)<1e-6);
+  const woods = [new THREE.Color('#c9915e'),new THREE.Color('#b77c4c')];
+  const seen=new Set();
+  for(let segment=0;segment<60;segment++) {
+    const station=2947.5+segment*.5+.25;
+    const shade=Math.floor(station)%2;
+    const wood=woods[shade],offset=pavingOffset+segment*18;
+    assert.ok(Math.abs(colors[offset]-wood.r)<1e-6);
+    assert.ok(Math.abs(colors[offset+1]-wood.g)<1e-6);
+    assert.ok(Math.abs(colors[offset+2]-wood.b)<1e-6);
+    seen.add(shade);
+  }
+  assert.equal(seen.size,2,'Wood planks retain alternating depth cues');
   assert.ok(road.geometry.getAttribute('position').array.every(Number.isFinite));
+  road.dispose();
+});
+
+test('land corner curbs retain luminance separation across region palettes',()=>{
+  const road=createCornerRoad(new THREE.Scene());
+  for(const distance of [140,940,8540]) {
+    road.update(distance,z=>routeFrame(distance,z));
+    const colors=road.geometry.getAttribute('color').array;
+    const stride=60*6*3;
+    // Sample inside the corner, not its extension before a region boundary.
+    const luminance=stripOffset=>{
+      const offset=stripOffset+20*18;
+      return colors[offset]*.2126+colors[offset+1]*.7152+colors[offset+2]*.0722;
+    };
+    assert.ok((luminance(stride)+.05)/(luminance(stride*2)+.05)>2.5,`Faint curb at ${distance}`);
+  }
   road.dispose();
 });

@@ -11,27 +11,49 @@ Full goal remains active. Partial work is not completion.
 | 4 Clubhouse | Implemented separate category navigation and cached model previews; browsing preserves saved profile |
 | 5 Passport | Partial: separate Passport category, current dog first; richer badge presentation remains |
 | 6 Portrait gameplay | Partial: larger score/action text; dog contrast pending |
-| 7 Bridge approach | Pending: bones, lanes and overhead silhouette |
+| 7 Bridge approach | Partial: continuous cream bone silhouette with dark sides, darker lane inlays, consistent overhead clearance edges and reduced branch foliage; final motion/non-color checks remain |
 | 8 Results | Implemented: one next puppy milestone, full rewards/stats behind an expandable section; score and failure advice stay prominent |
 | 9 Small results | Implemented: 320x568 screenshot confirms score, lesson, next milestone and retry visible; expanded rewards retain fixed actions |
 | 10 Small camp | Pending |
 | 11 Landscape camp | Pending |
 | 12 Landscape gameplay | Implemented corner controls and side guidance; camera center stays unobscured in inspected 844x390 screenshot; physical/coarse-pointer verification pending |
 | 13 Pause | Preserve; regression checks remain |
-| 14 Regions | Pending: depth and visual language |
-| 15 Pickups | Partial: pointed shield, faceted gem and dark tennis seams implemented; bone contours and color-independent testing remain |
+| 14 Regions | Partial: restrained scenery scale/setback and region-resistant curb contrast; complete recognition/accessibility checks remain |
+| 15 Pickups | Partial: pointed shield, faceted gem, dark tennis seams and dark-edged continuous bone silhouette implemented; color-independent testing remains |
 | 16 Powers | Partial: compact darker magnet rings, stronger shield bubble and speed streaks; full stacked-HUD / motion checks remain |
 | 17 Movement | Pending: Mochi articulation without timing changes |
 | 18 Outfits | Implemented front and rear/three-quarter preview toggle; 24 combinations in each angle inspected |
 | 19 Zipline | Partial: dark cable/tether and contrasting grip; approach catch-zone work remains |
-| 20 Split rows | Pending: clearance edge |
+| 20 Split rows | Implemented dark underside edges, light endpoint markers and stronger uprights across gate/arch/branch vocabulary; final motion checks remain |
 | 21 Route choices | Implemented: Scenic / Fewer obstacles and Challenge / More points signs; final motion and non-color recognition checks remain |
 | 22 Mochi | Pending: fur, brow and muzzle refinement |
-| 23 Turns/hills | Pending: depth; complete later-river visual coverage |
+| 23 Turns/hills | Partial: darker curbs and alternating river-corner plank bands; all seven terrain panels now captured and inspected, including later river; water polish remains |
 | 24 Desktop camp | Partial: dark name/description backing and larger companion label verified at 1440x900; secondary hierarchy remains |
-| 25 Desktop run | Partial: removed control fading; scenery/depth pending |
+| 25 Desktop run | Partial: removed control fading, reduced nearby scenery scale and increased setback; final motion coverage remains |
 
 ## Current evidence
+
+- Trail-clarity slice: redesigned the bone as one continuous beveled shape with
+  baked cream faces and dark sides. Replaced the initial multi-lobe attempt after
+  screenshots showed internal ring clutter. Remains one mesh/draw per pickup.
+  Regional bridge/course and split-row screenshots inspected; lane and curb
+  colors stay dark instead of washing out into each region's stone palette.
+- All seven terrain panels inspected using separate top, middle and bottom
+  captures. The 2,962.5m river corner now has alternating wooden bands and dark
+  curb edges. New tests check finite/reused geometry, both plank colors, and
+  material-space curb luminance separation inside each of three region palettes.
+  These are rendering regressions, not a claim of screen-space WCAG compliance.
+- Overhead arch, gate and branch now share a dark clearance edge with two light
+  endpoints; branch foliage reduced. Non-gateway scenery is smaller and farther
+  from the road. No movement, collision, reward or saved-profile rules changed.
+- Renderer checks: three 4,500m runs, three hearts throughout, 21 turns, nine
+  ziplines and 13 split rows. Peak 19 geometries, five textures, 121 pooled/active
+  objects and 204 draw calls, within the unchanged limits. Regression suite now
+  has 135 tests, including the new curb-color test.
+- Fresh 1440x900 reduced-motion input run: 1,105m, three hearts, two accepted
+  turns, all regions, zipline catch/landing and no reported HUD overlap. Inspected
+  all eight pickup silhouettes in a grayscale gallery: forms remain distinct;
+  this is not a substitute for user recognition or color-vision testing.
 
 - Guidance/results slice: illustrated help uses the actual obstacle meshes and
   existing renderer, with three cached images and no new GPU context. Images

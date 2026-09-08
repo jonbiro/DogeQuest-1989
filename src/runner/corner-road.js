@@ -19,7 +19,7 @@ const VERTEX_COUNT = SEGMENTS * STRIPS.length * VERTICES_PER_QUAD;
 const baseColors = {
   base: new THREE.Color("#526d49"),
   paving: new THREE.Color("#c1ba88"),
-  curb: new THREE.Color("#ddd1a0"),
+  curb: new THREE.Color("#526453"),
 };
 const regionColors = REGIONS.map((region, index) => {
   const stone = new THREE.Color(region.stone);
@@ -27,13 +27,14 @@ const regionColors = REGIONS.map((region, index) => {
     base: index === 0 ? baseColors.base : baseColors.base.clone().lerp(stone, 0.72),
     paving:
       index === 0 ? baseColors.paving : baseColors.paving.clone().lerp(stone, 0.72),
-    curb: index === 0 ? baseColors.curb : baseColors.curb.clone().lerp(stone, 0.72),
+    curb: index === 0 ? baseColors.curb : baseColors.curb.clone().lerp(stone, 0.08),
   };
 });
 const bridgeColors = {
   base: new THREE.Color('#64472e'),
   paving: new THREE.Color('#c9915e'),
-  curb: new THREE.Color('#efd6a0'),
+  pavingAlternate: new THREE.Color('#b77c4c'),
+  curb: new THREE.Color('#765036'),
 };
 
 function writeVertex(positions, normals, colors, offset, frame, across, height, color) {
@@ -123,7 +124,8 @@ export function createCornerRoad(scene) {
         const right = strip.center + halfWidth;
         const station = (stationA + stationB) / 2;
         const palette = isBridge(station) ? bridgeColors : regionColors[regionAt(station)];
-        const color = palette[strip.color];
+        const color = palette===bridgeColors && strip.color==='paving' && Math.floor(station)%2
+          ? bridgeColors.pavingAlternate : palette[strip.color];
 
         offset = writeVertex(positions, normals, colors, offset, frameA, left, strip.height, color);
         offset = writeVertex(positions, normals, colors, offset, frameA, right, strip.height, color);
