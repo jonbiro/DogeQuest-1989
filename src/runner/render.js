@@ -207,6 +207,9 @@ export function createView(canvas) {
     roughness: 0.9,
     flatShading: true,
   });
+  // Keep a wider visual corridor around playable lanes without moving hazards.
+  for (const group of decorations)
+    if (!group.userData.gateway) group.position.x *= 1.25;
   scenery.updateMatrixWorld(true);
   for (const geometry of [boxGeometry, coneGeometry, sphereGeometry]) {
     const entries = [];
@@ -226,7 +229,9 @@ export function createView(canvas) {
             terrain: item.userData.terrain === true,
           });
       });
-    for (const group of decorations)
+    for (const group of decorations.filter(
+      (group, index) => group.userData.gateway || index % 3 !== 1,
+    ))
       group.traverse((item) => {
         if (item.geometry === geometry)
           entries.push({

@@ -1,5 +1,21 @@
 # Runner verification
 
+## Contrast and scenery decluttering follow-up
+
+- Noninteractive scenery sits 25% farther from the lane center; roughly one
+  third of nongateway decoration groups are omitted. Hazards, route markers,
+  rewards and collision geometry are unchanged.
+- Score, bones, mission and touch controls have darker backings; hearts have
+  a dark edge shadow. Removed control backdrop blur for a cleaner silhouette.
+- All 134 tests, lint, build and distribution checks passed. Inspected the
+  running HUD at 390x844 and all three regional previews. Worst-case HUD
+  checks at 320x568 and 844x390 reported no overlaps or out-of-bounds controls.
+- Three seeded 4,500m runs retained all hearts, completed 21 turns and nine
+  ziplines, and exercised 13 split rows. Renderer peaks: 15 geometries, four
+  textures, 121 objects and 197 draw calls. An input-driven 40-second local
+  run also retained all hearts and caught/landed the zipline. These are desktop
+  browser checks, not physical-phone verification.
+
 ## In-run visual readability
 
 - Bones are 30% larger with a saturated gold, shaded material and bounded
