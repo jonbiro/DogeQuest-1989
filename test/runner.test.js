@@ -191,13 +191,39 @@ test("a lane-following runner survives a long seeded route at maximum difficulty
 });
 test("jump clears logs and blocks across a forgiving early-to-late input window", () => {
   for (const type of ["log", "rock"])
-    for (const lead of [0.2, 0.4, 0.7, 0.9]) {
+    for (const lead of [0.2, 0.3, 0.4, 0.5]) {
       const run = obstacle(type);
       run.objects[0].at = lead * 18;
       act(run, "jump");
       advance(run, 1.4);
       assert.equal(run.hearts, 3, `${type} with ${lead}s lead`);
     }
+});
+test("short action cues clear every obstacle at starting, top and boost-transition speeds", () => {
+  for (const type of ["log", "rock", "gap", "arch", "branch", "gate"])
+    for (const speed of [22, 36, 46.8])
+      for (const lead of [0.3, 0.45]) {
+        const run = createRun(1);
+        run.distance = speed === 22 ? 0 : 2000;
+        run.speed = speed;
+        run.objects = [{id: 999, at: run.distance + speed * lead, lane: 1, type}];
+        run.nextRow = Infinity;
+        run.nextChoice = Infinity;
+        run.nextZipline = Infinity;
+        act(run, ["arch", "branch", "gate"].includes(type) ? "slide" : "jump");
+        advance(run, 1);
+        assert.equal(run.hearts, 3, `${type} at ${speed}m/s with ${lead}s lead`);
+        assert.equal(run.clears, 1);
+      }
+});
+test("jumping or sliding far too early no longer protects the player", () => {
+  for (const [type, action] of [["rock", "jump"], ["gate", "slide"]]) {
+    const run = obstacle(type);
+    run.objects[0].at = run.speed * .85;
+    act(run, action);
+    advance(run, 1.2);
+    assert.equal(run.hearts, 2, `${action} should have finished before the ${type}`);
+  }
 });
 test("every overhead obstacle supports slides but catches upright runners", () => {
   for (const type of ["arch", "branch", "gate"]) {
@@ -242,9 +268,9 @@ test("earned upgrades spend points, reject unaffordable purchases, and cap at le
 test("upgrades affect the next run without changing the baseline or profile", () => {
   const run = createRun(1, { leap: 3, slide: 3, magnet: 3, value: 3 });
   act(run, "jump");
-  assert.equal(run.vy, 15.5);
+  assert.equal(run.vy, 18.2);
   act(run, "slide");
-  assert.equal(run.slide, 1.75);
+  assert.equal(run.slide, 0.79);
   run.objects = [
     { id: 900, type: "magnet", lane: 1, at: 2 },
     { id: 901, type: "bone", lane: 1, at: 4 },

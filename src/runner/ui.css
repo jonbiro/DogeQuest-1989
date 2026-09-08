@@ -14,18 +14,9 @@
   color: #ecffdc;
 }
 #cue {
-  position: fixed;
-  width: max-content;
-  left: 50%;
-  top: 42%;
-  transform: translateX(-50%);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: bold;
-  color: #173c32;
-  background: #efffc9;
-  border-radius: 24px;
-  padding: 10px 18px;
-  box-shadow: 0 4px 18px #102a2844;
+  color: var(--lime);
 }
 #cue:empty {
   display: none;
@@ -37,7 +28,7 @@
   left: 5%;
   right: 5%;
   z-index: 2;
-  padding: 9px 12px;
+  padding: 8px 12px;
   background: #102a28cb;
   border: 1px solid #d5edb633;
   border-radius: 12px;
@@ -235,7 +226,7 @@ h1 em {
   order: 3;
   color: var(--lime);
 }
-#route-choice { margin-bottom:8px; padding:8px 12px; border-radius:12px; background:#173c32ed; color:#efffc9; font-size:12px; line-height:1.5; }
+#route-choice { color:#efffc9; font-size:10px; line-height:1.5; }
 #route-choice:empty { display:none; }
 .save-notice { flex-basis:100%; grid-column:1/-1; margin:0 0 6px; padding:8px 10px; background:#493c26; border:1px solid #edc47788; border-radius:10px; font-size:11px; line-height:1.4; color:#fff0cb; }
 #game[data-storage="unavailable"] .intro, #game[data-storage="unavailable"] .menu-stats { display:none; }
@@ -455,45 +446,36 @@ footer .text-button {
 }
 #power {
   position: absolute;
-  top: 85px;
+  top: 82px;
   left: 0;
+  right: 0;
   color: var(--lime);
   font-size: 11px;
-  background: #102a2899;
-  border-radius: 15px;
-  padding: 7px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 #power:empty {
   display: none;
 }
-#power {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 0;
-  background: transparent;
-  max-width: 240px;
-}
 .power-chip {
   display: block;
-  padding: 9px 12px;
-  border-radius: 12px;
-  background: #102a28e8;
-  border: 1px solid #bcece966;
+  padding: 6px 8px;
+  border-radius: 9px;
+  background: #102a28cc;
+  border: 1px solid #bcece944;
   font-size: 10px;
   color: #d9fff4;
+  white-space: nowrap;
 }
 .power-chip small {
-  display: block;
-  font-size: 9px;
-  margin-top: 5px;
-  color: #b5d7cc;
+  display: none;
 }
 .power-chip progress {
   display: block;
   width: 100%;
-  height: 4px;
-  margin-top: 8px;
+  height: 2px;
+  margin-top: 3px;
   border: 0;
   appearance: none;
   background: #ffffff25;
@@ -513,21 +495,10 @@ footer .text-button {
   color: #ffe39a;
 }
 .toast {
-  position: absolute;
-  z-index: 5;
-  top: 28%;
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
   pointer-events: none;
-  font-size: 13px;
-  color: #fff;
-  border-radius: 25px;
-  background: #102a28dd;
-  padding: 12px 20px;
-  width: max-content;
-  max-width: 85%;
-  box-shadow: 0 5px 20px #0002;
+  font-size: 11px;
+  line-height: 1.4;
+  color: #ecffdc;
 }
 .toast:empty {
   display: none;
@@ -810,10 +781,6 @@ kbd {
   .modal h2 {
     font-size: 31px;
   }
-  .toast {
-    top: 32%;
-    font-size: 11px;
-  }
   .back-link {
     max-width: 67px;
     line-height: 1.4;
@@ -925,10 +892,6 @@ kbd {
 }
 @media (max-width: 700px) and (orientation: portrait) {
   #power {
-    right: 0;
-    max-width: none;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 4px;
   }
   .power-chip {
@@ -936,30 +899,21 @@ kbd {
     font-size: 9px;
   }
   .power-chip small { display: none; }
-  .power-chip progress { margin-top: 4px; height: 3px; }
-}
-@media (max-width: 700px) and (orientation: portrait) and (max-height: 740px) {
-  #cue { top: 53%; max-width: 90%; text-align: center; }
+  .power-chip progress { margin-top: 3px; height: 2px; }
 }
 @media (orientation: landscape) and (max-height: 520px) {
-  #hud.has-powers { top: 112px; }
+  #hud { top: 58px; }
+  .score strong { font-size: 24px; }
   #power {
-    position: fixed;
-    top: 60px;
-    left: 4%;
-    right: 4%;
-    max-width: none;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 4px;
+    top: 56px;
   }
   .power-chip { padding: 5px 6px; font-size: 8px; }
   .power-chip small { display: none; }
-  .power-chip progress { margin-top: 3px; height: 3px; }
+  .power-chip progress { margin-top: 3px; height: 2px; }
   .run-stats { flex-direction: row; align-items: center; gap: 8px; }
   .bones { padding: 6px 10px; font-size: 14px; }
   #hearts { font-size: 15px; }
   #mission-hud { bottom: 84px; padding: 5px 8px; font-size: 9px; }
-  #route-choice { margin-bottom: 4px; padding: 4px 6px; font-size: 10px; line-height: 1.2; }
+  #route-choice { font-size: 10px; line-height: 1.2; }
   #mission-progress { margin-top: 4px; }
 }

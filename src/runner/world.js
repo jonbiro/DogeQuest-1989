@@ -13,6 +13,8 @@ import { levels } from "./progression.js";
 import { jump, steer, moveVertical, JUMP_BUFFER } from "./motion.js";
 import { ZIPLINE_FIRST, ZIPLINE_PERIOD, ZIPLINE_LENGTH, ZIPLINE_HEIGHT } from "./ziplines.js";
 const SOLID_HAZARDS = ["rock", "log", "arch", "branch", "gate"];
+export const BASE_SLIDE_DURATION = .58;
+export const SLIDE_UPGRADE_DURATION = .07;
 export const HAZARDS = [...SOLID_HAZARDS,"gap"];
 export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart", 'gift', 'zoomies'];
 export function createRun(seed = Date.now(), upgrades = {}) {
@@ -163,7 +165,7 @@ export function act(run, action) {
     else run.jumpBuffer = JUMP_BUFFER;
   }
   if (action === "slide") {
-    run.slide = 1.15 + run.upgrades.slide * 0.2;
+    run.slide = BASE_SLIDE_DURATION + run.upgrades.slide * SLIDE_UPGRADE_DURATION;
     run.diving = run.y > 0;
     if (!run.diving) run.vy = 0;
     run.jumpBuffer = 0;

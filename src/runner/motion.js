@@ -1,14 +1,26 @@
 // Motion uses meters and seconds. Exact spring/ballistic integration keeps
 // steering and jump timing consistent across the supported simulation steps.
-export const GRAVITY = 22;
-export const JUMP_BUFFER = .18;
+export const JUMP_DURATION = .72;
+export const JUMP_SPEED = 14;
+export const GRAVITY = 2 * JUMP_SPEED / JUMP_DURATION;
+export const JUMP_BUFFER = .12;
 const LANE_SPRING = 26, DIVE_GRAVITY = 180, DIVE_TERMINAL = 28;
+
+function leapScale(run) {
+  return 1 + run.upgrades.leap * .1;
+}
+
+function jumpGravity(run) {
+  // Upgrades add clearance without stretching the input lockout. The launch
+  // speed and gravity scale together, so every level keeps the same airtime.
+  return GRAVITY * leapScale(run);
+}
 
 export function jump(run) {
   run.slide = 0;
   run.diving = false;
   run.jumpBuffer = 0;
-  run.vy = 12.5 * (1 + run.upgrades.leap * .08);
+  run.vy = JUMP_SPEED * leapScale(run);
   run.events.push('jump');
 }
 
@@ -23,7 +35,8 @@ export function steer(run, target, dt) {
 function fall(run, gravity, duration) {
   if (duration <= 0) return {elapsed: 0, landed: false};
   const endY = run.y + run.vy * duration - gravity * duration * duration / 2;
-  if (endY > 0) {
+  // Do not delay a boundary landing by a tick because of sub-nanometer roundoff.
+  if (endY > 1e-10) {
     run.y = endY;
     run.vy -= gravity * duration;
     return {elapsed: duration, landed: false};
@@ -42,7 +55,7 @@ export function moveVertical(run, dt) {
     run.jumpBuffer = Math.max(0, run.jumpBuffer - dt);
     return;
   }
-  const gravity = run.diving ? DIVE_GRAVITY : GRAVITY;
+  const gravity = run.diving ? DIVE_GRAVITY : jumpGravity(run);
   const accelerating = run.diving ? Math.min(dt, Math.max(0, (run.vy + DIVE_TERMINAL) / gravity)) : dt;
   let result = fall(run, gravity, accelerating);
   if (!result.landed && accelerating < dt) {
@@ -56,7 +69,7 @@ export function moveVertical(run, dt) {
     // A late press belongs to the next takeoff, regardless of leap height.
     if (run.jumpBuffer > result.elapsed) {
       jump(run);
-      fall(run, GRAVITY, remaining);
+      fall(run, jumpGravity(run), remaining);
     } else {
       run.slide = Math.max(0, run.slide - remaining);
     }

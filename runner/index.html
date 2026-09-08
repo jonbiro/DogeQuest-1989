@@ -99,10 +99,12 @@
           ><span id="hearts" aria-label="3 hearts remaining">♥ ♥ ♥</span>
         </div>
         <div id="power"></div>
-        <div id="cue" aria-live="polite"></div>
       </section>
-      <section id="mission-hud" aria-label="Current run challenge">
+      <section id="mission-hud" aria-label="Trail guidance and goal">
         <div id="route-choice"></div>
+        <div id="cue" aria-live="polite"></div>
+        <div id="toast" class="toast" role="status" aria-live="polite"></div>
+        <div id="mission-summary">
         <span id="mission-label"></span
         ><progress
           id="mission-progress"
@@ -110,8 +112,8 @@
           max="300"
           value="0"
         ></progress>
+        </div>
       </section>
-      <div id="toast" class="toast" role="status" aria-live="polite"></div>
       <section
         id="overlay"
         class="overlay"

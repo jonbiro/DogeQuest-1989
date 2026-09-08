@@ -6,9 +6,11 @@ Meet Biscuit: a small golden dog with a red scarf and five handcrafted trails to
 
 ## New companion: Biscuit Dash
 
-**Run challenges:** Complete a distance, bone-collection, or clean-clear goal in one run to earn additional upgrade points. Goals rotate and grow after each completion. Rewards are credited once when the run ends. The HUD shows live goal progress and contextual jump/slide cues. Every ten consecutive bones grants +100 points; each successful jump/slide over an obstacle grants +20 points.
+**Run challenges:** Complete a distance, bone-collection, or clean-clear goal in one run to earn additional upgrade points. Goals rotate and grow after each completion. Rewards are credited once when the run ends. A compact strip above the controls shows one useful item at a time: an action cue, route choice, important notice or unfinished goal. No center-screen banners or repeated run tutorials. Every ten consecutive bones grants +100 points; each successful jump/slide over an obstacle grants +20 points.
 
 Movement uses interpolated rendering, momentum-aware lane changes, smooth camera follow and accelerated airborne dives. A jump pressed just before landing is buffered for the next takeoff; diving preserves the full ground-slide duration. Velocity-driven leaning and a brief landing compression add weight without changing obstacle clearance. Decorative weight effects respect reduced-motion mode. Magnet bones curve toward Biscuit from all three lanes within 16 meters ahead; points are credited on arrival, once per bone. Already-attracted bones finish their trip if the magnet expires. Magnetic field rings, pickup halos, collection sparkles, and timer bars make power-up states visible.
+
+Jumps return to the ground in 0.72 seconds at every upgrade level; Spring paws adds 10% height per level instead of longer airtime. Standard slides last 0.58 seconds, rising to 0.79 seconds with all three upgrades. Action hints anticipate the puppy's physical lane and disappear when the current move already covers the obstacle. Swipes wait for a clear horizontal or vertical direction to avoid accidental diagonal actions.
 
 [Play Biscuit Dash in 3D](https://jonbiro.github.io/DogeQuest-1989/runner/)
 

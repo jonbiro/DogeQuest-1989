@@ -7,6 +7,8 @@ import {REGIONS,regionAt} from "./regions.js";
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound} from "./sound.js";
+import {actionCue,eventNotice,dockMode} from "./guidance.js";
+import {swipeAction} from "./gestures.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
 const $ = (id) => document.getElementById(id);
 let run = createRun(),
@@ -15,6 +17,7 @@ let run = createRun(),
   time = 0,
   accumulator = 0,
   toastUntil = 0,
+  noticePriority = 0,
   sound = false,
   audio = null;
 let graphicsReady = false;
@@ -161,9 +164,20 @@ function tone(frequency, duration = 0.08) {
     /* Sound is optional. */
   }
 }
-function toast(message, duration = 3) {
-  $("toast").textContent = message;
+function setText(id, text) {
+  if ($(id).textContent !== text) $(id).textContent = text;
+}
+function toast(message, duration = 1.5, priority = 0) {
+  if (time < toastUntil && priority < noticePriority) return;
+  setText('toast', message);
+  noticePriority = priority;
   toastUntil = time + duration;
+}
+function syncDock() {
+  const mode = dockMode({cue:$("cue").textContent,route:$("route-choice").textContent,
+    notice:$("toast").textContent,missionComplete:missionAnnounced});
+  for (const id of ['cue','route-choice','toast','mission-summary']) $(id).hidden = mode !== id;
+  $("mission-hud").hidden = state !== 'playing' || !mode;
 }
 function setState(next) {
   state = next;
@@ -188,10 +202,12 @@ function start() {
   run.appearance = { ...saved.collection };
   currentMission = missionFor(saved.challenges);
   missionAnnounced = false;
-  taughtObstacles = false;
+  lastHud = -1;
+  toastUntil = 0;
+  noticePriority = 0;
+  for (const id of ['cue','route-choice','toast','power']) setText(id, '');
   setState("playing");
   $("scene").focus({ preventScroll: true });
-  toast("Stay sharp: bones can lead into obstacles. Watch the trail.", 5);
   tone("yip");
 }
 function showOverlay(kind) {
@@ -220,7 +236,8 @@ function showOverlay(kind) {
         : "The next great run is one tap away."
       : kind === "help"
         ? "Swipe anywhere on the trail, or use the buttons."
-        : "The jungle can wait.";
+        : "Leaving now won’t bank this run’s points or gifts.";
+  $("home").textContent = kind === 'paused' ? 'Leave this run' : 'Back to camp';
   $("overlay-primary").textContent =
     kind === "ended"
       ? "Run it back ↗"
@@ -358,18 +375,10 @@ $("scene").addEventListener("pointermove", (event) => {
     return;
   const dx = event.clientX - pointer.x,
     dy = event.clientY - pointer.y;
-  if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+  const action = swipeAction(dx, dy);
+  if (!action) return;
   pointer.consumed = true;
-  act(
-    run,
-    Math.abs(dx) > Math.abs(dy)
-      ? dx > 0
-        ? "right"
-        : "left"
-      : dy < 0
-        ? "jump"
-        : "slide",
-  );
+  act(run, action);
 });
 $("scene").addEventListener("pointerup", (event) => {
   if (!pointer || pointer.id !== event.pointerId) return;
@@ -382,8 +391,10 @@ $("scene").addEventListener("pointerup", (event) => {
   pointer = null;
   if (state !== "playing") return;
   if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) act(run, "jump");
-  else if (Math.abs(dx) > Math.abs(dy)) act(run, dx > 0 ? "right" : "left");
-  else act(run, dy < 0 ? "jump" : "slide");
+  else {
+    const action = swipeAction(dx, dy);
+    if (action) act(run, action);
+  }
 });
 $("scene").addEventListener("pointercancel", () => {
   pointer = null;
@@ -429,8 +440,6 @@ try {
 } catch {
   graphicsError();
 }
-let milestone = 0,
-  taughtObstacles = false;
 let currentMission = missionFor(saved.challenges),
   missionAnnounced = false;
 let lastHud = -1;
@@ -445,46 +454,35 @@ function frame(now) {
       accumulator -= 1 / 120;
     }
     for (const event of run.events) {
+      const notice = eventNotice(event, run);
+      if (notice) toast(notice.text, 1.5, notice.priority);
       if (event === "bone") tone(740 + Math.min(run.combo, 12) * 28, 0.055);
       if (event === "streak") {
-        toast(`${run.combo} bones in a row! +100 points`);
         tone("reward");
       }
       if (event === "clear") tone(540, 0.08);
       if (event === "jump") tone("jump");
       if (event === "magnet") {
-        toast(
-          `Bone magnet! ${10 + run.upgrades.magnet * 3} seconds of snack magic.`,
-        );
         tone(900, 0.25);
       }
       if (event === "shield") {
-        toast("Shield ready. Your next bump is covered.");
         tone(650, 0.25);
       }
-      if (event === "shield-break") toast("Shield saved you. Keep running!");
       if (event === "gem") {
-        toast("Treasure gem! +250 points");
         tone(990, 0.2);
       }
-      if (event === "gift") { toast("Puppy present! +100 points. Finish this run to bank your gift."); tone("reward"); }
-      if (event === "zoomies") { toast("ZOOMIES! 6 seconds of speed. Smash obstacles for +40 points!"); tone("zoomies"); }
+      if (event === "gift") tone("reward");
+      if (event === "zoomies") tone("zoomies");
       if (event === "smash") tone(260,.08);
-      if (event === "zoomies-end") toast("Zoomies finished. Back to jumping and sliding!",2);
-      if(event==="route-scenic")toast("Scenic trail: fewer obstacles for the next 220 meters.",4);
-      if(event==="route-challenge")toast("Challenge trail! More jump/slide rows. Clean clears earn +60 points.",4);
-      if(event==="zipline-start") { toast("Sky paws! Steer left and right to fetch airborne bones.",3); tone("zoomies"); }
-      if(event==="zipline-end") { toast("Perfect delivery! Zipline complete · +250 points.",3); tone("reward"); }
+      if(event==="zipline-start") tone("zoomies");
+      if(event==="zipline-end") tone("reward");
       if (event === "double") {
-        toast("Golden bonus! Double bone points for 10 seconds.");
         tone(880, 0.2);
       }
       if (event === "heart") {
-        toast("A little love! Heart restored (maximum 3).");
         tone(660, 0.2);
       }
       if (event === "hit") {
-        toast("Jump logs, blocks and gaps. Slide under overhead obstacles.");
         tone(120, 0.2);
       }
     }
@@ -496,12 +494,11 @@ function frame(now) {
       lastHud = Math.floor(run.time * 10);
       $("distance").innerHTML = `${Math.floor(run.distance)}<small> m</small>`;
       $("region-name").textContent = REGIONS[regionAt(run.distance)].name;
-      $("route-choice").textContent = run.choicePending!==null && run.choicePending-run.distance<100
-        ? `GATES IN ${Math.max(0,Math.ceil(run.choicePending-run.distance))}m · ← Scenic · Challenge +60 → (center: scenic)`
-        : run.route && run.distance<run.route.until ? `${run.route.kind==="challenge"?"CHALLENGE · +60 per clear":"SCENIC · Fewer obstacles"} · ${Math.ceil(run.route.until-run.distance)}m` : "";
+      setText('route-choice', run.choicePending!==null && run.choicePending-run.distance<100
+        ? `GATES IN ${Math.max(0,Math.ceil(run.choicePending-run.distance))}m · ← Scenic · Challenge →` : '');
       $("bones").textContent = run.bones;
       $("run-score").textContent =
-        `${run.score.toLocaleString()} pts${run.combo >= 2 ? ` · ${run.combo} bone streak` : ""}`;
+        `${run.score.toLocaleString()} pts${run.route && run.distance<run.route.until ? ` · ${run.route.kind==='challenge'?'CHALLENGE':'SCENIC'}` : ''}`;
       const progress = missionProgress(run, currentMission);
       $("mission-label").textContent =
         `${currentMission.title} · ${progress}/${currentMission.target} ${currentMission.unit}`;
@@ -510,63 +507,39 @@ function frame(now) {
       if (progress === currentMission.target && !missionAnnounced) {
         missionAnnounced = true;
         toast(
-          `Challenge complete! +${currentMission.reward} points when this run ends.`,
-          4,
+          `Goal complete · +${currentMission.reward} at finish`,
+          2, 2,
         );
       }
-      const danger = run.objects.find(
-        (object) =>
-          !object.used &&
-          !object.passed &&
-          object.lane === run.lane &&
-          ["rock", "log", "arch", "branch", "gate", "gap"].includes(object.type) &&
-          object.at - run.distance > 0 &&
-          object.at - run.distance < run.speed * 0.8,
-      );
-      const duck = danger && ["arch", "branch", "gate"].includes(danger.type);
-      const cable = run.objects.find(object => object.type === "zipline-start" && !object.caught && object.at - run.distance > 0 && object.at - run.distance < run.speed * .65);
-      $("cue").textContent = run.zipline ? "← SWING for bones →" : cable ? "↑ JUMP to grab the zipline" : danger && run.zoomies === 0
-        ? duck
-          ? "↓ SLIDE under"
-          : danger.type === "gap" ? "↑ JUMP the gap" : "↑ JUMP over"
-        : "";
+      setText('cue', actionCue(run));
       $("hearts").textContent =
         "♥ ".repeat(Math.max(0, run.hearts)) + "♡ ".repeat(3 - run.hearts);
       $("hearts").setAttribute("aria-label", `${run.hearts} hearts remaining`);
       $("power").innerHTML = [
         run.zipline
-          ? `<span class="power-chip shield">🐾 SKY PAWS · ${Math.ceil(run.zipline.end-run.distance)}m <small>Ride to the end · +250 points</small><progress aria-label="Zipline distance remaining" max="140" value="${Math.max(0,run.zipline.end-run.distance)}"></progress></span>`
+          ? `<span class="power-chip shield" aria-label="Zipline ride">🐾 ${Math.ceil(run.zipline.end-run.distance)}m<progress aria-label="Zipline distance remaining" max="140" value="${Math.max(0,run.zipline.end-run.distance)}"></progress></span>`
           : "",
         run.zoomies > 0
-          ? `<span class="power-chip double">🎾 ZOOMIES · ${Math.ceil(run.zoomies)}s <small>Smash obstacles · +40 points</small><progress aria-label="Zoomies time remaining" max="6" value="${run.zoomies}"></progress></span>`
+          ? `<span class="power-chip double">🎾 ${Math.ceil(run.zoomies)}s<progress aria-label="Zoomies time remaining" max="6" value="${run.zoomies}"></progress></span>`
           : "",
         run.shield
-          ? '<span class="power-chip shield">◇ SHIELD · One hit protected</span>'
+          ? '<span class="power-chip shield" aria-label="Shield: one hit protected">◇ SHIELD</span>'
           : "",
         run.magnet > 0
-          ? `<span class="power-chip magnet">🧲 MAGNET · ${Math.ceil(run.magnet)}s <small>Pulling bones from all lanes</small><progress aria-label="Magnet time remaining" max="${10 + run.upgrades.magnet * 3}" value="${run.magnet}"></progress></span>`
+          ? `<span class="power-chip magnet">🧲 ${Math.ceil(run.magnet)}s<progress aria-label="Magnet time remaining" max="${10 + run.upgrades.magnet * 3}" value="${run.magnet}"></progress></span>`
           : "",
         run.double > 0
-          ? `<span class="power-chip double">×2 BONE POINTS · ${Math.ceil(run.double)}s<progress aria-label="Double points time remaining" max="10" value="${run.double}"></progress></span>`
+          ? `<span class="power-chip double">×2 ${Math.ceil(run.double)}s<progress aria-label="Double points time remaining" max="10" value="${run.double}"></progress></span>`
           : "",
       ]
         .filter(Boolean)
         .join("");
       $("hud").classList.toggle("has-powers", $("power").childElementCount > 0);
     }
-    const currentMilestone = Math.floor(run.distance / 250);
-    if (!taughtObstacles && run.distance > 65) {
-      taughtObstacles = true;
-      toast("Jump logs & blocks ↑ · Slide under arches, branches & gates ↓", 5);
-    }
-    if (currentMilestone > milestone) {
-      milestone = currentMilestone;
-      toast(`${milestone * 250} meters. Unstoppable paws!`);
-    }
-    if (run.distance < 1) milestone = 0;
     if (run.ended) finish();
   }
-  if (time > toastUntil) $("toast").textContent = "";
+  if (time > toastUntil) setText('toast', '');
+  syncDock();
   if (view && graphicsReady)
     view.draw(run, time, state, reducedMotion, dt, accumulator / (1 / 120), saved.collection);
   requestAnimationFrame(frame);

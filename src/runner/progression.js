@@ -1,11 +1,11 @@
 export const UPGRADES = {
   leap: {
     name: "Spring paws",
-    description: "Longer, higher jumps. +8% lift per level.",
+    description: "Jump higher without staying airborne longer. +10% clearance per level.",
   },
   slide: {
     name: "Silky slides",
-    description: "Stay low longer. +0.2 seconds per level.",
+    description: "Stay low a little longer. +0.07 seconds per level.",
   },
   magnet: {
     name: "Super sniffer",

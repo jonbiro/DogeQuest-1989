@@ -1,6 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { act, createRun, step, LANES } from "../src/runner/world.js";
+import {
+  act,
+  BASE_SLIDE_DURATION,
+  createRun,
+  LANES,
+  SLIDE_UPGRADE_DURATION,
+  step,
+} from "../src/runner/world.js";
+import {
+  GRAVITY,
+  JUMP_BUFFER,
+  JUMP_DURATION,
+  JUMP_SPEED,
+} from "../src/runner/motion.js";
 
 function cleanRun(upgrades = {}) {
   const run = createRun(1989, upgrades);
@@ -39,14 +52,14 @@ test("critically damped steering and reversals are timestep equivalent", () => {
   }
 });
 
-test("late jump presses above the old height cutoff buffer the next takeoff", () => {
+test("last-moment jump presses buffer one snappy follow-up takeoff", () => {
   for (const leap of [0, 3]) {
     const run = cleanRun({ leap });
     act(run, "jump");
 
     let reachedBufferWindow = false;
     for (let tick = 0; tick < 240; tick++) {
-      if (run.vy < 0 && run.y > 0.9 && run.y < 1.8) {
+      if (run.vy < 0 && run.y > 0.35 && run.y < 0.75) {
         reachedBufferWindow = true;
         break;
       }
@@ -54,9 +67,9 @@ test("late jump presses above the old height cutoff buffer the next takeoff", ()
     }
     assert.equal(reachedBufferWindow, true, `leap ${leap} reached its landing window`);
     const bufferedAt = run.y;
-    assert.ok(bufferedAt > 0.6);
+    assert.ok(bufferedAt > 0.3);
     act(run, "jump");
-    assert.equal(run.jumpBuffer, 0.18);
+    assert.equal(run.jumpBuffer, JUMP_BUFFER);
 
     for (let index = 0; index < 30 && run.events.filter(event => event === "jump").length < 2; index++)
       step(run, 1 / 120);
@@ -75,7 +88,7 @@ test("early airborne jump presses neither stack velocity nor survive until landi
   act(run, "jump");
   assert.equal(run.y, y);
   assert.equal(run.vy, vy);
-  assert.equal(run.jumpBuffer, 0.18);
+  assert.equal(run.jumpBuffer, JUMP_BUFFER);
 
   advance(run, 1.1);
   assert.equal(run.events.filter(event => event === "jump").length, 1);
@@ -93,13 +106,14 @@ test("airborne slides accelerate continuously and preserve their ground duration
   act(run, "slide");
   assert.equal(run.y, before.y);
   assert.equal(run.vy, before.vy);
-  assert.equal(run.slide, 1.75);
+  const upgradedSlide = BASE_SLIDE_DURATION + 3 * SLIDE_UPGRADE_DURATION;
+  assert.equal(run.slide, upgradedSlide);
   assert.equal(run.diving, true);
 
   step(run, 1 / 120);
   assert.ok(Math.abs(run.y - before.y) < 0.2);
   assert.ok(run.vy < before.vy);
-  assert.equal(run.slide, 1.75);
+  assert.equal(run.slide, upgradedSlide);
 
   let previousY = run.y;
   let landed = false;
@@ -115,7 +129,7 @@ test("airborne slides accelerate continuously and preserve their ground duration
   assert.equal(landed, true);
   assert.equal(run.diving, false);
   assert.ok(run.landing?.speed > 0 && run.landing.speed <= 28.000001);
-  assert.ok(run.slide >= 1.75 - 1 / 120 - 1e-9);
+  assert.ok(run.slide >= upgradedSlide - 1 / 120 - 1e-9);
 
   const atLanding = run.slide;
   advance(run, 0.2);
@@ -136,16 +150,48 @@ test("landing time and impact stay exact across timesteps and a boundary rebound
     assert.ok(Math.abs(landing.speed - landings[0].speed) < 1e-12);
   }
 
-  const boundary = cleanRun();
   const dt = 1 / 120;
-  boundary.y = 0.1;
-  boundary.vy = (11 * dt * dt - boundary.y) / dt;
-  boundary.jumpBuffer = 0.18;
-  step(boundary, dt);
-  assert.equal(boundary.landing.time, dt);
-  assert.equal(boundary.y, 0);
-  assert.equal(boundary.vy, 12.5);
-  assert.equal(boundary.events.filter(event => event === "jump").length, 1);
+  for (const landingAfter of [dt / 2, dt]) {
+    const boundary = cleanRun();
+    boundary.y = 0.1;
+    boundary.vy = (GRAVITY * landingAfter * landingAfter / 2 - boundary.y) / landingAfter;
+    boundary.jumpBuffer = JUMP_BUFFER;
+    step(boundary, dt);
+    assert.ok(Math.abs(boundary.landing.time - landingAfter) < 1e-12);
+    const reboundTime = dt - landingAfter;
+    assert.ok(Math.abs(boundary.y - (JUMP_SPEED * reboundTime - GRAVITY * reboundTime ** 2 / 2)) < 1e-12);
+    assert.ok(Math.abs(boundary.vy - (JUMP_SPEED - GRAVITY * reboundTime)) < 1e-12);
+    assert.equal(boundary.events.filter(event => event === "jump").length, 1);
+  }
+});
+
+test("jump and slide lockouts stay short while upgrades add useful clearance", () => {
+  const jumps = [];
+  for (const leap of [0, 1, 2, 3]) {
+    const run = cleanRun({leap});
+    act(run, "jump");
+    let peak = 0;
+    while (!run.landing) {
+      step(run, 1 / 240);
+      peak = Math.max(peak, run.y);
+    }
+    jumps.push({airtime: run.landing.time, peak});
+  }
+  for (const [level, jump] of jumps.entries()) {
+    assert.ok(Math.abs(jump.airtime - JUMP_DURATION) < 1e-12);
+    assert.ok(Math.abs(jump.peak / jumps[0].peak - (1 + level * .1)) < 1e-12);
+  }
+
+  for (const slide of [0, 3]) {
+    const run = cleanRun({slide});
+    act(run, "slide");
+    const expected = BASE_SLIDE_DURATION + slide * SLIDE_UPGRADE_DURATION;
+    assert.equal(run.slide, expected);
+    advance(run, expected - .02);
+    assert.ok(run.slide > 0);
+    advance(run, .03);
+    assert.equal(run.slide, 0);
+  }
 });
 
 test("invalid or non-positive simulation deltas are no-ops", () => {

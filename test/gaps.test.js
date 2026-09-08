@@ -7,7 +7,7 @@ function fixture(speed=22,lead=.5){
   r.objects=[0,1,2].map(lane=>({id:lane,type:"gap",lane,at:r.distance+speed*lead}));return r;
 }
 test("gaps can be jumped at starting and maximum speed with useful reaction margin",()=>{
-  for(const speed of [22,36])for(const lead of [.25,.45,.7,.9]){
+  for(const speed of [22,36])for(const lead of [.25,.35,.45,.55]){
     const r=fixture(speed,lead);act(r,"jump");advance(r,1.2);
     assert.equal(r.hearts,3,`${speed}m/s and ${lead}s lead`);assert.equal(r.clears,1);
   }

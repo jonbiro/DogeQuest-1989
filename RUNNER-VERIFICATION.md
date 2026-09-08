@@ -1,5 +1,16 @@
 # Runner verification
 
+## Shorter actions and a quieter trail
+
+- Normal jump airtime is 0.72 seconds at all four leap levels; launch speed and gravity scale together so upgrades add height without extra float. Ground slides last 0.58 seconds, or 0.79 seconds at level three. The late-jump buffer is 120 ms; continuous dives, full slide duration on touchdown and momentum-aware steering remain intact.
+- Removed center-screen banners, repeated tutorials, milestone interruptions and duplicate power-up chatter. A single edge dock prioritizes actionable cues, route choices, brief important notices and unfinished goals. Hints forecast the physical lane at impact, avoid repeating a covered slide, and still allow a jump hint during a ground slide. Power indicators use compact chips without moving the score panel when they activate.
+- Ambiguous diagonal swipes wait for a clear axis instead of triggering the wrong action. Short trail taps still jump. Paused runs explicitly warn that leaving will not bank points or gifts; the action is labelled “Leave this run.”
+- All 98 simulation/unit tests pass, including every hazard with the shorter cue window, base/top/boost-transition speeds, unchanged upgraded airtime, too-early actions expiring, cue priority/suppression, physical-lane prediction and swipe classification. Build, lint and release-artifact checks pass; normal builds remove the local-only browser fixture.
+- Real-time local 390×844 run with Mochi and full motion: 60 seconds, 1,886 meters, 3,600 frames, mean 16.67 ms and p95 16.80 ms. All three regions, Challenge selection, zipline catch and landing were observed, with three hearts and no detected HUD overlap or browser errors. This is desktop-browser viewport emulation, not a physical-phone performance guarantee.
+- Accelerated production-renderer check: three 4,500-meter runs, 54 checkpoints, nine ziplines and minimum three hearts. Peaks: 14 geometries, four textures, 117 active-plus-pooled objects and 182 draw calls.
+- Five-indicator layout stress checks pass at 320×568, 390×844, 568×320 and 844×390. The final compact labels fit a single row at 320 pixels wide; the cue sits at y=453 above the controls. This fixture tests layout, not naturally earning five powers simultaneously. Before/after phone-sized gameplay screenshots were visually inspected.
+- Actual keyboard-driven browser actions returned from jump posture in 708 ms and slide posture in 584 ms, consistent with the simulation durations and frame-sampled height threshold. The pause warning and leave label were verified in the rendered interface.
+
 ## Momentum, air slides and landing weight
 
 - Replaced instantaneous sideways velocity changes with an exactly integrated damped spring. Jump presses use a 180 ms time window instead of a fixed near-ground height cutoff. Air slides accelerate into a capped dive, and their full ground duration starts at touchdown; basic jump height, gravity, obstacle thresholds and progression remain unchanged.

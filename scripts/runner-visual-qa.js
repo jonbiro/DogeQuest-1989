@@ -143,7 +143,7 @@ export function longRunCheck() {
         const blocked=new Set(run.objects.filter(o=>o.at===next.at&&HAZARDS.includes(o.type)).map(o=>o.lane));
         const safe=[0,1,2].find(lane=>!blocked.has(lane));
         if(safe!==undefined && safe!==run.lane)act(run,safe<run.lane?"left":"right");
-        else if(safe===undefined&&next.at-run.distance<run.speed*.6)act(run,next.type==="gate"?"slide":"jump");
+        else if(safe===undefined&&next.at-run.distance<run.speed*.4)act(run,next.type==="gate"?"slide":"jump");
       }
       step(run,1/120);run.events=[];
       if(run.distance>=nextSample) {
@@ -262,27 +262,31 @@ export function dialogLayoutCheck() {
 // UI-only stress case: maximum simultaneous indicators, not an earned game state.
 export function hudStressCheck() {
   const game=document.querySelector("#game"),hud=document.querySelector("#hud");
-  const ids=["power","cue","route-choice","mission-label","controls"];
+  const ids=["power","cue","route-choice","toast","mission-summary","mission-label","mission-hud","controls"];
   const saved=ids.map(id=>{const element=document.getElementById(id);return {element,html:element.innerHTML,hidden:element.hidden};});
   const state=game.dataset.state,hidden=hud.hidden,classes=hud.className;
   try {
     game.dataset.state="playing";hud.hidden=false;hud.classList.add("has-powers");
     document.querySelector("#controls").hidden=false;
-    document.querySelector("#cue").textContent="↑ JUMP to grab the zipline";
-    document.querySelector("#route-choice").textContent="GATES IN 100m · ← Scenic · Challenge +60 → (center: scenic)";
+    document.querySelector("#mission-hud").hidden=false;
+    document.querySelector("#cue").hidden=false;
+    for(const id of ['route-choice','toast','mission-summary'])document.getElementById(id).hidden=true;
+    document.querySelector("#cue").textContent="↑ JUMP · ZIPLINE";
+    document.querySelector("#route-choice").textContent="GATES IN 100m · ← Scenic · Challenge →";
     document.querySelector("#mission-label").textContent="Trailblazer · 300/300 meters";
-    document.querySelector("#power").innerHTML=["🐾 SKY PAWS · 140m","🎾 ZOOMIES · 6s","◇ SHIELD · One hit protected","🧲 MAGNET · 19s","×2 BONE POINTS · 10s"].map(label=>`<span class="power-chip">${label}<small>Power description</small><progress max="10" value="8"></progress></span>`).join("");
+    document.querySelector("#power").innerHTML=["🐾 140m","🎾 6s","◇ SHIELD","🧲 19s","×2 10s"].map(label=>`<span class="power-chip">${label}<progress max="10" value="8"></progress></span>`).join("");
     const rect=id=>document.querySelector(id).getBoundingClientRect();
     const issues=[];
-    for(const [first,second] of [["#power","#cue"],["#power","#mission-hud"],["#power","#controls"],["#cue","#mission-hud"],["#cue","#controls"]]){
+    for(const [first,second] of [["#power","#mission-hud"],["#power","#controls"],["#mission-hud","#controls"]]){
       const a=rect(first),b=rect(second);
       if(a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top)issues.push(`${first} overlaps ${second}`);
     }
     for(const id of ["#power","#cue","#mission-hud","#controls"]){const r=rect(id);if(r.top<0||r.bottom>window.innerHeight||r.left<0||r.right>window.innerWidth)issues.push(`${id} outside viewport`);}
+    if(rect('#cue').top<window.innerHeight*.65)issues.push('Cue covers the center of the trail');
     return {viewport:[window.innerWidth,window.innerHeight],issues,powerBottom:rect("#power").bottom,cueTop:rect("#cue").top};
   } finally {
     game.dataset.state=state;hud.hidden=hidden;hud.className=classes;
-    for(const {element,html,hidden:wasHidden} of saved){if(element.id!=="controls")element.innerHTML=html;element.hidden=wasHidden;}
+    for(const {element,html,hidden:wasHidden} of saved){if(!['controls','mission-hud','mission-summary'].includes(element.id))element.innerHTML=html;element.hidden=wasHidden;}
   }
 }
 export function uiPlayCheck(seconds=22) {
@@ -301,9 +305,9 @@ export function uiPlayCheck(seconds=22) {
       regions.add(document.querySelector("#region-name").textContent);
       zipline ||= document.querySelector("#scene").dataset.posture === "zipline";
       landed ||= zipline && document.querySelector("#toast").textContent.includes("Zipline complete");
-      gate ||= route.includes("GATES IN");challenge ||= route.includes("CHALLENGE");
+      gate ||= route.includes("GATES IN");challenge ||= document.querySelector('#run-score').textContent.includes("CHALLENGE");
       if(now-lastAction>250) {
-        for (const [first, second] of [["#power","#cue"],["#power","#mission-hud"],["#power","#controls"],["#cue","#mission-hud"],["#cue","#controls"]]) {
+        for (const [first, second] of [["#power","#mission-hud"],["#power","#controls"],["#mission-hud","#controls"]]) {
           const a=document.querySelector(first).getBoundingClientRect(),b=document.querySelector(second).getBoundingClientRect();
           if(a.width && a.height && b.width && b.height && a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top)layoutIssues.add(`${first} overlaps ${second}`);
         }
