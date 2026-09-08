@@ -25,6 +25,11 @@ No physical-phone performance claim follows from desktop browser emulation.
 
 ## Previous scope and historical completion
 
+The expanded goal now includes implemented regional obstacle courses and their
+pressure/recovery pacing: jungle jump/duck timing, canyon gap crossings, and glade
+lane slaloms, with clean-course bonuses. The charged ability and persistent dog/
+region mastery are still outstanding; this is not a full-goal completion claim.
+
 The earlier requested browser-game scope was delivered at baseline `52b02a1`.
 
 ## Required product areas and completion evidence

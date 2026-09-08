@@ -131,6 +131,7 @@ export function longRunCheck() {
   document.body.append(canvas);
   const view=createView(canvas),samples=[];
   let completedZiplines=0,turns=0,missedTurns=0;
+  const regionalCourses=[0,0,0];
   for(let attempt=0;attempt<3;attempt++) {
     const run=createRun(1989+attempt);
     run.appearance={puppy:["biscuit","mochi","pepper"][attempt],costume:["scarf","hero","explorer"][attempt]};
@@ -150,7 +151,7 @@ export function longRunCheck() {
         const blocked=new Set(run.objects.filter(o=>o.at===next.at&&HAZARDS.includes(o.type)).map(o=>o.lane));
         const safe=[0,1,2].find(lane=>!blocked.has(lane));
         if(!turnLocked&&safe!==undefined&&safe!==run.lane)act(run,safe<run.lane?"left":"right");
-        else if(safe===undefined&&next.at-run.distance<run.speed*.4)act(run,next.type==="gate"?"slide":"jump");
+        else if(safe===undefined&&next.at-run.distance<run.speed*.4)act(run,['gate','branch','arch'].includes(next.type)?"slide":"jump");
       }
       step(run,1/120);run.events=[];
       if(run.distance>=nextSample) {
@@ -164,11 +165,33 @@ export function longRunCheck() {
     if(run.turns===0||run.missedTurns!==0)throw new Error(`Corner bot regression: ${run.turns} accepted, ${run.missedTurns} missed on seed ${run.seed}`);
     completedZiplines+=run.ziplines;
     turns+=run.turns;missedTurns+=run.missedTurns;
+    run.regionalCourses.forEach((count,region)=>{regionalCourses[region]+=count;});
   }
   const peak=key=>Math.max(...samples.map(sample=>sample[key]));
   const summary={runs:3,metersPerRun:4500,completedZiplines,turns,missedTurns,renderedCheckpoints:samples.length,minimumHearts:Math.min(...samples.map(sample=>sample.hearts)),peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),final:samples.at(-1)};
   if(summary.peakGeometries>32||summary.peakTextures>4||summary.peakObjects>200||summary.peakDrawCalls>220)throw new Error(`Renderer resource regression: ${JSON.stringify(summary)}`);
+  summary.regionalCourses=regionalCourses;
+  if(regionalCourses.some(count=>count===0))throw new Error(`Missing regional course coverage: ${regionalCourses}`);
   return summary;
+}
+export function previewRegionalCourses() {
+  const source=document.createElement('canvas');
+  source.style.cssText='position:fixed;left:-1000px;width:390px;height:600px';document.body.append(source);
+  const view=createView(source),gallery=document.createElement('section'),samples=[];
+  gallery.style.cssText='position:fixed;inset:0;z-index:9999;overflow:auto;background:#102a28;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:12px;color:white';document.body.append(gallery);
+  for(const start of [200,475,1120]) {
+    const run=createRun(17);
+    Object.assign(run,{distance:start-18,nextRow:start,row:12,objects:[],nextChoice:2000,nextZipline:3000,choicePending:null});
+    run.previous.distance=run.distance;run.appearance={puppy:'mochi',costume:'scarf'};
+    fillTrack(run);
+    view.draw(run,0,'playing',true,1/60,1);
+    const figure=document.createElement('figure'),canvas=document.createElement('canvas'),caption=document.createElement('figcaption');
+    figure.style.margin='0';canvas.width=390;canvas.height=600;canvas.style.width='100%';
+    canvas.getContext('2d').drawImage(source,0,0);
+    caption.textContent=run.course.name;figure.append(canvas,caption);gallery.append(figure);
+    samples.push({name:run.course.name,beats:run.course.beats,...view.diagnostics()});
+  }
+  return samples;
 }
 export function previewGates() {
   const canvas=document.createElement("canvas");
@@ -348,14 +371,14 @@ export function uiPlayCheck(seconds=22) {
           if(a.width && a.height && b.width && b.height && a.left<b.right && a.right>b.left && a.top<b.bottom && a.bottom>b.top)layoutIssues.add(`${first} overlaps ${second}`);
         }
         const turnLocked=cue.includes("TURN");
-        const code=cue.includes("TURN LEFT")?"ArrowLeft":cue.includes("TURN RIGHT")?"ArrowRight":turnLocked?null:
+        const code=cue.includes("TURN LEFT")||cue.includes("WEAVE LEFT")?"ArrowLeft":cue.includes("TURN RIGHT")||cue.includes("WEAVE RIGHT")?"ArrowRight":turnLocked?null:
           cue.includes("SLIDE")?"ArrowDown":cue.includes("JUMP")?"ArrowUp":route.includes("GATES IN")?"ArrowRight":null;
         if(code){window.dispatchEvent(new window.KeyboardEvent("keydown",{code,key:code,bubbles:true}));lastAction=now;}
       }
       if(now-started>=seconds*1000||state!=="playing") {
         document.querySelector("#pause-button").click();
         const sorted=[...frames].sort((a,b)=>a-b);
-        resolve({state,viewport:[window.innerWidth,window.innerHeight],endDistance:document.querySelector("#distance").textContent,frames:frames.length,meanMs:frames.reduce((a,b)=>a+b,0)/frames.length,p95Ms:sorted[Math.floor(sorted.length*.95)],regions:[...regions],layoutIssues:[...layoutIssues],gatePromptSeen:gate,challengeSelected:challenge,ziplineCaught:zipline,ziplineLanded:landed,turnDirections:[...turnDirections],turnAccepted,turns:Number(scene.dataset.turns||0),missedTurns:Number(scene.dataset.missedTurns||0),hearts:document.querySelector("#hearts").getAttribute("aria-label")});
+        resolve({state,viewport:[window.innerWidth,window.innerHeight],endDistance:document.querySelector("#distance").textContent,frames:frames.length,meanMs:frames.reduce((a,b)=>a+b,0)/frames.length,p95Ms:sorted[Math.floor(sorted.length*.95)],regions:[...regions],layoutIssues:[...layoutIssues],gatePromptSeen:gate,challengeSelected:challenge,ziplineCaught:zipline,ziplineLanded:landed,turnDirections:[...turnDirections],turnAccepted,turns:Number(scene.dataset.turns||0),missedTurns:Number(scene.dataset.missedTurns||0),regionalCourses:scene.dataset.courses,hearts:document.querySelector("#hearts").getAttribute("aria-label")});
         return;
       }
       window.requestAnimationFrame(tick);

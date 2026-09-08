@@ -264,6 +264,8 @@ function finish() {
   $("final-bones").textContent = run.bones;
   $("run-lesson").textContent = runLesson(run);
   $("run-highlights").textContent = `${run.turns} clean ${run.turns === 1 ? 'turn' : 'turns'} · ${run.clears} obstacles cleared · Best bone streak: ${run.bestCombo}`;
+  const courses = run.regionalCourses.reduce((sum,count)=>sum+count,0);
+  if (courses) $("run-highlights").textContent += ` · ${courses} clean regional ${courses === 1 ? 'course' : 'courses'}`;
   const {missionPoints: reward, prizes} = receipt;
   $("overlay-copy").textContent +=
     ` +${run.score.toLocaleString()} upgrade points earned. Spend them at camp.`;
@@ -467,6 +469,7 @@ function frame(now) {
       }
       if (event === "clear") tone(540, 0.08);
       if (event === "turn-left" || event === "turn-right") tone(680, 0.1);
+      if (event === "course-complete") tone('reward');
       if (event === "jump") tone("jump");
       if (event === "magnet") {
         tone(900, 0.25);
@@ -496,6 +499,8 @@ function frame(now) {
     $("scene").dataset.lane = String(run.lane + 1);
     $("scene").dataset.turns = String(run.turns);
     $("scene").dataset.missedTurns = String(run.missedTurns);
+    $("scene").dataset.courses = run.regionalCourses.join(',');
+    $("scene").dataset.course = run.course?.name || '';
     $("scene").dataset.posture =
       run.zipline ? "zipline" : run.y > 0.05 ? "jump" : run.slide > 0 ? "slide" : "run";
     if (Math.floor(run.time * 10) !== lastHud || run.ended) {

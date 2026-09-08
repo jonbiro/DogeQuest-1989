@@ -543,6 +543,11 @@ export function createView(canvas) {
     templates[type].scale.multiplyScalar(1.2);
   }
   templates.gap = new THREE.Group();
+  templates['crystal-rock'] = new THREE.Group();
+  for (const [x,height] of [[-.45,.8],[0,1.55],[.45,1.05]]) {
+    const crystal=cone(templates['crystal-rock'],x===0?'#b6f7ed':'#9da8e5',x,height/2,0,.65,height,.65);
+    crystal.rotation.z=x*.3;
+  }
   box(templates.gap,"#153c48",0,-.24,0,2.4,.08,5);
   for(const z of [-2.6,2.6]) {
     box(templates.gap,"#efae45",0,.12,z,2.4,.22,.22);
@@ -778,8 +783,9 @@ export function createView(canvas) {
           visibleIds.add(object.id);
           let item = active.get(object.id);
           if (!item) {
-            item = pools[object.type].pop() || templates[object.type].clone();
-            item.userData.type = object.type;
+            const renderType = object.type === 'rock' && object.courseRegion === 2 ? 'crystal-rock' : object.type;
+            item = pools[renderType].pop() || templates[renderType].clone();
+            item.userData.type = renderType;
             active.set(object.id, item);
             scene.add(item);
           }

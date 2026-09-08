@@ -1,5 +1,35 @@
 # Runner verification
 
+## Regional courses and pressure/recovery pacing
+
+- Replaced the generic repeated sequence with three authored regional courses:
+  jungle log/branch/log timing, canyon gap/log/gap crossings, and glade left/right/
+  center slaloms with distinct crystal models. Three beats are spaced 35 meters
+  apart, followed by a gift and 30 meters without another hazard. All gap rows
+  align to the paving grid. A clean course awards 180 points exactly once.
+- Courses stay inside their region, avoid corners/route-decision/zipline
+  reservations, and appear at most once per region visit. Scenic skips them.
+  Challenge hazard beats remain inside its duration; only the clear recovery
+  may extend past it. Jump/slide durations, turn controls and existing saves are
+  unchanged. The three regional completion counters are per-run, ready for the
+  later persistent mastery work; no persistent mastery is claimed yet.
+- All 120 tests pass with build, lint and artifact checks. Coverage includes all
+  courses at normal top speed and with Zoomies, base/max leap upgrades, explicit
+  slalom lane requirements, failed-course denial, duplicate-award prevention,
+  reservations, recovery spacing and guidance priority.
+- Final accelerated production-renderer check: three 4,500-meter seeded runs,
+  54 checkpoints, 21 clean turns, zero missed turns, nine ziplines, and three
+  hearts throughout. Clean courses: 12 jungle, three canyon, three glade. Peaks:
+  15 geometries, four textures, 123 pooled-plus-active objects and 197 draw calls.
+- The three course entrances were visually inspected through the production
+  renderer at a 390×600 camera aspect. This is a local fixture; naturally earned
+  course coverage comes from the separate input-driven checks, not the gallery.
+- Final 60-second local keyboard-driven 390×844 run with Mochi and full motion:
+  1,821 meters, two jungle courses, one canyon course, one glade course, three
+  clean turns, zero misses, zipline catch/landing and three hearts. 3,602 frames,
+  mean 16.66 ms, p95 16.80 ms, no detected HUD overlap and no browser errors.
+  This is desktop browser emulation, not a physical-phone performance claim.
+
 ## Research-led adventure: deliberate corners and real terrain
 
 This is the first verified slice of the expanded goal in `ADVENTURE-ROADMAP.md`,

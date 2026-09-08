@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { actionCue, dockMode, eventNotice, runLesson } from "../src/runner/guidance.js";
 import { swipeAction } from "../src/runner/gestures.js";
 import { act, createRun, LANES, step } from "../src/runner/world.js";
+import {courseAt} from '../src/runner/courses.js';
 
 const HAZARD_ACTION = {
   arch: "slide",
@@ -12,6 +13,17 @@ const HAZARD_ACTION = {
   log: "jump",
   rock: "jump",
 };
+
+test('course introduction never hides a jump/slide deadline and slaloms request lanes',()=>{
+  const run=createRun(1989);
+  run.distance=170;run.nextCorner=1;run.course=courseAt(200);run.objects=[];
+  assert.equal(actionCue(run),'Root scramble · +180 clean');
+  run.objects=[{type:'gate',lane:1,at:178}];
+  assert.equal(actionCue(run),'↓ SLIDE');
+  run.course=courseAt(1120);run.distance=1105;run.objects=[];
+  assert.equal(actionCue(run),'← WEAVE LEFT');
+  act(run,'left');assert.equal(actionCue(run),'Crystal slalom · +180 clean');
+});
 
 test('corner cues work in the air, confirm one accepted swipe and correct wrong input', () => {
   const run = createRun(1989);

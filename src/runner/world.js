@@ -12,6 +12,8 @@ export function seededRandom(seed) {
 import { levels } from "./progression.js";
 import { jump, steer, moveVertical, JUMP_BUFFER } from "./motion.js";
 import { ZIPLINE_FIRST, ZIPLINE_PERIOD, ZIPLINE_LENGTH, ZIPLINE_HEIGHT } from "./ziplines.js";
+import {courseAt, COURSE_LENGTH, COURSE_RECOVERY, advanceCourse} from './courses.js';
+import {REGION_LENGTH} from './regions.js';
 import {
   TURN_SKILL_REWARD,
   applyTurnInput,
@@ -70,6 +72,9 @@ export function createRun(seed = Date.now(), upgrades = {}) {
     nextZipline: ZIPLINE_FIRST,
     zipline: null,
     ziplines: 0,
+    course: null,
+    lastCourseVisit: -1,
+    regionalCourses: [0,0,0],
     row: 0,
     lastSafeLane: 1,
     id: 0,
@@ -127,20 +132,24 @@ export function fillTrack(run) {
       break;
     }
     const route=run.route && run.nextRow<run.route.until ? run.route.kind : null;
-    // Authored jump/duck runs break up random rows. Keep the entire sequence
-    // clear of decision gates and within its selected difficulty section.
-    const sequenceEnd = run.nextRow + 144;
-    if (run.nextRow > 600 && run.row % 16 === 12 && route !== "scenic" &&
+    // Regional courses break up random rows. Keep the entire course clear of
+    // decision gates, and every hazard beat within its selected difficulty.
+    const start = Math.ceil(run.nextRow/5)*5;
+    const sequenceEnd = start + COURSE_LENGTH;
+    const visit = Math.floor(start/REGION_LENGTH);
+    if (start >= 195 && !run.course && visit !== run.lastCourseVisit && route !== "scenic" &&
         sequenceEnd < Math.min(run.nextChoice, run.nextZipline) - 45 &&
-        !cornerIntersecting(run.nextRow, sequenceEnd) &&
-        (!run.route || run.nextRow >= run.route.until || sequenceEnd < run.route.until)) {
-      const types = Math.floor(run.row / 16) % 2 ? ["gate", "log", "gate"] : ["log", "gate", "log"];
-      for (let beat = 0; beat < types.length; beat++) {
-        const at = run.nextRow + beat * 48;
-        for (let lane = 0; lane < 3; lane++) add(run, types[beat], lane, at);
-        for (let i = 1; i <= 4; i++) add(run, "bone", 1, at + i * 4);
+        sequenceEnd <= (visit+1)*REGION_LENGTH &&
+        !cornerIntersecting(start, sequenceEnd) &&
+        (!run.route || start >= run.route.until || sequenceEnd - COURSE_RECOVERY <= run.route.until)) {
+      run.course = courseAt(start);
+      run.lastCourseVisit = visit;
+      for (const beat of run.course.beats) {
+        for (let lane = 0; lane < 3; lane++)
+          if (lane !== beat.safeLane) add(run, beat.type, lane, beat.at).courseRegion = run.course.region;
+        for (let i = 1; i <= 3; i++) add(run, "bone", beat.safeLane ?? 1, beat.at + i * 4);
       }
-      add(run, "gift", 1, run.nextRow + 116);
+      add(run, "gift", 1, start + 88);
       run.nextRow = sequenceEnd;
       run.row++;
       continue;
@@ -409,6 +418,7 @@ export function step(run, dt) {
   run.objects = run.objects.filter(
     (object) => object.at > run.distance - 8 || (object.pull && !object.used),
   );
+  if (!run.ended) advanceCourse(run, LANES);
   run.score = Math.floor(run.distance) + run.bonePoints + run.bonusPoints;
   fillTrack(run);
 }

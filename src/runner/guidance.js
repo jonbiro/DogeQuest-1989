@@ -2,6 +2,7 @@
 import {LANES} from './world.js';
 import {steer} from './motion.js';
 import {turnPrompt} from './turns.js';
+import {courseCue} from './courses.js';
 
 function onApproach(run, object) {
   const projected = {x:run.x, vx:run.vx};
@@ -13,6 +14,8 @@ export function actionCue(run) {
   const turn = turnPrompt(run);
   if (turn) return turn.status === 'accepted' ? '✓ TURN SET'
     : turn.direction === 'left' ? '← TURN LEFT' : '→ TURN RIGHT';
+  const weave = courseCue(run);
+  if (weave) return weave;
   if (run.zipline || run.y > .05 || run.vy > 0) return '';
   const cable = run.objects.find(object => object.type === 'zipline-start' && !object.caught &&
     object.at > run.distance && object.at - run.distance < run.speed * .45);
@@ -23,7 +26,9 @@ export function actionCue(run) {
     object.at > run.distance && object.at - run.distance < run.speed * .45 && onApproach(run, object));
   if (danger && ['arch','branch','gate'].includes(danger.type) &&
       run.slide > (danger.at - run.distance + .4) / run.speed) return '';
-  return !danger ? '' : ['arch', 'branch', 'gate'].includes(danger.type)
+  const intro = run.course && run.course.start-run.distance < 40 &&
+    run.course.start-run.distance > run.speed*.5 ? `${run.course.name} · +180 clean` : '';
+  return !danger ? intro : ['arch', 'branch', 'gate'].includes(danger.type)
     ? '↓ SLIDE' : danger.type === 'gap' ? '↑ JUMP GAP' : '↑ JUMP';
 }
 
@@ -36,6 +41,7 @@ export function eventNotice(event, run) {
     'route-scenic': {text: 'Scenic trail', priority: 1},
     'route-challenge': {text: 'Challenge trail · +60 per clear', priority: 1},
     'zipline-end': {text: 'Zipline complete · +250', priority: 1},
+    'course-complete': {text: 'Clean regional course · +180', priority: 1},
   };
   return notices[event] || null;
 }
