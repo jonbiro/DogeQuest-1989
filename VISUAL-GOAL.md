@@ -33,6 +33,84 @@ Full goal remains active. Partial work is not completion.
 
 ## Current evidence
 
+- Expanded route wording now verified in an actual 320x568 full-motion run:
+  the saved 320m capture shows both meanings on the backed guidance panel,
+  above the controls and below the dog. Run completed 1,112m, three hearts,
+  two turns, all regions, complete zipline, no HUD overlap, 51 trusted and
+  zero synthetic keys. Publishing this verified slice does not close the
+  remaining full-audit acceptance work.
+
+- Route-choice clarification: production HUD now spells out "Scenic: fewer
+  obstacles" and "Challenge: more points" beside the direction arrows, so the
+  explanation does not rely solely on distant sign text or color. Added a
+  visible-route variant to the stacked-HUD fixture; all four target sizes pass
+  overlap and near-track boundary checks. Corrected its check to inspect the
+  active route label instead of the hidden action cue. Fresh production-run
+  screenshot for the expanded wording remains required before publication.
+
+- Fresh closing terrain review: inspected all three regional courses, the
+  mixed gate/log row, route-choice signs and all seven terrain checkpoints
+  using top/middle/bottom captures, including the 2,962.5m river corner.
+  Dark curb edges, alternating wooden bands and Mochi's contact shadow remain
+  visible. Mixed rows distinguish an open slide clearance from solid jump
+  obstacles. Route names are explicit; small explanatory sign text still
+  requires a native-phone-distance check. Water remains deliberately calm:
+  retain this low-detail treatment to keep road edges and hazards dominant,
+  rather than adding reflective motion that competes with gameplay. This is
+  an explicit art disposition, not a claim of a new water shader.
+
+- Updated-bone native-size motion gate: 390x844 full-motion trusted run passed
+  1,109m, three hearts, both turns, all regions and zipline catch/landing;
+  55 trusted/zero synthetic key events and no HUD overlap. Inspected the
+  682m capture: dark bone outlines remain visible along the aerial trail.
+- Combined powers rechecked in full and reduced motion: three bones are
+  pulling at 0.1s and collected by 0.4s; Zoomies has expired at 6.5s; magnet
+  and double have expired at 10.5s; shield persists in all four samples.
+  Fresh saved galleries show rings and speed streaks disappear with their
+  powers while the shield remains. Nine geometries/two textures at the final
+  sample. These deterministic lifecycle checks are not motion-comfort testing.
+
+- Bone-contrast follow-up: darkened the existing baked edge and retained dark
+  coloring across the bevel instead of blending it into the pale face. Fresh
+  eight-pickup color and grayscale galleries show a clearer continuous bone
+  outline against the road. Geometry, mesh/draw count, pickup size and gameplay
+  behavior are unchanged. Saved evidence: `15-pickups-dark-bevel.png` and
+  `15-pickups-dark-bevel-gray.png` in the closing audit folder. This establishes
+  a visual improvement in the fixture, not full user-recognition or glare
+  testing; native-size motion confirmation remains in the closing checklist.
+
+- Current-build menu-label follow-up: browser accessibility snapshots confirm
+  all four upgrade buttons include the upgrade name and target level; puppy
+  and outfit actions include their item names, including locked prizes.
+  No purchases or equipment changes were made. Seven camp controls pass
+  44px-minimum target, bounds, hit-test and backed-text checks at all four
+  required sizes. Conservative measured CSS text/backing contrast is at least
+  7.29:1 for these tested controls, not a claim about all scene/UI contrast.
+  The served local HTML, script and stylesheet byte-match the current build.
+
+- Browser access restored on the resumed closing review. Current camera guard
+  passed fresh full-motion trusted-keyboard runs at 390x844 (1,109m) and
+  320x568 (1,141m): three hearts, both turns, all three regions, complete
+  zipline ride, no HUD overlaps, 52 trusted and zero synthetic key events each.
+  Both saved zipline screenshots were inspected; the dog remains inside frame.
+  Three 4,500m renderer runs pass all 54 puppy-envelope checkpoints, 21 turns,
+  nine ziplines and 13 split rows. Peaks: 20 geometries, five textures,
+  121 objects and 202 draw calls. These changes remain unpublished pending
+  the other closing-review checks, including distant bone contrast.
+
+- Closing audit, current unpublished work: added camera-local framing guard
+  with regression coverage across portrait/landscape, lane lag, curves and
+  jump/zipline heights. Added explicit item names to collection/upgrade button
+  accessibility labels and stronger camp-control backings. These changes still
+  require the remaining fresh browser checks before publication.
+- Trusted-input acceptance now explicitly requires at least 1,000m and two
+  accepted turns; zero missed turns alone cannot pass an incomplete run.
+  Added rejection tests for short runs, missing turns, duplicate regions,
+  synthetic-only input, damage, incomplete zipline and HUD collisions.
+- Latest continuation: browser access reports the Mac locked. Fresh browser
+  verification is paused pending manual unlock; no new visual or live-release
+  claim is made from the successful local regression gate.
+
 - HUD/zoom follow-up: removed remaining 8px/9px mobile power-label overrides;
   power labels are now 11px, region label 10px, hearts have a dark backing.
   Four-size stacked HUD checks include minimum label sizes and conservative

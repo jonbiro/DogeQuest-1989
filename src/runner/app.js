@@ -156,6 +156,7 @@ function kennel() {
       copy.textContent = `${item.name}${item.breed ? ` · ${item.breed}` : ""} — ${item.description}`;
       button.dataset[kind] = id;
       button.textContent = saved.collection[kind] === id ? "Equipped" : owned ? "Equip" : item.prize ? "Prize locked" : `${item.cost.toLocaleString()} pts`;
+      button.setAttribute('aria-label',`${button.textContent} · ${item.name}`);
       button.disabled = saved.collection[kind] === id || (!owned && (item.prize || saved.credits < item.cost));
       button.onclick = () => {
         if (equipOrBuy(saved, kind, id)) {
@@ -217,6 +218,7 @@ function shop() {
     copy.append(name,benefit,status,meter);copy.className='upgrade-copy';
     button.textContent =
       cost === null ? "Maxed" : `${cost.toLocaleString()} pts`;
+    button.setAttribute('aria-label',`${button.textContent} · ${upgrade.name} · ${cost===null?'Maximum level':`Upgrade to level ${level+1}`}`);
     button.disabled = cost === null || saved.credits < cost;
     button.dataset.upgrade = key;
     button.onclick = () => {
@@ -613,7 +615,7 @@ function frame(now) {
       $("distance").innerHTML = `${Math.floor(run.distance)}<small> m</small>`;
       $("region-name").textContent = REGIONS[regionAt(run.distance)].name;
       setText('route-choice', run.choicePending!==null && run.choicePending-run.distance<100
-        ? `GATES IN ${Math.max(0,Math.ceil(run.choicePending-run.distance))}m · ← Scenic · Challenge →` : '');
+        ? `GATES IN ${Math.max(0,Math.ceil(run.choicePending-run.distance))}m · ← Scenic: fewer obstacles · Challenge: more points →` : '');
       $("bones").textContent = run.bones;
       $("run-score").textContent =
         `${run.score.toLocaleString()} pts${run.route && run.distance<run.route.until ? ` · ${run.route.kind==='challenge'?'CHALLENGE':'SCENIC'}` : ''}`;

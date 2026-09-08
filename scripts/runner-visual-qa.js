@@ -4,6 +4,7 @@ import {createView} from "../src/runner/render.js";
 import {createRun,step,act,fillTrack,HAZARDS} from "../src/runner/world.js";
 import {CUES,playNotes} from "../src/runner/sound.js";
 import {PUPPIES,COSTUMES} from "../src/runner/collection.js";
+import {UPGRADES} from '../src/runner/progression.js';
 import {turnPrompt,upcomingCorner,cornersBetween} from "../src/runner/turns.js";
 import * as THREE from 'three';
 import {createMochiModel} from '../src/runner/mochi-model.js';
@@ -200,6 +201,8 @@ export function longRunCheck() {
       step(run,1/120);run.events=[];
       if(run.distance>=nextSample) {
         view.draw(run,run.time,"playing",attempt===2,1/60,1);
+        const frame=view.diagnostics().puppyFrame;
+        if(!frame||frame.minX<-.84001||frame.maxX>.84001)throw Error(`Puppy framing regression: ${JSON.stringify(frame)}`);
         samples.push({attempt,distance:Math.floor(run.distance),hearts:run.hearts,turns:run.turns,missedTurns:run.missedTurns,...view.diagnostics()});
         nextSample+=250;
       }
@@ -282,7 +285,7 @@ export function previewTrailShape(reducedMotion=false) {
   }
   return {reducedMotion,samples};
 }
-export function previewZipline(distance=700,reducedMotion=false) {
+export function previewZipline(distance=700,reducedMotion=false,lane=2) {
   const canvas=document.createElement("canvas");
   canvas.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;z-index:9999";document.body.append(canvas);
   const run=createRun(1989);
@@ -292,7 +295,7 @@ export function previewZipline(distance=700,reducedMotion=false) {
   let jumped=false;
   while(run.distance<distance) {
     if(!jumped && 650-run.distance<run.speed*.4){act(run,"jump");jumped=true;}
-    if(run.zipline && run.distance>680)act(run,"right");
+    if(run.zipline && run.distance>680 && lane!==run.lane)act(run,lane>run.lane?'right':'left');
     step(run,1/120);run.events=[];
     view.draw(run,run.time,"playing",reducedMotion,1/120,1);
   }
@@ -378,13 +381,43 @@ export function dialogLayoutCheck() {
 }
 export function menuLayoutCheck() {
   if(document.querySelector('#game').dataset.state!=='menu')throw Error('Open camp before checking its layout');
-  const controls=['play','help','shop','kennel','audio','motion'].map(id=>{
-    const button=document.getElementById(id),rect=button.getBoundingClientRect();
+  const controls=['#play','#help','#shop','#kennel','#audio','#motion','.back-link'].map(selector=>{
+    const button=document.querySelector(selector),id=button.id||selector,rect=button.getBoundingClientRect();
     if(rect.width<44||rect.height<44||rect.left<0||rect.right>window.innerWidth||rect.top<0||rect.bottom>window.innerHeight)throw Error(`Camp target out of bounds or too small: ${id}`);
     if(!button.contains(document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2)))throw Error(`Covered camp target: ${id}`);
     return {id,width:rect.width,height:rect.height};
   });
-  return {viewport:[window.innerWidth,window.innerHeight],controls};
+  const textChecks=backedTextChecks([['#play','#play',12],['#help','#help',11],['#kennel','#kennel',11],['#shop','#shop',11],['#audio','#audio',20],['.back-link','.back-link',10],['#motion','#motion',11]]);
+  if(textChecks.some(check=>check.fontSize<check.minimumFontSize||check.minimumContrast<4.5))throw Error(`Camp readability regression: ${JSON.stringify(textChecks)}`);
+  return {viewport:[window.innerWidth,window.innerHeight],controls,textChecks};
+}
+export function actionLabelsCheck() {
+  const buttons=[...document.querySelectorAll('[data-upgrade],[data-puppy],[data-costume]')];
+  if(!buttons.length)throw Error('Open upgrades, puppies or outfits first');
+  const labels=buttons.map(button=>{
+    const item=UPGRADES[button.dataset.upgrade]||PUPPIES[button.dataset.puppy]||COSTUMES[button.dataset.costume];
+    const label=button.getAttribute('aria-label')||'';
+    if(!item||!label.includes(item.name)||!label.includes(button.textContent))throw Error(`Ambiguous purchase/equip action: ${label}`);
+    return label;
+  });
+  if(new Set(labels).size!==labels.length)throw Error('Duplicate action names');
+  return {labels};
+}
+// Conservative text/backing contrast over a white scene. This does not measure
+// scene objects or claim the complete interface is accessible.
+function backedTextChecks(specs) {
+  const luminance=rgb=>rgb.map(value=>value/255).map(value=>value<=.04045?value/12.92:((value+.055)/1.055)**2.4).reduce((sum,value,index)=>sum+value*[.2126,.7152,.0722][index],0);
+  const channels=color=>color.match(/[\d.]+/g).map(Number);
+  return specs.map(([text,backing,minimumFontSize])=>{
+    const style=window.getComputedStyle(document.querySelector(text));
+    const background=channels(window.getComputedStyle(document.querySelector(backing)).backgroundColor);
+    const foreground=channels(style.color),alpha=background[3]??1;
+    if((foreground[3]??1)!==1)throw Error(`Translucent text needs a separate contrast calculation: ${text}`);
+    const backLight=luminance(background.slice(0,3).map(value=>value*alpha+255*(1-alpha)));
+    const frontLight=luminance(foreground.slice(0,3));
+    const ratio=(Math.max(frontLight,backLight)+.05)/(Math.min(frontLight,backLight)+.05);
+    return {text,fontSize:parseFloat(style.fontSize),minimumFontSize,minimumContrast:Number(ratio.toFixed(2))};
+  });
 }
 export function passportLayoutCheck() {
   const passport=document.querySelector('#trail-passport');
@@ -406,7 +439,7 @@ export function instructionLayoutCheck() {
   return {images,...dialogLayoutCheck()};
 }
 // UI-only stress case: maximum simultaneous indicators, not an earned game state.
-export function hudStressCheck() {
+export function hudStressCheck(routeChoice=false) {
   const game=document.querySelector("#game"),hud=document.querySelector("#hud");
   const ids=["power","cue","route-choice","toast","mission-summary","mission-label","mission-hud","controls"];
   const saved=ids.map(id=>{const element=document.getElementById(id);return {element,html:element.innerHTML,hidden:element.hidden};});
@@ -418,27 +451,17 @@ export function hudStressCheck() {
     document.querySelector("#cue").hidden=false;
     for(const id of ['route-choice','toast','mission-summary'])document.getElementById(id).hidden=true;
     document.querySelector("#cue").textContent="↑ JUMP · ZIPLINE";
-    document.querySelector("#route-choice").textContent="GATES IN 100m · ← Scenic · Challenge →";
+    document.querySelector("#route-choice").textContent="GATES IN 100m · ← Scenic: fewer obstacles · Challenge: more points →";
+    if(routeChoice){document.querySelector('#cue').hidden=true;document.querySelector('#route-choice').hidden=false;}
     document.querySelector("#mission-label").textContent="Trailblazer · 300/300 meters";
     document.querySelector("#power").innerHTML=["🐾 140m","🎾 6s","◇ SHIELD","🧲 19s","×2 10s"].map(label=>`<span class="power-chip">${label}<progress max="10" value="8"></progress></span>`).join("");
     const rect=id=>document.querySelector(id).getBoundingClientRect();
     const issues=[];
-    // A white scene is the worst case behind these dark, translucent backings.
-    // This checks CSS text/backing contrast, not WebGL object recognition.
-    const luminance=rgb=>rgb.map(value=>value/255).map(value=>value<=.04045?value/12.92:((value+.055)/1.055)**2.4).reduce((sum,value,index)=>sum+value*[.2126,.7152,.0722][index],0);
-    const channels=color=>color.match(/[\d.]+/g).map(Number);
-    const textChecks=[['.power-chip','.power-chip',11],['#hearts','#hearts',15],['#region-name','.score',10]].map(([text,backing,minimum])=>{
-      const style=window.getComputedStyle(document.querySelector(text));
-      const background=channels(window.getComputedStyle(document.querySelector(backing)).backgroundColor);
-      const foreground=channels(style.color),alpha=background[3]??1;
-      const backLight=luminance(background.slice(0,3).map(value=>value*alpha+255*(1-alpha)));
-      const frontLight=luminance(foreground.slice(0,3));
-      const ratio=(Math.max(frontLight,backLight)+.05)/(Math.min(frontLight,backLight)+.05);
-      const fontSize=parseFloat(style.fontSize);
-      if(fontSize<minimum)issues.push(`${text} label too small: ${fontSize}px`);
-      if(ratio<4.5)issues.push(`${text} worst-case text contrast below 4.5: ${ratio}`);
-      return {text,fontSize,minimumContrast:Number(ratio.toFixed(2))};
-    });
+    const textChecks=backedTextChecks([['.power-chip','.power-chip',11],['#hearts','#hearts',15],['#region-name','.score',10]]);
+    for(const check of textChecks){
+      if(check.fontSize<check.minimumFontSize)issues.push(`${check.text} label too small: ${check.fontSize}px`);
+      if(check.minimumContrast<4.5)issues.push(`${check.text} worst-case text contrast below 4.5: ${check.minimumContrast}`);
+    }
     for(const [first,second] of [["#power",".score"],["#power","#mission-hud"],["#power","#controls"],["#mission-hud","#controls"]]){
       const a=rect(first),b=rect(second);
       if(a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top)issues.push(`${first} overlaps ${second}`);
@@ -456,7 +479,7 @@ export function hudStressCheck() {
     }
     if(landscape){const r=rect('#mission-hud');if(r.left<window.innerWidth*.6&&r.right>window.innerWidth*.4)issues.push('Guidance covers puppy corridor');}
     if(landscape){if(rect('#mission-hud').bottom>window.innerHeight*.48)issues.push('Guidance enters the near-track area');}
-    else if(rect('#cue').top<window.innerHeight*.65)issues.push('Cue covers the center of the trail');
+    else if(rect(routeChoice?'#route-choice':'#cue').top<window.innerHeight*.65)issues.push('Guidance covers the center of the trail');
     return {viewport:[window.innerWidth,window.innerHeight],issues,textChecks,powerBottom:rect("#power").bottom,cueTop:rect("#cue").top};
   } finally {
     game.dataset.state=state;hud.hidden=hidden;hud.className=classes;

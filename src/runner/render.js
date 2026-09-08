@@ -11,6 +11,7 @@ import { puppyPose, smoothLegAngles, bodyMotion, mochiCrouch } from "./puppy-pos
 import { createMochiModel } from "./mochi-model.js";
 import { isBridge } from "./bridges.js";
 import { ziplineAt, ZIPLINE_HEIGHT } from "./ziplines.js";
+import {createPuppyFramer} from './framing.js';
 
 // Shared low-poly geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -442,11 +443,12 @@ export function createView(canvas) {
   boneGeometry.translate(0,0,-.07);
   const boneNormals=boneGeometry.attributes.normal;
   const boneColors=new Float32Array(boneNormals.count*3);
-  const boneFace=new THREE.Color('#ffe8aa'),boneEdge=new THREE.Color('#693714');
+  const boneFace=new THREE.Color('#ffe8aa'),boneEdge=new THREE.Color('#352619');
   const boneColor=new THREE.Color();
   // Baked side contrast keeps the bone readable without an outline draw per pickup.
   for(let i=0;i<boneNormals.count;i++) {
-    const face=THREE.MathUtils.smoothstep(Math.abs(boneNormals.getZ(i)),.45,.85);
+    // Keep the bevel dark too: pale bevels disappear against the cream road.
+    const face=THREE.MathUtils.smoothstep(Math.abs(boneNormals.getZ(i)),.94,.999);
     boneColor.copy(boneEdge).lerp(boneFace,face).toArray(boneColors,i*3);
   }
   boneGeometry.setAttribute('color',new THREE.BufferAttribute(boneColors,3));
@@ -681,6 +683,8 @@ export function createView(canvas) {
   const bendEuler = new THREE.Euler(0, 0, 0, 'YXZ');
   const routeRotation = new THREE.Quaternion();
   const routePosition = new THREE.Vector3();
+  const framePuppy=createPuppyFramer();
+  let puppyFrame=null;
   return {
     instructionImage(action) {
       const subject=new THREE.Group();
@@ -928,6 +932,7 @@ export function createView(canvas) {
           active.delete(id);
         }
       if (menu) {
+        puppyFrame=null;
         const mobile = camera.aspect < 0.85;
         camera.position.set(6, mobile ? 4 : 3.3, mobile ? 11 : 7.7);
         const compact = mobile && canvas.clientHeight<=700 && canvas.clientHeight>520;
@@ -944,6 +949,7 @@ export function createView(canvas) {
         );
         const look = frameAt(-13);
         camera.lookAt(cameraX * (camera.aspect < 0.85 ? 0.4 : 0.12) + look.x * .3, 0.75 + cameraLift + look.y * .65, -13);
+        puppyFrame=framePuppy(camera,dog.position);
       }
       if (state === "playing" && dt > 0.025) slowFrames++;
       else slowFrames = Math.max(0, slowFrames - 1);
@@ -955,7 +961,7 @@ export function createView(canvas) {
       renderer.render(scene, camera);
     },
     diagnostics() {
-      return {geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,activeObjects:active.size,pooledObjects:Object.values(pools).reduce((sum,items)=>sum+items.length,0),legAngles:activeRig.legs.map(leg=>leg.rotation.x),bodyTransform:[...dog.position.toArray(),dog.rotation.x,dog.rotation.y,dog.rotation.z,...dog.scale.toArray()]};
+      return {geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,activeObjects:active.size,pooledObjects:Object.values(pools).reduce((sum,items)=>sum+items.length,0),puppyFrame:puppyFrame?{...puppyFrame}:null,legAngles:activeRig.legs.map(leg=>leg.rotation.x),bodyTransform:[...dog.position.toArray(),dog.rotation.x,dog.rotation.y,dog.rotation.z,...dog.scale.toArray()]};
     },
   };
 }
