@@ -431,22 +431,25 @@ export function createView(canvas) {
       : part.geometry.clone()
     ).applyMatrix4(part.matrixWorld),
   );
-  templates.bone = new THREE.Mesh(mergeGeometries(boneParts), mat("#ffe39a"));
+  templates.bone = new THREE.Mesh(mergeGeometries(boneParts),
+    new THREE.MeshStandardMaterial({color:'#e58b08',roughness:.45,metalness:.25,
+      emissive:'#a35c00',emissiveIntensity:.25}));
+  templates.bone.scale.setScalar(1.3);
   boneParts.forEach((part) => part.dispose());
   templates.rock = new THREE.Group();
-  box(templates.rock, "#758e72", 0, 1.05, 0, 1.75, 2.1, 1.4);
+  box(templates.rock, "#293e49", 0, 1.05, 0, 1.75, 2.1, 1.4);
   box(templates.rock, "#aec191", 0, 2.13, 0, 1.9, 0.2, 1.5);
   box(templates.rock, "#e9dca6", 0, 1.08, 0.72, 0.35, 0.7, 0.06);
   templates.log = new THREE.Group();
-  box(templates.log, "#815b37", 0, 0.48, 0, 1.95, 0.95, 0.8);
+  box(templates.log, "#542d18", 0, 0.48, 0, 1.95, 0.95, 0.8);
   box(templates.log, "#b28850", 0, 0.98, 0, 1.9, 0.1, 0.7);
   for (const x of [-0.7, 0.7])
     box(templates.log, "#ebc078", x, 0.5, 0.41, 0.18, 0.65, 0.04);
   templates.arch = new THREE.Group();
   for (const x of [-1, 1])
-    box(templates.arch, "#618979", x, 1.45, 0, 0.22, 2.9, 0.6);
-  box(templates.arch, "#6d9580", 0, 1.95, 0, 2.2, 1.15, 0.7);
-  box(templates.arch, "#e8c582", 0, 1.46, 0.38, 1.85, 0.16, 0.04);
+    box(templates.arch, "#154052", x, 1.45, 0, 0.22, 2.9, 0.6);
+  box(templates.arch, "#175c70", 0, 1.95, 0, 2.2, 1.15, 0.7);
+  box(templates.arch, "#86ffed", 0, 1.46, 0.38, 1.85, 0.16, 0.04);
   templates.magnet = new THREE.Group();
   for (const x of [-0.28, 0.28]) {
     box(templates.magnet, "#ff8d83", x, 0, 0, 0.2, 0.75, 0.2);
@@ -479,13 +482,13 @@ export function createView(canvas) {
   box(templates.branch, "#6c4b2e", 0, 1.7, 0, 2.3, 0.8, 0.8);
   for (const x of [-0.9, 0.6])
     ball(templates.branch, "#4e944f", x, 2.2, 0, 0.7, 0.5, 0.6);
-  box(templates.branch, "#e7bc70", 0, 1.28, 0.43, 1.8, 0.13, 0.06);
+  box(templates.branch, "#86ffed", 0, 1.28, 0.43, 1.8, 0.13, 0.06);
   templates.gate = new THREE.Group();
   for (const x of [-1, 1])
-    box(templates.gate, "#6a808a", x, 1.5, 0, 0.2, 3, 0.4);
+    box(templates.gate, "#154052", x, 1.5, 0, 0.2, 3, 0.4);
   for (const x of [-0.65, 0, 0.65])
-    box(templates.gate, "#bac7bd", x, 2.1, 0, 0.16, 1.55, 0.3);
-  box(templates.gate, "#ecc36f", 0, 1.33, 0, 2.1, 0.15, 0.4);
+    box(templates.gate, "#175c70", x, 2.1, 0, 0.16, 1.55, 0.3);
+  box(templates.gate, "#86ffed", 0, 1.33, 0, 2.1, 0.15, 0.4);
   templates.gem = new THREE.Group();
   ball(templates.gem, "#bf8bff", 0, 0, 0, 0.5, 0.65, 0.4);
   templates.double = new THREE.Group();
@@ -545,7 +548,7 @@ export function createView(canvas) {
   templates.gap = new THREE.Group();
   templates['crystal-rock'] = new THREE.Group();
   for (const [x,height] of [[-.45,.8],[0,1.55],[.45,1.05]]) {
-    const crystal=cone(templates['crystal-rock'],x===0?'#b6f7ed':'#9da8e5',x,height/2,0,.65,height,.65);
+    const crystal=cone(templates['crystal-rock'],x===0?'#513187':'#256884',x,height/2,0,.65,height,.65);
     crystal.rotation.z=x*.3;
   }
   box(templates.gap,"#153c48",0,-.24,0,2.4,.08,5);
@@ -695,7 +698,8 @@ export function createView(canvas) {
           const corner = upcomingCorner(distance-z-70);
           const cornerSection = !menu && corner && distance-z > corner.at-45 && distance-z < corner.end+20;
           if (entry.cable ? !cableSection : (entry.road && entry.bridge !== bridge) || (!entry.road && (bridge || cableSection))) instanceMatrix.scale(bendScale.set(0,0,0));
-          if (entry.gateway && (cornerSection || z > 0)) instanceMatrix.scale(bendScale.set(0,0,0));
+          // Decorative gateways must not masquerade as playable slide gates.
+          if (entry.gateway && (!menu || cornerSection || z > 0)) instanceMatrix.scale(bendScale.set(0,0,0));
           if (!menu && entry.road && !entry.terrain && !entry.water && !entry.cable &&
               corner && distance-z >= corner.at && distance-z <= corner.end)
             instanceMatrix.scale(bendScale.set(0,0,0));
@@ -810,7 +814,7 @@ export function createView(canvas) {
           }
           item.rotation.y = pickup
             ? object.type === "bone"
-              ? time * (reducedMotion ? 0 : 1.8)
+              ? (reducedMotion ? 0 : Math.sin(time * 1.8) * .25)
               : Math.sin(time * 1.5) * 0.25
             : 0;
           const frame = frameAt(item.position.z), across = item.position.x;

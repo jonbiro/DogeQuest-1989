@@ -1,5 +1,26 @@
 # Runner verification
 
+## In-run visual readability
+
+- Bones are 30% larger with a saturated gold, shaded material and bounded
+  quarter-radian sway instead of full spins that turn them edge-on. No change
+  to pickup reach, collisions, jump/slide timing or saved progress.
+- Solid logs/rocks have darker bodies against the pale road. Overhead arches
+  and gates use deep teal frames and bright mint clearance strips; branches
+  share the mint strip. Actual obstacle shapes still distinguish actions, so
+  the distinction does not depend on color alone.
+- Hazard crystals are saturated purple/teal rather than pale scenery-like
+  colors. Noninteractive decorative gateways are hidden during runs, leaving
+  actual slide gates and route-choice markers intact. Camp decoration remains.
+- Split-decision and three-region renderer previews were inspected at phone
+  aspect ratios. All 134 tests pass. Three 4,500m renderer runs retained three
+  hearts, with 21 turns, nine ziplines and 13 split rows. Peaks remain bounded:
+  15 geometries, four textures, 121 objects and 203 draw calls.
+- Full-motion 60-second 390x844 browser run: 1,821m, three hearts, all regions,
+  three correct turns, zipline catch/landing, no HUD overlaps or browser errors.
+  Mean frame interval 16.66ms and p95 16.70ms. These are desktop-browser results,
+  not a physical-device performance guarantee.
+
 ## Split-decision obstacle rows
 
 - Later ordinary/Challenge action rows periodically offer one slide-under gate
