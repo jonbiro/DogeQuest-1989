@@ -1,5 +1,15 @@
 # Visual audit implementation tracker
 
+## Scope of the active game-improvement goal
+
+All 25 numbered audit observations below are included in the active
+"improve the game" goal as ongoing acceptance criteria. Preserve completed
+improvements and check for regressions while improving gameplay, physics,
+visual clarity, contrast, clutter, controls, progression and power-ups.
+Completed audit items are not reopened merely by adding them to this goal.
+Physical-device and human usability checks remain explicitly unverified
+until the necessary devices or user sessions are available.
+
 Source: 2026-09-08 audit, 25 observations, baseline 043a063.
 Final acceptance reconciled against published implementation 2a58d17.
 All 25 observations are resolved or explicitly dispositioned below. Historical

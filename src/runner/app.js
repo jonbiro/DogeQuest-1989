@@ -516,7 +516,7 @@ $("scene").addEventListener("pointercancel", clearOwnedPointer);
 $("scene").addEventListener("lostpointercapture", clearOwnedPointer);
 for (const button of document.querySelectorAll("[data-action]")) {
   button.onpointerdown = (event) => {
-    if (state === "playing") {
+    if (state === "playing" && canStartSwipe(event, pointer)) {
       event.preventDefault();
       act(run, button.dataset.action);
     }
