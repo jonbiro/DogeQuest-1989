@@ -212,6 +212,7 @@ export function act(run, action) {
     else run.jumpBuffer = JUMP_BUFFER;
   }
   if (action === "slide") {
+    if (run.slide === 0) run.events.push('slide');
     run.slide = BASE_SLIDE_DURATION + run.upgrades.slide * SLIDE_UPGRADE_DURATION;
     run.diving = run.y > 0;
     if (!run.diving) run.vy = 0;

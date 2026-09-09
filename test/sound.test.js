@@ -1,6 +1,23 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {CUES,playNotes,stopSound} from "../src/runner/sound.js";
+import {createRun,act,step} from "../src/runner/world.js";
+
+test('slide feedback plays on a new move, not repeated presses or suspended movement',()=>{
+  const run=createRun(1989);
+  act(run,'slide');act(run,'slide');
+  assert.equal(run.events.filter(event=>event==='slide').length,1);
+  for(let i=0;i<90;i++)step(run,1/120);
+  act(run,'slide');
+  assert.equal(run.events.filter(event=>event==='slide').length,2);
+  run.zipline={start:0,end:140};run.slide=0;
+  act(run,'slide');
+  assert.equal(run.events.filter(event=>event==='slide').length,2);
+  run.zipline=null;run.ended=true;
+  act(run,'slide');
+  assert.equal(run.events.filter(event=>event==='slide').length,2);
+  assert.ok(CUES.slide[0].from>CUES.slide[0].to,'descending cue contrasts with rising jump');
+});
 test("sound cues use finite, bounded pitches, durations and supported voices",()=>{
   for(const notes of Object.values(CUES))for(const note of notes){
     assert.ok(note.from>=100&&note.from<=2000);assert.ok(note.to>=100&&note.to<=2000);
