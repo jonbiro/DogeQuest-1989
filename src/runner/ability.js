@@ -2,6 +2,10 @@
 export const FETCH_CHARGE = 100;
 export const FETCH_DURATION = 4;
 
+export function fetchReady(run) {
+  return !run.ended && run.fetchCharge >= FETCH_CHARGE && run.magnet <= 0;
+}
+
 export function chargeFetch(run, amount) {
   // A burst cannot refill itself by vacuuming up its own rewards.
   if (run.fetchTime > 0) return;
@@ -9,7 +13,7 @@ export function chargeFetch(run, amount) {
 }
 
 export function activateFetch(run) {
-  if (run.ended || run.fetchCharge < FETCH_CHARGE || run.magnet > 0) return false;
+  if (!fetchReady(run)) return false;
   run.fetchCharge = 0;
   run.fetchTime = FETCH_DURATION;
   run.magnet = FETCH_DURATION;

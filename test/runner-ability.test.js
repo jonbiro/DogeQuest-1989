@@ -1,7 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRun, act, step} from '../src/runner/world.js';
-import {chargeFetch, activateFetch} from '../src/runner/ability.js';
+import {chargeFetch, activateFetch, fetchReady} from '../src/runner/ability.js';
+
+test('Fetch readiness matches activation, including waiting for a pickup magnet to expire',()=>{
+  const run=createRun(1);
+  assert.equal(fetchReady(run),false);
+  chargeFetch(run,100);
+  assert.equal(fetchReady(run),true);
+  run.magnet=.05;
+  assert.equal(fetchReady(run),false);
+  assert.equal(activateFetch(run),false);
+  for(let i=0;i<8;i++)step(run,1/120);
+  assert.equal(fetchReady(run),true);
+  assert.equal(activateFetch(run),true);
+  assert.equal(fetchReady(run),false);
+  run.fetchCharge=100;run.magnet=0;run.ended=true;
+  assert.equal(fetchReady(run),false);
+});
 
 test('Fetch requires earned charge, caps it, and spends it exactly once', () => {
   const run = createRun(1);

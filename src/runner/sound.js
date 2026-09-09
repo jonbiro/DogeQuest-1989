@@ -4,6 +4,7 @@ export const CUES = {
   zoomies:[{from:220,to:880,at:0,duration:.22,type:"triangle"},{from:440,to:1320,at:.12,duration:.25,type:"sine"}],
   jump:[{from:300,to:700,at:0,duration:.12,type:"sine"}],
   slide:[{from:420,to:140,at:0,duration:.10,type:"sine"}],
+  ready:[{from:660,to:660,at:0,duration:.09,type:"sine"},{from:880,to:880,at:.09,duration:.12,type:"sine"}],
   finish:[{from:523,to:440,at:0,duration:.15,type:"triangle"},{from:392,to:330,at:.17,duration:.2,type:"triangle"}],
 };
 const voices=new WeakMap();

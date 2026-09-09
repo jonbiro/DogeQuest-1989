@@ -4,7 +4,7 @@ import { UPGRADES, levels, price, purchase } from "./progression.js";
 import { missionFor, missionProgress } from "./missions.js";
 import { bankRun } from "./rewards.js";
 import {masteryFrom,masteryCards} from './mastery.js';
-import {FETCH_DURATION} from './ability.js';
+import {FETCH_DURATION,fetchReady} from './ability.js';
 import {REGIONS,regionAt} from "./regions.js";
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
@@ -639,7 +639,9 @@ function frame(now) {
       setText('cue', actionCue(run));
       const fetchButton = $('fetch');
       $('scene').dataset.fetchUses = String(run.fetchUses);
-      fetchButton.disabled = run.fetchCharge < 100 || run.magnet > 0;
+      const ready = fetchReady(run);
+      if (fetchButton.disabled && ready) tone('ready');
+      fetchButton.disabled = !ready;
       fetchButton.classList.toggle('ready', !fetchButton.disabled);
       setText('fetch', run.fetchTime > 0 ? `FETCH · ${Math.ceil(run.fetchTime)}s`
         : run.magnet > 0 ? `MAGNET ACTIVE · ${run.fetchCharge}%`

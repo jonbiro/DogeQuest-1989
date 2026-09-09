@@ -2,6 +2,27 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {CUES,playNotes,stopSound} from "../src/runner/sound.js";
 import {createRun,act,step} from "../src/runner/world.js";
+import {readFileSync} from 'node:fs';
+import {URL} from 'node:url';
+import {runInNewContext} from 'node:vm';
+import {fetchReady} from '../src/runner/ability.js';
+
+test('HUD chimes once per usable Fetch transition, never on every frame',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('const ready = fetchReady(run);');
+  const end=source.indexOf("fetchButton.classList.toggle",start);
+  assert.ok(start>=0 && end>start);
+  const run=createRun(1),fetchButton={disabled:true},notes=[];
+  const update=()=>runInNewContext(`{${source.slice(start,end)}}`,{run,fetchButton,fetchReady,tone:cue=>notes.push(cue)});
+  update();run.fetchCharge=100;update();update();update();
+  assert.deepEqual(notes,['ready']);
+  run.magnet=1;update();update();
+  assert.deepEqual(notes,['ready'],'charge alone is not enough during a magnet');
+  run.magnet=0;update();update();
+  assert.deepEqual(notes,['ready','ready']);
+  run.ended=true;update();
+  assert.equal(fetchButton.disabled,true);
+});
 
 test('slide feedback plays on a new move, not repeated presses or suspended movement',()=>{
   const run=createRun(1989);
