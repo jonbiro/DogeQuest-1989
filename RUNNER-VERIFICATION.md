@@ -1,5 +1,31 @@
 # Runner verification
 
+## Input and feedback follow-up (2026-09-08)
+
+- Gameplay release `010826b`, acceptance helper `8d6ac1d`: 149 tests pass.
+  The helper now requires at least one actual Fetch activation, in addition
+  to distance, turns, regions, zipline completion, hearts and trusted inputs.
+- Live 1280x720 run: 1,102m, three hearts, two turns, all three regions,
+  zipline caught and landed, two Fetch activations, 54 trusted/zero synthetic
+  key events and no checked HUD overlaps.
+- Live 320x568 browser-emulated layout: 1,105m, three hearts, two turns,
+  all regions, complete zipline, two Fetch activations, 50 trusted/zero
+  synthetic keys and no checked HUD overlaps. This is not physical touch QA.
+- Local browser pointer check on `a4be957`: a 600ms held contact released
+  without jumping while still playing; a following quick tap produced jump.
+  Unit tests also cover secondary buttons, unrelated pointers and diagonal
+  out-and-back drags. These mouse inputs do not establish phone usability.
+- Local browser sound check on `dbc31b8`: enabled slide created a voice;
+  mute suspended the audio context, and an isolated muted jump/slide sequence
+  created zero voices. Temporary instrumentation was removed.
+- All seven cues, including slide and Fetch-ready, rendered finite, nonzero
+  offline browser audio below the established peak limit. Readiness tests
+  cover one chime per usable transition and waiting for magnet expiry.
+  This verifies generated audio, not subjective listening quality.
+- Gameplay assets for `010826b` matched live HTML, JavaScript and CSS bytes.
+  CI and Pages for acceptance-only `8d6ac1d` both succeeded
+  (34294609456 / 34294609508). No gameplay files changed in that commit.
+
 ## Contrast and scenery decluttering follow-up
 
 - Noninteractive scenery sits 25% farther from the lane center; roughly one
