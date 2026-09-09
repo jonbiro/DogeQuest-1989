@@ -4,6 +4,7 @@ export function assertTrustedRun(result) {
   const distance=Number(String(result.distance).replace(/[^\d.]/g,''));
   if(!result.proof?.trusted||result.proof.untrusted||result.issues?.length||
     result.missedTurns!==0||result.turns<2||!Number.isFinite(result.turns)||
+    !Number.isInteger(result.fetchUses)||result.fetchUses<1||
     distance<1000||!Number.isFinite(distance)||!result.ziplineCaught||
     !result.ziplineLanded||new Set(result.regions).size!==3||
     result.hearts!=='3 hearts remaining') {
@@ -51,7 +52,8 @@ export async function trustedRunCheck(page,cdp,{seconds=40,onCheckpoint=async()=
       await new Promise(resolve=>setTimeout(resolve,80));
     }
     const proof=await read('window.__runnerInputProof');
-    const result={...snapshot,regions:[...regions],issues:[...issues],ziplineCaught,ziplineLanded,proof};
+    const fetchUses=await read('Number(document.querySelector("#scene").dataset.fetchUses)');
+    const result={...snapshot,fetchUses,regions:[...regions],issues:[...issues],ziplineCaught,ziplineLanded,proof};
     assertTrustedRun(result);
     await page.playwright.locator('#scene').press('Escape');
     return result;
