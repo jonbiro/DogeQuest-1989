@@ -11,7 +11,7 @@ import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound} from "./sound.js";
 import {actionCue,eventNotice,dockMode,runLesson} from "./guidance.js";
 import {turnPrompt} from "./turns.js";
-import {swipeAction} from "./gestures.js";
+import {swipeAction,canStartSwipe,ownsSwipe} from "./gestures.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
 const $ = (id) => document.getElementById(id);
 let run = createRun(),
@@ -474,7 +474,7 @@ window.addEventListener("keydown", (event) => {
 });
 let pointer = null;
 $("scene").addEventListener("pointerdown", (event) => {
-  if (state !== "playing" || pointer) return;
+  if (state !== "playing" || !canStartSwipe(event,pointer)) return;
   pointer = { x: event.clientX, y: event.clientY, id: event.pointerId };
   $("scene").setPointerCapture(event.pointerId);
 });
@@ -509,9 +509,11 @@ $("scene").addEventListener("pointerup", (event) => {
     if (action) act(run, action);
   }
 });
-$("scene").addEventListener("pointercancel", () => {
-  pointer = null;
-});
+const clearOwnedPointer = event => {
+  if(ownsSwipe(event,pointer))pointer=null;
+};
+$("scene").addEventListener("pointercancel", clearOwnedPointer);
+$("scene").addEventListener("lostpointercapture", clearOwnedPointer);
 for (const button of document.querySelectorAll("[data-action]")) {
   button.onpointerdown = (event) => {
     if (state === "playing") {
