@@ -7,6 +7,13 @@ export function ownsSwipe(event, activePointer) {
   return activePointer !== null && activePointer.id === event.pointerId;
 }
 
+export function isJumpTap(pointer, event) {
+  const elapsed = event.timeStamp - pointer.started;
+  const travel = Math.max(pointer.travel || 0,
+    Math.abs(event.clientX - pointer.x), Math.abs(event.clientY - pointer.y));
+  return elapsed >= 0 && elapsed <= 350 && travel < 24;
+}
+
 export function swipeAction(dx, dy) {
   const x = Math.abs(dx), y = Math.abs(dy);
   if (Math.max(x, y) < 24) return null;

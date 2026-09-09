@@ -11,7 +11,7 @@ import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound} from "./sound.js";
 import {actionCue,eventNotice,dockMode,runLesson} from "./guidance.js";
 import {turnPrompt} from "./turns.js";
-import {swipeAction,canStartSwipe,ownsSwipe} from "./gestures.js";
+import {swipeAction,canStartSwipe,ownsSwipe,isJumpTap} from "./gestures.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
 const $ = (id) => document.getElementById(id);
 let run = createRun(),
@@ -475,7 +475,7 @@ window.addEventListener("keydown", (event) => {
 let pointer = null;
 $("scene").addEventListener("pointerdown", (event) => {
   if (state !== "playing" || !canStartSwipe(event,pointer)) return;
-  pointer = { x: event.clientX, y: event.clientY, id: event.pointerId };
+  pointer = { x: event.clientX, y: event.clientY, id: event.pointerId, started: event.timeStamp, travel: 0 };
   $("scene").setPointerCapture(event.pointerId);
 });
 $("scene").addEventListener("pointermove", (event) => {
@@ -488,6 +488,7 @@ $("scene").addEventListener("pointermove", (event) => {
     return;
   const dx = event.clientX - pointer.x,
     dy = event.clientY - pointer.y;
+  pointer.travel = Math.max(pointer.travel, Math.abs(dx), Math.abs(dy));
   const action = swipeAction(dx, dy);
   if (!action) return;
   pointer.consumed = true;
@@ -501,9 +502,10 @@ $("scene").addEventListener("pointerup", (event) => {
   }
   const dx = event.clientX - pointer.x,
     dy = event.clientY - pointer.y;
+  const tap = isJumpTap(pointer, event);
   pointer = null;
   if (state !== "playing") return;
-  if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) act(run, "jump");
+  if (tap) act(run, "jump");
   else {
     const action = swipeAction(dx, dy);
     if (action) act(run, action);
