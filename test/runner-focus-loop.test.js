@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {URL} from 'node:url';
 import {runInNewContext} from 'node:vm';
 
 test('dialog keyboard loop excludes controls inside collapsed sections',()=>{
