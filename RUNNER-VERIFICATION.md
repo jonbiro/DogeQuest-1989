@@ -1,5 +1,43 @@
 # Runner verification
 
+## Isolated iOS Safari follow-up (2026-09-10)
+
+- Used a newly created iPhone 17 Pro / iOS 27 simulator named
+  `Biscuit Dash QA — Sep 10` (UDID
+  `A684C311-2581-42FF-8F83-9E38506B11B5`). Other projects' simulators were
+  not reused or modified. Safari ran the local production build through a
+  live simulator mirror. This is iOS Simulator evidence, not physical hardware.
+- Actual mirrored gestures started play, changed lanes, jumped and slid;
+  pause/resume and natural game-over were also inspected. Tool-paced play
+  is not a difficulty or frame-rate benchmark.
+- Landscape Safari exposed clipped primary results, camera-cutout overlap
+  with hearts, and upgrade dialogs whose items were hidden by their actions.
+  Short landscape dialogs now use bounded, independently scrollable content
+  beside their actions. Safe-area-aware HUD margins clear either cutout side.
+- Scrolled upgrades exposed a second issue: Help inherited the previous
+  dialog's scroll position. Changing dialog state now resets content to the
+  top without focus-induced scrolling; same-state purchase updates preserve
+  the current list position. A regression test executes the actual state
+  transition function and checks both cases.
+- Simulator screenshots verified primary results and both cutout directions,
+  upgrade content scrolling with actions retained, and Help starting at its
+  heading. Rotation back to portrait retained readable Help instructions,
+  camp navigation, upgrade rows and reachable primary/back actions.
+- At a separately emulated 874x300 viewport with 62px side safe areas,
+  normal and route-choice stress checks passed after moving the route dock
+  above the near trail. A 40-second trusted-input run reached 1,095m with
+  three hearts, two turns, all regions, a caught/landed zipline and two Fetch
+  uses: 51 trusted and zero untrusted key events, no checked HUD overlaps.
+  This browser run is separate from the simulator gesture evidence.
+- Layout guards now reject initially clipped primary results and score/heart
+  overlap with side safe areas. Temporarily restoring the old layouts made
+  these guards fail; restored fixes passed.
+- Release `4404311`: all 150 tests, lint, build and artifact checks passed.
+  CI `34533271417` and Pages `34533271484` succeeded. Published runner HTML,
+  JavaScript and CSS each matched the tested local build byte-for-byte.
+  No physics, scoring, save format or original 2D gameplay changes were made
+  in these layout fixes.
+
 ## Input and feedback follow-up (2026-09-08)
 
 - Gameplay release `010826b`, acceptance helper `8d6ac1d`: 149 tests pass.
