@@ -7,8 +7,26 @@ All 25 numbered audit observations below are included in the active
 improvements and check for regressions while improving gameplay, physics,
 visual clarity, contrast, clutter, controls, progression and power-ups.
 Completed audit items are not reopened merely by adding them to this goal.
-Physical-device and human usability checks remain explicitly unverified
-until the necessary devices or user sessions are available.
+The user requested agent-operated simulator QA instead of hands-on phone
+feedback. The isolated iOS Safari checks and resulting fixes are recorded in
+`RUNNER-VERIFICATION.md` (2026-09-10). Physical hardware and human usability
+remain disclosed coverage limits, not a request for a user testing session.
+
+## Current release follow-up (2026-09-10)
+
+Release `7b4d4db` preserves the visual implementation accepted below. Changes
+since `2a58d17` are confined to input handling, Fetch readiness/audio feedback,
+pause sound cleanup, dialog focus/scrolling, compact Safari layout and their
+verification helpers/tests; models, scenery and core movement timing are intact.
+All 152 tests and build/lint/artifact checks pass. CI `34534103021` and Pages
+`34534103037` succeeded; runner HTML/script/CSS match the local build bytes.
+
+Fresh live 1280x720 reduced-motion acceptance: 1,112m, three hearts, two correct
+turns, zero missed turns, all three regions, zipline caught and landed, two Fetch
+uses, 48 trusted/zero untrusted key events, and no checked HUD overlaps. This is
+a browser input run, separate from the iOS Simulator gesture/layout evidence.
+The numbered table and slice notes below preserve historical intermediate
+findings; the final acceptance summary is their reconciled disposition.
 
 Source: 2026-09-08 audit, 25 observations, baseline 043a063.
 Final acceptance reconciled against published implementation 2a58d17.
