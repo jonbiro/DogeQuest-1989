@@ -260,6 +260,7 @@ function syncDock() {
   $("mission-hud").hidden = state !== 'playing' || !mode;
 }
 function setState(next) {
+  const previous = state;
   state = next;
   $("game").dataset.state = state;
   $("menu").hidden = state !== "menu";
@@ -273,7 +274,10 @@ function setState(next) {
   $("scene").inert = state !== "playing";
   document.querySelector("header").inert = modal;
   $("hud").inert = modal;
-  if (modal) $("overlay-primary").focus();
+  if (modal) {
+    if (previous !== next) document.querySelector('.modal-content').scrollTop = 0;
+    $("overlay-primary").focus({preventScroll:true});
+  }
   accumulator = 0;
   pointer = null;
 }
