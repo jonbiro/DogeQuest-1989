@@ -1017,6 +1017,19 @@ kbd {
   }
 }
 @media (max-width: 700px) and (orientation: portrait) {
+  /* Portrait is the primary phone layout: equal, thumb-sized fallback controls. */
+  #controls {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 7px;
+  }
+  #controls button, #controls #fetch {
+    width: 100%;
+    min-width: 0;
+    height: 60px;
+  }
+  #controls button[data-action="slide"] { margin-left: 0; }
+  #mission-hud { bottom: calc(96px + var(--safe-bottom)); }
   #power {
     gap: 4px;
   }

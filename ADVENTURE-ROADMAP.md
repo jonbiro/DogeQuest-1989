@@ -1,5 +1,13 @@
 # Puppy adventure goal
 
+## Primary mobile orientation
+
+Design and verify portrait first: assume most phone sessions are vertical.
+Prioritize swipe-anywhere, one-handed play, reachable fallback controls and a
+clear view of the puppy and upcoming obstacles. Landscape remains supported,
+but must not determine compromises in the main portrait experience. Check
+compact 320px portrait as well as taller phones before landscape regressions.
+
 ## Research-led goal
 
 Build a richer, skill-based adventure inspired by the Temple Run 2 research,
