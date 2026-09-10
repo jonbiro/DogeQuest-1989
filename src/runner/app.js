@@ -339,6 +339,7 @@ function showOverlay(kind) {
   setState(kind);
 }
 function pause() {
+  if (audio) stopSound(audio);
   if (state === "playing") showOverlay("paused");
 }
 function finish() {
