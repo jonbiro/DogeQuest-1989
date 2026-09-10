@@ -439,7 +439,7 @@ window.addEventListener("keydown", (event) => {
   if (event.key === "Tab" && !$("overlay").hidden) {
     const buttons = [
       ...$("overlay").querySelectorAll("button:not(:disabled), a[href], summary"),
-    ].filter((button) => !button.closest("[hidden]"));
+    ].filter((button) => !button.closest("[hidden]") && button.getClientRects().length > 0);
     if (event.shiftKey && document.activeElement === buttons[0]) {
       event.preventDefault();
       buttons.at(-1).focus();
