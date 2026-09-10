@@ -371,6 +371,12 @@ export function keyboardCheck() {
 }
 export function dialogLayoutCheck() {
   const content=document.querySelector(".modal-content");
+  if(document.querySelector('#game').dataset.state==='ended' && content.scrollTop===0) {
+    const stats=document.querySelector('#results').getBoundingClientRect();
+    const visible=content.getBoundingClientRect();
+    if(stats.top<visible.top-1 || stats.bottom>visible.bottom+1)
+      throw new Error('Primary results are clipped before scrolling');
+  }
   const actions=[...document.querySelectorAll(".modal-actions button")].filter(button=>!button.hidden).map(button=>{
     const rect=button.getBoundingClientRect();
     const hit=document.elementFromPoint(rect.x+rect.width/2,rect.y+rect.height/2);
@@ -457,6 +463,14 @@ export function hudStressCheck(routeChoice=false) {
     document.querySelector("#power").innerHTML=["🐾 140m","🎾 6s","◇ SHIELD","🧲 19s","×2 10s"].map(label=>`<span class="power-chip">${label}<progress max="10" value="8"></progress></span>`).join("");
     const rect=id=>document.querySelector(id).getBoundingClientRect();
     const issues=[];
+    const rootStyle=window.getComputedStyle(document.documentElement);
+    const safeLeft=parseFloat(rootStyle.getPropertyValue('--safe-left'))||0;
+    const safeRight=parseFloat(rootStyle.getPropertyValue('--safe-right'))||0;
+    for(const id of ['.score','.run-stats']) {
+      const r=rect(id);
+      if(r.left<safeLeft || r.right>window.innerWidth-safeRight)
+        issues.push(`${id} enters a device side safe area`);
+    }
     const textChecks=backedTextChecks([['.power-chip','.power-chip',11],['#hearts','#hearts',15],['#region-name','.score',10]]);
     for(const check of textChecks){
       if(check.fontSize<check.minimumFontSize)issues.push(`${check.text} label too small: ${check.fontSize}px`);
