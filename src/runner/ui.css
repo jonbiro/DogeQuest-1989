@@ -1070,6 +1070,12 @@ header {
   left:max(5%,calc(var(--safe-left) + 12px));
   right:max(5%,calc(var(--safe-right) + 12px));
 }
+@media (orientation: landscape) and (max-height: 340px) {
+  #mission-hud {
+    top: calc(94px + var(--safe-top));
+    padding-block: 5px;
+  }
+}
 @media(max-height:520px) {
   .menu { left:max(6%,calc(var(--safe-left) + 12px)); }
 }
