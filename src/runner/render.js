@@ -8,6 +8,7 @@ import { createCornerRoad } from "./corner-road.js";
 import { PUPPIES } from "./collection.js";
 import { REGIONS, regionAt, regionBlend, horizonProfile } from "./regions.js";
 import {createSky} from './sky.js';
+import {createMountainGeometry} from './mountain.js';
 import { puppyPose, smoothLegAngles, bodyMotion, mochiCrouch } from "./puppy-pose.js";
 import { createMochiModel } from "./mochi-model.js";
 import { isBridge } from "./bridges.js";
@@ -189,6 +190,7 @@ export function createView(canvas) {
     decorations.push(group);
   }
   const mountains = [];
+  const mountainGeometry=createMountainGeometry();
   const horizon = {};
   for (let i = 0; i < 8; i++) {
     const mountain = cone(
@@ -202,6 +204,7 @@ export function createView(canvas) {
       22,
     );
     mountain.rotation.y = random();
+    mountain.geometry = mountainGeometry;
     mountain.material = mountain.material.clone();
     // Horizon haze is blended explicitly below; scene fog would erase these
     // distant silhouettes a second time, leaving the regional backdrop blank.
