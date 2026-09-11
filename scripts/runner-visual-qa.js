@@ -3,6 +3,7 @@
 import {createView} from "../src/runner/render.js";
 import {createRun,step,act,fillTrack,HAZARDS} from "../src/runner/world.js";
 import {CUES,playNotes} from "../src/runner/sound.js";
+import {portraitControlIssues} from './runner-portrait-layout.mjs';
 import {PUPPIES,COSTUMES} from "../src/runner/collection.js";
 import {UPGRADES} from '../src/runner/progression.js';
 import {turnPrompt,upcomingCorner,cornersBetween} from "../src/runner/turns.js";
@@ -482,6 +483,10 @@ export function hudStressCheck(routeChoice=false) {
     }
     for(const id of ["#power","#cue","#mission-hud","#controls"]){const r=rect(id);if(r.top<0||r.bottom>window.innerHeight||r.left<0||r.right>window.innerWidth)issues.push(`${id} outside viewport`);}
     const buttons=[...document.querySelectorAll('#controls button')];
+    issues.push(...portraitControlIssues(buttons.map(button=>button.getBoundingClientRect()),{
+      width:window.innerWidth,height:window.innerHeight,
+      safeBottom:parseFloat(rootStyle.getPropertyValue('--safe-bottom'))||0,
+    }));
     const landscape=window.innerWidth>window.innerHeight&&window.innerHeight<=520;
     for(const button of buttons){
       const r=button.getBoundingClientRect();
