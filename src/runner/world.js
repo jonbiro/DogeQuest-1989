@@ -232,8 +232,8 @@ function syncUnvisitedCorners(run) {
 }
 
 function harm(run, mistake) {
-  run.lastMistake = mistake;
   if (run.invulnerable > 0) return false;
+  run.lastMistake = mistake;
   if (run.shield) {
     run.shield = 0;
     run.events.push("shield-break");

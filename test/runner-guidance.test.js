@@ -77,6 +77,25 @@ function hazard(run, type, secondsAway = 0.449, overrides = {}) {
   };
 }
 
+test('recovery collisions do not replace the last meaningful mistake',()=>{
+  const run=emptyRun();
+  run.objects=[hazard(run,'log',.1)];
+  advance(run,.2);
+  assert.equal(run.hearts,2);
+  assert.equal(run.lastMistake.type,'log');
+  run.objects=[hazard(run,'gate',.1)];
+  advance(run,.2);
+  assert.equal(run.hearts,2);
+  assert.equal(run.lastMistake.type,'log');
+  assert.match(runLesson(run),/low obstacle/);
+  advance(run,1.8);
+  run.objects=[hazard(run,'gate',.1)];
+  advance(run,.2);
+  assert.equal(run.hearts,1);
+  assert.equal(run.lastMistake.type,'gate');
+  assert.match(runLesson(run),/overhead/);
+});
+
 test('zipline approach explains aerial bones before the jump deadline and keeps airborne guidance', () => {
   const run = emptyRun();
   run.objects = [hazard(run, 'zipline-start', 1.5)];
