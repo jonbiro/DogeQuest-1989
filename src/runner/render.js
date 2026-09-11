@@ -7,6 +7,7 @@ import { objectVisible } from "./visibility.js";
 import { createCornerRoad } from "./corner-road.js";
 import { PUPPIES } from "./collection.js";
 import { REGIONS, regionAt, regionBlend, horizonProfile } from "./regions.js";
+import {createSky} from './sky.js';
 import { puppyPose, smoothLegAngles, bodyMotion, mochiCrouch } from "./puppy-pose.js";
 import { createMochiModel } from "./mochi-model.js";
 import { isBridge } from "./bridges.js";
@@ -28,6 +29,8 @@ export function createView(canvas) {
   scene.background = new THREE.Color("#8ec5aa");
   scene.fog = new THREE.Fog("#8ec5aa", 35, 145);
   const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 190);
+  const sky=createSky();
+  scene.add(sky);
   scene.add(new THREE.HemisphereLight("#e9fff1", "#345342", 3));
   const sun = new THREE.DirectionalLight("#ffe1a2", 4);
   sun.position.set(-10, 20, 10);
@@ -772,6 +775,7 @@ export function createView(canvas) {
       const atmosphere = regionBlend(menu ? 0 : distance);
       scene.background.copy(regionColors[atmosphere.previous].sky).lerp(regionColors[atmosphere.index].sky,atmosphere.blend);
       scene.fog.color.copy(scene.background);
+      sky.material.color.copy(scene.background);
       ground.material.color.copy(regionColors[atmosphere.previous].ground).lerp(regionColors[atmosphere.index].ground,atmosphere.blend);
       horizonProfile(menu ? 0 : distance, horizon);
       for(const mountain of mountains) {
