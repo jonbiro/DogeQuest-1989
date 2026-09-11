@@ -6,7 +6,7 @@ import { upcomingCorner } from "./turns.js";
 import { objectVisible } from "./visibility.js";
 import { createCornerRoad } from "./corner-road.js";
 import { PUPPIES } from "./collection.js";
-import { REGIONS, regionAt, regionBlend } from "./regions.js";
+import { REGIONS, regionAt, regionBlend, horizonProfile } from "./regions.js";
 import { puppyPose, smoothLegAngles, bodyMotion, mochiCrouch } from "./puppy-pose.js";
 import { createMochiModel } from "./mochi-model.js";
 import { isBridge } from "./bridges.js";
@@ -186,6 +186,7 @@ export function createView(canvas) {
     decorations.push(group);
   }
   const mountains = [];
+  const horizon = {};
   for (let i = 0; i < 8; i++) {
     const mountain = cone(
       scene,
@@ -199,6 +200,11 @@ export function createView(canvas) {
     );
     mountain.rotation.y = random();
     mountain.material = mountain.material.clone();
+    // Horizon haze is blended explicitly below; scene fog would erase these
+    // distant silhouettes a second time, leaving the regional backdrop blank.
+    mountain.material.fog = false;
+    mountain.userData.baseScale = mountain.scale.clone();
+    mountain.userData.depthHaze = (-mountain.position.z - 115) / 25 * .18;
     mountains.push(mountain);
   }
   // Batch hundreds of trees, paving stones, and ruin pieces into three draws.
@@ -767,7 +773,12 @@ export function createView(canvas) {
       scene.background.copy(regionColors[atmosphere.previous].sky).lerp(regionColors[atmosphere.index].sky,atmosphere.blend);
       scene.fog.color.copy(scene.background);
       ground.material.color.copy(regionColors[atmosphere.previous].ground).lerp(regionColors[atmosphere.index].ground,atmosphere.blend);
-      for(const mountain of mountains) mountain.material.color.copy(ground.material.color).lerp(scene.background,.3);
+      horizonProfile(menu ? 0 : distance, horizon);
+      for(const mountain of mountains) {
+        mountain.material.color.copy(ground.material.color).lerp(scene.background,horizon.haze+mountain.userData.depthHaze);
+        const base=mountain.userData.baseScale;
+        mountain.scale.set(base.x*horizon.width,base.y*horizon.height,base.z);
+      }
       const gaps = menu ? [] : run.objects.filter(object => object.type === "gap" && object.lane === 1);
       if (state === "playing" || menu) {
         pose += ((menu || run.slide === 0 ? 1 : 0.46) - pose) * smooth;
