@@ -94,7 +94,12 @@ export function stepPractice(run, dt) {
     if(course.checked>checked) {
       const correct=course.clean>clean;
       run.practice.outcomes.push(correct);
-      run.practice.feedback={text:correct?'✓ Open lane found':'Aim for the open lane · ×2 means two swipes',until:run.time+1};
+      const late=!correct&&run.lane===course.beats[checked].safeLane;
+      if(late)run.practice.lateWeaves=(run.practice.lateWeaves||0)+1;
+      const feedback=correct?'✓ Open lane found':late
+        ? 'Correct lane · steer earlier next time'
+        : 'Aim for the open lane · ×2 means two swipes';
+      run.practice.feedback={text:feedback,until:run.time+1};
     }
     run.practice.index=course.checked;run.practice.correct=course.clean;
     run.hearts=3;run.fetchCharge=0;
@@ -184,7 +189,9 @@ export function practiceResult(run) {
     title:`${run.practice.correct} of 3 weaves cleared`,
     lesson:run.practice.correct===3
       ? 'Nice footwork! Two quick swipes cross from one outside lane to the other. The hint shortens after the first move; one swipe is enough for an adjacent lane.'
-      : 'Aim for the open lane, not the crystals. ×2 means two separate swipes in the same direction. After the first swipe, follow the remaining single-move hint.',
+      : run.practice.lateWeaves>0
+        ? 'You found an open lane but arrived too late. Start steering earlier; for ×2, make both swipes before the rocks reach your puppy. Try the same moves again.'
+        : 'Aim for the open lane, not the crystals. ×2 means two separate swipes in the same direction. After the first swipe, follow the remaining single-move hint.',
   };
   if (run.practice.kind==='gap') return {
     title:run.practice.correct ? 'Gap cleared!' : 'Try the gap again',

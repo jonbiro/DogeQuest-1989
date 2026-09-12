@@ -1,5 +1,17 @@
 # Runner verification
 
+## Carry steering timing lessons through practice (2026-09-12)
+
+- Weave practice now acknowledges a correctly selected lane reached too late,
+  instead of telling that player to find the open lane again. The existing brief
+  feedback cue says to steer earlier; the final rehearsal lesson retains that
+  advice after the cue expires. Wrong-lane and successful-move copy is preserved.
+- Full check: 310 tests pass. Early, late and unanswered inputs are exercised at
+  30/60/120Hz through actual rehearsal simulation and completion. A late move
+  cannot earn a clean beat; all hearts remain, Fetch stays empty, no rewards bank,
+  and the next rehearsal does not inherit mistakes. No new UI panels or changes
+  to timing, geometry or persisted progress.
+
 ## Specific coaching for late course steering (2026-09-12)
 
 - Course-rock collisions now capture the authored safe lane. When the player

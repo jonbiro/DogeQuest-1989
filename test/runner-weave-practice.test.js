@@ -38,3 +38,24 @@ test('actual course-rock collisions preserve evidence for contextual practice an
     else assert.deepEqual(run.lastMistake,{type:'rock'});
   }
 });
+
+test('weave practice acknowledges correct late steering without awarding a clean beat',()=>{
+  for(const fps of [30,60,120])for(const timing of ['early','late','none']) {
+    const run=createWeavePracticeRun();const at=run.course.beats[0].at;
+    let moved=false;
+    while(run.practice.index===0&&!run.ended) {
+      if(!moved&&(timing==='early'||timing==='late'&&at-run.distance<.5)) {
+        act(run,'left');act(run,'left');moved=true;
+      }
+      stepPractice(run,1/fps);
+    }
+    assert.equal(run.practice.correct,timing==='early'?1:0);
+    assert.match(practiceCue(run),timing==='early'?/Open lane found/:timing==='late'?/Correct lane.*earlier/:/Aim for the open lane/);
+    assert.equal(run.hearts,3);
+    assert.equal(run.fetchCharge,0);
+    while(!run.ended)stepPractice(run,1/fps);
+    assert.match(practiceResult(run).lesson,timing==='late'?/arrived too late.*earlier/:/two separate swipes/);
+    assert.equal(bankRun({},run,[]),null);
+  }
+  assert.equal(createWeavePracticeRun().practice.lateWeaves,undefined,'a fresh rehearsal does not inherit timing mistakes');
+});
