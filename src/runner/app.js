@@ -481,6 +481,10 @@ const keyActions = {
   KeyF: "fetch",
 };
 window.addEventListener("keydown", (event) => {
+  if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
+  // Focused action buttons own Space; their native click invokes the named move.
+  // Elsewhere Space remains the quick jump shortcut.
+  if (event.code === 'Space' && document.activeElement?.closest?.('[data-action]')) return;
   if (event.key === "Tab" && !$("overlay").hidden) {
     const buttons = [
       ...$("overlay").querySelectorAll("button:not(:disabled), a[href], summary"),

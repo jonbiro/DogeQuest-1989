@@ -511,3 +511,17 @@ by the new contextual mission help, three-goal HUD and clean-move results text.
   scrolled to Silky slides. Test profile and offline cache were removed afterward;
   production saves were not modified. This is browser portrait evidence, not a
   new native-phone performance measurement.
+
+### September 11: focused keyboard controls
+
+- Fixed Space being intercepted as Jump when a gameplay button such as Slide
+  had focus. Native Space activation now invokes that button's named action;
+  Space on the focused trail retains its jump shortcut. Modified browser
+  shortcuts, composition and already-handled events no longer trigger gameplay.
+- All 192 tests pass, including the actual keyboard-handler block for focused
+  controls, normal shortcuts and modifier combinations. Existing pointer tests
+  continue to cover one action per swipe, cancelled ownership, hold rejection
+  and native keyboard clicks without duplicate pointer clicks.
+- Real browser Space input on focused Slide produced the rendered `slide`
+  posture. After resuming with trail focus, Space produced `jump`. Escape
+  paused both checks. No synthetic movement was injected for these observations.
