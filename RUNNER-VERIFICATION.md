@@ -1,5 +1,30 @@
 # Runner verification
 
+## Native Safari frame-pacing finding (2026-09-12)
+
+- Used only the booted Biscuit Dash QA — Sep 10 simulator, UDID
+  A684C311-2581-42FF-8F83-9E38506B11B5, through the simulator-browser skill.
+  Safari initially held an older script; reloaded and confirmed the current
+  game.js?v=ddd523eda74edcaa before measuring. Other projects' simulators were
+  not controlled. The existing native profile held 1,360 credits.
+- Measured requestAnimationFrame intervals during the real unscored three-move
+  rehearsal, started through its existing handler from WebKit's console. After
+  one second of warmup, 229 samples over approximately eight seconds averaged
+  28.62fps: median 17ms, p95 96ms, maximum 565ms, sixteen intervals above 50ms.
+  The game was still playing when sampling ended and was then paused.
+- This is NOT a smoothness pass or isolated renderer benchmark. Live mirroring,
+  DevTools and concurrent simulators/shared-host load were present. The poor tail
+  latency requires separating host/mirror scheduling from game rendering before
+  attributing a regression or claiming a phone performance improvement.
+- Full saved-profile text was unchanged at measurement completion. Returned to
+  camp with the same displayed balance. Screenshot evidence is in the sibling
+  DogeQuest-1989-native-qa-2026-09-12/performance-return-to-camp.png. A transient
+  mirror disconnect was recovered by reloading the existing mirror, not restarting
+  the running measurement. The completed measurement was not repeated.
+- Closed the mirror tab, stopped the tracked helper and confirmed terminal exit
+  plus no listener on port 3200. The dedicated simulator remains booted. No
+  production code changed; next performance work must investigate these stalls.
+
 ## Compact queued-label visual correction (2026-09-12)
 
 - The actual queued-control fixture at 320x568 exposed 1px horizontal overflow
