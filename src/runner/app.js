@@ -1,4 +1,5 @@
 import { createRun, act, step } from "./world.js";
+import {RESUME_DURATION,resumeStep} from './resume.js';
 import { createView } from "./render.js";
 import { UPGRADES, levels, price, purchase } from "./progression.js";
 import { missionFor, missionProgress, missionTip, missionPackFor } from "./missions.js";
@@ -347,6 +348,11 @@ function pause() {
   if (audio) stopSound(audio);
   if (state === "playing") showOverlay("paused");
 }
+function resume() {
+  run.resumeRemaining = RESUME_DURATION;
+  setState('playing');
+  $('scene').focus({preventScroll:true});
+}
 function finish() {
   const receipt = bankRun(saved, run, run.missions);
   if (!receipt) return;
@@ -409,8 +415,7 @@ $("home").onclick = () => {
 };
 $("overlay-primary").onclick = () => {
   if (state === "paused") {
-    setState("playing");
-    $("scene").focus();
+    resume();
   } else start();
 };
 $("audio").onclick = () => {
@@ -464,8 +469,7 @@ window.addEventListener("keydown", (event) => {
     if (event.repeat) return;
     if (state === "playing") pause();
     else if (state === "paused") {
-      setState("playing");
-      $("scene").focus();
+      resume();
     } else if (["help", "shop", "kennel"].includes(state)) {
       const opener = state;
       setState("menu");
@@ -579,7 +583,7 @@ function frame(now) {
   last = now;
   time += dt;
   if (state === "playing") {
-    accumulator += dt;
+    accumulator += resumeStep(run, dt);
     while (accumulator >= 1 / 120 && !run.ended) {
       step(run, 1 / 120);
       accumulator -= 1 / 120;

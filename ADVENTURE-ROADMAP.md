@@ -60,6 +60,14 @@ the evidence behind each area, closure of the completion checks and explicit val
 
 ## Delivered implementation
 
+Pause recovery now eases from 15% to full simulation speed over 0.9 seconds,
+without a central countdown. Button and Escape resumes share one path; fresh
+runs keep their normal start. The integrated time scale applies to the whole
+simulation, including powers and slide timing, with equivalent behavior at
+30/60/120 Hz. All 174 checks pass. Actual portrait button resume showed distance
+samples 6/11/20/31 m at half-second intervals with three hearts; keyboard resume
+showed 31/35 m over its first half-second. Pausing again worked in both paths.
+
 Adaptive rendering quality is now reversible. Three seconds of sustained slow
 frames lower drawing density to 1×; after a five-second cooldown and twenty
 seconds of stable fast frames, the original density (up to 1.5×) returns. Brief

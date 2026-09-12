@@ -34,6 +34,7 @@ export function createRun(seed = Date.now(), upgrades = {}) {
     random: seededRandom(seed),
     distance: 0,
     time: 0,
+    resumeRemaining: 0,
     speed: 22,
     upgrades: levels(upgrades),
     jumpBuffer: 0,
