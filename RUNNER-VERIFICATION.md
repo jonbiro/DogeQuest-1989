@@ -1,5 +1,21 @@
 # Runner verification
 
+## Portrait Safari practice check (2026-09-12)
+
+- Used only the dedicated Biscuit Dash QA — Sep 10 iOS 27 simulator. Native
+  Safari reloaded the current local runner; camp displayed 1,380 points before
+  and after the rehearsal. Other projects' simulators were left untouched.
+- Native touch dragging scrolled Help. Expanding the practice disclosure brought
+  all three lesson buttons into view without covering the fixed start/camp actions.
+  Tapping Practise turns started the real rendered unscored left-turn lesson.
+- An intentionally unanswered turn showed a compact edge coaching hint and then
+  Try the turn again, with timing instructions and reachable rehearsal/camp actions.
+  Returning to camp preserved the displayed balance. No scored run was started.
+- The mirror briefly disconnected after opening Help; reloading the mirror alone
+  restored the existing Safari state. This checks native Safari layout, navigation
+  and missed-turn practice completion, not successful timed steering, physical
+  touch feel, audible sound, frame-rate performance or full saved-profile equality.
+
 ## Space respects focused controls (2026-09-12)
 
 - A failing regression reproduced Space being prevented and interpreted as jump
