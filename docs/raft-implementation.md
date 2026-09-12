@@ -170,3 +170,18 @@ This verifies button wiring and portrait presentation, not continuous reaction
 timing, swipe gestures, native Safari frame pacing or physical-device usability.
 The temporary tab was closed and viewport override reset. The final normal build
 removes the generated fixture files.
+
+## Tilt timing integration
+
+A combined sensor/world test now feeds 60 Hz orientation readings through the
+actual smoothing/rearm adapter, with 300 ms cue reactions, into Challenge river
+steering. The old edge-to-edge reversal failed at boosted speed; ordinary-speed
+collection also suffered. River cues now look ahead 1.35 seconds, and the three
+beats sweep adjacent lanes (left, center, right). Challenge retains two rocks per
+row and unchanged collision rules; Scenic retains one. The final gift follows
+the final safe lane. Both normal and boosted sensor runs complete without hits,
+shield saves or boost-smashes and collect at least nine bones.
+
+This supersedes prior fixtures' lane paths; those button previews need rechecking
+before release. Synthetic sensor coverage is not physical-phone evidence. The
+river remains gated and default version-three trails are unchanged.

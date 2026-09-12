@@ -17,7 +17,7 @@ export function actionCue(run) {
   if (turn) return turn.status === 'accepted' ? '✓ TURN SET'
     : turn.direction === 'left' ? '← TURN LEFT' : '→ TURN RIGHT';
   if(run.raft){
-    const obstacle=run.objects.find(object=>object.raftHazard&&!object.used&&object.at>run.distance&&object.at-run.distance<run.speed*.95);
+    const obstacle=run.objects.find(object=>object.raftHazard&&!object.used&&object.at>run.distance&&object.at-run.distance<run.speed*1.35);
     return obstacle?laneCue(run.lane,obstacle.raftSafeLane,'RAFT'):
       run.raft.end-run.distance<run.speed*.8?'SHORE AHEAD':'RAFT · STEER LEFT / RIGHT';
   }
