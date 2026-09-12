@@ -60,6 +60,9 @@ export function startPerformanceCheck({seconds=8,warmup=1}={}) {
       intervals=[];updates=[];draws=[];requestAnimationFrame(frame);
     } else {
       result.status='done';result.phase='done';
+      // Safari inspection may select an isolated JavaScript world. Store the
+      // completed read-only report in the shared DOM for reliable retrieval.
+      document.body.dataset.performanceResult=JSON.stringify(result);
       console.log('Biscuit performance check',JSON.stringify(result));
     }
   }

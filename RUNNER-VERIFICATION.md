@@ -1,5 +1,32 @@
 # Runner verification
 
+## Native isolated timing comparisons (2026-09-12)
+
+- Ran the standalone fixture in Safari on the dedicated Biscuit Dash simulator.
+  Each phase had 1s warmup and approximately 8s measurement. Three completed runs:
+
+  | Setup | Idle mean / p95 interval | Game mean / p95 / max interval | Game gaps >50ms | Mean update / draw CPU |
+  | --- | --- | --- | --- | --- |
+  | First mirrored | 16.67 / 17ms | 19.87 / 20 / 1181ms | 5 | .093 / 3.839ms |
+  | Mirror stopped during sample | 16.70 / 17ms | 16.70 / 18 / 41ms | 0 | .192 / 1.446ms |
+  | Warm mirrored repeat | 16.70 / 17ms | 16.73 / 18 / 48ms | 0 | .125 / 3.407ms |
+
+- Both later samples sustained approximately 60fps. The warm mirrored repeat
+  prevents falsely attributing the first stall solely to mirroring. Cache warmth,
+  changing concurrent host load and scene position remain confounds; no isolated
+  root cause or physical-phone improvement is proven. First-run stalls remain a
+  watch item, but the evidence does not justify cutting visual quality globally.
+- All runs completed with visibilityInterrupted false and ended false. They cover
+  the opening approximately 181–208m, not long-run or all-region performance.
+  Added a shared-DOM completed report to the developer fixture because Safari's
+  inspector can select an isolated world where page-global results are unavailable.
+- No saved progress was read/written by the fixture. Returned to native camp and
+  confirmed 1,360 credits. Mirror was stopped only after the first run completed,
+  restarted only after its helper exited, and was not used to restart a timed-out
+  measurement. Final helper exited; temporary pages/bundles removed by rebuild.
+  Screenshot: isolated-timing-comparison.png in the sibling
+  DogeQuest-1989-native-qa-2026-09-12 folder.
+
 ## Isolated phase-timing fixture (2026-09-12)
 
 - Added development-only scripts/runner-performance-qa.js. Bundle as an IIFE
