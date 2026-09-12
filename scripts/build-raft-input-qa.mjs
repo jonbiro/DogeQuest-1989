@@ -64,7 +64,10 @@ window.raftInputQA={
     if(state!=='playing')throw Error('Run is not playing');
     for(let i=0;i<Math.round(seconds*120)&&!run.ended;i++){
       accumulator+=resumeStep(run,1/120);
-      while(accumulator+1e-12>=1/120&&!run.ended){step(run,1/120);accumulator-=1/120;}
+      while(accumulator+1e-12>=1/120&&!run.ended){
+        if(run.practice)stepPractice(run,1/120);else step(run,1/120);
+        accumulator-=1/120;
+      }
     }
     lastHud=-1;return this.snapshot();
   },
@@ -76,6 +79,15 @@ const benchmarkButton=document.createElement('button');
 benchmarkButton.textContent='Run 30-second river benchmark';
 benchmarkButton.onclick=()=>window.raftInputQA.benchmark();
 document.getElementById('menu').append(benchmarkButton);
+const practiceButton=document.createElement('button');
+practiceButton.textContent='QA river lesson';
+practiceButton.onclick=()=>startPractice('raft');
+document.getElementById('menu').append(practiceButton);
+const clockButton=document.createElement('button');
+clockButton.textContent='QA advance 3 seconds';
+clockButton.style.cssText='position:fixed;top:45%;left:0;z-index:100;font-size:10px;padding:4px';
+clockButton.onclick=()=>window.raftInputQA.advance(3);
+document.body.append(clockButton);
 `;
 await build({stdin:{contents:source,resolveDir:new URL('src/runner/',root).pathname,sourcefile:'raft-input-qa.js'},
   bundle:true,format:'esm',outfile:new URL('dist/runner/raft-input-qa.js',root).pathname});

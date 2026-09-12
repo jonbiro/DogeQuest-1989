@@ -15,6 +15,19 @@ also completes without exhausting hearts and receives river-specific advice. Ful
 build, distribution, lint and 440 tests pass; the final banking assertion additionally
 passes in the focused tests. The new lesson's rendered UI has not yet been checked.
 
+Subsequent full-app browser verification used the isolated fixture with the actual
+practice clock and on-screen controls. At 320 × 568, a complete button-steered
+crossing collected nine bones; the three-second manual increments intentionally
+missed lead-in pickups. Boarding disabled ground controls, shore restored them,
+the result showed 9/12, and Practise again reset to zero distance/bones. At
+390 × 844, Pause explained unscored play and Leave practice returned to camp with
+zero points. A no-steering completion showed 4/12 and the early-steering advice;
+Run the adventure then restored ordinary zero-distance, three-heart gameplay.
+Both portrait result layouts retained accessible action buttons; the shortest
+layout scrolls its copy. Console errors were empty. This is stepped-clock UI
+evidence, not real-time reaction or native-device coverage. Temporary tab and
+viewport were cleaned up; fixture storage remains disabled.
+
 ## Movement and reservation foundation
 
 `rafts.js` supplies an exact damped steering oscillator, bounded banks and a
