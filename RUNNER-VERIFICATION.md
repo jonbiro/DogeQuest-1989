@@ -1,5 +1,13 @@
 # Runner verification
 
+## Consistent reduced-motion pickups (2026-09-12)
+
+- Fixed non-bone pickups continuing to sway in reduced-motion mode. All eight
+  collectible types now use the same motion preference; normal mode retains
+  the exact prior frequencies and amplitude. Magnet pull paths are unchanged.
+- Tests cover every pickup at multiple animation times, static reduced motion,
+  bounded rotation and unchanged normal-mode formulas. Full check: 354 passed.
+
 ## Keyboard practice navigation (2026-09-12)
 
 - At 320 × 568, used Tab/Enter to open Help, Shift-Tab/Space to expand practice,

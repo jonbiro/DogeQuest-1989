@@ -30,6 +30,7 @@ import {BANK_SURFACE_Y} from './terrain.js';
 import {trailColors,sampleTrailColor} from './trail-palette.js';
 import {createShieldMaterial} from './shield-material.js';
 import {magnetPulse} from './magnet-field.js';
+import {pickupYaw} from './pickup-motion.js';
 
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -1045,9 +1046,7 @@ export function createView(canvas) {
             );
           }
           item.rotation.y = pickup
-            ? object.type === "bone"
-              ? (reducedMotion ? 0 : Math.sin(time * 1.8) * .25)
-              : Math.sin(time * 1.5) * 0.25
+            ? pickupYaw(object.type,time,reducedMotion)
             : 0;
           const frame = frameAt(item.position.z), across = item.position.x;
           item.position.set(frame.x + across * Math.cos(frame.yaw), item.position.y + frame.y,
