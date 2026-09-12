@@ -3,7 +3,7 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
 import { LANES, PICKUPS, seededRandom } from "./world.js";
 import { routeFrame } from "./route.js";
 import { upcomingCorner } from "./turns.js";
-import { objectVisible } from "./visibility.js";
+import { objectVisible, ziplineSignVisible } from "./visibility.js";
 import { createCornerRoad } from "./corner-road.js";
 import { PUPPIES } from "./collection.js";
 import { REGIONS, regionAt, regionBlend, horizonProfile } from "./regions.js";
@@ -661,8 +661,8 @@ export function createView(canvas) {
       box(station, "#185965", 0, 3, 0, 6.5, .24, .24);
       // Three visible grips show that jumping can catch from any lane.
       for(const x of LANES)box(station,"#a2ffde",x,3,.03,.6,.3,.3);
-      box(station, "#225c60", 0, 5.4, .4, 3.6, 1.8, .12);
-      const label=routeLabel(3.5,1.7,2);label.position.set(0,5.4,.47);station.add(label);
+      box(station, "#225c60", 0, 5.4, .4, 3.6, 1.8, .12).userData.ziplineSign=true;
+      const label=routeLabel(3.5,1.7,2);label.userData.ziplineSign=true;label.position.set(0,5.4,.47);station.add(label);
     }
   }
   const zipHandle = new THREE.Group(); scene.add(zipHandle);
@@ -913,6 +913,8 @@ export function createView(canvas) {
             scene.add(item);
           }
           const pickup = PICKUPS.includes(object.type);
+          for (const child of item.children) if (child.userData.ziplineSign)
+            child.visible=ziplineSignVisible(object,distance);
           item.position.set(
             LANES[object.lane],
             pickup

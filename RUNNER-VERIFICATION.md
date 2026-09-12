@@ -1,5 +1,30 @@
 # Runner verification
 
+## High-bone rehearsal and catch visibility (2026-09-12)
+
+- How to play now offers an optional 17-second high-bone practice trail.
+  It starts just before the actual first zipline, uses the adventure's generated
+  cable/reward layout and real catch, steering and landing physics at practice
+  speed. All 18 high bones are reachable without a magnet. Saved upgrades apply.
+- A missed handle ends after under four seconds with specific advice and a
+  same-rehearsal retry. Successful results report bones collected and explain
+  automatic landing. Practice stays unscored, never banks rewards, and normal
+  adventure starts fresh. Displayed practice distance begins at zero; the
+  initial interpolation state starts at the cable approach rather than camp.
+- A compact aerial screenshot exposed an instruction sign covering the dog.
+  The sign and its backing now disappear inside the catch window or after a
+  catch, while the station, grips and cable remain visible. Reused stations
+  restore their sign on approach. This visibility fix also applies in adventures.
+- All 207 tests, lint, build and artifact checks passed. Tests cover missed
+  catch, all 18 bones and automatic landing at every jump-upgrade level,
+  non-banking, initial interpolation and sign/structure visibility separation.
+- Browser keyboard play at 320x568 followed only visible jump/steering prompts
+  and collected 18/18 before and after the sign fix. Screenshots confirmed the
+  obstruction and its removal. Same-rehearsal retry, natural missed catch,
+  readable results and the fresh normal-adventure transition were checked.
+  The local save remained absent throughout; the isolated cache was cleaned.
+  This is desktop browser portrait evidence, not native touchscreen coverage.
+
 ## Two-thumb controls (2026-09-12)
 
 - Explicit action buttons now accept a second touch contact, so one thumb on

@@ -1,5 +1,5 @@
 import { createRun, act, step } from "./world.js";
-import {createPracticeRun,stepPractice,practiceCue} from './practice.js';
+import {createPracticeRun,createZiplinePracticeRun,stepPractice,practiceCue,practiceProgress,practiceResult} from './practice.js';
 import {scoreChaseLabel} from './score-chase.js';
 import {RESUME_DURATION,resumeStep} from './resume.js';
 import {installBackupControls} from './backup-ui.js';
@@ -390,9 +390,10 @@ function finish() {
     showOverlay('ended');
     for (const id of ['results','run-breakdown','run-highlights']) $(id).hidden = true;
     $('overlay-label').textContent = 'NO PRESSURE. JUST PRACTICE.';
-    $('overlay-title').textContent = `${run.practice.correct} of 3 moves cleared`;
+    const result=practiceResult(run);
+    $('overlay-title').textContent = result.title;
     $('overlay-copy').textContent = 'Practice never changes your points, records or challenges. Rehearse again or head into the adventure.';
-    $('run-lesson').textContent = run.practice.correct === 3 ? 'Nice paws! You are ready to take these moves onto the adventure trail.' : 'Watch the edge prompt for jump and slide timing. For the last move, steer left instead of jumping.';
+    $('run-lesson').textContent = result.lesson;
     $('overlay-primary').textContent = 'Run the adventure ↗';
     $('practice-again').hidden = false;
     return;
@@ -442,17 +443,19 @@ function finish() {
   tone("finish");
 }
 $("play").onclick = start;
-$('practice-start').onclick = () => {
+function startPractice(kind) {
   if (!graphicsReady) return;
   start();
   const appearance = run.appearance;
-  run = createPracticeRun(saved.upgrades);
+  run = kind==='zipline' ? createZiplinePracticeRun(saved.upgrades) : createPracticeRun(saved.upgrades);
   run.puppy = saved.collection.puppy;
   run.appearance = appearance;
   run.missions = [currentMission];
   missionAnnounced = true;
-};
-$('practice-again').onclick = () => $('practice-start').onclick();
+}
+$('practice-start').onclick = () => startPractice('moves');
+$('practice-zipline').onclick = () => startPractice('zipline');
+$('practice-again').onclick = () => startPractice(run.practice?.kind || 'moves');
 $("run-breakdown").addEventListener("toggle", () => {
   if ($("run-breakdown").open) $("run-breakdown").scrollIntoView({block:"start"});
 });
@@ -708,13 +711,13 @@ function frame(now) {
       run.zipline ? "zipline" : run.y > 0.05 ? "jump" : run.slide > 0 ? "slide" : "run";
     if (Math.floor(run.time * 10) !== lastHud || run.ended) {
       lastHud = Math.floor(run.time * 10);
-      $("distance").innerHTML = `${Math.floor(run.distance)}<small> m</small>`;
+      $("distance").innerHTML = `${Math.floor(run.distance-(run.practice?.start || 0))}<small> m</small>`;
       $("region-name").textContent = run.practice ? 'Practice · no penalties' : REGIONS[regionAt(run.distance)].name;
       setText('route-choice', run.choicePending!==null && run.choicePending-run.distance<100
         ? `GATES IN ${Math.max(0,Math.ceil(run.choicePending-run.distance))}m · ← Scenic: fewer obstacles · Challenge: more points →` : '');
       $("bones").textContent = run.bones;
       $("run-score").textContent =
-        run.practice ? `${run.practice.correct}/3 moves cleared` : run.route && run.distance<run.route.until
+        run.practice ? practiceProgress(run) : run.route && run.distance<run.route.until
           ? `${run.score.toLocaleString()} pts · ${run.route.kind==='challenge'?'CHALLENGE':'SCENIC'}`
           : scoreChaseLabel(run.score, saved.best);
       const progress = missionProgress(run, currentMission);
