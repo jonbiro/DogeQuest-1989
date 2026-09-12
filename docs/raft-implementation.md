@@ -195,3 +195,17 @@ maneuver. Every combination now preserves three hearts, completes the crossing,
 collects at least nine bones and the gift, without shield saves or boost-smashes.
 No physics, collision or reward-count thresholds were relaxed. Updated visual
 placement still requires the pending portrait recheck before river rollout.
+
+## Updated portrait swipe evidence
+
+The revised adjacent-lane route and pickup offsets were rechecked through real
+pointer drags on the full-app fixture at 320 × 568 and 390 × 844. Both runs
+collected all 12 bones, retained three hearts and completed one dismount. The
+raft state cleared, jump/slide buttons re-enabled and the running accessibility
+description returned. Screenshots at both sizes showed distinct rocks, a visible
+bone lead-in and controls clear of the route. Browser console errors were empty.
+
+These were manually advanced simulation runs, not sustained real-time play or
+physical touch/sensor tests. This closes the revised-layout swipe-wiring recheck,
+not native Safari performance, tilt-device validation or versioned rollout.
+The temporary browser tab was closed and viewport override reset afterward.
