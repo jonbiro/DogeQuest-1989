@@ -102,7 +102,9 @@ export function raftEncounter(section,challenge=false){
     const at=section.start+35+index*35;
     for(let lane=0;lane<3;lane++)if(challenge?lane!==safeLane:lane===[1,2,0][index])
       objects.push({type:'rock',lane,at,raftHazard:true,raftSafeLane:safeLane});
-    for(const offset of [-16,-10,-4,5])objects.push({type:'bone',lane:safeLane,at:at+offset,raftPickup:true});
+    // Keep a visible lead-in, but place half the reward after the steering beat
+    // so filtered tilt input can earn the line without racing the first pickup.
+    for(const offset of [-10,-4,5,11])objects.push({type:'bone',lane:safeLane,at:at+offset,raftPickup:true});
   }
   objects.push({type:'gift',lane:2,at:section.end-12,raftPickup:true});
   return objects;

@@ -185,3 +185,13 @@ shield saves or boost-smashes and collect at least nine bones.
 This supersedes prior fixtures' lane paths; those button previews need rechecking
 before release. Synthetic sensor coverage is not physical-phone evidence. The
 river remains gated and default version-three trails are unchanged.
+
+The sensor matrix now covers all three sensitivity presets at 24/60 Hz and
+normal/boosted speed (12 combinations), including final gift collection. Steady
+initially cleared rocks but collected fewer than nine bones at boosted speed.
+Pickup offsets are now -10/-4/+5/+11 m around each steering beat rather than
+-16/-10/-4/+5: two lead-in bones still show the lane, while two reward the completed
+maneuver. Every combination now preserves three hearts, completes the crossing,
+collects at least nine bones and the gift, without shield saves or boost-smashes.
+No physics, collision or reward-count thresholds were relaxed. Updated visual
+placement still requires the pending portrait recheck before river rollout.
