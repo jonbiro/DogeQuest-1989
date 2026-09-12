@@ -477,3 +477,20 @@ by the new contextual mission help, three-goal HUD and clean-move results text.
 - This is desktop browser offline coverage, not an iOS airplane-mode or native
   installation test. Browser storage eviction can remove cached files; the help
   explains this limitation. No cloud synchronization is implied.
+
+### September 11: evidence-based retry coaching
+
+- `npm run check`: 187 tests pass. Actual simulated collisions prove late-jump,
+  incorrect slide and overhead-jump diagnoses; controlled state cases cover
+  descent, recent landing, aerial dive and expired-slide evidence. A naturally
+  expired slide is distinguished from a slide cancelled by jumping. Fresh runs
+  reset evidence; generic lessons remain when no specific diagnosis is proven.
+- In the isolated local browser, an unassisted run naturally ended at 200 m,
+  300 points and four bones, displaying the existing generic collision lesson.
+  All eight specific coaching strings were then previewed in that real results
+  layout at 320 × 568. Retry remained within the viewport for each; a screenshot
+  confirmed the final message's readability and accessible primary action.
+- The eight-message layout preview is synthetic UI coverage, not eight trusted
+  playthroughs. Collision classification is verified separately by simulation.
+  No jump, slide, speed or collision threshold was changed; slide-expiry
+  timestamps record existing motion without extending or shortening it.

@@ -17,6 +17,7 @@ function jumpGravity(run) {
 }
 
 export function jump(run) {
+  run.slideExpiredAt = null;
   run.slide = 0;
   run.diving = false;
   run.jumpBuffer = 0;
@@ -51,7 +52,7 @@ function fall(run, gravity, duration) {
 
 export function moveVertical(run, dt) {
   if (run.y === 0 && run.vy === 0) {
-    run.slide = Math.max(0, run.slide - dt);
+    tickSlide(run, dt);
     run.jumpBuffer = Math.max(0, run.jumpBuffer - dt);
     return;
   }
@@ -71,8 +72,14 @@ export function moveVertical(run, dt) {
       jump(run);
       fall(run, jumpGravity(run), remaining);
     } else {
-      run.slide = Math.max(0, run.slide - remaining);
+      tickSlide(run, remaining);
     }
   }
   run.jumpBuffer = Math.max(0, run.jumpBuffer - dt);
+}
+
+function tickSlide(run, dt) {
+  const before = run.slide;
+  run.slide = Math.max(0, before - dt);
+  if (before > 0 && run.slide === 0) run.slideExpiredAt = run.time - Math.max(0, dt - before);
 }

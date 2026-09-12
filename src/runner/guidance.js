@@ -3,6 +3,7 @@ import {LANES} from './world.js';
 import {steer} from './motion.js';
 import {turnPrompt} from './turns.js';
 import {courseCue} from './courses.js';
+import {timingLesson} from './mistakes.js';
 
 function onApproach(run, object) {
   const projected = {x:run.x, vx:run.vx};
@@ -59,6 +60,8 @@ export function eventNotice(event, run) {
 }
 
 export function runLesson(run) {
+  const timing = timingLesson(run.lastMistakeDetail);
+  if (timing) return timing;
   const mistake = run.lastMistake;
   if (!mistake) return 'Keep an eye on the trail ahead. Your next run is one tap away.';
   if (mistake.type === 'corner') return `Missed a ${mistake.direction} turn. Swipe ${mistake.direction} when the turn arrow appears; one swipe locks it in.`;

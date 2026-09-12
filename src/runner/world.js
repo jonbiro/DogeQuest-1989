@@ -12,6 +12,7 @@ export function seededRandom(seed) {
 import { levels } from "./progression.js";
 import {chargeFetch, activateFetch} from './ability.js';
 import {cleanMove} from './flow.js';
+import {mistakeDetail} from './mistakes.js';
 import { jump, steer, moveVertical, JUMP_BUFFER } from "./motion.js";
 import { ZIPLINE_FIRST, ZIPLINE_PERIOD, ZIPLINE_LENGTH, ZIPLINE_HEIGHT } from "./ziplines.js";
 import {courseAt, COURSE_LENGTH, COURSE_RECOVERY, advanceCourse} from './courses.js';
@@ -91,6 +92,8 @@ export function createRun(seed = Date.now(), upgrades = {}) {
     events: [],
     effects: [],
     lastMistake: null,
+    lastMistakeDetail: null,
+    slideExpiredAt: null,
     previous: { x: 0, y: 0, distance: 0 },
   };
   fillTrack(run);
@@ -218,6 +221,7 @@ export function act(run, action) {
     else run.jumpBuffer = JUMP_BUFFER;
   }
   if (action === "slide") {
+    run.slideExpiredAt = null;
     if (run.slide === 0) run.events.push('slide');
     run.slide = BASE_SLIDE_DURATION + run.upgrades.slide * SLIDE_UPGRADE_DURATION;
     run.diving = run.y > 0;
@@ -240,6 +244,7 @@ function syncUnvisitedCorners(run) {
 function harm(run, mistake) {
   if (run.invulnerable > 0) return false;
   run.lastMistake = mistake;
+  run.lastMistakeDetail = mistakeDetail(run, mistake);
   run.cleanStreak = 0;
   if (run.shield) {
     run.shield = 0;

@@ -1,6 +1,14 @@
 # Puppy adventure goal
 
-## Latest delivered increment: offline reopening
+## Latest delivered increment: actionable retry coaching
+
+Results now distinguish late takeoff, early landing, cancelled jumps, incorrect
+slide/jump choices, late aerial dives, naturally expired slides and wrong turns.
+Advice comes from captured collision evidence; uncertain cases retain the
+general obstacle lesson. These tips replace the existing results lesson rather
+than adding mid-run notices. Compact portrait checks cover all eight messages.
+
+## Offline reopening
 
 The runner now downloads a small, build-versioned offline shell on an online
 visit. Each file is SHA-256 checked before installation; failed or mixed-release
