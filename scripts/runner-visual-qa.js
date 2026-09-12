@@ -195,12 +195,13 @@ export function longRunCheck() {
   const view=createView(canvas),samples=[];
   let completedZiplines=0,turns=0,missedTurns=0;
   const regionalCourses=[0,0,0];
-  const splitRows=new Set();
+  const splitRows=new Set(),courseNames=new Set();
   for(let attempt=0;attempt<3;attempt++) {
     const run=createRun(1989+attempt);
     run.appearance={puppy:["biscuit","mochi","pepper"][attempt],costume:["scarf","hero","explorer"][attempt]};
     let nextSample=250;
     while(run.distance<4500 && !run.ended) {
+      if(run.course)courseNames.add(run.course.name);
       const corner=turnPrompt(run),turnLocked=Boolean(corner);
       if(corner&&corner.status!=="accepted")act(run,corner.direction);
       const cable=run.objects.find(o=>o.type==="zipline-start"&&!o.caught&&o.at>run.distance&&o.at-run.distance<run.speed*.4);
@@ -242,6 +243,8 @@ export function longRunCheck() {
   // One shared route-label atlas adds one fixed texture, never one per sign.
   if(summary.peakGeometries>32||summary.peakTextures>5||summary.peakObjects>200||summary.peakDrawCalls>220)throw new Error(`Renderer resource regression: ${JSON.stringify(summary)}`);
   summary.regionalCourses=regionalCourses;
+  summary.courseNames=[...courseNames];
+  if(courseNames.size!==9)throw new Error(`Missing course variations: ${[...courseNames]}`);
   summary.splitRowsSeen=splitRows.size;
   if(!splitRows.size)throw new Error('Missing split-decision coverage');
   if(regionalCourses.some(count=>count===0))throw new Error(`Missing regional course coverage: ${regionalCourses}`);

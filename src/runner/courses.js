@@ -9,12 +9,25 @@ export const COURSES = [
   {name:'Canyon crossings', types:['gap','log','gap']},
   {name:'Crystal slalom', lanes:[0,2,1]},
 ];
+const VARIATIONS = [
+  [COURSES[0],
+    {name:'Canopy shuffle',types:['branch','log','branch']},
+    {name:'Root rhythm',types:['log','log','branch']}],
+  [COURSES[1],
+    {name:'Ridge hop',types:['log','gap','log']},
+    {name:'Twin crossings',types:['gap','gap','log']}],
+  [COURSES[2],
+    {name:'Moonpaw weave',lanes:[2,0,1]},
+    {name:'Crystal switchback',lanes:[1,0,2]}],
+];
 
 export function courseAt(start) {
-  const region = regionAt(start), definition = COURSES[region];
+  const region = regionAt(start);
+  const variant = Math.floor(start / (REGION_LENGTH * COURSES.length)) % 3;
+  const definition = VARIATIONS[region][variant];
   return {
     start, end:start+COURSE_LENGTH, region, visit:Math.floor(start/REGION_LENGTH),
-    name:definition.name, checked:0, clean:0,
+    name:definition.name, variant, checked:0, clean:0,
     beats:BEAT_OFFSETS.map((offset,index)=>({at:start+offset,
       type:definition.types?.[index] || 'rock', safeLane:definition.lanes?.[index]})),
   };

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRun,fillTrack,step,act,HAZARDS,LANES} from '../src/runner/world.js';
-import {courseCue,COURSE_BONUS} from '../src/runner/courses.js';
+import {courseAt,courseCue,COURSE_BONUS,COURSE_LENGTH} from '../src/runner/courses.js';
 
 function sequence(start=200,route=null) {
   const run=createRun(17);
@@ -10,6 +10,23 @@ function sequence(start=200,route=null) {
   fillTrack(run);
   return run;
 }
+test('later laps rotate nine distinct courses without changing spacing or recovery',()=>{
+  const names=new Set();
+  for(const start of [200,475,1120]) {
+    const patterns=new Set();
+    for(let lap=0;lap<3;lap++) {
+      const course=courseAt(start+1350*lap);
+      names.add(course.name);
+      patterns.add(JSON.stringify(course.beats.map(b=>[b.type,b.safeLane])));
+      assert.equal(course.variant,lap);
+      assert.deepEqual(course.beats.map(b=>b.at-course.start),[0,35,70]);
+      assert.equal(course.end-course.start,COURSE_LENGTH);
+      assert.equal(courseAt(start+1350*(lap+3)).name,course.name);
+    }
+    assert.equal(patterns.size,3);
+  }
+  assert.equal(names.size,9);
+});
 
 test('regions author distinct jungle timing, canyon gaps and crystal slalom courses',()=>{
   for(const [start,region,types] of [[200,0,['log','branch','log']],[475,1,['gap','log','gap']],[1120,2,['rock','rock','rock']]]) {
@@ -40,9 +57,16 @@ test('courses respect Scenic, corner reservations and region boundaries',()=>{
   assert.equal(run.objects.filter(o=>o.type==='gift'&&o.at===288).length,1);
 });
 
-test('all regional courses clear with base and upgraded moves at top and boosted speeds',()=>{
-  for(const start of [200,475,1120])for(const leap of [0,3])for(const speed of [36,46.8]) {
+test('all nine regional courses clear with base and upgraded moves at top and boosted speeds',()=>{
+  for(const start of [200,475,1120])for(const lap of [0,1,2])for(const leap of [0,3])for(const speed of [36,46.8]) {
     const run=sequence(start), course=run.course;
+    const variant=courseAt(start+lap*1350);
+    course.name=variant.name;
+    course.beats=variant.beats.map((beat,i)=>({...beat,at:start+i*35}));
+    run.objects=[];
+    for(const beat of course.beats)for(let lane=0;lane<3;lane++) {
+      if(lane!==beat.safeLane)run.objects.push({id:run.id++,type:beat.type,lane,at:beat.at});
+    }
     run.objects=run.objects.filter(o=>o.at<course.end).map(o=>({...o,at:o.at+10000}));
     for(const beat of course.beats)beat.at+=10000;
     course.start+=10000;course.end+=10000;

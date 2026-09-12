@@ -60,6 +60,17 @@ the evidence behind each area, closure of the completion checks and explicit val
 
 ## Delivered implementation
 
+Regional courses now rotate through nine authored patterns across later laps:
+three jungle jump/duck rhythms, three canyon gap sequences and three crystal
+slaloms. The first lap stays familiar, while later visits change the required
+sequence. All keep three beats, 35-meter spacing, the same recovery zone and
+180-point clean-course reward. Tests exercise every pattern with base/upgraded
+movement at top and boosted speeds. The real-renderer simulation covered all
+nine patterns across 3 × 4500 m, 54 rendered checkpoints, 21 clean turns and nine
+completed ziplines, with minimum three hearts and peaks of 22 geometries,
+five textures, 188 draw calls and 119 active/pooled objects. These are automated
+simulation and renderer checks, not physical-phone play or measured mobile FPS.
+
 Pause recovery now eases from 15% to full simulation speed over 0.9 seconds,
 without a central countdown. Button and Escape resumes share one path; fresh
 runs keep their normal start. The integrated time scale applies to the whole
