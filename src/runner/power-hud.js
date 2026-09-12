@@ -9,12 +9,12 @@ export function createPowerHud(container) {
     ['double',null,'Zoomies time remaining'],
     ['shield','Shield: one hit protected',null],
     ['magnet',null,'Magnet time remaining'],
-    ['double',null,'Double points time remaining'],
+    ['double','Double bone points: gems and trail bonuses are unchanged','Double bone points time remaining'],
   ];
   const chips=specifications.map(([style,label,timer])=>{
     const node=doc.createElement('span'),text=doc.createTextNode('');
     node.className=`power-chip ${style}`;
-    if(label)node.setAttribute('aria-label',label);
+    if(label){node.setAttribute('aria-label',label);node.setAttribute('title',label);}
     node.append(text);node.hidden=true;
     const progress=timer?doc.createElement('progress'):null;
     if(progress){progress.setAttribute('aria-label',timer);node.append(progress);}

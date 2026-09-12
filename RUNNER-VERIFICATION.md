@@ -1,5 +1,13 @@
 # Runner verification
 
+## Accurate multiplier labels (2026-09-12)
+
+- The multiplier's accessible timer now specifies double bone points, matching
+  the actual scoring rule and help. Its chip label/tooltip clarifies that gems
+  and trail bonuses are unchanged. Visible chip text and layout are unchanged.
+- HUD regression verifies both labels and preserves reusable node allocation.
+  Full build, distribution verification, lint and all 349 tests passed.
+
 ## Collectible score breakdown (2026-09-12)
 
 - Expanded results identify the existing bonus points from gems, gifts and

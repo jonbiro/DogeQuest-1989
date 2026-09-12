@@ -38,6 +38,9 @@ test('power HUD reuses all elements through updates, expiration and reactivation
   assert.equal(update(run),true);
   assert.deepEqual(nodes.map(n=>n.hidden),[false,false,false,false,false]);
   assert.deepEqual(nodes.map(n=>n.children[0].nodeValue),['🐾 140m','🎾 6s','◇ SHIELD','🧲 19s','×2 10s']);
+  assert.equal(nodes[4].attributes['aria-label'],'Double bone points: gems and trail bonuses are unchanged');
+  assert.equal(nodes[4].attributes.title,nodes[4].attributes['aria-label']);
+  assert.equal(nodes[4].children[1].attributes['aria-label'],'Double bone points time remaining');
   for(let i=0;i<500;i++){run.magnet=19-i/100;run.distance=i/10;update(run);}
   assert.deepEqual(f.counts(),counts,'no nodes allocated or reinserted during updates');
   assert.equal(nodes[3].children[1].max,19);
