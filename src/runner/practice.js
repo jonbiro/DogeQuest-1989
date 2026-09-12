@@ -3,10 +3,23 @@ import {actionCue} from './guidance.js';
 import {ZIPLINE_FIRST,ZIPLINE_LENGTH} from './ziplines.js';
 
 const LESSONS = [
-  {at:35,type:'log',hint:'↑ Jump over the logs'},
-  {at:75,type:'gate',hint:'↓ Slide under the gates'},
+  {at:35,type:'log',hint:'Logs ahead · wait for the cue'},
+  {at:75,type:'gate',hint:'Gates ahead · wait for the cue'},
   {at:115,type:'rock',hint:'← Steer into the open left lane'},
 ];
+function lessonFeedback(lesson,correct,detail) {
+  if (correct) return lesson.type==='log' ? '✓ Jump cleared' : lesson.type==='gate' ? '✓ Slide cleared' : '✓ Open lane found';
+  if (lesson.type==='rock') return 'Steer left into the open lane';
+  const reason=Math.abs((detail?.distance ?? -100)-lesson.at)<2 ? detail.reason : '';
+  const timing={
+    'early-jump':'Jump later · nearer the log',
+    'late-jump':'Jump a little earlier',
+    'cancelled-jump':'Stay airborne over the log',
+    'early-slide':'Slide later · nearer the gate',
+    'late-dive':'Slide earlier, from the ground',
+  };
+  return timing[reason] || (lesson.type==='log' ? 'Use ↑ to jump over logs' : 'Use ↓ to slide under gates');
+}
 export function createPracticeRun(upgrades = {}) {
   const run = createRun(1989, upgrades);
   run.practice = {index:0,correct:0,outcomes:[]};
@@ -51,6 +64,7 @@ export function stepPractice(run, dt) {
   if (lesson && run.distance > lesson.at + .4) {
     const correct = lesson.type === 'rock' ? Math.abs(run.x-LANES[0]) < .75 : run.clears > clears;
     run.practice.outcomes.push(correct);
+    run.practice.feedback={text:lessonFeedback(lesson,correct,run.lastMistakeDetail),until:run.time+1};
     run.practice.correct += Number(correct);
     run.practice.index++;
   }
@@ -64,8 +78,11 @@ export function practiceCue(run) {
     if (run.ziplines) return '✓ LANDED · high bones belong to the cable';
     return actionCue(run) || (run.zipline ? 'Steer toward the high bones' : 'ZIPLINE AHEAD · wait for jump cue');
   }
+  if (run.practice.feedback?.until>run.time) return run.practice.feedback.text;
   const lesson = LESSONS[run.practice.index];
   if (!lesson) return `${run.practice.correct}/3 moves practised · trail complete`;
+  if (lesson.type==='log' && (run.y>0 || run.vy>0)) return 'Jumping · wait for landing';
+  if (lesson.type==='gate' && run.slide>0) return 'Sliding · stay low';
   const near = lesson.at-run.distance < run.speed*.45;
   return `${run.practice.index+1}/3 · ${near && lesson.type!=='rock' ? lesson.type==='log'?'↑ JUMP NOW':'↓ SLIDE NOW' : lesson.hint}`;
 }

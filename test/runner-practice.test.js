@@ -25,9 +25,53 @@ test('practice teaches actual jump, slide and steering at every upgrade level',(
   }
 });
 test('practice prompts distinguish preparation and timing without stacked notices',()=>{
-  const run=createPracticeRun();assert.match(practiceCue(run),/1\/3.*Jump over/);
+  const run=createPracticeRun();assert.match(practiceCue(run),/1\/3.*Logs ahead.*wait/);
   run.distance=32;assert.match(practiceCue(run),/JUMP NOW/);
   run.practice.index=2;assert.match(practiceCue(run),/Steer.*left/);
+});
+
+test('practice acknowledges moves and their result instead of asking for duplicate input',()=>{
+  const run=createPracticeRun();
+  while(run.distance<30)stepPractice(run,1/120);
+  act(run,'jump');assert.match(practiceCue(run),/Jumping/);assert.doesNotMatch(practiceCue(run),/NOW/);
+  while(run.practice.index===0)stepPractice(run,1/120);
+  assert.equal(practiceCue(run),'✓ Jump cleared');
+  const feedback=practiceCue(run);assert.equal(practiceCue(run),feedback,'rendering does not consume the feedback');
+  while(run.practice.feedback.until>run.time)stepPractice(run,1/120);
+  assert.match(practiceCue(run),/Gates ahead.*wait/);
+  while(run.distance<70)stepPractice(run,1/120);
+  act(run,'slide');assert.match(practiceCue(run),/Sliding/);
+  while(run.practice.index===1)stepPractice(run,1/120);
+  assert.equal(practiceCue(run),'✓ Slide cleared');
+});
+
+test('practice gives collision-specific coaching for early moves and missing inputs',()=>{
+  for(const early of [false,true]) {
+    const run=createPracticeRun();const cues=[];let previous=0;
+    while(!run.ended) {
+      if(early && !cues.length && run.distance>=26 && run.distance<26.1)act(run,'jump');
+      if(early && run.practice.index===1 && run.distance>=65.4 && run.distance<65.5)act(run,'slide');
+      stepPractice(run,1/120);
+      if(run.practice.index!==previous){cues.push(practiceCue(run));previous=run.practice.index;}
+    }
+    assert.deepEqual(run.practice.outcomes,[false,false,false]);
+    assert.deepEqual(cues,early ? ['Jump later · nearer the log','Slide later · nearer the gate','Steer left into the open lane']
+      : ['Use ↑ to jump over logs','Use ↓ to slide under gates','Steer left into the open lane']);
+  }
+});
+
+test('a response delay after the actual practice cues still clears all three lessons',()=>{
+  for(const delay of [0,.1,.2,.3])for(const level of [0,3]) {
+    const run=createPracticeRun({leap:level,slide:level}),plans=new Map(),used=new Set();
+    while(!run.ended) {
+      const index=run.practice.index,cue=practiceCue(run);
+      if(index<2&&/NOW/.test(cue)&&!plans.has(index))plans.set(index,run.time+delay);
+      if(index<2&&run.time>=plans.get(index)&&!used.has(index)){act(run,index===0?'jump':'slide');used.add(index);}
+      if(index===2&&!used.has(index)){act(run,'left');used.add(index);}
+      stepPractice(run,1/120);
+    }
+    assert.deepEqual(run.practice.outcomes,[true,true,true],`delay ${delay}, level ${level}`);
+  }
 });
 
 test('missing the practice cable offers a quick retry without collecting unreachable bones or banking',()=>{

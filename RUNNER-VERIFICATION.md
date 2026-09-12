@@ -1,5 +1,26 @@
 # Runner verification
 
+## Practice timing feedback (2026-09-12)
+
+- Basic practice now distinguishes preparation, movement in progress and the
+  actual result. It no longer repeats `JUMP NOW` or `SLIDE NOW` while the named
+  action is underway. A one-second message in the existing edge dock confirms
+  a clear or explains a missed/early move using recorded collision evidence.
+  No new panels, center-screen messages or adventure-physics changes.
+- All 213 tests, build, lint and artifact checks passed. Tests exercise actual
+  moves and collision outcomes, early jump/slide coaching, unconsumed feedback,
+  and 0/0.1/0.2/0.3-second cue response delays at base and maximum upgrades.
+  Every delayed-input simulation clears all three lessons.
+- At 320x568, browser keyboard play with a deliberate 150ms input delay cleared
+  3/3. Observed cue transitions included preparation, `Jumping`, `Jump cleared`,
+  `Sliding`, `Slide cleared`, steering and `Open lane found`. An idle retry ended
+  0/3 and showed the three appropriate action instructions. The saved profile
+  remained absent through both checks; the isolated local cache was cleaned.
+- A saved screenshot in the sibling
+  `DogeQuest-1989-practice-feedback-2026-09-12/jump-feedback.png` confirms the
+  feedback below the dog at compact portrait size. Browser and simulation
+  evidence do not establish human learning effectiveness or native touch timing.
+
 ## Tall-phone decision-window framing (2026-09-12)
 
 - Projection diagnostics found opposite-lane bone centers outside the viewport
