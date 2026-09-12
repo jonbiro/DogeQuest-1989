@@ -49,6 +49,8 @@ export function actionCue(run) {
   }
   if (danger && ['arch','branch','gate'].includes(danger.type) &&
       run.slide > (danger.at - run.distance + .4) / run.speed) return '';
+  if (danger && ['arch','branch','gate'].includes(danger.type) && run.slide>0)
+    return 'OVERHEAD NEXT';
   const intro = run.course && run.course.start-run.distance < 40 &&
     run.course.start-run.distance > run.speed*.5 ? `${run.course.name} · +180 clean` : '';
   return !danger ? intro : ['arch', 'branch', 'gate'].includes(danger.type)

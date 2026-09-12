@@ -185,7 +185,7 @@ test("the short action hint leaves enough time to clear every hazard", () => {
 
 test("action guidance does not repeat while an action or assisted mode is active", () => {
   const states = [
-    { y: 0.5, vy: -1 },
+    { y: 2.5, vy: -1 },
     { y: 0, vy: 2 },
     { zipline: { start: 0, end: 140 } },
     { zoomies: 0.1 },
@@ -207,7 +207,9 @@ test("slide guidance renews only when the current slide will expire before impac
   const expiring = emptyRun();
   expiring.slide = 0.1;
   expiring.objects = [hazard(expiring, "gate")];
-  assert.equal(actionCue(expiring), "↓ SLIDE", "an expiring slide gets a timely renewal hint");
+  assert.equal(actionCue(expiring), "OVERHEAD NEXT", "do not request an input that an active slide ignores");
+  expiring.slide=0;
+  assert.equal(actionCue(expiring), "↓ SLIDE", "a fresh slide gets its own actionable hint after expiration");
 
   const jump = emptyRun();
   jump.slide = 0.55;

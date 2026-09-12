@@ -3,7 +3,7 @@
 export const JUMP_DURATION = .72;
 export const JUMP_SPEED = 14;
 export const GRAVITY = 2 * JUMP_SPEED / JUMP_DURATION;
-export const JUMP_BUFFER = .12;
+export const JUMP_BUFFER = .24;
 const LANE_SPRING = 26, DIVE_GRAVITY = 180, DIVE_TERMINAL = 28;
 
 function leapScale(run) {

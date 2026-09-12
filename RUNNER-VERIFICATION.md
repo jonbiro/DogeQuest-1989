@@ -1,5 +1,21 @@
 # Runner verification
 
+## Delayed-response consecutive hazards (2026-09-12)
+
+- Eight seeded 3km simulations at each of 100/150/200ms cue-response delays
+  exposed one hit at 200ms on seed 7, 1623m: the second-jump hint arrived too
+  late after the preceding jump. Expanded the landing input buffer from 120ms
+  to 240ms without changing jump airtime, height or collision clearance.
+- The same 72km matrix now completes without hit events. Inputs are queued from
+  actual guidance changes rather than obstacle-oracle perfect timing. This is
+  bounded deterministic simulation evidence, not proof of all layouts or human
+  usability; the fixture does not assert that shields were never consumed.
+- Active slides that will expire before an overhead obstacle now show the
+  non-actionable OVERHEAD NEXT cue, followed by SLIDE after expiration. This
+  removes an outdated renewal instruction following the fixed-duration change.
+- Full build, distribution verification, lint and 283 tests passed, including
+  early-buffer expiration and unchanged jump timing regressions.
+
 ## Predictable slide duration (2026-09-12)
 
 - Repeated Slide actions no longer restart an active slide timer or erase a
