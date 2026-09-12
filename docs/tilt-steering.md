@@ -49,6 +49,20 @@ Two further sensor regressions verify that touch cannot shift neutral or allow a
 immediate competing tilt action. All 418 tests and full checks passed after this
 input-arbitration correction. Physical combined tilt/touch feel remains unverified.
 
+## Native Safari permission check
+
+On the dedicated iOS 27 simulator `A684C311-2581-42FF-8F83-9E38506B11B5`,
+Safari rendered the current Help panel and sensitivity controls. Enable tilt
+opened the native localhost motion/orientation permission prompt. After Allow,
+no usable readings arrived and the four-second timeout correctly displayed
+“Motion sensors are unavailable. Use swipes or buttons.” Enable remained usable
+and Recalibrate disabled. This proves the permission/availability fallback, not
+physical gyroscope steering or sustained rendering performance.
+
+Local screenshot: `test-results/tilt-native-safari-fallback.png`. The scoped
+simulator mirror was disconnected after capture; the other project's simulator
+was not controlled. The existing 200-point simulator profile was not changed.
+
 [MDN orientation permission](https://developer.mozilla.org/en-US/docs/Web/API/DeviceOrientationEvent/requestPermission_static).
 Where implemented, permission requests require a secure context and direct user
 activation. API availability alone does not prove that a device emits readings.
