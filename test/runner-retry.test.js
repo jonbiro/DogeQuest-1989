@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 import {URL} from 'node:url';
 import {runInNewContext} from 'node:vm';
 import {createRun, step} from '../src/runner/world.js';
+import {missionPackFor} from '../src/runner/missions.js';
 
 test('results retry repeats the seed with a fresh simulation; camp starts a new trail',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
@@ -14,7 +15,7 @@ test('results retry repeats the seed with a fresh simulation; camp starts a new 
   original.hearts=0;original.ended=true;original.score=250;
   const context={run:original,state:'ended',graphicsReady:true,
     saved:{upgrades:{},collection:{puppy:'mochi'},challenges:0},
-    createRun,Date:{now:()=>987654},missionFor:()=>({}),
+    createRun,Date:{now:()=>987654},missionPackFor,
     setText:()=>{},setState:value=>{context.state=value;},
     $:()=>({focus:()=>{}}),tone:()=>{}};
   runInNewContext(source.slice(start,end),context);

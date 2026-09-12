@@ -60,6 +60,19 @@ the evidence behind each area, closure of the completion checks and explicit val
 
 ## Delivered implementation
 
+Runs now offer a three-challenge chain instead of stopping after one goal.
+Whole-run progress counts, goals advance in order after the brief completion
+notice, and the finish transaction banks up to three earned bonuses exactly
+once. Incomplete goals carry forward through the existing saved challenge index.
+Goal notices have lower priority than traversal and recovery feedback: testing
+found and fixed a goal message suppressing the zipline landing notice.
+All 165 checks pass. Portrait browser play verified three bonuses totaling 1100
+points in actual results; the final trusted-input run reached 1109 m with all
+three hearts, all regions, two turns, two Fetch activations, a caught/completed
+zipline, 53 trusted inputs, zero untrusted inputs and no HUD overlaps. An earlier
+run took one hit, and a second exposed the notice issue; neither was counted as
+a passing full gameplay check. This is browser portrait, not physical-phone QA.
+
 How to Play now includes an expandable guide for the current mission, with its
 target, reward and concrete scoring rules. It explains Fetch versus pickup
 magnets, zipline height and timing, clean-course beats and streak resets.

@@ -71,6 +71,10 @@ export function missionProgress(run, mission) {
     Math.max(0, Math.floor(value || 0)),
   );
 }
+export function missionPackFor(completed = 0) {
+  const first = missionFor(completed);
+  return [first, missionFor(first.id + 1), missionFor(first.id + 2)];
+}
 export function claimMission(profile, run, mission) {
   if (!run.ended) return 0;
   if (

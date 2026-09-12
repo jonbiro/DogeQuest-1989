@@ -1,7 +1,7 @@
 import { createRun, act, step } from "./world.js";
 import { createView } from "./render.js";
 import { UPGRADES, levels, price, purchase } from "./progression.js";
-import { missionFor, missionProgress, missionTip } from "./missions.js";
+import { missionFor, missionProgress, missionTip, missionPackFor } from "./missions.js";
 import { bankRun } from "./rewards.js";
 import {masteryFrom,masteryCards} from './mastery.js';
 import {FETCH_DURATION,fetchReady} from './ability.js';
@@ -290,7 +290,8 @@ function start() {
   run = createRun(state === 'ended' ? run.seed : Date.now(), saved.upgrades);
   run.puppy = saved.collection.puppy;
   run.appearance = { ...saved.collection };
-  currentMission = missionFor(saved.challenges);
+  run.missions = missionPackFor(saved.challenges);
+  currentMission = run.missions[0];
   missionAnnounced = false;
   lastHud = -1;
   toastUntil = 0;
@@ -347,7 +348,7 @@ function pause() {
   if (state === "playing") showOverlay("paused");
 }
 function finish() {
-  const receipt = bankRun(saved, run, currentMission);
+  const receipt = bankRun(saved, run, run.missions);
   if (!receipt) return;
   showOverlay("ended");
   $("overlay-copy").textContent = receipt.personalBest
@@ -364,7 +365,7 @@ function finish() {
     ` +${run.score.toLocaleString()} upgrade points earned. Spend them at camp.`;
   if (reward)
     $("overlay-copy").textContent +=
-      ` Challenge complete: +${reward} extra points!`;
+      ` ${receipt.missionCount} ${receipt.missionCount === 1 ? 'challenge' : 'challenges'} complete: +${reward} extra points!`;
   if (run.gifts) $("overlay-copy").textContent += ` ${run.gifts} gift boxes banked.`;
   if (run.ziplines) $("overlay-copy").textContent += ` ${run.ziplines} zipline ${run.ziplines === 1 ? "ride" : "rides"} completed (+${run.ziplines * 250} points included in your score).`;
   if (prizes.length) $("overlay-copy").textContent += ` Prizes earned: ${prizes.map(p => p.name).join(", ")}! Visit the clubhouse.`;
@@ -638,15 +639,19 @@ function frame(now) {
         `${run.score.toLocaleString()} pts${run.route && run.distance<run.route.until ? ` · ${run.route.kind==='challenge'?'CHALLENGE':'SCENIC'}` : ''}`;
       const progress = missionProgress(run, currentMission);
       $("mission-label").textContent =
-        `${currentMission.title} · ${progress}/${currentMission.target} ${currentMission.unit}`;
+        `${run.missions.indexOf(currentMission)+1}/3 · ${currentMission.title} · ${progress}/${currentMission.target} ${currentMission.unit}`;
       $("mission-progress").max = currentMission.target;
       $("mission-progress").value = progress;
       if (progress === currentMission.target && !missionAnnounced) {
         missionAnnounced = true;
         toast(
           `Goal complete · +${currentMission.reward} at finish`,
-          2, 2,
+          2, 0,
         );
+      }
+      if (missionAnnounced && time >= toastUntil) {
+        const next = run.missions[run.missions.indexOf(currentMission) + 1];
+        if (next) { currentMission = next; missionAnnounced = false; }
       }
       setText('cue', actionCue(run));
       const fetchButton = $('fetch');
