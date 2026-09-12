@@ -460,7 +460,7 @@ export function step(run, dt) {
       if (sameLane && !cleared && run.invulnerable === 0) {
         object.used = true;
         harm(run, object.type==='rock' && [0,1,2].includes(object.courseRegion)
-          ? {type:'rock',courseWeave:true} : {type: object.type});
+          ? {type:'rock',courseWeave:true,safeLane:run.course?.beats.find(beat=>beat.at===object.at)?.safeLane} : {type: object.type});
         if (run.ended) break;
       }
     }

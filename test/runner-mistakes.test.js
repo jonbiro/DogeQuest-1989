@@ -51,3 +51,23 @@ test('only naturally expired slides produce early-slide evidence',()=>{
   const cancelled=createRun(1);act(cancelled,'slide');act(cancelled,'jump');
   assert.equal(cancelled.slideExpiredAt,null);
 });
+
+test('course collisions distinguish a late correct lane from a missed lane choice',()=>{
+  for(const safeLane of [0,1,2])for(const choseCorrectly of [false,true]) {
+    const run=collision('rock',run=>{
+      const from=safeLane===1?0:1;
+      run.lane=from;run.x=(from-1)*2.4;run.objects[0].lane=from;
+      run.objects[0].courseRegion=2;
+      run.objects[0].at=0;
+      run.course={end:100,checked:0,clean:0,region:2,beats:[{at:0,type:'rock',safeLane}]};
+      if(choseCorrectly)act(run,safeLane<from?'left':'right');
+    });
+    assert.equal(run.lastMistake.safeLane,safeLane);
+    assert.equal(run.lastMistakeDetail.reason,choseCorrectly?'late-weave':'missed');
+    assert.match(runLesson(run),choseCorrectly?/chose the open lane.*too late/:/Each swipe moves one lane/);
+    run.lane=1;run.distance+=100;
+    assert.match(runLesson(run),choseCorrectly?/too late/:/Each swipe/,'coaching uses captured collision evidence');
+  }
+  const run=createRun(1);run.lane=0;
+  assert.equal(mistakeDetail(run,{type:'rock',courseWeave:true}).reason,'missed','unknown safe lane must not imply late steering');
+});

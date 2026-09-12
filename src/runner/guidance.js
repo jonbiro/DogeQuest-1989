@@ -84,7 +84,9 @@ export function eventNotice(event, run) {
 export function runLesson(run) {
   if (run.retired) return 'Good dogs deserve a break. Only completed challenges and traversal rewards count; your next adventure is ready whenever you are.';
   if (run.lastMistake?.type==='rock' && run.lastMistake.courseWeave)
-    return 'This course rewards finding the open lane. Each swipe moves one lane; ×2 means swipe twice. The hint updates after your first move.';
+    return run.lastMistakeDetail?.reason==='late-weave'
+      ? 'You chose the open lane, but reached it too late. Start steering a little earlier; for a ×2 hint, make both swipes before the rocks reach your puppy.'
+      : 'This course rewards finding the open lane. Each swipe moves one lane; ×2 means swipe twice. The hint updates after your first move.';
   const timing = timingLesson(run.lastMistakeDetail);
   if (timing) return timing;
   const mistake = run.lastMistake;

@@ -2,7 +2,9 @@
 export function mistakeDetail(run, mistake) {
   let reason = 'missed';
   const overhead = ['arch', 'branch', 'gate'].includes(mistake.type);
-  if (mistake.type === 'corner') {
+  if(mistake.type==='rock'&&mistake.courseWeave) {
+    if([0,1,2].includes(mistake.safeLane)&&run.lane===mistake.safeLane)reason='late-weave';
+  } else if (mistake.type === 'corner') {
     if (run.turnAttempt && !run.turnAttempt.correct) reason = 'wrong-turn';
   } else if (overhead) {
     if (run.y >= .2) reason = run.diving ? 'late-dive' : 'jumped';

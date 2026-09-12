@@ -1,5 +1,16 @@
 # Runner verification
 
+## Specific coaching for late course steering (2026-09-12)
+
+- Course-rock collisions now capture the authored safe lane. When the player
+  already selected it but the puppy had not arrived, results explain that the
+  correct move came too late and suggest earlier steering/both swipes for ×2.
+  Wrong or unknown lane choices retain the existing open-lane instructions.
+- Full check: 309 tests pass. Actual simulation collisions cover correct-late
+  and wrong choices for all three lanes; later position changes cannot rewrite
+  the captured lesson. Ordinary jump/slide coaching remains covered. No physics,
+  obstacle layouts, rewards, live HUD panels or saved-profile fields changed.
+
 ## Monochrome action arrows on native Safari (2026-09-12)
 
 - Native portrait screenshots exposed blue emoji boxes where diagonal action
