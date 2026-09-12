@@ -542,3 +542,15 @@ by the new contextual mission help, three-goal HUD and clean-move results text.
   hearts, region name and the first challenge, then paused normally.
 - These are actual browser input and rendering checks, not physical-device
   performance or evidence that three practice moves teach every advanced feature.
+
+### September 12: quiet personal-best chase
+
+- All 198 checks pass. The existing score line shows distance in points to a
+  reachable personal best, requires one additional point when tied, and marks
+  a surpassed record as BEST. First runs and distant records remain ordinary
+  score displays. Practice and active route labels retain priority.
+- In an isolated 320 × 568 browser run with a 120-point record fixture, normal
+  gameplay displayed 115 points to best, then 178 points · BEST after crossing
+  the record. Screenshots at both stages showed no added panels or overlap with
+  bones, hearts, the dog or controls. The run was paused before banking; the
+  feature itself does not mutate saves or award extra points.

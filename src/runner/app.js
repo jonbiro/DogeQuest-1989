@@ -1,5 +1,6 @@
 import { createRun, act, step } from "./world.js";
 import {createPracticeRun,stepPractice,practiceCue} from './practice.js';
+import {scoreChaseLabel} from './score-chase.js';
 import {RESUME_DURATION,resumeStep} from './resume.js';
 import {installBackupControls} from './backup-ui.js';
 import {installOfflineSupport} from './offline.js';
@@ -700,7 +701,9 @@ function frame(now) {
         ? `GATES IN ${Math.max(0,Math.ceil(run.choicePending-run.distance))}m · ← Scenic: fewer obstacles · Challenge: more points →` : '');
       $("bones").textContent = run.bones;
       $("run-score").textContent =
-        run.practice ? `${run.practice.correct}/3 moves cleared` : `${run.score.toLocaleString()} pts${run.route && run.distance<run.route.until ? ` · ${run.route.kind==='challenge'?'CHALLENGE':'SCENIC'}` : ''}`;
+        run.practice ? `${run.practice.correct}/3 moves cleared` : run.route && run.distance<run.route.until
+          ? `${run.score.toLocaleString()} pts · ${run.route.kind==='challenge'?'CHALLENGE':'SCENIC'}`
+          : scoreChaseLabel(run.score, saved.best);
       const progress = missionProgress(run, currentMission);
       $("mission-label").textContent =
         `${run.missions.indexOf(currentMission)+1}/3 · ${currentMission.title} · ${progress}/${currentMission.target} ${currentMission.unit}`;
