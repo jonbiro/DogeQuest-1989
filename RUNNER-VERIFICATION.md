@@ -1,5 +1,20 @@
 # Runner verification
 
+## Offline recovery follow-up (2026-09-12)
+
+- Temporary navigation failures (HTTP 500, 502, 503 and 504) now use the
+  previously verified cached game when available. Intentional 404 responses
+  remain visible, and a missing cache preserves the original server response.
+- Cache access failures no longer prevent known game assets from loading
+  online. If both storage and networking fail, loading still fails honestly.
+- All 200 tests, lint, production build and artifact checks passed. New
+  regression tests execute the worker with simulated server and storage
+  failures; these are not native Safari outage tests.
+- The dedicated simulator follow-up could not finish because its mirror
+  disconnected and Device Hub timed out. Its helper was stopped without
+  changing other simulators. Native Safari checks of practice and offline
+  reopening remain open; previous browser evidence is recorded below.
+
 ## Isolated iOS Safari follow-up (2026-09-10)
 
 - Used a newly created iPhone 17 Pro / iOS 27 simulator named

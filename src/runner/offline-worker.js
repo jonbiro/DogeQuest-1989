@@ -6,6 +6,11 @@ const CACHE = PREFIX + VERSION;
 const absolute = path => new worker.URL(path, worker.registration.scope).href;
 const known = new Set(ASSETS.map(asset => absolute(asset.url)));
 
+async function cachedResponse(request) {
+  try { return await (await worker.caches.open(CACHE)).match(request); }
+  catch { return undefined; } // Storage eviction/failure must not break online play.
+}
+
 worker.addEventListener('install', event => event.waitUntil((async () => {
   // A deployment can change files between requests. Accept only one verified build.
   const responses = await Promise.all(ASSETS.map(async asset => {
@@ -43,14 +48,18 @@ worker.addEventListener('fetch', event => {
   if (url.origin !== scope.origin) return;
   if (request.mode === 'navigate' && (url.pathname === scope.pathname || url.pathname === scope.pathname + 'index.html')) {
     event.respondWith((async () => {
-      try { return await worker.fetch(request); }
+      try {
+        const response = await worker.fetch(request);
+        // A temporary host failure is not a new version of the game.
+        return response.status >= 500 ? (await cachedResponse(absolute('index.html'))) || response : response;
+      }
       catch (error) {
-        const cached = await (await worker.caches.open(CACHE)).match(absolute('index.html'));
+        const cached = await cachedResponse(absolute('index.html'));
         if (cached) return cached;
         throw error;
       }
     })());
   } else if (known.has(url.href)) {
-    event.respondWith((async () => (await (await worker.caches.open(CACHE)).match(request)) || worker.fetch(request))());
+    event.respondWith((async () => (await cachedResponse(request)) || worker.fetch(request))());
   }
 });
