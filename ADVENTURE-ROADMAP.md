@@ -1,5 +1,13 @@
 # Puppy adventure goal
 
+## Lower-overhead collectible rendering
+
+Identical bones now share a reusable graphics batch instead of separate draw
+submissions. Their contrast, animation, terrain placement and magnet behavior
+remain unchanged. The batch grows safely for denser scenes and clears on pickup
+or a new run. Matched portrait rendering and twelve-course long-run validation
+are recorded in the verification log; this is not a physical-device FPS claim.
+
 ## Friendly shared score challenges
 
 Results links can include the sender's run score as an optional target. Opening

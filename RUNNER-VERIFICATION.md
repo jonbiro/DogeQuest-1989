@@ -1,5 +1,30 @@
 # Runner verification
 
+## Shared bone rendering batch (2026-09-12)
+
+- Bones now share one instanced draw while retaining the same beveled geometry,
+  vertex-color contrast, lane/terrain transforms, bobbing and magnet pull arc.
+  Capacity grows without dropping pickups; old instance buffers are disposed
+  without disposing shared geometry or materials. Empty/menu frames hide the batch.
+- A matched 390 × 844 real-WebGL fixture with 59 visible bones (ground, aerial
+  and a partly attracted bone, with one used pickup excluded) measured 97 draw
+  calls before and 39 after, with eight geometries and two textures in both.
+  Screenshots retained the same outlines and placement. Removing all bones left
+  zero instances and 38 scene draws. This is reduced submission overhead, not a
+  claim of 60% faster frame rate or physical-phone performance.
+- The long-run fixture exposed its obsolete nine-course expectation. It now
+  runs 6,000m per seed and requires all twelve current course names explicitly.
+  Three runs passed 72 rendered checkpoints, 27 turns without misses, twelve
+  zipline finishes and minimum three hearts. Peaks: 182 draw calls, 22 geometries,
+  five textures, and 107 active/pooled objects. Simulation inputs drive this
+  accelerated check; it is not a real-time frame-rate benchmark.
+- Combined-power checks in both motion modes confirmed three attracted bone
+  instances before collection and zero afterward, through magnet/Zoomies/double
+  expiry. Unit tests cover transform retention during capacity growth, shared
+  resource ownership, repeated shrink/reset, and visibility of an empty batch.
+  All 253 tests and build/lint/distribution checks pass.
+  Temporary fixture tabs were closed; no scored runs or saved profiles changed.
+
 ## Score chases remain visible on routes (2026-09-12)
 
 - Scenic/Challenge sections no longer replace the score-chase line. The existing

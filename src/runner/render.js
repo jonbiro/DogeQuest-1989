@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import {createInstanceBatch} from './instance-batch.js';
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { LANES, PICKUPS, seededRandom } from "./world.js";
 import { routeFrame } from "./route.js";
@@ -470,6 +471,8 @@ export function createView(canvas) {
   templates.bone = new THREE.Mesh(boneGeometry,
     new THREE.MeshStandardMaterial({vertexColors:true,roughness:.55,metalness:.1}));
   templates.bone.scale.setScalar(1.3);
+  const boneTransform=templates.bone.clone();
+  const boneBatch=createInstanceBatch(scene,boneGeometry,templates.bone.material);
   templates.rock = new THREE.Group();
   box(templates.rock, "#293e49", 0, 1.05, 0, 1.75, 2.1, 1.4);
   box(templates.rock, "#aec191", 0, 2.13, 0, 1.9, 0.2, 1.5);
@@ -907,11 +910,13 @@ export function createView(canvas) {
       flashes.count = sparkCount;
       flashes.instanceMatrix.needsUpdate = true;
       const visibleIds = new Set();
+      boneBatch.begin();
       if (!menu)
         for (const object of run.objects) {
           if (!objectVisible(object, distance)) continue;
-          visibleIds.add(object.id);
-          let item = active.get(object.id);
+          const bone=object.type==='bone';
+          if(!bone)visibleIds.add(object.id);
+          let item = bone ? boneTransform : active.get(object.id);
           if (!item) {
             const renderType = object.type === 'rock' && object.courseRegion === 2 ? 'crystal-rock' : object.type;
             item = pools[renderType].pop() || templates[renderType].clone();
@@ -951,7 +956,12 @@ export function createView(canvas) {
           item.rotation.x = pickup ? 0 : frame.pitch;
           item.rotation.y += frame.yaw;
           item.rotation.order = 'YXZ';
+          if(bone) {
+            item.updateMatrix();
+            boneBatch.add(item.matrix);
+          }
         }
+      boneBatch.end();
       for (const [id, item] of active)
         if (!visibleIds.has(id)) {
           scene.remove(item);
@@ -986,7 +996,7 @@ export function createView(canvas) {
       renderer.render(scene, camera);
     },
     diagnostics() {
-      return {geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,activeObjects:active.size,pooledObjects:Object.values(pools).reduce((sum,items)=>sum+items.length,0),puppyFrame:puppyFrame?{...puppyFrame}:null,legAngles:activeRig.legs.map(leg=>leg.rotation.x),bodyTransform:[...dog.position.toArray(),dog.rotation.x,dog.rotation.y,dog.rotation.z,...dog.scale.toArray()]};
+      return {geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,activeObjects:active.size+boneBatch.count,boneInstances:boneBatch.count,boneCapacity:boneBatch.capacity,pooledObjects:Object.values(pools).reduce((sum,items)=>sum+items.length,0),puppyFrame:puppyFrame?{...puppyFrame}:null,legAngles:activeRig.legs.map(leg=>leg.rotation.x),bodyTransform:[...dog.position.toArray(),dog.rotation.x,dog.rotation.y,dog.rotation.z,...dog.scale.toArray()]};
     },
   };
 }

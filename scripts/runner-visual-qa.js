@@ -9,6 +9,25 @@ import {UPGRADES} from '../src/runner/progression.js';
 import {turnPrompt,upcomingCorner,cornersBetween} from "../src/runner/turns.js";
 import * as THREE from 'three';
 import {createMochiModel} from '../src/runner/mochi-model.js';
+export function boneBatchPreview() {
+  const canvas=document.createElement('canvas');
+  canvas.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;z-index:9999';
+  document.body.append(canvas);
+  const run=createRun(1989);
+  run.distance=610;run.objects=[];
+  run.previous={x:run.x,y:run.y,distance:run.distance};
+  for(let i=0;i<60;i++)run.objects.push({id:i,type:'bone',lane:i%3,at:614+Math.floor(i/3)*4,used:false,airborne:i>=48});
+  run.objects[0].pull={fromX:-2.4,fromY:1.1,fromAt:614,elapsed:.2,duration:.5};
+  run.objects[1].used=true;
+  const view=createView(canvas);
+  view.draw(run,0,'paused',true,1/60,1);
+  const populated=view.diagnostics();
+  const verifyReset=()=>{
+    run.objects=[];view.draw(run,0,'paused',true,1/60,1);
+    return view.diagnostics();
+  };
+  return {populated,verifyReset};
+}
 export function contactShadowPreview(overGap=false) {
   const canvas=document.createElement('canvas');
   canvas.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;z-index:9999';
@@ -179,7 +198,7 @@ export function powerPreview(reducedMotion=false,combined=false) {
     figure.style.margin='0';canvas.width=270;canvas.height=360;canvas.style.width='100%';
     canvas.getContext('2d').drawImage(source,0,0,270,360);
     caption.textContent=label;figure.append(canvas,caption);gallery.append(figure);
-    samples.push({label,bones:run.bones,magnet:run.magnet,zoomies:run.zoomies,shield:run.shield,double:run.double,pulling:run.objects.filter(o=>o.pull&&!o.used).length});
+    samples.push({label,bones:run.bones,magnet:run.magnet,zoomies:run.zoomies,shield:run.shield,double:run.double,pulling:run.objects.filter(o=>o.pull&&!o.used).length,boneInstances:view.diagnostics().boneInstances});
   }
   if(!combined) {
     for(const [id,type] of ['bone','magnet','shield','gem','double','heart','gift','zoomies'].entries()) {
@@ -197,6 +216,7 @@ export function powerPreview(reducedMotion=false,combined=false) {
       capture(`${target}s · ${run.bones} bones`);
     }
     if(samples[0].pulling!==3||samples[0].bones!==0||samples[1].bones!==3||samples[2].zoomies!==0||samples[3].magnet!==0||samples[3].double!==0||samples.some(s=>s.shield!==1))throw new Error('Combined power lifecycle regression');
+    if(samples[0].boneInstances!==3||samples.slice(1).some(sample=>sample.boneInstances!==0))throw new Error('Magnet collection left incorrect bone instances');
   }
   return {reducedMotion,combined,samples,...view.diagnostics()};
 }
@@ -212,7 +232,7 @@ export function longRunCheck() {
     const run=createRun(1989+attempt);
     run.appearance={puppy:["biscuit","mochi","pepper"][attempt],costume:["scarf","hero","explorer"][attempt]};
     let nextSample=250;
-    while(run.distance<4500 && !run.ended) {
+    while(run.distance<6000 && !run.ended) {
       if(run.course)courseNames.add(run.course.name);
       const corner=turnPrompt(run),turnLocked=Boolean(corner);
       if(corner&&corner.status!=="accepted")act(run,corner.direction);
@@ -244,19 +264,20 @@ export function longRunCheck() {
       }
     }
     if(run.ended)throw new Error(`Input-driven run ended at ${run.distance} on seed ${run.seed}`);
-    if(run.ziplines!==3)throw new Error(`Expected three zipline finishes, got ${run.ziplines}`);
+    if(run.ziplines!==4)throw new Error(`Expected four zipline finishes, got ${run.ziplines}`);
     if(run.turns===0||run.missedTurns!==0)throw new Error(`Corner bot regression: ${run.turns} accepted, ${run.missedTurns} missed on seed ${run.seed}`);
     completedZiplines+=run.ziplines;
     turns+=run.turns;missedTurns+=run.missedTurns;
     run.regionalCourses.forEach((count,region)=>{regionalCourses[region]+=count;});
   }
   const peak=key=>Math.max(...samples.map(sample=>sample[key]));
-  const summary={runs:3,metersPerRun:4500,completedZiplines,turns,missedTurns,renderedCheckpoints:samples.length,minimumHearts:Math.min(...samples.map(sample=>sample.hearts)),peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),final:samples.at(-1)};
+  const summary={runs:3,metersPerRun:6000,completedZiplines,turns,missedTurns,renderedCheckpoints:samples.length,minimumHearts:Math.min(...samples.map(sample=>sample.hearts)),peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),final:samples.at(-1)};
   // One shared route-label atlas adds one fixed texture, never one per sign.
   if(summary.peakGeometries>32||summary.peakTextures>5||summary.peakObjects>200||summary.peakDrawCalls>220)throw new Error(`Renderer resource regression: ${JSON.stringify(summary)}`);
   summary.regionalCourses=regionalCourses;
   summary.courseNames=[...courseNames];
-  if(courseNames.size!==9)throw new Error(`Missing course variations: ${[...courseNames]}`);
+  for(const name of ['Root scramble','Canopy shuffle','Root rhythm','Fern dash','Canyon crossings','Ridge hop','Twin crossings','Ridge switch','Crystal slalom','Moonpaw weave','Crystal switchback','Moonlit hurdles'])
+    if(!courseNames.has(name))throw new Error(`Missing course variation: ${name}`);
   summary.splitRowsSeen=splitRows.size;
   if(!splitRows.size)throw new Error('Missing split-decision coverage');
   if(regionalCourses.some(count=>count===0))throw new Error(`Missing regional course coverage: ${regionalCourses}`);
