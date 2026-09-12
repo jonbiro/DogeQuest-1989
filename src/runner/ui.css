@@ -728,6 +728,14 @@ kbd {
   border-radius: 14px;
 }
 #controls #fetch:disabled { opacity: 1; color: #c9d6cd; }
+#controls button[data-action="jump"]:disabled,
+#controls button[data-action="slide"]:disabled {
+  opacity: 1;
+  color: #becac2;
+  background: #243a36;
+  border-color: #52665d;
+  box-shadow: none;
+}
 #controls #fetch.ready { background: #98f5e1; color: #123b32; border-color: #c5fff0; }
 #controls button:enabled:active {
   box-shadow: inset 0 0 0 3px currentColor;

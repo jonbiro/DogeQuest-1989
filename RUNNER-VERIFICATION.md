@@ -1,5 +1,28 @@
 # Runner verification
 
+## Screenshot-led traversal-control audit (2026-09-12)
+
+- Fresh 390 × 844 captures covered camp, a live ground course, and the actual
+  high-bone rehearsal. The cable screen showed Jump as the brightest active
+  control even though the world ignores jumps/slides while riding.
+- Jump and Slide now become disabled on the cable, with a subdued legible style
+  and accessible availability explanation. Steering and Fetch retain their own
+  availability rules; no buttons move and the physics remain unchanged.
+- All 270 tests and build/lint/distribution checks pass. New checks verify the
+  two disabled actions, untouched steering/Fetch, labels, restoration and actual
+  simulated dismount followed by a working dive. Browser accessibility output
+  confirmed disabled cable controls and re-enabled Jump/Slide after dismount.
+- Before/after screenshots match viewport and riding state (136m/141m rehearsal
+  progress, not identical world position). One late pause screenshot was rejected;
+  timed observations were inspected on the same continuing rehearsal, not retried
+  as new runs. No save changed, no browser errors/warnings appeared, and temporary
+  tab/viewport cleanup completed. Screenshots and notes are in the sibling local
+  DogeQuest-1989-readability-audit-2026-09-12 folder. This is browser/reduced-motion
+  evidence, not physical-device FPS or full accessibility certification.
+- Ground contrast and bottom-docked progress were readable in the captured
+  section. Distant overhead rows remain a specific recognition follow-up; the
+  thin horizon silhouette is a risk to inspect, not a verified cue failure.
+
 ## Optional daily shared trail (2026-09-12)
 
 - The Help disclosure selects a deterministic UTC-day seed and current layout

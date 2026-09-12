@@ -14,6 +14,7 @@ import {fetchReady} from './ability.js';
 import {createPowerHud} from './power-hud.js';
 import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLink} from './trail-link.js';
 import {dailyTrail} from './daily-trail.js';
+import {updateTraversalControls} from './traversal-controls.js';
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound,resumeSound} from "./sound.js";
@@ -23,6 +24,7 @@ import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,isJumpTap} from "./ge
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
 const $ = (id) => document.getElementById(id);
 const updatePowerHud = createPowerHud($('power'));
+const traversalButtons=document.querySelectorAll('#controls [data-action="jump"], #controls [data-action="slide"]');
 let sharedSeed = readTrailSeed(window.location.search);
 let sharedVersion = readTrailVersion(window.location.search);
 let sharedTarget = readTrailTarget(window.location.search);
@@ -805,6 +807,7 @@ function frame(now) {
       }
     }
     run.events = [];
+    updateTraversalControls(traversalButtons,run);
     $("scene").dataset.lane = String(run.lane + 1);
     $("scene").dataset.turns = String(run.turns);
     $("scene").dataset.missedTurns = String(run.missedTurns);
