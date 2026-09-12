@@ -32,9 +32,15 @@ export function actionCue(run) {
     return run.y > .05 || run.vy > 0 ? 'CATCH THE TURQUOISE HANDLE' : '↑ JUMP · ZIPLINE';
   }
   if (run.zoomies > 0) return '';
+  // A closely following jump needs an earlier first takeoff so the next landing
+  // buffer remains usable. Short slides retain their normal half-second cue.
+  const warningLead=object=>['log','rock','gap'].includes(object.type)&&run.objects.some(next=>
+    ['log','rock','gap'].includes(next.type)&&!next.used&&!next.passed&&next.at>object.at&&
+    next.at-object.at<run.speed*.75&&onApproach(run,next)) ? .58 : .5;
   const danger = run.objects.find(object => !object.used && !object.passed &&
     ['rock', 'log', 'arch', 'branch', 'gate', 'gap'].includes(object.type) &&
-    object.at > run.distance && object.at - run.distance < run.speed * .5 && onApproach(run, object));
+    object.at > run.distance && object.at - run.distance < run.speed*.6 &&
+    object.at - run.distance < run.speed * warningLead(object) && onApproach(run, object));
   // Jumping already answers low hazards, but an overhead row needs a new
   // downward input. Keep that escape visible until the dive is underway.
   if (run.y > 0 || run.vy > 0) {
