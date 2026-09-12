@@ -4,11 +4,11 @@ import * as THREE from 'three';
 import {createBranchModel} from '../src/runner/branch-model.js';
 
 test('overhead branch has grounded supports outside the playable clearance',()=>{
-  const geometry=new THREE.BoxGeometry(1,1,1),material=new THREE.MeshBasicMaterial();
-  const builder=(parent,_color,x,y,z,sx,sy,sz)=>{
+  const geometry=new THREE.SphereGeometry(1,20,14),boxGeometry=new THREE.BoxGeometry(1,1,1),material=new THREE.MeshBasicMaterial();
+  const builder=(geometry)=>(parent,_color,x,y,z,sx,sy,sz)=>{
     const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);parent.add(mesh);return mesh;
   };
-  const branch=createBranchModel(builder,builder),supports=branch.children.filter(child=>child.name==='branch-support');
+  const branch=createBranchModel(builder(boxGeometry),builder(geometry)),supports=branch.children.filter(child=>child.name==='branch-support');
   assert.equal(supports.length,2);
   for(const support of supports) {
     const bounds=new THREE.Box3().setFromObject(support);
@@ -18,6 +18,9 @@ test('overhead branch has grounded supports outside the playable clearance',()=>
   }
   const bounds=new THREE.Box3().setFromObject(branch);
   assert.ok(bounds.min.x>=-1.3&&bounds.max.x<=1.3,'no extra neighboring-lane clutter');
-  assert.equal(branch.children.length,8,'only two support draws added');
-  geometry.dispose();material.dispose();
+  const limbs=branch.children.filter(child=>child.name==='branch-limb');
+  assert.equal(limbs.length,3);
+  for(const limb of limbs)assert.ok(new THREE.Box3().setFromObject(limb).min.y>1.25,'duck-under opening remains clear');
+  assert.equal(branch.children.length,10,'bounded model complexity');
+  geometry.dispose();boxGeometry.dispose();material.dispose();
 });

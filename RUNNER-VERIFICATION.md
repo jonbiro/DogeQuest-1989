@@ -1,5 +1,15 @@
 # Runner verification
 
+## Organic overhead branch (2026-09-12)
+
+- Replaced the block beam and rectangular supports with shared rounded meshes
+  and three gently angled limbs. Kept the dark underside and mint slide marks.
+- Updated geometry tests use real sphere extents rather than box stand-ins,
+  verifying grounded supports, neighboring-lane boundaries and limb clearance.
+- Inspected a 390 × 844 approach at 12m. All 339 tests passed; the 24 km browser
+  fixture retained 36 accepted turns, 16 ziplines, no hits, stable resources and
+  a 238-draw peak within the unchanged budget.
+
 ## Magnet field follows the trail (2026-09-12)
 
 - Ground rings use the local trail pitch and yaw instead of remaining flat
