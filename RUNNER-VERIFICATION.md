@@ -1,5 +1,19 @@
 # Runner verification
 
+## Visible total run earnings (2026-09-12)
+
+- The existing results summary now states the exact upgrade points banked,
+  including score, mission, prize and mastery awards. The completion receipt
+  captures the credit delta once; repeated reads or later purchases cannot
+  change that historical total or bank it again. Existing currency rules are
+  unchanged, and unavailable-storage messaging still takes precedence.
+- New tests verify every award category with both zero and nonzero starting
+  balances and a subsequent purchase. Full check: 289 tests pass.
+- An actual disposable 1m run at 320x568 displayed its 1-point total, matching
+  saved credits. Retry and camp buttons remained visible in the screenshot.
+  Fixed singular wording after that check. The previously absent disposable
+  save was restored, the temporary tab closed and viewport override reset.
+
 ## Frame-limited reaction coverage (2026-09-12)
 
 - Confirmed urgent action hints update every draw before the 10Hz score/HUD

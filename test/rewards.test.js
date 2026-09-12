@@ -6,6 +6,21 @@ import { missionFor, missionPackFor } from '../src/runner/missions.js';
 const profile = () => ({best: 0, distance: 0, bones: 0, credits: 0,
   challenges: 0, collection: collectionFrom()});
 const completed = () => ({ended: true, score: 2000, distance: 1100, bones: 50, gifts: 2});
+test('receipt total includes every award but excludes points already owned',()=>{
+  for(const owned of [0,12345]) {
+    const p={...profile(),credits:owned};
+    const run={...completed(),puppy:'mochi',clears:100,turns:100,regionalCourses:[2,2,2]};
+    const receipt=bankRun(p,run,missionPackFor(0));
+    const awards=receipt.scorePoints+receipt.missionPoints+receipt.mastery.points+
+      receipt.prizes.reduce((sum,prize)=>sum+prize.points,0);
+    assert.ok(receipt.mastery.points>0);assert.ok(receipt.prizes.length>0);
+    assert.equal(receipt.totalPoints,awards);
+    assert.equal(p.credits-owned,receipt.totalPoints);
+    p.credits-=100;
+    assert.equal(bankRun(p,run,missionPackFor(0)).totalPoints,awards,'receipt remains the earned total after purchases');
+    assert.equal(p.credits,owned+awards-100,'reading the total never banks twice');
+  }
+});
 test('shared score targets are display-only and cannot mint currency or change saved records',()=>{
   const ordinary=profile(),challenged=profile(),a=completed(),b={...completed(),challengeTarget:1};
   assert.deepEqual(bankRun(challenged,b,missionFor(0)),bankRun(ordinary,a,missionFor(0)));
