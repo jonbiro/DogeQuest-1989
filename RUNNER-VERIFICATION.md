@@ -1,5 +1,19 @@
 # Runner verification
 
+## Clear retry targets in compact results (2026-09-12)
+
+- Close shared/rematch attempts now show the exact points needed to beat the
+  target in the existing summary. Ties correctly need one more point. Shared
+  targets retain priority; distant targets remain in details, using the same
+  bounded chase window as the HUD. Rewards and saved-profile fields unchanged.
+- Full check: 300 tests pass, including ties, wins, priority, threshold edges
+  and invalid values. In a real 320 x 568 browser shared-trail attempt, the
+  summary displayed 101 points needed at score zero, with Retry and camp actions
+  visible. Retry preserved the target; a later 260-point result displayed Target
+  beaten and the correct banked points. The isolated test save was restored to
+  absent and the temporary viewport/tab cleaned up. This is browser layout and
+  control evidence, not a new native-device performance measurement.
+
 ## Optional camp shader preparation (2026-09-12)
 
 - Supported renderers now prepare scene and detached obstacle/pickup template
