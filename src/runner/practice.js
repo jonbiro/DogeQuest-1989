@@ -8,9 +8,11 @@ const LESSONS = [
   {at:75,type:'gate',hint:'Gates ahead · wait for the cue'},
   {at:115,type:'rock',hint:'← Steer into the open left lane'},
 ];
+const GAP_LESSON={at:35,type:'gap',hint:'Gap ahead · wait for the jump cue'};
 export function practiceOffer(run) {
   if (!run.ended || run.practice || run.retired) return null;
   const mistake=run.lastMistake;
+  if (mistake?.type==='gap') return {kind:'gap',cornerIndex:0,label:'Practise gap jumps'};
   if (mistake?.type==='corner' && ['left','right'].includes(mistake.direction))
     return {kind:'turn',cornerIndex:mistake.direction==='right'?1:0,label:'Practise this turn'};
   if (['log','rock','arch','branch','gate'].includes(mistake?.type))
@@ -18,6 +20,7 @@ export function practiceOffer(run) {
   return null;
 }
 function lessonFeedback(lesson,correct,detail) {
+  if (lesson.type==='gap') return correct ? '✓ Gap cleared' : 'Jump at the cue · do not slide';
   if (correct) return lesson.type==='log' ? '✓ Jump cleared' : lesson.type==='gate' ? '✓ Slide cleared' : '✓ Open lane found';
   if (lesson.type==='rock') return 'Steer left into the open lane';
   const reason=Math.abs((detail?.distance ?? -100)-lesson.at)<2 ? detail.reason : '';
@@ -39,6 +42,12 @@ export function createPracticeRun(upgrades = {}) {
     if (lesson.type === 'rock' && lane === 0) continue;
     run.objects.push({id:run.id++,type:lesson.type,lane,at:lesson.at,used:false});
   }
+  return run;
+}
+export function createGapPracticeRun(upgrades = {}) {
+  const run=createPracticeRun(upgrades);
+  run.practice.kind='gap';
+  run.objects=[0,1,2].map(lane=>({id:run.id++,type:'gap',lane,at:GAP_LESSON.at,used:false}));
   return run;
 }
 export function createZiplinePracticeRun(upgrades = {}) {
@@ -91,7 +100,7 @@ export function stepPractice(run, dt) {
         run.distance>=ZIPLINE_FIRST+ZIPLINE_LENGTH+20) run.ended=true;
     return;
   }
-  const lesson = LESSONS[run.practice.index];
+  const lesson = (run.practice.kind==='gap' ? [GAP_LESSON] : LESSONS)[run.practice.index];
   const clears = run.clears;
   step(run, dt);
   if (lesson && run.distance > lesson.at + .4) {
@@ -104,9 +113,15 @@ export function stepPractice(run, dt) {
   run.hearts = 3;
   run.fetchCharge = 0;
   run.events = run.events.filter(event => !['hit','flow','end'].includes(event));
-  if (run.distance >= 130) run.ended = true;
+  if (run.distance >= (run.practice.kind==='gap' ? 55 : 130)) run.ended = true;
 }
 export function practiceCue(run) {
+  if (run.practice.kind==='gap') {
+    if (run.practice.feedback?.until>run.time) return run.practice.feedback.text;
+    if (run.practice.outcomes.length) return 'Gap practice complete';
+    if (run.y>0 || run.vy>0) return 'Stay airborne · do not slide';
+    return GAP_LESSON.at-run.distance < run.speed*.45 ? '↑ JUMP GAP' : GAP_LESSON.hint;
+  }
   if (run.practice.kind === 'turn') {
     const prompt = turnPrompt(run);
     if (prompt) return actionCue(run);
@@ -128,10 +143,16 @@ export function practiceCue(run) {
 }
 
 export function practiceProgress(run) {
+  if (run.practice.kind==='gap') return `${run.practice.correct}/1 gap cleared`;
   if (run.practice.kind==='turn') return `${run.practice.direction} corner · ${run.practice.correct}/1 cleared`;
   return run.practice.kind==='zipline' ? `${run.bones}/18 high bones · ${run.ziplines ? 'landed' : run.practice.caught ? 'cable caught' : 'catch the cable'}` : `${run.practice.correct}/3 moves cleared`;
 }
 export function practiceResult(run) {
+  if (run.practice.kind==='gap') return {
+    title:run.practice.correct ? 'Gap cleared!' : 'Try the gap again',
+    lesson:run.practice.correct ? 'Jump as the striped edge approaches, then stay airborne until you pass the gap. The adventure uses these same jump physics.'
+      : 'Wait for the jump cue near the striped edge. Jump across the full-width gap; sliding or switching lanes will not cross it.',
+  };
   if (run.practice.kind==='turn') return {
     title:run.practice.correct ? 'Corner cleared!' : 'Try the turn again',
     lesson:run.practice.correct

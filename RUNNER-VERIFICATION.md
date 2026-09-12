@@ -1,5 +1,21 @@
 # Runner verification
 
+## Contextual gap rehearsal (2026-09-12)
+
+- Missed-gap results now offer a five-second gap lesson. It uses a grid-aligned,
+  full-width road break and actual jump/collision simulation, without adding a
+  camp button. Base/max leap clear the jump, including a 100ms response delay;
+  sliding, steering and no input fail the lesson without persistent penalties.
+- At 320x568, rendered-cue-driven browser inputs reached a natural gap death at
+  1885m on shared trail `2-1j9`. The results offered Practise gap jumps. A visible
+  click entered the lesson; the actual renderer showed the striped road break,
+  the cue-driven jump cleared it, and Gap cleared results fit on screen.
+- The profile banked by the scored run remained byte-for-byte unchanged through
+  practice. Only that disposable test profile was then removed to restore the
+  origin's verified absent-save baseline. No console warnings/errors; tab closed
+  and viewport reset. Synthetic input evidence is not physical-touch evidence.
+- All 235 tests and build, lint and distribution gates passed.
+
 ## Collision-to-practice shortcut (2026-09-12)
 
 - Collision results offer a matching corner rehearsal or the basic movement

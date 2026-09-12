@@ -8,8 +8,10 @@ between early lane-changing swipes and a committed turn. Misses have no lasting
 penalty; a successful rehearsal offers the opposite corner next, while a miss
 retries the same direction. Practice never banks rewards or changes records.
 Collision results now offer this rehearsal directly for the missed direction,
-or the basic movement trail for logs, rocks and overhead obstacles. Retired runs
-do not receive unwanted coaching; unsupported mistakes do not invent a lesson.
+the basic movement trail for logs, rocks and overhead obstacles, or a five-second
+gap-jump rehearsal after a missed gap. The gap lesson uses a real full-width break
+with striped edges and the same jump physics. Retired runs do not receive unwanted
+coaching; unsupported mistakes do not invent a lesson.
 
 ## Mixed-action regional courses
 

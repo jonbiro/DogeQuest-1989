@@ -1,5 +1,5 @@
 import { createRun, act, step } from "./world.js";
-import {createPracticeRun,createZiplinePracticeRun,createTurnPracticeRun,stepPractice,practiceCue,practiceProgress,practiceResult,practiceOffer} from './practice.js';
+import {createPracticeRun,createZiplinePracticeRun,createTurnPracticeRun,createGapPracticeRun,stepPractice,practiceCue,practiceProgress,practiceResult,practiceOffer} from './practice.js';
 import {scoreChaseLabel} from './score-chase.js';
 import {RESUME_DURATION,resumeStep} from './resume.js';
 import {installBackupControls} from './backup-ui.js';
@@ -482,7 +482,8 @@ function startPractice(kind, cornerIndex=0) {
   if (!graphicsReady) return;
   start();
   const appearance = run.appearance;
-  run = kind==='turn' ? createTurnPracticeRun(saved.upgrades,cornerIndex)
+  run = kind==='gap' ? createGapPracticeRun(saved.upgrades)
+    : kind==='turn' ? createTurnPracticeRun(saved.upgrades,cornerIndex)
     : kind==='zipline' ? createZiplinePracticeRun(saved.upgrades) : createPracticeRun(saved.upgrades);
   run.puppy = saved.collection.puppy;
   run.appearance = appearance;

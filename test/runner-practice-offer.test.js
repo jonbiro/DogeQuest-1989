@@ -12,7 +12,7 @@ test('collision results offer relevant practice without guessing an unsupported 
   for (const type of ['log','rock','arch','branch','gate'])
     assert.equal(practiceOffer({ended:true,lastMistake:{type}}).kind,'moves');
   for (const run of [{}, {ended:true}, {ended:true,lastMistake:{type:'corner'}},
-    {ended:true,lastMistake:{type:'gap'}}, {ended:true,lastMistake:{type:'unknown'}},
+    {ended:true,lastMistake:{type:'unknown'}},
     {ended:false,lastMistake:{type:'log'}},
     {ended:true,retired:true,lastMistake:{type:'log'}},
     {ended:true,practice:{},lastMistake:{type:'log'}}])
@@ -27,6 +27,7 @@ test('the actual results practice button routes collisions and rehearsal retries
   for (const [run,expected] of [
     [{ended:true,lastMistake:{type:'corner',direction:'right'}},['turn',1]],
     [{ended:true,lastMistake:{type:'log'}},['moves',0]],
+    [{ended:true,lastMistake:{type:'gap'}},['gap',0]],
     [{practice:{kind:'turn',cornerIndex:1,correct:1}},['turn',0]],
     [{practice:{kind:'turn',cornerIndex:1,correct:0}},['turn',1]],
     [{practice:{kind:'zipline'}},['zipline',0]],
