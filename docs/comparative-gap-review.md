@@ -37,7 +37,7 @@ progress with exceptions for currency and challenge streaks.
 Not every competitor feature should be copied. Accounts, global rankings, paid
 revives, extra currencies and attendance penalties are not prerequisites for a
 better puppy game. No new external service, paid asset or tracking is authorized
-by this review. The six-million-token work history is not acceptance evidence.
+by this review. Iteration volume is not acceptance evidence.
 
 ## Next implementation slice: river raft
 
