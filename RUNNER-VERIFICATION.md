@@ -1,5 +1,20 @@
 # Runner verification
 
+## Forgiving thumb-arc release (2026-09-12)
+
+- Previously a 40 × 34 px swipe remained unresolved even on release. Movement
+  still requires a 1.25 dominant-axis ratio for immediate commitment; release
+  now accepts 1.1. The 24 px minimum and one-action-per-contact guard are unchanged.
+  Equal or near-equal diagonals stay uncommitted instead of guessing a move.
+- All 245 tests and build/lint/distribution checks pass. Regression coverage uses
+  the actual pointer listeners and checks all four directions, tiny gestures,
+  unresolved diagonals, release ownership and no duplicated action.
+- Real browser drag input during unscored practice moved from center to right
+  after a 40 × 34 px drag; a subsequent -40 × 40 px drag kept the right lane.
+  The practice was paused and the temporary tab closed. No scored run was started
+  and no settings were changed. This is browser pointer evidence, not a physical
+  phone or native Safari gesture measurement.
+
 ## Portrait Safari practice check (2026-09-12)
 
 - Used only the dedicated Biscuit Dash QA — Sep 10 iOS 27 simulator. Native

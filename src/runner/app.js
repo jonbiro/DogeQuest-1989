@@ -653,7 +653,7 @@ $("scene").addEventListener("pointerup", (event) => {
   if (state !== "playing") return;
   if (tap) act(run, "jump");
   else {
-    const action = swipeAction(dx, dy);
+    const action = swipeAction(dx, dy, true);
     if (action) act(run, action);
   }
 });

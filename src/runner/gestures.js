@@ -19,10 +19,14 @@ export function isJumpTap(pointer, event) {
   return elapsed >= 0 && elapsed <= 350 && travel < 24;
 }
 
-export function swipeAction(dx, dy) {
+export function swipeAction(dx, dy, released = false) {
   const x = Math.abs(dx), y = Math.abs(dy);
   if (Math.max(x, y) < 24) return null;
-  if (x > y * 1.25) return dx > 0 ? 'right' : 'left';
-  if (y > x * 1.25) return dy > 0 ? 'slide' : 'jump';
+  // While moving, wait for a clear direction. On release there are no more
+  // samples to clarify a natural thumb arc, so accept a modestly dominant axis.
+  // Near-perfect diagonals still do nothing rather than guessing an action.
+  const bias = released ? 1.1 : 1.25;
+  if (x > y * bias) return dx > 0 ? 'right' : 'left';
+  if (y > x * bias) return dy > 0 ? 'slide' : 'jump';
   return null;
 }

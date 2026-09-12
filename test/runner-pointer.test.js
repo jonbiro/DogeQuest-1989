@@ -29,6 +29,23 @@ test('track listeners ignore holds but keep taps and deliberate swipes responsiv
   handlers.pointermove({...contact,clientX:80,clientY:80,timeStamp:150});
   handlers.pointerup({...contact,timeStamp:200});
   assert.equal(actions.length,2,'ambiguous out-and-back motion does not become a tap');
+  handlers.pointerdown(contact);
+  handlers.pointermove({...contact,clientX:90,clientY:84,timeStamp:150});
+  assert.equal(actions.length,2,'a thumb arc waits for more direction while moving');
+  handlers.pointerup({...contact,clientX:90,clientY:84,timeStamp:180});
+  assert.deepEqual(actions,['jump','right','right'],'release resolves the dominant axis exactly once');
+  handlers.pointerup({...contact,clientX:90,clientY:84,timeStamp:190});
+  assert.equal(actions.length,3);
+});
+
+test('released thumb arcs resolve all four directions but not near-equal diagonals or tiny gestures',()=>{
+  for (const [dx,dy,action] of [[40,34,'right'],[-40,34,'left'],[34,40,'slide'],[34,-40,'jump']]) {
+    assert.equal(swipeAction(dx,dy),null);
+    assert.equal(swipeAction(dx,dy,true),action);
+  }
+  for (const [dx,dy] of [[40,40],[40,38],[-40,38],[38,-40],[23,0],[0,-23]])
+    assert.equal(swipeAction(dx,dy,true),null);
+  assert.equal(swipeAction(40,10),'right','clear swipes still trigger immediately');
 });
 
 test('tap jumps require quick contact without a wandering drag',()=>{
