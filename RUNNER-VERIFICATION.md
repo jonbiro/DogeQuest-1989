@@ -1,5 +1,18 @@
 # Runner verification
 
+## Recognition beyond score records (2026-09-12)
+
+- Results can now recognize a new distance or single-run bone best without a
+  score record. The existing summary chooses one compact message, prioritizing
+  score and rematch records; no new panel, toast or currency award was added.
+- Completion snapshots the record flags before updating the profile. Re-reading
+  the receipt retains the result. Distance compares displayed whole meters, so
+  invisible fractional improvements do not trigger a record message.
+- Tests cover distance only, bones only, both, ties, fractional distance, score
+  and rematch precedence, stable receipts and unchanged earned credits. Full
+  build, distribution verification, lint and 291 tests passed. This pass has no
+  new screenshot or physical-device coverage.
+
 ## Visible total run earnings (2026-09-12)
 
 - The existing results summary now states the exact upgrade points banked,

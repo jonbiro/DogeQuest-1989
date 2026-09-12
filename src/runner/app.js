@@ -9,6 +9,7 @@ import { createView } from "./render.js";
 import { UPGRADES, levels, price, purchase, refundUpgrade } from "./progression.js";
 import { missionFor, missionProgress, missionTip, missionPackFor } from "./missions.js";
 import { bankRun } from "./rewards.js";
+import {resultRecord} from './result-record.js';
 import {masteryFrom,masteryCards} from './mastery.js';
 import {fetchReady} from './ability.js';
 import {createPowerHud} from './power-hud.js';
@@ -473,7 +474,7 @@ function finish() {
     const difference=run.score-run.challengeTarget;
     $("run-breakdown-copy").textContent += ` Shared target: ${run.challengeTarget.toLocaleString()} points. ${difference>0?`${difference.toLocaleString()} ahead`:difference===0?'Target tied — one more point to beat it':`${(-difference).toLocaleString()} short`}. This is a friendly, unverified score, not a ranked result.`;
   }
-  $("overlay-copy").textContent = `${receipt.personalBest ? 'New personal best! ' : run.rematchBest>0&&run.score>run.rematchBest ? 'Rematch best! ' : ''}${receipt.totalPoints.toLocaleString()} upgrade ${receipt.totalPoints===1?'point':'points'} banked. Retry the same trail, or head to camp ${sharedSeed === null ? 'for a fresh one' : 'to switch to random trails'}.`;
+  $("overlay-copy").textContent = `${resultRecord(receipt,run)}${receipt.totalPoints.toLocaleString()} upgrade ${receipt.totalPoints===1?'point':'points'} banked. Retry the same trail, or head to camp ${sharedSeed === null ? 'for a fresh one' : 'to switch to random trails'}.`;
   if (run.challengeTarget>0 && run.score>run.challengeTarget)
     $("overlay-copy").textContent = `Target beaten! ${$("overlay-copy").textContent}`;
   const nextBond=dogCard?.tiers.find(tier=>dogCard.current<tier.target);
