@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import {createInstanceBatch} from './instance-batch.js';
+import {createShaderPreparation} from './shader-preparation.js';
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { LANES, PICKUPS, seededRandom } from "./world.js";
 import { createRouteSampler } from "./route.js";
@@ -697,7 +698,11 @@ export function createView(canvas) {
   const routePosition = new THREE.Vector3();
   const framePuppy=createPuppyFramer();
   let puppyFrame=null;
+  const templateScene=new THREE.Group();
+  templateScene.add(...Object.values(templates));
+  const shaderPreparation=createShaderPreparation(renderer,scene,camera,templateScene);
   return {
+    prepareShaders:()=>shaderPreparation.start(),
     instructionImage(action) {
       const subject=new THREE.Group();
       if(action==='lanes') {
@@ -991,9 +996,10 @@ export function createView(canvas) {
         resize();
       }
       renderer.render(scene, camera);
+      if(menu&&shaderPreparation.status==='idle')void shaderPreparation.start();
     },
     diagnostics() {
-      return {geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,activeObjects:active.size+boneBatch.count,boneInstances:boneBatch.count,boneCapacity:boneBatch.capacity,pooledObjects:Object.values(pools).reduce((sum,items)=>sum+items.length,0),puppyFrame:puppyFrame?{...puppyFrame}:null,legAngles:activeRig.legs.map(leg=>leg.rotation.x),bodyTransform:[...dog.position.toArray(),dog.rotation.x,dog.rotation.y,dog.rotation.z,...dog.scale.toArray()]};
+      return {shaderPreparation:shaderPreparation.status,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,activeObjects:active.size+boneBatch.count,boneInstances:boneBatch.count,boneCapacity:boneBatch.capacity,pooledObjects:Object.values(pools).reduce((sum,items)=>sum+items.length,0),puppyFrame:puppyFrame?{...puppyFrame}:null,legAngles:activeRig.legs.map(leg=>leg.rotation.x),bodyTransform:[...dog.position.toArray(),dog.rotation.x,dog.rotation.y,dog.rotation.z,...dog.scale.toArray()]};
     },
   };
 }

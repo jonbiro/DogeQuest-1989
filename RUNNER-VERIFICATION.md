@@ -1,5 +1,22 @@
 # Runner verification
 
+## Optional camp shader preparation (2026-09-12)
+
+- Supported renderers now prepare scene and detached obstacle/pickup template
+  shaders once after the first camp draw. Play never awaits this task; unsupported
+  extensions and compilation failures fall back to normal rendering. This does
+  not remove the first camp draw or promise zero synchronous preparation work.
+- Same-build desktop fixture comparison (2s sample, .25s warmup): explicit
+  preparation took 82.1ms; maximum warmup draw was 19ms versus 135.5ms without
+  preparation. Both completed near 50m, with 110 draw calls, 10 geometries and
+  2 textures. Steady draw averages were 1.53ms prepared and 1.40ms unprepared.
+  This supports moving first-use work earlier, not a sustained FPS improvement
+  or proof that the prior native Safari stall is fixed. Browser cache and host
+  load were not controlled; these are short desktop samples, not phone results.
+- Normal production UI started and paused through real controls, with no console
+  errors/warnings and no save created. Full check: 298 tests pass, including
+  one-attempt sequencing, shared lighting and unsupported/failed fallbacks.
+
 ## Startup timing and bounded hitch context (2026-09-12)
 
 - The developer fixture now reports setup CPU and warmup CPU separately instead

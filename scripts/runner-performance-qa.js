@@ -13,7 +13,7 @@ function summary(values) {
     max:sorted.at(-1),over50:values.filter(value=>value>50).length};
 }
 
-export function startPerformanceCheck({seconds=8,warmup=1}={}) {
+export function startPerformanceCheck({seconds=8,warmup=1,prepare=false}={}) {
   if(!Number.isFinite(seconds)||seconds<2||seconds>30||!Number.isFinite(warmup)||warmup<0||warmup>5)
     throw Error('Use a 2–30 second sample and 0–5 second warmup');
   if(document.querySelector('#game'))throw Error('Use a blank standalone page, not the running app');
@@ -77,6 +77,12 @@ export function startPerformanceCheck({seconds=8,warmup=1}={}) {
       console.log('Biscuit performance check',JSON.stringify(result));
     }
   }
-  requestAnimationFrame(frame);
+  if(prepare) {
+    result.phase='preparing';const started=performance.now();
+    view.prepareShaders().then(ready=>{
+      result.preparation={ready,wallMs:performance.now()-started};
+      result.phase='idle';requestAnimationFrame(frame);
+    });
+  } else requestAnimationFrame(frame);
   return result;
 }
