@@ -12,7 +12,7 @@ import {createMountainGeometry} from './mountain.js';
 import { puppyPose, smoothLegAngles, bodyMotion, mochiCrouch } from "./puppy-pose.js";
 import { createMochiModel } from "./mochi-model.js";
 import { isBridge } from "./bridges.js";
-import { ziplineAt, ZIPLINE_HEIGHT } from "./ziplines.js";
+import { ziplineAt, ZIPLINE_HEIGHT, cableSegment, CABLE_SEGMENT_LENGTH } from "./ziplines.js";
 import {createPuppyFramer} from './framing.js';
 import {createQualityController} from './quality.js';
 
@@ -113,7 +113,7 @@ export function createView(canvas) {
       bridgeBox("#64472e", x, -.45, 0, .22, .22, 5.4);
     }
     tile.add(bridge);
-    const cable = box(tile, "#25494d", 0, 6.5, 0, .075, .075, 5.4);
+    const cable = box(tile, "#25494d", 0, 6.5, 0, .075, .075, CABLE_SEGMENT_LENGTH);
     cable.userData.cable = true;
     scenery.add(tile);
     tiles.push(tile);
@@ -798,13 +798,15 @@ export function createView(canvas) {
             entry.start -
             ((entry.offset - (distance % entry.period) + entry.period) %
               entry.period);
-          const frame = frameAt(z);
+          const cableClip = entry.cable ? cableSegment(z) : null;
+          const frame = frameAt(cableClip ? cableClip.z : z);
           bendEuler.set(frame.pitch, frame.yaw, 0, 'YXZ');
           routeRotation.setFromEuler(bendEuler);
           // Extra overlap closes the outside edge of the short curved slabs.
-          const overlap = entry.road && !entry.water ? 1 + (entry.terrain ? 30 : 4.6) * Math.abs(frame.curvature) : 1;
+          const overlap = entry.road && !entry.water && !entry.cable ? 1 + (entry.terrain ? 30 : 4.6) * Math.abs(frame.curvature) : 1;
           bendMatrix.compose(routePosition.set(frame.x, frame.y, frame.z), routeRotation, bendScale.set(1, 1, overlap));
           instanceMatrix.multiplyMatrices(bendMatrix, entry.matrix);
+          if(cableClip) instanceMatrix.scale(bendScale.set(1,1,cableClip.scale));
           const region = regionAt(menu ? 0 : distance-z);
           const bridge = !menu && isBridge(distance-z);
           const cableSection = !menu && ziplineAt(distance-z);

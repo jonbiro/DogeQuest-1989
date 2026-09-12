@@ -1,5 +1,26 @@
 # Runner verification
 
+## Fresh portrait scene audit and cable cleanup (2026-09-12)
+
+- Used the screenshot-led product-design audit on the current 390x844 runner:
+  jungle at 108m, canyon at 536m, cable at 721m, and glade at 1031m. The run
+  retained three hearts through both turns and all regions. Saved screenshots
+  and step-specific findings are in the sibling folder
+  `DogeQuest-1989-visual-audit-2026-09-12/AUDIT.md`.
+- The cable's camera-side tail became a thick foreground beam. Renderer-only
+  clipping now ends it 1.5 units behind the dog, retaining its normal thickness,
+  contrast, forward geometry and attachment. Full-length segments ahead are
+  unchanged; overlapping clipped segments preserve continuity as tiles recycle.
+- A fresh practice screenshot in the same cable section confirmed the beam
+  removed and dog/handle visible. Before/after frames have different lane and
+  HUD states, not pixel-identical gameplay. That practice finished with 18/18
+  bones. All 208 tests, lint, build and artifact checks passed; the new test
+  sweeps tile phases for continuity, attachment coverage and tail bounds.
+- Other findings: near-canyon bones retain dark outlines; distant sign text
+  needs the existing backed guidance; peripheral foreground bones can clip.
+  This pass is not a full accessibility, glare, native touch or low-end GPU
+  certification. No movement, collision, reward or save rules changed.
+
 ## High-bone rehearsal and catch visibility (2026-09-12)
 
 - How to play now offers an optional 17-second high-bone practice trail.

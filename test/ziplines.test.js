@@ -1,8 +1,27 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {createRun, fillTrack, step, act, LANES, HAZARDS} from "../src/runner/world.js";
-import {ziplineAt, ZIPLINE_HEIGHT} from "../src/runner/ziplines.js";
+import {ziplineAt, ZIPLINE_HEIGHT, cableSegment, CABLE_SEGMENT_LENGTH} from "../src/runner/ziplines.js";
 import {actionCue} from '../src/runner/guidance.js';
+
+test('cable clipping keeps an unbroken attachment while excluding the near-camera tail',()=>{
+  for(let phase=0;phase<5;phase+=.025) {
+    const segments=[];
+    for(let i=-6;i<=2;i++) {
+      const z=phase+i*5,clip=cableSegment(z),half=CABLE_SEGMENT_LENGTH*clip.scale/2;
+      assert.ok(clip.scale>=0&&clip.scale<=1);
+      if(clip.scale===0)continue;
+      const start=clip.z-half,end=clip.z+half;
+      assert.ok(end<=1.5+1e-10);
+      assert.ok(start>=z-CABLE_SEGMENT_LENGTH/2-1e-10,'clipping never extends the far end');
+      segments.push({start,end});
+    }
+    assert.ok(segments.some(s=>s.start<=0&&s.end>=0),'dog attachment remains under the cable');
+    for(let i=1;i<segments.length;i++)assert.ok(segments[i].start<=segments[i-1].end,'adjacent cable sections have no gap');
+  }
+  assert.deepEqual(cableSegment(-20),{z:-20,scale:1});
+  assert.equal(cableSegment(10).scale,0);
+});
 
 test('following zipline cues collects all eighteen bones and the gift without a magnet',()=>{
   for(const start of [650,2050]) {
