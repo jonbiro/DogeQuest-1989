@@ -1,5 +1,21 @@
 # Runner verification
 
+## Reward authored lane-weave skill (2026-09-12)
+
+- Clean safe-lane beats in named courses now advance the clean-move streak and
+  charge Fetch by 12%, once per beat. Ordinary empty-lane running does not count;
+  Zoomies does not earn this credit, and an active Fetch cannot recharge itself.
+  Jump/slide clear counters and their missions/mastery retain their meanings.
+  The existing quiet clear sound is reused; no new HUD message or panel added.
+- Tests exercise steering at 60/120/240Hz, milestone points, missed lanes,
+  Zoomies and Fetch exclusions. A full three-beat slalom with real rock obstacles
+  and left / two-right / left inputs retains three hearts, earns exactly 36%
+  Fetch and three clean moves, and awards the existing 180-point course bonus.
+- An 18km seeded cue-driver run retained three hearts with no hits/shield saves,
+  217 best clean moves and five weave credits. It generated no glade courses;
+  this is not all-region coverage or a human difficulty/performance benchmark.
+  The explicit slalom test supplies the missing mechanic coverage.
+
 ## Clear retry targets in compact results (2026-09-12)
 
 - Close shared/rematch attempts now show the exact points needed to beat the

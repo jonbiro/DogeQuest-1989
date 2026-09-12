@@ -783,7 +783,7 @@ function frame(now) {
       if (event === "streak" || event === 'flow') {
         tone("reward");
       }
-      if (event === "clear") tone(540, 0.08);
+      if (event === "clear" || event === 'weave') tone(540, 0.08);
       if (event === "turn-left" || event === "turn-right") tone(680, 0.1);
       if (event === "course-complete") tone('reward');
       if (event === "jump") tone("jump");

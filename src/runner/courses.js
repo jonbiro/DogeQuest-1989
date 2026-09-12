@@ -42,18 +42,22 @@ export function courseAt(start,version=CURRENT_TRAIL_VERSION) {
   };
 }
 
-// This only scores the authored course. Ordinary hazard collision remains the
-// sole owner of damage, shields and jump/slide rewards.
+// Scores the authored course and returns newly completed unboosted weave beats.
+// Ordinary hazard collision remains the sole owner of damage and jump/slide rewards.
 export function advanceCourse(run, lanes) {
   const course = run.course;
-  if (!course) return;
+  if (!course) return 0;
+  let weaves=0;
   while (course.checked < course.beats.length && run.distance >= course.beats[course.checked].at + .4) {
     const beat = course.beats[course.checked++];
     const clean = beat.safeLane !== undefined
       ? Math.abs(run.x-lanes[beat.safeLane]) < .95
       : beat.type === 'branch' ? run.slide > 0 && run.y < .2 || run.zoomies > 0
         : run.y > (beat.type === 'gap' ? .8 : .65) || run.zoomies > 0;
-    if (clean) course.clean++;
+    if (clean) {
+      course.clean++;
+      if(beat.safeLane !== undefined && run.zoomies===0)weaves++;
+    }
   }
   if (run.distance >= course.end) {
     if (course.clean === course.beats.length) {
@@ -63,6 +67,7 @@ export function advanceCourse(run, lanes) {
     }
     run.course = null;
   }
+  return weaves;
 }
 
 export function courseCue(run) {

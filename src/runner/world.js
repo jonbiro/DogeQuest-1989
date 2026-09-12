@@ -468,7 +468,14 @@ export function step(run, dt) {
   run.objects = run.objects.filter(
     (object) => object.at > run.distance - 8 || (object.pull && !object.used),
   );
-  if (!run.ended) advanceCourse(run, LANES);
+  if (!run.ended) {
+    const weaves=advanceCourse(run, LANES);
+    for(let i=0;i<weaves;i++) {
+      chargeFetch(run,12);
+      cleanMove(run);
+      run.events.push('weave');
+    }
+  }
   run.score = Math.floor(run.distance) + run.bonePoints + run.bonusPoints;
   fillTrack(run);
 }

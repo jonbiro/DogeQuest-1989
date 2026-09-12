@@ -47,3 +47,51 @@ test('automatic Zoomies clears do not count but a deliberate marked turn does',(
   for(let i=0;i<60;i++) step(run,1/120);
   assert.equal(run.turns,1);assert.equal(run.cleanStreak,1);
 });
+
+test('authored lane weaves earn clean flow and Fetch once without becoming jump clears',()=>{
+  for(const fps of [60,120,240]) {
+    const run=quietRun();run.cleanStreak=4;run.bestCleanStreak=4;
+    run.course={end:100,checked:0,clean:0,region:2,beats:[{at:10,type:'rock',safeLane:0}]};
+    act(run,'left');
+    for(let i=0;i<fps;i++)step(run,1/fps);
+    assert.equal(run.course.clean,1);
+    assert.equal(run.cleanStreak,5);
+    assert.equal(run.flowPoints,50);
+    assert.equal(run.fetchCharge,12);
+    assert.equal(run.clears,0,'jump / slide missions keep their meaning');
+    assert.equal(run.events.filter(e=>e==='weave').length,1);
+  }
+});
+
+test('missed lanes and Zoomies do not earn weave charge; Fetch cannot refill itself',()=>{
+  for(const mode of ['miss','zoomies','fetch']) {
+    const run=quietRun();
+    run.course={end:100,checked:0,clean:0,region:2,beats:[{at:1,type:'rock',safeLane:1}]};
+    if(mode==='miss'){run.x=-2.4;run.lane=0;}
+    if(mode==='zoomies')run.zoomies=5;
+    if(mode==='fetch')run.fetchTime=5;
+    for(let i=0;i<30;i++)step(run,1/120);
+    assert.equal(run.fetchCharge,0,mode);
+    assert.equal(run.cleanStreak,mode==='fetch'?1:0,mode);
+  }
+});
+
+test('a full slalom pays three weave credits and its course bonus without collision',()=>{
+  const run=quietRun();
+  const beats=[{at:10,type:'rock',safeLane:0},{at:45,type:'rock',safeLane:2},{at:80,type:'rock',safeLane:1}];
+  run.course={end:100,checked:0,clean:0,region:2,beats};
+  run.objects=beats.flatMap(beat=>[0,1,2].filter(l=>l!==beat.safeLane)
+    .map(lane=>({id:run.id++,type:'rock',lane,at:beat.at,courseRegion:2})));
+  act(run,'left');let movedRight=false,movedCenter=false;
+  while(run.distance<101&&!run.ended) {
+    if(run.distance>20&&!movedRight){act(run,'right');act(run,'right');movedRight=true;}
+    if(run.distance>60&&!movedCenter){act(run,'left');movedCenter=true;}
+    step(run,1/120);
+  }
+  assert.equal(run.hearts,3);
+  assert.equal(run.regionalCourses[2],1);
+  assert.equal(run.cleanStreak,3);
+  assert.equal(run.fetchCharge,36);
+  assert.equal(run.bonusPoints,180);
+  assert.equal(run.events.filter(e=>e==='weave').length,3);
+});

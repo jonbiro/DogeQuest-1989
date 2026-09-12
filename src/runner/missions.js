@@ -39,7 +39,7 @@ const TIPS = {
   bones:'Collect bones in any lane. Magnets and charged Fetch bursts help gather nearby ground bones.',
   clears:'Jump low obstacles or slide under overhead ones. Passing through an empty lane is safe, but does not count as a jump or slide clear.',
   turns:'At a marked corner, swipe toward the arrow when the turn prompt appears. One swipe locks it in; ordinary lane changes do not count.',
-  fetchUses:'Collect bones by hand and clear obstacles or turns to charge Fetch. Tap the paw button when ready, or press F. Picked-up magnets do not count; wait for an active magnet to expire first.',
+  fetchUses:'Collect bones by hand and clear obstacles, course weaves or turns to charge Fetch. Tap the paw button when ready, or press F. Picked-up magnets do not count; wait for an active magnet to expire first.',
   ziplines:'The first zipline starts at 650 m. Jump as the turquoise handle reaches your puppy, then ride to the end. High bones belong to the zipline, not a normal jump.',
   regionalCourses:'Complete all three beats of a named course: jump and duck in the jungle, cross gaps in the canyon, or follow the open lanes in the glade. A missed beat means that course does not count.',
   bestCombo:'Collect consecutive bones without letting one pass. Missing a bone resets the streak; your best streak during this run counts toward the goal.',
