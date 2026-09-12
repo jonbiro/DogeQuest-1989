@@ -3,9 +3,32 @@ import assert from 'node:assert/strict';
 import {updateTraversalControls} from '../src/runner/traversal-controls.js';
 import {createRun,act,step} from '../src/runner/world.js';
 function button(action) {
-  return {dataset:{action},disabled:false,attributes:{},
+  const label={textContent:action.toUpperCase()};
+  return {dataset:{action},disabled:false,attributes:{},querySelector:()=>label,
     setAttribute(key,value){this.attributes[key]=value;},removeAttribute(key){delete this.attributes[key];}};
 }
+test('buffered moves confirm acceptance without changing control availability',()=>{
+  const buttons=['jump','slide'].map(button),run=createRun(1);
+  act(run,'jump');act(run,'jump');
+  updateTraversalControls(buttons,run);
+  assert.equal(buttons[0].querySelector().textContent,'JUMP','an early buffer that expires before landing is not confirmed');
+  run.y=.2;run.vy=-10;act(run,'jump');
+  updateTraversalControls(buttons,run);
+  assert.equal(buttons[0].querySelector().textContent,'QUEUED');
+  assert.match(buttons[0].attributes['aria-label'],/queued after landing/);
+  assert.equal(buttons[0].disabled,false);
+  run.jumpBuffer=0;run.y=0;run.vy=0;
+  act(run,'slide');run.slide=.1;act(run,'slide');
+  updateTraversalControls(buttons,run);
+  assert.equal(buttons[0].querySelector().textContent,'JUMP');
+  assert.equal(buttons[1].querySelector().textContent,'QUEUED');
+  act(run,'jump');updateTraversalControls(buttons,run);
+  assert.equal(buttons[1].querySelector().textContent,'SLIDE');
+  assert.equal(buttons[1].dataset.controlState,'ready');
+  run.jumpBuffer=.1;run.zipline={end:790};updateTraversalControls(buttons,run);
+  assert.equal(buttons[0].querySelector().textContent,'JUMP');
+  assert.equal(buttons[0].disabled,true,'unavailable traversal takes precedence');
+});
 test('cable controls disable only jump and slide, with an explanation and no layout change',()=>{
   const buttons=['left','right','fetch','jump','slide'].map(button);
   updateTraversalControls(buttons,{zipline:{end:790}});

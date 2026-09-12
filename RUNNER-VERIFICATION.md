@@ -1,5 +1,18 @@
 # Runner verification
 
+## Buffered-action confirmation (2026-09-12)
+
+- Existing Jump/Slide controls now display QUEUED with a steady contrasting
+  treatment when a follow-up is pending, rather than adding a trail banner.
+  Labels and accessible descriptions restore when the move starts, expires or
+  is canceled. Zipline unavailability takes precedence, and state changes avoid
+  repeated DOM writes. Controls remain enabled for deliberate overrides.
+- Jump confirmation requires projected landing within the remaining buffer;
+  an early input that expires before landing is not presented as queued.
+  Tests cover this distinction, slide queue cancellation and cable precedence.
+- Full check: 292 tests passed. This pass verifies state/label behavior and CSS
+  build integration, not a fresh visual or physical-device inspection.
+
 ## Recognition beyond score records (2026-09-12)
 
 - Results can now recognize a new distance or single-run bone best without a

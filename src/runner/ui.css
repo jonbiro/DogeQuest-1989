@@ -737,6 +737,12 @@ kbd {
   box-shadow: none;
 }
 #controls #fetch.ready { background: #98f5e1; color: #123b32; border-color: #c5fff0; }
+#controls button[data-control-state="queued"] {
+  background: #98f5e1;
+  color: #123b32;
+  border-color: #c5fff0;
+  box-shadow: inset 0 0 0 2px #123b32;
+}
 #controls button:enabled:active {
   box-shadow: inset 0 0 0 3px currentColor;
   border-color: currentColor;
