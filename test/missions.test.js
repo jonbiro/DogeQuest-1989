@@ -6,6 +6,29 @@ import {
   claimMission,
 } from "../src/runner/missions.js";
 import { createRun, act, step } from "../src/runner/world.js";
+test('adventure missions reward traversal, active powers and mastery after the introduction',()=>{
+  assert.deepEqual([6,7,8,9,10].map(i=>missionFor(i).metric),
+    ['turns','fetchUses','ziplines','regionalCourses','bestCombo']);
+  const run={ended:true,turns:2,fetchUses:1,ziplines:1,regionalCourses:[0,1,0],bestCombo:10};
+  for(let id=6;id<=10;id++){
+    const mission=missionFor(id),profile={challenges:id,credits:0};
+    assert.equal(missionProgress(run,mission),mission.target);
+    assert.equal(claimMission(profile,run,mission),mission.reward);
+    assert.equal(claimMission(profile,run,mission),0);
+    assert.equal(profile.credits,mission.reward);
+  }
+  assert.equal(missionProgress({regionalCourses:[1,1,1]},missionFor(25)),3);
+  assert.equal(missionProgress({},missionFor(9)),0);
+});
+test('late missions stay bounded and invalid progress indices fall back safely',()=>{
+  for(let i=6;i<1000;i++){
+    const mission=missionFor(i);
+    assert.ok(mission.target>0 && mission.target<=mission.cap);
+    assert.ok(mission.reward<=1300);
+  }
+  for(const input of [Infinity,-Infinity,NaN,'invalid'])
+    assert.equal(missionFor(input).id,0);
+});
 test("challenges rotate through distance, bones and clears with increasing targets", () => {
   assert.deepEqual(
     [0, 1, 2].map((i) => missionFor(i).metric),

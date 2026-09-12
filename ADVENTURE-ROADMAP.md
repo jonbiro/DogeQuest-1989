@@ -60,6 +60,16 @@ the evidence behind each area, closure of the completion checks and explicit val
 
 ## Delivered implementation
 
+After the first six introductory missions, eight rotating adventure goals now
+cover clean turns, player-activated Fetch bursts, completed ziplines, clean
+regional courses, bone streaks, distance, bone collecting and obstacle clears.
+Targets and reward growth are capped so experienced players still get finite,
+useful goals instead of ever-longer survival requirements. Existing saved mission
+counts continue directly into the rotation; no reset or new currency is needed.
+The 162-test check covers rotation, course aggregation, bounded late targets,
+invalid indices and exactly-once rewards. New mission UI uses the existing compact
+goal slot; no additional in-run banners were added.
+
 Results now offer “Retry this trail”: a fresh run using the previous seed so
 players can learn an obstacle sequence instead of receiving a different layout
 after every mistake. Camp and help starts still generate fresh adventures.
