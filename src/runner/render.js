@@ -13,7 +13,7 @@ import {AREAS,areaAt,areaBlend} from './areas.js';
 import {createBoneGeometry} from './bone-model.js';
 import {createCapeGeometry} from './cape-model.js';
 import {createSky} from './sky.js';
-import {createMountainGeometry} from './mountain.js';
+import {createMountainGeometry,blendMountainArea} from './mountain.js';
 import { puppyPose, smoothLegAngles, bodyMotion, mochiCrouch } from "./puppy-pose.js";
 import { createMochiModel } from "./mochi-model.js";
 import { isBridge } from "./bridges.js";
@@ -293,6 +293,7 @@ export function createView(canvas) {
     );
     mountain.rotation.y = random() * Math.PI * 2;
     mountain.geometry = mountainGeometry;
+    mountain.updateMorphTargets();
     mountain.material = mountain.material.clone();
     mountain.material.vertexColors = true;
     // Horizon haze is blended explicitly below; scene fog would erase these
@@ -877,6 +878,7 @@ export function createView(canvas) {
       ground.material.color.copy(areaColors[atmosphere.previous].ground).lerp(areaColors[atmosphere.index].ground,atmosphere.blend);
       horizonProfile(menu ? 0 : distance, horizon);
       for(const mountain of mountains) {
+        blendMountainArea(mountain,atmosphere);
         mountain.material.color.copy(ground.material.color).lerp(scene.background,horizon.haze+mountain.userData.depthHaze);
         const base=mountain.userData.baseScale;
         mountain.scale.set(base.x*horizon.width,base.y*horizon.height,base.z);
