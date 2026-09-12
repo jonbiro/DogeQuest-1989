@@ -9,7 +9,8 @@ import { UPGRADES, levels, price, purchase, refundUpgrade } from "./progression.
 import { missionFor, missionProgress, missionTip, missionPackFor } from "./missions.js";
 import { bankRun } from "./rewards.js";
 import {masteryFrom,masteryCards} from './mastery.js';
-import {FETCH_DURATION,fetchReady} from './ability.js';
+import {fetchReady} from './ability.js';
+import {createPowerHud} from './power-hud.js';
 import {REGIONS,regionAt} from "./regions.js";
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
@@ -19,6 +20,7 @@ import {turnPrompt} from "./turns.js";
 import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,isJumpTap} from "./gestures.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
 const $ = (id) => document.getElementById(id);
+const updatePowerHud = createPowerHud($('power'));
 let run = createRun(),
   state = "menu",
   last = 0,
@@ -774,26 +776,7 @@ function frame(now) {
         "♥ ".repeat(Math.max(0, run.hearts)) + "♡ ".repeat(3 - run.hearts);
       $("hearts").setAttribute("aria-label", `${run.hearts} hearts remaining`);
       if (run.practice) { $('hearts').textContent = '∞'; $('hearts').setAttribute('aria-label','Practice: unlimited tries'); }
-      $("power").innerHTML = [
-        run.zipline
-          ? `<span class="power-chip shield" aria-label="Zipline ride">🐾 ${Math.ceil(run.zipline.end-run.distance)}m<progress aria-label="Zipline distance remaining" max="140" value="${Math.max(0,run.zipline.end-run.distance)}"></progress></span>`
-          : "",
-        run.zoomies > 0
-          ? `<span class="power-chip double">🎾 ${Math.ceil(run.zoomies)}s<progress aria-label="Zoomies time remaining" max="6" value="${run.zoomies}"></progress></span>`
-          : "",
-        run.shield
-          ? '<span class="power-chip shield" aria-label="Shield: one hit protected">◇ SHIELD</span>'
-          : "",
-        run.magnet > 0
-          ? `<span class="power-chip magnet">🧲 ${Math.ceil(run.magnet)}s<progress aria-label="Magnet time remaining" max="${run.fetchTime > 0 && run.magnet <= FETCH_DURATION ? FETCH_DURATION : 10 + run.upgrades.magnet * 3}" value="${run.magnet}"></progress></span>`
-          : "",
-        run.double > 0
-          ? `<span class="power-chip double">×2 ${Math.ceil(run.double)}s<progress aria-label="Double points time remaining" max="10" value="${run.double}"></progress></span>`
-          : "",
-      ]
-        .filter(Boolean)
-        .join("");
-      $("hud").classList.toggle("has-powers", $("power").childElementCount > 0);
+      $("hud").classList.toggle("has-powers", updatePowerHud(run));
     }
     if (run.ended) finish();
   }

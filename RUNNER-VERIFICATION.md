@@ -1,5 +1,21 @@
 # Runner verification
 
+## Stable power-up display elements (2026-09-12)
+
+- Replaced the 10Hz power-display HTML rebuild with five reusable chips and
+  four persistent progress elements. Labels update only when changed; timer
+  values update in place. Inactive chips and the empty container are hidden.
+  Existing classes, labels, order, timer scales and HUD spacing are retained.
+- All 221 tests, build, lint and artifact checks passed. The new regression
+  exercises 500 updates, expiration and reactivation with no new allocations
+  or insertions, and verifies the four-second Fetch versus upgraded magnet scale.
+- A local-only browser fixture of the bundled production module displayed all
+  five powers and exposed all four correctly named progress indicators. All
+  nine element identities survived 100 timer updates. The temporary fixture tab
+  was closed; it did not change the saved profile or production page contents.
+- This establishes reduced DOM replacement and stable accessibility identity,
+  not a measured frame-rate improvement or a new full-game portrait layout audit.
+
 ## Native Safari offline reopening (2026-09-12)
 
 - Tested release `c175da7` in iOS 27 Safari on the dedicated Biscuit Dash QA
