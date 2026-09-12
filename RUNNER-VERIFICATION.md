@@ -1,5 +1,25 @@
 # Runner verification
 
+## Isolated phase-timing fixture (2026-09-12)
+
+- Added development-only scripts/runner-performance-qa.js. Bundle as an IIFE
+  named BiscuitPerformanceQA and load into a blank page, then call
+  startPerformanceCheck(). It records idle scheduling first, then the real
+  renderer and simulation, separating update CPU, draw-submission CPU and frame
+  intervals. Each phase defaults to 1s warmup plus 8s measurement. The returned
+  object reaches status done; reload the page before repeating a measurement.
+- The fixture rejects the production app and existing fixture canvases, bounds
+  duration, flags visibility interruption and never touches saves. It is excluded
+  from the production bundle. Drawing CPU does not measure asynchronous GPU cost.
+- Initial desktop 390x844 validation: idle mean interval 8.21ms, p95 10ms;
+  game mean 8.33ms, p95 10.1ms, maximum 16.5ms, zero intervals above 50ms.
+  Update CPU averaged .044ms; draw CPU averaged 1.239ms, p95 1.8ms, max 18.7ms.
+  Run reached 207.8m, remained active, and no visibility interruption occurred.
+- This isolates a healthy desktop engine sample, not native Safari or a physical
+  phone. The native stalls remain unresolved; run these same phase measurements
+  in Safari before attributing them to simulation, drawing or host scheduling.
+  Temporary fixture page/tab and viewport were cleaned up by rebuild/close/reset.
+
 ## Native Safari frame-pacing finding (2026-09-12)
 
 - Used only the booted Biscuit Dash QA — Sep 10 simulator, UDID
