@@ -12,3 +12,13 @@ The synthetic four-run, 24 km rendering regression reported no hits or missed
 turns, stable repeat laps, and peaks of 238 draw calls, 32 geometries, eight
 textures and 107 objects. No browser errors were reported. This is desktop
 portrait emulation and resource regression evidence, not a phone FPS benchmark.
+
+## Weathered boulder silhouette
+
+The shared boulder mesh now has clipped, irregular faces rather than a spherical
+outline. Deterministic deformation preserves the original local bounds and
+vertex count; physics and scale are unchanged. A new geometry regression checks
+bounds, determinism, finite unit normals, budget and non-spherical contours.
+All 359 tests and the complete check passed. A 390 × 844 canyon preview and the
+same 24 km rendering regression passed with unchanged resource peaks and no
+browser errors.
