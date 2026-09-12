@@ -9,13 +9,46 @@ for(const [from,to] of [
   ['readStoredProfile(localStorage)','({value:null,available:false,readable:false})'],
   ['writeStoredProfile(localStorage,saved,profileReadable)','false'],
   ['installOfflineSupport();',''],
-  ['accumulator += resumeStep(run, dt);','accumulator += 0;'],
+  ['accumulator += resumeStep(run, dt);','accumulator += riverPerf.active ? resumeStep(run, dt) : 0;'],
+  ['time += dt;','time += dt; riverPerfTick(frameDt);'],
+  ['for (const event of run.events) {',"for (const event of run.events) { if(riverPerf.active&&['hit','shield-break'].includes(event))riverPerf.hits++;"],
 ]){
   if(!source.includes(from))throw Error(`Fixture hook drift: ${from}`);
   source=source.replace(from,to);
 }
 source+=`
+const riverPerf={active:false,elapsed:0,frames:[],rides:0,bones:0,hits:0};
+function riverPerfTick(frameDt){
+  if(!riverPerf.active)return;
+  if(document.hidden||state!=='playing'){
+    riverPerf.active=false;window.riverPerfResult={error:'Benchmark interrupted; keep the page visible and running'};return;
+  }
+  riverPerf.elapsed+=Math.max(0,frameDt);
+  if(riverPerf.elapsed>2&&riverPerf.frames.length<12000)riverPerf.frames.push(frameDt*1000);
+  if(run.distance>=1300||run.ended){
+    riverPerf.rides+=run.rafts||0;riverPerf.bones+=run.bones;
+    window.raftInputQA.prepare();
+  }
+  const cue=actionCue(run);
+  if(cue.startsWith('←'))act(run,'left');
+  if(cue.startsWith('→'))act(run,'right');
+  if(riverPerf.elapsed>=32){
+    riverPerf.active=false;
+    const sorted=[...riverPerf.frames].sort((a,b)=>a-b);
+    const percentile=p=>sorted[Math.min(sorted.length-1,Math.floor(sorted.length*p))];
+    window.riverPerfResult={elapsed:riverPerf.elapsed,frames:sorted.length,
+      medianMs:percentile(.5),p95Ms:percentile(.95),p99Ms:percentile(.99),
+      over50ms:sorted.filter(ms=>ms>50).length,rides:riverPerf.rides,
+      bones:riverPerf.bones,hits:riverPerf.hits,renderer:view.diagnostics()};
+    pause();
+    document.getElementById('overlay-copy').textContent=JSON.stringify(window.riverPerfResult);
+  }
+}
 window.raftInputQA={
+  benchmark(){
+    this.prepare();Object.assign(riverPerf,{active:true,elapsed:0,frames:[],rides:0,bones:0,hits:0});
+    window.riverPerfResult={running:true};
+  },
   prepare(){
     start(); if(state!=='playing')throw Error('Graphics not ready');
     Object.assign(run,{raftPrototype:true,distance:1090,nextRow:1090,objects:[],
@@ -35,6 +68,10 @@ window.raftInputQA={
     raft:Boolean(run.raft),rafts:run.rafts||0,hearts:run.hearts,bones:run.bones,
     cue:actionCue(run),jumpBuffer:run.jumpBuffer,slide:run.slide};}
 };
+const benchmarkButton=document.createElement('button');
+benchmarkButton.textContent='Run 30-second river benchmark';
+benchmarkButton.onclick=()=>window.raftInputQA.benchmark();
+document.getElementById('menu').append(benchmarkButton);
 `;
 await build({stdin:{contents:source,resolveDir:new URL('src/runner/',root).pathname,sourcefile:'raft-input-qa.js'},
   bundle:true,format:'esm',outfile:new URL('dist/runner/raft-input-qa.js',root).pathname});

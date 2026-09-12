@@ -263,3 +263,20 @@ shield saves or boost-smashes to hide mistakes. Double bone points apply once;
 magnet/double timers retain normal expiry. Fetch cannot self-recharge, and an
 already-active magnet prevents spending Fetch charge. This is a collection pilot,
 not delayed human-reaction evidence; that remains the separate tilt matrix.
+
+## Real-time benchmark baseline
+
+The isolated full-app fixture now includes a 30-second benchmark button (plus
+two seconds of warm-up). It uses the normal RAF clock, fixed-step accumulator,
+renderer and HUD, with a directional autopilot and repeated entry/exit. Profile
+storage remains disabled. Hidden/interrupted runs produce an error rather than a
+successful measurement. Samples are bounded; raw frame intervals are measured
+before the simulation's dt clamp. The reported renderer snapshot is final state,
+not a peak resource claim.
+
+Desktop in-app browser at 390 × 844: 32.008 s total, 3,597 measured post-warm-up
+frames, median 8.3 ms, p95 10.1 ms, p99 10.3 ms, zero frames over 50 ms. Five
+crossings, 50 bones, zero damage/shield saves; console errors empty. This measures
+the default puppy and current motion setting, not all dogs/powers or native iOS.
+The temporary tab and viewport override were cleaned up. Native Safari remains
+the next performance gate. Fixture bundling and lint passed.
