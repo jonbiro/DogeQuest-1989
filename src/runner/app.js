@@ -11,7 +11,7 @@ import { bankRun } from "./rewards.js";
 import {masteryFrom,masteryCards} from './mastery.js';
 import {fetchReady} from './ability.js';
 import {createPowerHud} from './power-hud.js';
-import {readTrailSeed,trailLink} from './trail-link.js';
+import {readTrailSeed,readTrailVersion,trailLink} from './trail-link.js';
 import {REGIONS,regionAt} from "./regions.js";
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
@@ -23,6 +23,7 @@ import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } 
 const $ = (id) => document.getElementById(id);
 const updatePowerHud = createPowerHud($('power'));
 let sharedSeed = readTrailSeed(window.location.search);
+let sharedVersion = readTrailVersion(window.location.search);
 $('shared-trail').hidden = sharedSeed === null;
 const playLabel = () => sharedSeed === null ? `Run with ${PUPPIES[saved.collection.puppy].name} ↗` : 'Run shared trail ↗';
 let run = createRun(),
@@ -325,7 +326,9 @@ function start() {
   if(!graphicsReady){graphicsError();return;}
   // A results-screen retry is a rematch, not a new random obstacle layout.
   // Camp/help use random adventures unless an explicit shared trail is active.
-  run = createRun(state === 'ended' && !run.practice ? run.seed : sharedSeed ?? Date.now(), saved.upgrades);
+  const retry = state === 'ended' && !run.practice;
+  run = createRun(retry ? run.seed : sharedSeed ?? Date.now(), saved.upgrades,
+    retry ? run.generatorVersion : sharedSeed === null ? undefined : sharedVersion);
   run.puppy = saved.collection.puppy;
   run.appearance = { ...saved.collection };
   run.missions = missionPackFor(saved.challenges);
@@ -407,7 +410,7 @@ function finish() {
   }
   const receipt = bankRun(saved, run, run.missions);
   if (!receipt) return;
-  $('trail-link').value = trailLink(window.location.href,run.seed);
+  $('trail-link').value = trailLink(window.location.href,run.seed,run.generatorVersion);
   $('trail-copy-status').textContent = '';
   showOverlay("ended");
   if (run.retired) {
@@ -454,6 +457,7 @@ function finish() {
 $("play").onclick = start;
 $('shared-random').onclick = () => {
   sharedSeed=null;
+  sharedVersion=null;
   const url=new window.URL(window.location.href);url.searchParams.delete('trail');
   window.history.replaceState(null,'',url);
   $('shared-trail').hidden=true;updateRecords();$('play').focus({preventScroll:true});

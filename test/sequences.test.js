@@ -10,22 +10,49 @@ function sequence(start=200,route=null) {
   fillTrack(run);
   return run;
 }
-test('later laps rotate nine distinct courses without changing spacing or recovery',()=>{
+test('version-one replay links retain all original course patterns and their three-lap cycle',()=>{
+  const expected=[
+    [['log','branch','log'],['branch','log','branch'],['log','log','branch']],
+    [['gap','log','gap'],['log','gap','log'],['gap','gap','log']],
+    [[0,2,1],[2,0,1],[1,0,2]],
+  ];
+  for(const [region,start] of [200,475,1120].entries())for(let lap=0;lap<12;lap++) {
+    const course=courseAt(start+lap*1350,1);
+    assert.deepEqual(course.beats.map(b=>region===2?b.safeLane:b.type),expected[region][lap%3]);
+  }
+});
+test('new generated courses mix lane decisions with action rows while legacy runs keep their layout',()=>{
+  for(const start of [1620,1900,2470])for(const version of [1,2]) {
+    const run=createRun(17,{},version);
+    Object.assign(run,{distance:start-25,nextRow:start,row:12,objects:[],course:null,
+      nextChoice:Infinity,nextZipline:Infinity,choicePending:null});
+    fillTrack(run);
+    assert.equal(run.course?.name,courseAt(start,version).name);
+    const beats=run.course.beats;
+    if(version===2)assert.ok(beats.some(b=>b.safeLane!==undefined)&&beats.some(b=>b.safeLane===undefined));
+    for(const beat of beats) {
+      const row=run.objects.filter(o=>o.at===beat.at&&HAZARDS.includes(o.type));
+      assert.equal(row.length,beat.safeLane===undefined?3:2);
+      assert.ok(row.every(o=>o.type===beat.type&&o.lane!==beat.safeLane));
+    }
+  }
+});
+test('later laps rotate twelve distinct courses without changing spacing or recovery',()=>{
   const names=new Set();
   for(const start of [200,475,1120]) {
     const patterns=new Set();
-    for(let lap=0;lap<3;lap++) {
+    for(let lap=0;lap<4;lap++) {
       const course=courseAt(start+1350*lap);
       names.add(course.name);
       patterns.add(JSON.stringify(course.beats.map(b=>[b.type,b.safeLane])));
       assert.equal(course.variant,lap);
       assert.deepEqual(course.beats.map(b=>b.at-course.start),[0,35,70]);
       assert.equal(course.end-course.start,COURSE_LENGTH);
-      assert.equal(courseAt(start+1350*(lap+3)).name,course.name);
+      assert.equal(courseAt(start+1350*(lap+4)).name,course.name);
     }
-    assert.equal(patterns.size,3);
+    assert.equal(patterns.size,4);
   }
-  assert.equal(names.size,9);
+  assert.equal(names.size,12);
 });
 
 test('regions author distinct jungle timing, canyon gaps and crystal slalom courses',()=>{
@@ -57,8 +84,8 @@ test('courses respect Scenic, corner reservations and region boundaries',()=>{
   assert.equal(run.objects.filter(o=>o.type==='gift'&&o.at===288).length,1);
 });
 
-test('all nine regional courses clear with base and upgraded moves at top and boosted speeds',()=>{
-  for(const start of [200,475,1120])for(const lap of [0,1,2])for(const leap of [0,3])for(const speed of [36,46.8]) {
+test('all twelve regional courses clear with base and upgraded moves at top and boosted speeds',()=>{
+  for(const start of [200,475,1120])for(const lap of [0,1,2,3])for(const leap of [0,3])for(const speed of [36,46.8]) {
     const run=sequence(start), course=run.course;
     const variant=courseAt(start+lap*1350);
     course.name=variant.name;

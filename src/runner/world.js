@@ -10,6 +10,7 @@ export function seededRandom(seed) {
   };
 }
 import { levels } from "./progression.js";
+import {CURRENT_TRAIL_VERSION} from './trail-version.js';
 import {chargeFetch, activateFetch} from './ability.js';
 import {cleanMove} from './flow.js';
 import {mistakeDetail} from './mistakes.js';
@@ -29,9 +30,10 @@ export const BASE_SLIDE_DURATION = .58;
 export const SLIDE_UPGRADE_DURATION = .07;
 export const HAZARDS = [...SOLID_HAZARDS,"gap"];
 export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart", 'gift', 'zoomies'];
-export function createRun(seed = Date.now(), upgrades = {}) {
+export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = CURRENT_TRAIL_VERSION) {
   const run = {
     seed,
+    generatorVersion: generatorVersion === 1 ? 1 : CURRENT_TRAIL_VERSION,
     random: seededRandom(seed),
     distance: 0,
     time: 0,
@@ -156,7 +158,7 @@ export function fillTrack(run) {
         sequenceEnd <= (visit+1)*REGION_LENGTH &&
         !cornerIntersecting(start, sequenceEnd) &&
         (!run.route || start >= run.route.until || sequenceEnd - COURSE_RECOVERY <= run.route.until)) {
-      run.course = courseAt(start);
+      run.course = courseAt(start,run.generatorVersion);
       run.lastCourseVisit = visit;
       for (const beat of run.course.beats) {
         for (let lane = 0; lane < 3; lane++)

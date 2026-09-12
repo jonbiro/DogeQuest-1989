@@ -1,5 +1,25 @@
 # Runner verification
 
+## Mixed-action course expansion (2026-09-12)
+
+- Added Fern dash (jump/right/duck), Ridge switch (gap/left/gap), and Moonlit
+  hurdles (right/jump/left). New runs rotate four variants per region instead
+  of three; existing 35m beats, recovery spacing, course bonuses and collision
+  ownership remain unchanged. Version-one shared links keep their old generator,
+  retries preserve that version, and newly shared links encode version two.
+- All 227 tests, build, lint and artifact checks passed. Coverage includes all
+  twelve courses at base/max leap and top/boosted speeds, new generated mixed
+  rows, twelve laps of legacy course patterns, old/new link parsing and retry
+  version preservation. Invalid future link versions still fall back safely.
+- A 95-second production-app probe at 390x844 on seed 1989/version two reached
+  3,081m with three hearts, five correct turns and zero misses. DOM observations
+  recorded all three new named courses; regional completion totals 3/2/2 account
+  for all seven encountered courses. Zipline catch/landing and Challenge were
+  observed; the sampled HUD overlap checks found no issues.
+- Inputs were synthetic responses to rendered prompts, not human playtesting.
+  The run paused without banking, the isolated profile remained absent, and the
+  temporary tab and viewport override were cleaned up.
+
 ## CPU-throttled integration check (2026-09-12)
 
 - Ran the same local-only prompt-driven production-app probe for 60 seconds at

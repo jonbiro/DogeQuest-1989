@@ -1,4 +1,5 @@
 import {regionAt, REGION_LENGTH} from './regions.js';
+import {CURRENT_TRAIL_VERSION} from './trail-version.js';
 
 const BEAT_OFFSETS = [0,35,70];
 export const COURSE_RECOVERY = 30;
@@ -9,7 +10,7 @@ export const COURSES = [
   {name:'Canyon crossings', types:['gap','log','gap']},
   {name:'Crystal slalom', lanes:[0,2,1]},
 ];
-const VARIATIONS = [
+const LEGACY_VARIATIONS = [
   [COURSES[0],
     {name:'Canopy shuffle',types:['branch','log','branch']},
     {name:'Root rhythm',types:['log','log','branch']}],
@@ -20,16 +21,23 @@ const VARIATIONS = [
     {name:'Moonpaw weave',lanes:[2,0,1]},
     {name:'Crystal switchback',lanes:[1,0,2]}],
 ];
+const MIXED_COURSES = [
+  {name:'Fern dash',beats:[{type:'log'},{type:'rock',safeLane:2},{type:'branch'}]},
+  {name:'Ridge switch',beats:[{type:'gap'},{type:'rock',safeLane:0},{type:'gap'}]},
+  {name:'Moonlit hurdles',beats:[{type:'rock',safeLane:2},{type:'log'},{type:'rock',safeLane:0}]},
+];
+const VARIATIONS=LEGACY_VARIATIONS.map((courses,i)=>[courses[0],MIXED_COURSES[i],...courses.slice(1)]);
 
-export function courseAt(start) {
+export function courseAt(start,version=CURRENT_TRAIL_VERSION) {
   const region = regionAt(start);
-  const variant = Math.floor(start / (REGION_LENGTH * COURSES.length)) % 3;
-  const definition = VARIATIONS[region][variant];
+  const variations=version===1?LEGACY_VARIATIONS:VARIATIONS;
+  const variant = Math.floor(start / (REGION_LENGTH * COURSES.length)) % variations[region].length;
+  const definition = variations[region][variant];
   return {
     start, end:start+COURSE_LENGTH, region, visit:Math.floor(start/REGION_LENGTH),
     name:definition.name, variant, checked:0, clean:0,
     beats:BEAT_OFFSETS.map((offset,index)=>({at:start+offset,
-      type:definition.types?.[index] || 'rock', safeLane:definition.lanes?.[index]})),
+      type:definition.types?.[index] || 'rock', safeLane:definition.lanes?.[index],...definition.beats?.[index]})),
   };
 }
 

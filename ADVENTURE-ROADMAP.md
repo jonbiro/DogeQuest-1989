@@ -1,5 +1,14 @@
 # Puppy adventure goal
 
+## Mixed-action regional courses
+
+New adventures rotate twelve authored courses. On later laps, Fern dash combines
+jump/right-lane/duck, Ridge switch combines gap/left-lane/gap, and Moonlit hurdles
+combines right-lane/jump/left-lane. They keep the 35m beat spacing and 30m recovery
+stretch. The opening courses stay movement-specific before these combinations.
+Version-one replay links retain their original nine-course generation; new links
+preserve the expanded version instead of silently changing previously shared runs.
+
 ## Replay links without accounts
 
 Run details now include a copyable, versioned link to the same starting trail.

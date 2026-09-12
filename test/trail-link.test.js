@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {URL} from 'node:url';
-import {readTrailSeed,trailLink} from '../src/runner/trail-link.js';
+import {readTrailSeed,readTrailVersion,trailLink} from '../src/runner/trail-link.js';
 import {createRun,step} from '../src/runner/world.js';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
@@ -20,9 +20,10 @@ test('trail links round-trip generated seeds without sharing unrelated URL data'
   }
 });
 test('malformed, ambiguous and incompatible trail codes fall back to random play',()=>{
-  for(const search of ['', '?trail=', '?trail=2-1','?trail=1--1','?trail=1-01','?trail=1-Z','?trail=1-zzzzzzz','?trail=1-0&trail=1-1','?trail=1-%3Cscript%3E'])
+  for(const search of ['', '?trail=', '?trail=3-1','?trail=1--1','?trail=1-01','?trail=1-Z','?trail=1-zzzzzzz','?trail=1-0&trail=1-1','?trail=1-%3Cscript%3E'])
     assert.equal(readTrailSeed(search),null,search);
   assert.equal(readTrailSeed('?trail=1-0'),0);
+  for(const version of [1,2])assert.equal(readTrailVersion(new URL(trailLink('https://example.com/',0,version)).search),version);
   assert.equal(trailLink('javascript:alert(1)',42),'');
   assert.equal(trailLink('https://example.com/',NaN),'');
 });
