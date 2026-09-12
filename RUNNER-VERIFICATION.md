@@ -1,5 +1,24 @@
 # Runner verification
 
+## Consecutive-jump guidance timing (2026-09-12)
+
+- A 150ms delayed-cue simulation exposed late takeoffs on seeds 5, 7 and 8.
+  Seed 7 hid the second hint until 1615m, took off at 1621m and hit a rock at
+  1623m. Near-landing airborne suppression was leaving too little reaction time.
+- Guidance now forecasts ordinary-jump touchdown and can request JUMP AGAIN in
+  the existing 120ms buffer window when a separate hazard arrives after landing.
+  Queuing that jump silences the cue immediately, without changing velocity or
+  height. Dives and hazards reached before landing do not request another jump.
+- All three seeds now reach 5000m with zero hit events under the same delayed
+  controller. Regression tests also cover base/max leap and buffer acknowledgement.
+- In the actual app at 390x844, a 57-second run on shared trail `2-7` used synthetic
+  keyboard events delayed 150ms from rendered cues. It reached 1778m with three
+  hearts throughout and three correct turns/no misses. The new hint was observed
+  at x=32.5..357.5/y=725..739 inside the lower dock. The run was paused unbanked;
+  save remained absent, no browser warnings/errors, tab closed and viewport reset.
+- All 239 tests/build/lint/distribution gates pass. These timing checks are not
+  a claim about human reaction times or physical-device performance.
+
 ## Surface-aware puppy shadow (2026-09-12)
 
 - The contact shadow now fades across the approach to a missing 5m road slab,

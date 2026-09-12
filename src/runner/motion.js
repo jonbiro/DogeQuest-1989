@@ -15,6 +15,11 @@ function jumpGravity(run) {
   // speed and gravity scale together, so every level keeps the same airtime.
   return GRAVITY * leapScale(run);
 }
+// Remaining airtime of an ordinary ballistic jump (not an accelerated dive).
+export function jumpLandingTime(run) {
+  const gravity=jumpGravity(run);
+  return (run.vy+Math.sqrt(run.vy*run.vy+2*gravity*run.y))/gravity;
+}
 
 export function jump(run) {
   run.slideExpiredAt = null;

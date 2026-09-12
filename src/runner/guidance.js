@@ -1,6 +1,6 @@
 // One small, timely hint at the edge of the trail; never a stack of banners.
 import {LANES} from './world.js';
-import {steer} from './motion.js';
+import {steer,jumpLandingTime,JUMP_BUFFER} from './motion.js';
 import {turnPrompt} from './turns.js';
 import {courseCue} from './courses.js';
 import {timingLesson} from './mistakes.js';
@@ -37,9 +37,16 @@ export function actionCue(run) {
     object.at > run.distance && object.at - run.distance < run.speed * .45 && onApproach(run, object));
   // Jumping already answers low hazards, but an overhead row needs a new
   // downward input. Keep that escape visible until the dive is underway.
-  if (run.y > .05 || run.vy > 0) return danger &&
-    ['arch', 'branch', 'gate'].includes(danger.type) && !run.diving
-    ? '↓ DIVE · SLIDE' : '';
+  if (run.y > 0 || run.vy > 0) {
+    if (danger && ['arch', 'branch', 'gate'].includes(danger.type) && !run.diving)
+      return '↓ DIVE · SLIDE';
+    if (danger && !run.diving && run.vy<0 && !run.jumpBuffer) {
+      const landing=jumpLandingTime(run);
+      if (landing<=JUMP_BUFFER && (danger.at-run.distance+.4)/run.speed>landing)
+        return '↑ JUMP AGAIN';
+    }
+    return '';
+  }
   if (danger && ['arch','branch','gate'].includes(danger.type) &&
       run.slide > (danger.at - run.distance + .4) / run.speed) return '';
   const intro = run.course && run.course.start-run.distance < 40 &&

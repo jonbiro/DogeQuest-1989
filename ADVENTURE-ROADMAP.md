@@ -1,5 +1,12 @@
 # Puppy adventure goal
 
+## Readable consecutive jumps
+
+Near the end of a jump, the edge dock can now cue a separate upcoming jump
+before touchdown. It uses the existing 120ms landing buffer and acknowledges
+queued input immediately. This removes a guidance blind spot between tightly
+spaced obstacles without extending airtime or weakening collision rules.
+
 ## Safe corner rehearsal
 
 Help now offers a seven-second turn practice using the actual world corner,
