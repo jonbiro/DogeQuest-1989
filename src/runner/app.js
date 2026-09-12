@@ -876,7 +876,7 @@ function frame(now) {
         `${run.missions.indexOf(currentMission)+1}/3 · ${currentMission.title} · ${progress}/${currentMission.target} ${currentMission.unit}`;
       $("mission-progress").max = courseStatus?.max ?? currentMission.target;
       $("mission-progress").value = courseStatus?.value ?? progress;
-      $("mission-progress").setAttribute('aria-label',courseStatus?'Clean course moves':'Challenge progress');
+      $("mission-progress").setAttribute('aria-label',courseStatus?.ariaLabel ?? (courseStatus?'Clean course moves':'Challenge progress'));
       if (progress === currentMission.target && !missionAnnounced) {
         missionAnnounced = true;
         toast(

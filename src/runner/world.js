@@ -33,7 +33,7 @@ export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart", 'g
 export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = CURRENT_TRAIL_VERSION) {
   const run = {
     seed,
-    generatorVersion: generatorVersion === 1 ? 1 : CURRENT_TRAIL_VERSION,
+    generatorVersion: [1,2].includes(generatorVersion) ? generatorVersion : CURRENT_TRAIL_VERSION,
     random: seededRandom(seed),
     distance: 0,
     time: 0,
@@ -157,16 +157,19 @@ export function fillTrack(run) {
     const start = Math.ceil(run.nextRow/5)*5;
     const sequenceEnd = start + COURSE_LENGTH;
     const visit = Math.floor(start/REGION_LENGTH);
-    if (start >= 195 && !run.course && visit !== run.lastCourseVisit && route !== "scenic" &&
+    if (start >= 195 && !run.course && visit !== run.lastCourseVisit && (route !== "scenic" || run.generatorVersion>=3) &&
         sequenceEnd < Math.min(run.nextChoice, run.nextZipline) - 45 &&
         sequenceEnd <= (visit+1)*REGION_LENGTH &&
         !cornerIntersecting(start, sequenceEnd) &&
         (!run.route || start >= run.route.until || sequenceEnd - COURSE_RECOVERY <= run.route.until)) {
-      run.course = courseAt(start,run.generatorVersion);
+      run.course = courseAt(start,run.generatorVersion,route==='scenic');
       run.lastCourseVisit = visit;
       for (const beat of run.course.beats) {
         for (let lane = 0; lane < 3; lane++)
-          if (lane !== beat.safeLane) add(run, beat.type, lane, beat.at).courseRegion = run.course.region;
+          if (run.course.scenic ? lane===beat.blockedLane : lane !== beat.safeLane) {
+            const obstacle=add(run, beat.type, lane, beat.at);
+            if(!run.course.scenic)obstacle.courseRegion=run.course.region;
+          }
         for (let i = 1; i <= 3; i++) add(run, "bone", beat.safeLane ?? 1, beat.at + i * 4);
       }
       add(run, "gift", 1, start + 88);

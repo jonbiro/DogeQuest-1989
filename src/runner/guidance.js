@@ -52,7 +52,7 @@ export function actionCue(run) {
   if (danger && ['arch','branch','gate'].includes(danger.type) && run.slide>SLIDE_BUFFER)
     return 'OVERHEAD NEXT';
   const intro = run.course && run.course.start-run.distance < 40 &&
-    run.course.start-run.distance > run.speed*.5 ? `${run.course.name} · +180 clean` : '';
+    run.course.start-run.distance > run.speed*.5 ? `${run.course.name} · ${run.course.scenic?'open lanes':'+180 clean'}` : '';
   return !danger ? intro : ['arch', 'branch', 'gate'].includes(danger.type)
     ? '↓ SLIDE' : danger.type === 'gap' ? '↑ JUMP GAP' : '↑ JUMP';
 }

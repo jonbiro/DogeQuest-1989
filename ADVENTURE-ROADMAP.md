@@ -1,5 +1,15 @@
 # Puppy adventure goal
 
+## Regional variety on the gentle route
+
+New version-three trails include optional Scenic encounters: Fern rambles,
+Sandstone stroll and Mooncap meander. Each row has one obstacle and two open
+lanes, with bones marking an optional safe line and a recovery stretch after
+the sequence. These do not award hard-course mastery or clean-course bonuses;
+ordinary pickups and successfully cleared obstacles retain their normal rewards.
+Challenge keeps its twelve authored courses. Version-one and version-two replay
+links preserve their original generation, including their original Scenic routes.
+
 ## Route choices now change the trail
 
 Scenic takes a gentler left-hand detour and Challenge sweeps right, with smooth

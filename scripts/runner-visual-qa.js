@@ -609,13 +609,13 @@ export function hudStressCheck(routeChoice=false) {
     for(const {element,nodes,hidden:wasHidden} of saved){if(!['controls','mission-hud','mission-summary'].includes(element.id))element.replaceChildren(...nodes);element.hidden=wasHidden;}
   }
 }
-export function uiPlayCheck(seconds=22) {
+export function uiPlayCheck(seconds=22,routePolicy='challenge') {
   return new Promise(resolve=>{
     document.querySelector("#pause-button").click();
     document.querySelector("#home").click();
     document.querySelector("#play").click();
     const started=performance.now(),frames=[];
-    const regions = new Set(), layoutIssues = new Set(),turnDirections=new Set();
+    const regions = new Set(), layoutIssues = new Set(),turnDirections=new Set(),scenicSequences=new Set();
     let last=started,lastAction=0,gate=false,challenge=false,zipline=false,landed=false,turnAccepted=false;
     function tick(now) {
       frames.push(now-last);last=now;
@@ -623,6 +623,8 @@ export function uiPlayCheck(seconds=22) {
       const route=document.querySelector("#route-choice").textContent;
       const cue=document.querySelector("#cue").textContent;
       const scene=document.querySelector("#scene");
+      const progress=document.querySelector('#mission-label').textContent;
+      if(progress.includes('open lanes'))scenicSequences.add(progress);
       const fetchButton=document.querySelector('#fetch');
       if (!fetchButton.disabled) {
         const uses=Number(scene.dataset.fetchUses||0);
@@ -643,13 +645,13 @@ export function uiPlayCheck(seconds=22) {
         }
         const turnLocked=cue.includes("TURN");
         const code=cue.includes("TURN LEFT")||cue.includes("WEAVE LEFT")||/(BONES|GIFT) LEFT/.test(cue)?"ArrowLeft":cue.includes("TURN RIGHT")||cue.includes("WEAVE RIGHT")||/(BONES|GIFT) RIGHT/.test(cue)?"ArrowRight":turnLocked?null:
-          cue.includes("SLIDE")?"ArrowDown":cue.includes("JUMP")?"ArrowUp":route.includes("GATES IN")?"ArrowRight":null;
+          cue.includes("SLIDE")?"ArrowDown":cue.includes("JUMP")?"ArrowUp":route.includes("GATES IN")?(routePolicy==='scenic'?'ArrowLeft':'ArrowRight'):null;
         if(code){window.dispatchEvent(new window.KeyboardEvent("keydown",{code,key:code,bubbles:true}));lastAction=now;}
       }
       if(now-started>=seconds*1000||state!=="playing") {
         document.querySelector("#pause-button").click();
         const sorted=[...frames].sort((a,b)=>a-b);
-        resolve({state,viewport:[window.innerWidth,window.innerHeight],endDistance:document.querySelector("#distance").textContent,frames:frames.length,meanMs:frames.reduce((a,b)=>a+b,0)/frames.length,p95Ms:sorted[Math.floor(sorted.length*.95)],regions:[...regions],layoutIssues:[...layoutIssues],gatePromptSeen:gate,challengeSelected:challenge,ziplineCaught:zipline,ziplineLanded:landed,turnDirections:[...turnDirections],turnAccepted,turns:Number(scene.dataset.turns||0),missedTurns:Number(scene.dataset.missedTurns||0),regionalCourses:scene.dataset.courses,hearts:document.querySelector("#hearts").getAttribute("aria-label")});
+        resolve({state,routePolicy,scenicSequences:[...scenicSequences],viewport:[window.innerWidth,window.innerHeight],endDistance:document.querySelector("#distance").textContent,frames:frames.length,meanMs:frames.reduce((a,b)=>a+b,0)/frames.length,p95Ms:sorted[Math.floor(sorted.length*.95)],regions:[...regions],layoutIssues:[...layoutIssues],gatePromptSeen:gate,challengeSelected:challenge,ziplineCaught:zipline,ziplineLanded:landed,turnDirections:[...turnDirections],turnAccepted,turns:Number(scene.dataset.turns||0),missedTurns:Number(scene.dataset.missedTurns||0),regionalCourses:scene.dataset.courses,hearts:document.querySelector("#hearts").getAttribute("aria-label")});
         return;
       }
       window.requestAnimationFrame(tick);

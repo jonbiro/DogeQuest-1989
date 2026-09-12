@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {createRun,fillTrack,step,act,HAZARDS,LANES} from '../src/runner/world.js';
 import {courseAt,courseCue,COURSE_BONUS,COURSE_LENGTH} from '../src/runner/courses.js';
 
-function sequence(start=200,route=null) {
-  const run=createRun(17);
+function sequence(start=200,route=null,version=3) {
+  const run=createRun(17,{},version);
   Object.assign(run,{distance:start-25,nextRow:start,row:12,objects:[],route,
     nextChoice:2000,nextZipline:3000,choicePending:null});
   fillTrack(run);
@@ -72,7 +72,8 @@ test('regions author distinct jungle timing, canyon gaps and crystal slalom cour
 });
 
 test('courses respect Scenic, corner reservations and region boundaries',()=>{
-  assert.equal(sequence(200,{kind:'scenic',until:1000}).course,null);
+  for(const version of [1,2])assert.equal(sequence(200,{kind:'scenic',until:1000},version).course,null);
+  assert.equal(sequence(200,{kind:'scenic',until:1000}).course.scenic,true);
   assert.equal(sequence(480,{kind:'challenge',until:570}).course?.start,480,
     'a clear recovery may extend beyond Challenge, while all hazard beats stay inside it');
   assert.notEqual(sequence(100).course?.start,100);

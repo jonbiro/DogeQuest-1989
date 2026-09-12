@@ -30,8 +30,20 @@ const MIXED_COURSES = [
 ];
 const VARIATIONS=LEGACY_VARIATIONS.map((courses,i)=>[courses[0],MIXED_COURSES[i],...courses.slice(1)]);
 
-export function courseAt(start,version=CURRENT_TRAIL_VERSION) {
+export function courseAt(start,version=CURRENT_TRAIL_VERSION,scenic=false) {
   const region = regionAt(start);
+  if(scenic&&version>=3){
+    const definitions=[
+      {name:'Fern rambles',types:['log','branch','log']},
+      {name:'Sandstone stroll',types:['rock','log','rock']},
+      {name:'Mooncap meander',types:['branch','rock','branch']},
+    ];
+    const definition=definitions[region];
+    return {start,end:start+COURSE_LENGTH,region,visit:Math.floor(start/REGION_LENGTH),
+      name:definition.name,scenic:true,checked:0,clean:0,
+      beats:BEAT_OFFSETS.map((offset,index)=>({at:start+offset,type:definition.types[index],
+        blockedLane:[1,2,0][index],safeLane:[0,1,1][index]}))};
+  }
   const variations=version===1?LEGACY_VARIATIONS:VARIATIONS;
   const variant = Math.floor(start / (REGION_LENGTH * COURSES.length)) % variations[region].length;
   const definition = variations[region][variant];
@@ -48,6 +60,10 @@ export function courseAt(start,version=CURRENT_TRAIL_VERSION) {
 export function advanceCourse(run, lanes) {
   const course = run.course;
   if (!course) return 0;
+  if(course.scenic){
+    if(run.distance>=course.end)run.course=null;
+    return 0; // Optional detours earn pickups/normal clears, never hard-course mastery.
+  }
   let weaves=0;
   while (course.checked < course.beats.length && run.distance >= course.beats[course.checked].at + .4) {
     const beat = course.beats[course.checked++];
@@ -76,7 +92,7 @@ export function advanceCourse(run, lanes) {
 
 export function courseCue(run) {
   const course = run.course;
-  if (!course) return '';
+  if (!course || course.scenic) return '';
   const beat = course.beats[course.checked];
   if (!beat || beat.safeLane === undefined || beat.at < run.distance ||
       beat.at-run.distance > run.speed*.8 || run.lane === beat.safeLane) return '';
@@ -90,6 +106,7 @@ export function activeCourse(run) {
 export function courseProgress(run) {
   const course=activeCourse(run);
   if (!course) return null;
+  if(course.scenic)return {label:`${course.name} · open lanes`,ariaLabel:'Scenic sequence distance',value:Math.max(0,run.distance-course.start),max:COURSE_LENGTH};
   const total=course.beats.length;
   const possible=course.clean+total-course.checked;
   const bonus=course.clean===course.checked ? COURSE_BONUS

@@ -1,5 +1,28 @@
 # Long-run experience audit
 
+## Implemented follow-up
+
+Version-three trails now generate gentle regional sequences inside Scenic
+sections. One blocked lane per beat leaves two escape lanes; safe-line bones
+invite steering but never require it. No full-width gaps, course bonuses or
+regional mastery are attached to these optional sequences. Ordinary successful
+clears and pickups remain useful. Version-one/two generation remains available.
+
+Verification: 363 tests pass, including nine 6 km cue-driven runs across three
+seeds and three replay versions. New default-center Scenic routes encounter all
+three regional families; old versions retain the original jungle-only authored
+course coverage. Separate tests preserve two escape lanes, collision advice,
+zero hard-course mastery, replay round trips and meaningful progress labels.
+
+A 24 km real-renderer simulation completed 36 turns and 16 ziplines without hits
+or misses, with stable repeat laps: peaks 237 draw calls, 32 geometries, eight
+textures and 105 objects. A 45-second 320 × 568 actual-interface run using
+synthetic keyboard/pointer events reached 1,281 m with three hearts, two turns,
+a completed zipline, both canyon/glade Scenic labels, and no detected HUD
+overlaps. It did not choose Challenge. This is desktop evidence, not physical
+touchscreen or hardware FPS acceptance. The run exposed a progress-meter label
+that incorrectly said clean moves; the Scenic meter now identifies distance.
+
 Baseline: ea2938d. The broader goal of surpassing Temple Run remains unproven.
 This audit examines what a player actually encounters, not just what exists.
 
