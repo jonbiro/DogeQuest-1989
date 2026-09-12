@@ -1,5 +1,17 @@
 # River raft implementation status
 
+## Water contact
+
+A short, surface-bound V wake now trails the occupied raft. It follows the
+river ribbon and rider's lateral position, fades over the first/last three
+meters of the crossing, and disappears on bridges or without a rider. This
+uses the existing water shader and a reused uniform: no particles, textures,
+geometry or extra draw calls. Reduced-motion play retains a steady foam shape.
+Portrait 390 × 844 previews checked centered and left-lane positions with clear
+rocks and bone lines; shader/browser errors were empty. Uniform lifecycle and
+shore fades are covered by tests; full checks passed 445 tests. A new native
+performance measurement has not been made for this shader addition.
+
 ## Ride passport progression
 
 River and cable completions now bank separate lifetime passport counters. Each

@@ -37,12 +37,14 @@ export function createWaterSurface(scene) {
   geometry.setIndex(indices);
   const mesh=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.32,metalness:.12}));
   const phase={value:0};
+  const wake={value:new THREE.Vector4(0,0,1,0)};
   mesh.material.onBeforeCompile=shader=>{
     shader.uniforms.riverPhase=phase;
+    shader.uniforms.raftWake=wake;
     shader.vertexShader='varying vec2 riverCoord;\n'+shader.vertexShader;
     shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>',
       '#include <begin_vertex>\nriverCoord = uv;');
-    shader.fragmentShader='uniform float riverPhase;\nvarying vec2 riverCoord;\n'+shader.fragmentShader;
+    shader.fragmentShader='uniform float riverPhase;\nuniform vec4 raftWake;\nvarying vec2 riverCoord;\n'+shader.fragmentShader;
     shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`
       #include <color_fragment>
       float wave = sin(riverCoord.y * 2.4 + sin(riverCoord.x * 0.7) * 1.8 - riverPhase);
@@ -51,14 +53,25 @@ export function createWaterSurface(scene) {
       float fade = 1.0 - smoothstep(35.0, 110.0, length(vViewPosition));
       diffuseColor.rgb *= 1.0 + wave * 0.055 * fade;
       diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.56, 0.79, 0.77), glint * 0.24 * fade);
+      // Surface-bound foam: one short V behind the raft, never particles in
+      // the obstacle sightline. Coordinates follow the same bent river ribbon.
+      vec2 wakeCoord = vec2(riverCoord.x * (8.0 / 35.0) - raftWake.x,
+        (riverCoord.y - raftWake.y) * raftWake.z);
+      float aft = -wakeCoord.y;
+      float spread = 1.05 + max(0.0, aft) * 0.19;
+      float edge = 1.0 - smoothstep(0.04, 0.24, abs(abs(wakeCoord.x) - spread));
+      float tail = smoothstep(0.3, 1.6, aft) * (1.0 - smoothstep(4.0, 9.0, aft));
+      float foam = edge * tail * raftWake.w;
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.72, 0.88, 0.82), foam * 0.58);
     `);
   };
-  mesh.material.customProgramCacheKey=()=> 'river-ripples-v1';
+  mesh.material.customProgramCacheKey=()=> 'river-ripples-wake-v2';
   mesh.name='continuous-river';mesh.frustumCulled=false;mesh.visible=false;mesh.receiveShadow=true;
   scene.add(mesh);
   return {
     mesh,
-    update(distance,frameAt,menu=false,dt=0,animate=false,section=null){
+    update(distance,frameAt,menu=false,dt=0,animate=false,section=null,riderX=null){
+      wake.value.w=0;
       if(animate&&Number.isFinite(dt)&&dt>0)phase.value=(phase.value+Math.min(dt,.05)*1.2)%(Math.PI*200);
       mesh.visible=false;
       if(menu||!Number.isFinite(distance)||distance<0)return;
@@ -68,6 +81,9 @@ export function createWaterSurface(scene) {
       const start=section?section.start:cycle*BRIDGE_PERIOD+BRIDGE_START-2.5;
       const end=section?section.end:cycle*BRIDGE_PERIOD+BRIDGE_END-2.5;
       if(end<distance-12||start>distance+175)return;
+      if(section&&Number.isFinite(riderX)&&distance>=start&&distance<end)
+        wake.value.set(riderX,(distance-start)/(end-start)*100,(end-start)/100,
+          Math.min(1,(distance-start)/3,(end-distance)/3));
       for(let row=0;row<ROWS;row++){
         const station=start+(end-start)*row/(ROWS-1);
         const frame=frameAt(distance-station);

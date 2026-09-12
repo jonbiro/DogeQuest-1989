@@ -947,7 +947,7 @@ export function createView(canvas) {
       cornerRoad.update(distance, frameAt, menu);
       water.update(distance, frameAt, menu, dt, state === 'playing' && !reducedMotion);
       const river=run.raftPrototype&&!menu?raftIntersecting(distance-12,distance+170):null;
-      if(river)raftWater.update(distance,frameAt,false,dt,state==='playing'&&!reducedMotion,river);
+      if(river)raftWater.update(distance,frameAt,false,dt,state==='playing'&&!reducedMotion,river,run.raft?x:null);
       else raftWater.mesh.visible=false;
       dog.position.set(
         menu ? 0 : x,
