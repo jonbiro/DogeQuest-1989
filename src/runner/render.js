@@ -2,7 +2,7 @@ import * as THREE from "three";
 import {createInstanceBatch} from './instance-batch.js';
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { LANES, PICKUPS, seededRandom } from "./world.js";
-import { routeFrame } from "./route.js";
+import { createRouteSampler } from "./route.js";
 import { upcomingCorner } from "./turns.js";
 import { objectVisible, ziplineSignVisible } from "./visibility.js";
 import { createCornerRoad } from "./corner-road.js";
@@ -767,8 +767,9 @@ export function createView(canvas) {
         : THREE.MathUtils.lerp(run.previous.distance, run.distance, blend);
       // Several hundred instanced pieces share fewer than 200 route frames.
       const frames = new Map();
+      const sampleRoute=createRouteSampler(distance,{route:menu?null:run.route});
       const frameAt = z => {
-        if (!frames.has(z)) frames.set(z, routeFrame(distance, z,{route:menu?null:run.route}));
+        if (!frames.has(z)) frames.set(z, sampleRoute(z));
         return frames.get(z);
       };
       const groundFrame = frameAt(0);

@@ -195,32 +195,42 @@ function selectedFrame(station,route,reveal) {
 // The returned position is in the player's horizontal tangent frame. Elevation
 // remains world-up so hills never alter jump physics or collision coordinates.
 export function routeFrame(distance, z, { flat = false, route = null } = {}) {
-  if (!Number.isFinite(distance) || !Number.isFinite(z)) {
-    return { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, slope: 0, curvature: 0 };
-  }
-  const station = distance - z;
+  return createRouteSampler(distance,{flat,route})(z);
+}
+
+// One sampler per rendered frame shares the player transform and terrain across
+// every visible section. Keep it local to the frame: the run's route can change.
+export function createRouteSampler(distance, {flat=false,route=null}={}) {
+  const empty=()=>({x:0,y:0,z:0,yaw:0,pitch:0,slope:0,curvature:0});
+  if(!Number.isFinite(distance))return empty;
   const reveal=detourReveal(distance,route);
   const playerPosition = selectedFrame(distance,route,reveal);
-  const targetPosition = selectedFrame(station,route,reveal);
   const playerDirection = playerPosition;
-  const targetDirection = targetPosition;
-  const deltaX = targetPosition.x - playerPosition.x;
-  const deltaZ = targetPosition.z - playerPosition.z;
   const cosine = Math.cos(playerDirection.yaw);
   const sine = Math.sin(playerDirection.yaw);
-  const terrain = flat ? { height: 0, slope: 0 } : terrainProfile(station);
   const playerTerrain = flat ? { height: 0 } : terrainProfile(distance);
-  const stretch=targetPosition.stretch||1;
+  // Snapshot the tiny route descriptor so callers cannot mix two route states.
+  const selectedRoute=route?{kind:route.kind,until:route.until}:null;
+  return z=>{
+    if(!Number.isFinite(z))return empty();
+    const station=distance-z;
+    const targetPosition = selectedFrame(station,selectedRoute,reveal);
+    const targetDirection = targetPosition;
+    const deltaX = targetPosition.x - playerPosition.x;
+    const deltaZ = targetPosition.z - playerPosition.z;
+    const terrain = flat ? { height: 0, slope: 0 } : terrainProfile(station);
+    const stretch=targetPosition.stretch||1;
 
-  return {
-    x: cleanZero(deltaX * cosine + deltaZ * sine),
-    y: cleanZero(terrain.height - playerTerrain.height),
-    z: cleanZero(deltaX * sine - deltaZ * cosine),
-    yaw: cleanZero(normalizeAngle(targetDirection.yaw - playerDirection.yaw)),
-    pitch: cleanZero(Math.atan(terrain.slope/stretch)),
-    slope: cleanZero(terrain.slope/stretch),
-    curvature: cleanZero(targetDirection.curvature/stretch),
-    ...(Math.abs(stretch-1)>1e-12?{stretch}:{}),
+    return {
+      x: cleanZero(deltaX * cosine + deltaZ * sine),
+      y: cleanZero(terrain.height - playerTerrain.height),
+      z: cleanZero(deltaX * sine - deltaZ * cosine),
+      yaw: cleanZero(normalizeAngle(targetDirection.yaw - playerDirection.yaw)),
+      pitch: cleanZero(Math.atan(terrain.slope/stretch)),
+      slope: cleanZero(terrain.slope/stretch),
+      curvature: cleanZero(targetDirection.curvature/stretch),
+      ...(Math.abs(stretch-1)>1e-12?{stretch}:{}),
+    };
   };
 }
 
