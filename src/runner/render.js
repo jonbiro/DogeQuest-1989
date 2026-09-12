@@ -29,6 +29,7 @@ import {createWaterSurface} from './water.js';
 import {BANK_SURFACE_Y} from './terrain.js';
 import {trailColors,sampleTrailColor} from './trail-palette.js';
 import {createShieldMaterial} from './shield-material.js';
+import {magnetPulse} from './magnet-field.js';
 
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -973,10 +974,13 @@ export function createView(canvas) {
         streak.position.z = .6 + (reducedMotion ? streak.userData.phase : (animationTime * 2 + streak.userData.phase) % 1) * 3;
       });
       magnetField.position.set(x, 0.18, 0);
+      // Use the trail tangent, not an always-horizontal plane or the jumping
+      // dog's pose. This keeps rings above the paving on climbs and descents.
+      magnetField.rotation.set(groundFrame.pitch,groundFrame.yaw,0,'YXZ');
       magnetField.children.forEach((ring, i) => {
-        const phase = reducedMotion ? i / 3 : (time * 0.7 + i / 3) % 1;
-        ring.scale.setScalar(1 + phase * 1.8);
-        ring.material.opacity = 0.8 * (1 - phase);
+        const pulse=magnetPulse(time,i,reducedMotion);
+        ring.scale.setScalar(pulse.scale);
+        ring.material.opacity = pulse.opacity;
       });
       let sparkCount = 0;
       if (!menu && !reducedMotion && !run.ended)

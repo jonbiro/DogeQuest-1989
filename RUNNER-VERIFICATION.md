@@ -1,5 +1,14 @@
 # Runner verification
 
+## Magnet field follows the trail (2026-09-12)
+
+- Ground rings use the local trail pitch and yaw instead of remaining flat
+  through climbs and descents. Pulses contract toward the collector and fade
+  to zero at their wrap point. Reduced-motion rings remain fixed and visible.
+- New regressions cover inward travel, pulse bounds, invisible wrap and static
+  reduced motion. Portrait preview at 80m inspected; 24 km rendering fixture
+  passed with unchanged resource peaks and stable repeated-lap allocation.
+
 ## Readable protective shield (2026-09-12)
 
 - Replaced the flat translucent blue shell with a view-dependent teal rim and
