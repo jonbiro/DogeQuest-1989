@@ -459,9 +459,11 @@ $('practice-again').onclick = () => startPractice(run.practice?.kind || 'moves')
 $("run-breakdown").addEventListener("toggle", () => {
   if ($("run-breakdown").open) $("run-breakdown").scrollIntoView({block:"start"});
 });
-$("mission-help").addEventListener("toggle", () => {
-  if ($("mission-help").open) $("mission-help").scrollIntoView({block:"start"});
-});
+for (const id of ['mission-help','practice-help']) {
+  $(id).addEventListener('toggle', () => {
+    if ($(id).open) $(id).scrollIntoView({block:'start'});
+  });
+}
 $("help").onclick = () => {
   showOverlay("help");
   for(const image of document.querySelectorAll('[data-guide]'))

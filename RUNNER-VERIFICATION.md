@@ -1,5 +1,22 @@
 # Runner verification
 
+## Native portrait practice navigation (2026-09-12)
+
+- Real iOS 27 Simulator Safari on the dedicated Biscuit Dash QA device exposed
+  practice buttons clipped beneath Help's scrollable content after expansion.
+  Practice now uses the same reveal-on-open behavior as challenge help; closing
+  either disclosure does not move the viewport.
+- All 214 tests, build, lint and artifact checks passed. A regression executes
+  the actual disclosure handlers and checks open versus collapse behavior.
+- Native touch opened Help, scrolled, expanded practice and started the basic
+  trail. Both practice buttons became fully visible above the fixed actions.
+  An idle run naturally reached its 0/3 result; Back to camp retained the shown
+  1,380-point balance. Screenshots are in the sibling directory
+  `DogeQuest-1989-native-qa-2026-09-12` (practice-visible and practice-result).
+- This establishes native Safari navigation, rendering and basic practice
+  completion, not successful native timed gestures, multi-touch, physical-phone
+  performance or native offline reopening. Those remain separate checks.
+
 ## Practice timing feedback (2026-09-12)
 
 - Basic practice now distinguishes preparation, movement in progress and the
