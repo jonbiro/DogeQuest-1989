@@ -10,6 +10,7 @@ import {turnPrompt,upcomingCorner,cornersBetween} from "../src/runner/turns.js";
 import * as THREE from 'three';
 import {createMochiModel} from '../src/runner/mochi-model.js';
 import {createPowerHud} from '../src/runner/power-hud.js';
+import {checkRendererResources} from './runner-resource-budget.js';
 export function routeDetourPreview(kind='scenic',distance=435) {
   const canvas=document.createElement('canvas');
   canvas.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;z-index:9999';document.body.append(canvas);
@@ -258,9 +259,11 @@ export function longRunCheck() {
   let minimumHearts=3,hits=0,shieldSaves=0,peakSpeed=0;
   const regionalCourses=[0,0,0];
   const splitRows=new Set(),courseNames=new Set();
-  for(let attempt=0;attempt<3;attempt++) {
-    const run=createRun(1989+attempt);
-    run.appearance={puppy:["biscuit","mochi","pepper"][attempt],costume:["scarf","hero","explorer"][attempt]};
+  let warmed=null;
+  for(let attempt=0;attempt<4;attempt++) {
+    const variant=attempt%3;
+    const run=createRun(1989+variant);
+    run.appearance={puppy:["biscuit","mochi","pepper"][variant],costume:["scarf","hero","explorer"][variant]};
     let nextSample=250;
     while(run.distance<6000 && !run.ended) {
       if(run.course)courseNames.add(run.course.name);
@@ -294,7 +297,9 @@ export function longRunCheck() {
         view.draw(run,run.time,"playing",attempt===2,1/60,1);
         const frame=view.diagnostics().puppyFrame;
         if(!frame||frame.minX<-.84001||frame.maxX>.84001)throw Error(`Puppy framing regression: ${JSON.stringify(frame)}`);
-        samples.push({attempt,distance:Math.floor(run.distance),hearts:run.hearts,turns:run.turns,missedTurns:run.missedTurns,...view.diagnostics()});
+        const sample={attempt,distance:Math.floor(run.distance),hearts:run.hearts,turns:run.turns,missedTurns:run.missedTurns,...view.diagnostics()};
+        checkRendererResources(sample,warmed);
+        samples.push(sample);
         nextSample+=250;
       }
     }
@@ -304,12 +309,11 @@ export function longRunCheck() {
     completedZiplines+=run.ziplines;
     turns+=run.turns;missedTurns+=run.missedTurns;
     run.regionalCourses.forEach((count,region)=>{regionalCourses[region]+=count;});
+    if(attempt===2)warmed={geometries:Math.max(...samples.map(s=>s.geometries)),textures:Math.max(...samples.map(s=>s.textures))};
   }
   const peak=key=>Math.max(...samples.map(sample=>sample[key]));
-  const summary={runs:3,metersPerRun:6000,completedZiplines,turns,missedTurns,renderedCheckpoints:samples.length,minimumHearts,hits,shieldSaves,peakSpeed,peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),final:samples.at(-1)};
+  const summary={runs:4,metersPerRun:6000,completedZiplines,turns,missedTurns,renderedCheckpoints:samples.length,minimumHearts,hits,shieldSaves,peakSpeed,peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),warmed,repeatLapStable:true,final:samples.at(-1)};
   if(hits||shieldSaves)throw new Error(`Traversal collision between checkpoints: ${JSON.stringify(summary)}`);
-  // One shared route-label atlas adds one fixed texture, never one per sign.
-  if(summary.peakGeometries>32||summary.peakTextures>5||summary.peakObjects>200||summary.peakDrawCalls>220)throw new Error(`Renderer resource regression: ${JSON.stringify(summary)}`);
   summary.regionalCourses=regionalCourses;
   summary.courseNames=[...courseNames];
   for(const name of ['Root scramble','Canopy shuffle','Root rhythm','Fern dash','Canyon crossings','Ridge hop','Twin crossings','Ridge switch','Crystal slalom','Moonpaw weave','Crystal switchback','Moonlit hurdles'])

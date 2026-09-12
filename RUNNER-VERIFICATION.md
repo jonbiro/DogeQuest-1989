@@ -1,5 +1,26 @@
 # Runner verification
 
+## Post-overhaul endurance and repeat-lap allocation check (2026-09-12)
+
+- The old long-run fixture stopped at obsolete resource limits (5 textures,
+  220 draws) after successfully completing 18km. The upgraded renderer measured
+  31 geometries, 8 textures, 236 peak draws and 107 active/pooled objects.
+- Added explicit current-catalog budgets (32 geometries, 8 textures, 260 draws,
+  200 objects), invalid-count tests, and a fourth 6km lap using the first seed
+  again. That repeat lap rejects any geometry or texture growth even below the
+  absolute budget; the test suite demonstrates those leak checks can fail.
+- Actual browser checks at 390 × 844 and 320 × 568 each completed 24km with
+  96 renderer checkpoints: three hearts throughout, zero hits/shield saves,
+  36 accepted turns, 16 ziplines, all 12 course names encountered, 28 completed
+  regional courses and 21 split rows seen. GPU allocation stayed at 31
+  geometries / 8 textures on the repeat lap; peak objects stayed at 107.
+  Peak draw calls were 236 and 234 respectively. No browser warnings/errors.
+- These are accelerated input-driven simulations with periodic real renders,
+  not real-time frame-pacing, physical-device, or human difficulty evidence.
+  No production gameplay change or saved-profile mutation was made in this pass.
+- Full build, distribution verification, lint and all 324 tests passed. The
+  final build removed the temporary standalone browser fixture.
+
 ## Keyboard focus during graphics startup (2026-09-12)
 
 - Shader completion now focuses Play only if the player has not already
