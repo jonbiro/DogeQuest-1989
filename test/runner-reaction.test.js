@@ -12,14 +12,16 @@ test('urgent hints update before the score-display throttle',()=>{
   assert.ok(cue>=0&&throttle>cue,'action hints must not wait for the 10Hz statistics refresh');
 });
 
-for(const fps of [30,60])for(const level of [0,3])test(`delayed cues clear eight 3km trails at ${fps}fps and upgrade level ${level}`,()=>{
+for(const fps of [24,30,50,60])for(const level of [0,3])test(`delayed cues clear eight 3km trails at ${fps}fps and upgrade level ${level}`,()=>{
   for(const delay of [.1,.15,.2,.25])for(let seed=0;seed<8;seed++) {
     const run=createRun(seed,{leap:level,slide:level,magnet:level,value:level});
     let previous='';
-    let tick=0;
+    let nextFrame=0;
     const pending=[];
     while(!run.ended&&run.distance<3000) {
-      const cue=tick++%(120/fps)===0?actionCue(run):previous;
+      const displayFrame=run.time+1e-9>=nextFrame;
+      const cue=displayFrame?actionCue(run):previous;
+      if(displayFrame)nextFrame+=1/fps;
       if(cue!==previous) {
         previous=cue;
         const action=cue.includes('LEFT')?'left':cue.includes('RIGHT')?'right':

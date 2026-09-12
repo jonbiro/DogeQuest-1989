@@ -1,5 +1,16 @@
 # Runner verification
 
+## Mobile reaction-timing audit (2026-09-12)
+
+- Expanded cue/response regression coverage to 24, 30, 50 and 60 fps, base and
+  maximum upgrades, four response delays from 100 to 250ms and eight seeds.
+  All 256 three-kilometer simulations passed without hit or shield-break events.
+- Cue refreshes now use elapsed display time in the test instead of a modulo
+  tick count, allowing rates such as 50 fps that do not divide the 120Hz physics
+  clock. This checks sampling boundaries; it is not a device FPS benchmark.
+- Full check: 343 tests passed. No production physics or difficulty change was
+  warranted by this audit; current action timing remains unchanged.
+
 ## Organic overhead branch (2026-09-12)
 
 - Replaced the block beam and rectangular supports with shared rounded meshes
