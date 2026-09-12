@@ -34,6 +34,7 @@ import {pickupYaw} from './pickup-motion.js';
 import {themeHazard} from './hazard-palette.js';
 import {createBoulderGeometry} from './boulder-model.js';
 import {createPalmFrondGeometry} from './palm-frond.js';
+import {addBambooLeaves} from './bamboo-leaves.js';
 
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -223,9 +224,7 @@ export function createView(canvas) {
         const height=5+random()*7,x=(j-1.5)*.65;
         mesh(group,trunkGeometry,'#688d44',x,height/2,0,.16,height,.16);
         for(let y=1;y<height;y+=1.6)ball(group,'#b6c67b',x,y,0,.19,.065,.19);
-        const leaf=mesh(group,canopyGeometry,'#487445',x+.5,height*.8,0,1.4,.38,.65);
-        leaf.rotation.z=.4;
-        const lower=mesh(group,canopyGeometry,'#71954d',x-.45,height*.57,.2,1.1,.28,.5);lower.rotation.z=-.3;
+        addBambooLeaves(group,palmFrondGeometry,mesh,x,height);
       }
     }else if(region===1){
       const height=5+random()*4;
