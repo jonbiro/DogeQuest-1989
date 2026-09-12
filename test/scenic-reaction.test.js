@@ -14,6 +14,21 @@ test('extra warning applies only to consecutive on-path jumps, never short slide
   first.type='log';next.used=true;assert.equal(actionCue(run),'');
 });
 
+test('lookahead scans only the extra warning interval and only for the occupied path',()=>{
+  const run=createRun(1989);run.speed=36;run.course=null;
+  const first={id:1,type:'log',lane:1,at:14};
+  run.objects=[first,{id:2,type:'rock',lane:1,at:35}];
+  let scans=0;
+  run.objects.some=function(predicate){scans++;return Array.prototype.some.call(this,predicate);};
+  assert.equal(actionCue(run),'↑ JUMP');assert.equal(scans,0,'ordinary warnings need no extra scan');
+  first.at=19.8;
+  assert.equal(actionCue(run),'↑ JUMP');assert.equal(scans,1,'extended interval performs one lookahead');
+  scans=0;first.lane=0;
+  assert.equal(actionCue(run),'');assert.equal(scans,0,'off-path obstacles need no lookahead');
+  first.lane=1;first.at=21;
+  assert.equal(actionCue(run),'');assert.equal(scans,0,'beyond the warning interval needs no lookahead');
+});
+
 for(const fps of [24,60])for(const level of [0,3])test(`Scenic cues tolerate 300ms reactions at ${fps}fps, upgrade level ${level}`,()=>{
   for(const seed of [1989,1990,1991,1992]){
     const run=createRun(seed,{leap:level,slide:level,magnet:level,value:level});

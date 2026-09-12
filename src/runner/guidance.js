@@ -39,8 +39,9 @@ export function actionCue(run) {
     next.at-object.at<run.speed*.75&&onApproach(run,next)) ? .58 : .5;
   const danger = run.objects.find(object => !object.used && !object.passed &&
     ['rock', 'log', 'arch', 'branch', 'gate', 'gap'].includes(object.type) &&
-    object.at > run.distance && object.at - run.distance < run.speed*.6 &&
-    object.at - run.distance < run.speed * warningLead(object) && onApproach(run, object));
+    object.at > run.distance && object.at - run.distance < run.speed*.58 &&
+    onApproach(run, object) &&
+    (object.at-run.distance<run.speed*.5 || object.at-run.distance<run.speed*warningLead(object)));
   // Jumping already answers low hazards, but an overhead row needs a new
   // downward input. Keep that escape visible until the dive is underway.
   if (run.y > 0 || run.vy > 0) {

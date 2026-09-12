@@ -22,3 +22,9 @@ A 50-second real-interface run at 320 × 568, driven by synthetic keyboard and
 pointer events, reached 1,461 m with three hearts, two correct turns, the completed
 zipline, both Scenic sequence labels and no detected HUD overlap. No browser
 errors were reported; the isolated origin's saved-progress key remained absent.
+
+The follow-up cost check limits the extra object scan to the 500–580 ms warning
+interval on the occupied path. Ordinary warnings, off-path hazards and objects
+beyond that interval do not scan ahead. An instrumented regression verifies
+those scan counts; all 371 tests pass, including the same reaction matrix.
+This establishes less redundant work, not a measured physical-device FPS gain.
