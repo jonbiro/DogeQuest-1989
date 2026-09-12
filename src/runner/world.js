@@ -259,6 +259,7 @@ function harm(run, mistake) {
   run.lastMistake = mistake;
   run.lastMistakeDetail = mistakeDetail(run, mistake);
   run.cleanStreak = 0;
+  const impactType=run.shield ? 'shield-break' : 'hit';
   if (run.shield) {
     run.shield = 0;
     run.events.push("shield-break");
@@ -267,6 +268,7 @@ function harm(run, mistake) {
     run.events.push("hit");
   }
   run.combo = 0;
+  run.effects.push({type:impactType,time:run.time,x:run.x,y:run.y+.75});
   run.invulnerable = 1.8;
   if (run.hearts <= 0) {
     run.ended = true;

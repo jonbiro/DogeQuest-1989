@@ -18,6 +18,7 @@ import { ziplineAt, ZIPLINE_HEIGHT, cableSegment, CABLE_SEGMENT_LENGTH } from ".
 import {createPuppyFramer,gameplayFov} from './framing.js';
 import {createQualityController} from './quality.js';
 import {contactShadow} from './contact-shadow.js';
+import {effectColor} from './impact-color.js';
 import {createBranchModel} from './branch-model.js';
 import {detourCameraWeight} from './route-detour.js';
 import {createSurfaceTexture} from './surface.js';
@@ -470,7 +471,7 @@ export function createView(canvas) {
   const flashes = new THREE.InstancedMesh(
     new THREE.SphereGeometry(1, 6, 4),
     new THREE.MeshBasicMaterial({
-      color: "#fff0a6",
+      color: "#ffffff",
       transparent: true,
       opacity: 0.8,
       depthWrite: false,
@@ -480,6 +481,9 @@ export function createView(canvas) {
   flashes.frustumCulled = false;
   scene.add(flashes);
   const flashMatrix = new THREE.Matrix4();
+  const flashColor = new THREE.Color();
+  // Allocate instance colors before shader warmup, not on the first pickup/hit.
+  flashes.setColorAt(0,flashColor);
   const templates = {};
   const boneShape=new THREE.Shape();
   boneShape.moveTo(-.22,.08);boneShape.lineTo(.22,.08);
@@ -940,26 +944,31 @@ export function createView(canvas) {
         ring.material.opacity = 0.8 * (1 - phase);
       });
       let sparkCount = 0;
-      if (!menu && !reducedMotion)
+      if (!menu && !reducedMotion && !run.ended)
         for (const effect of run.effects) {
           const age = run.time - effect.time;
+          flashColor.set(effectColor(effect.type));
+          const impact=effect.type==='hit'||effect.type==='shield-break';
+          const size=(impact?.14:.07)*(1-age/.45);
           for (let i = 0; i < 6 && sparkCount < 192; i++) {
             const angle = (i * Math.PI) / 3;
             flashMatrix.makeScale(
-              0.07 * (1 - age / 0.45),
-              0.07 * (1 - age / 0.45),
-              0.07 * (1 - age / 0.45),
+              size,
+              size,
+              size,
             );
             flashMatrix.setPosition(
-              effect.x + Math.cos(angle) * age * 3,
+              effect.x + Math.cos(angle) * age * (impact?5:3),
               effect.y + Math.sin(angle) * age * 2,
               age * 2,
             );
+            flashes.setColorAt(sparkCount, flashColor);
             flashes.setMatrixAt(sparkCount++, flashMatrix);
           }
         }
       flashes.count = sparkCount;
       flashes.instanceMatrix.needsUpdate = true;
+      if(flashes.instanceColor)flashes.instanceColor.needsUpdate = true;
       const visibleIds = new Set();
       boneBatch.begin();
       if (!menu)

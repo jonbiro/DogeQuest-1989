@@ -1,5 +1,22 @@
 # Runner verification
 
+## Local impact and power feedback (2026-09-12)
+
+- Real damage now emits six short coral particles at the dog; shield rescue
+  emits blue fragments. Power pickups use matching accent colors while bones
+  retain gold. Reuses the existing bounded particle batch with instance colors
+  allocated before shader warmup, without new textures or geometry.
+- Bursts expire after 450ms, do not repeat during invulnerability, and are
+  hidden for reduced motion and ended runs. Removed unused full-screen hit-flash
+  CSS. No camera shake, extra banner or collision/score changes.
+- Tests drive actual collisions with and without shields, verify health and
+  one-shot impact events, recovery suppression, expiry and color distinctions.
+  Actual renderer fixtures at 390 × 844 and 320 × 568 show the local bursts;
+  reduced motion removes their draw (99 → 98). No browser warnings/errors.
+  Fixtures retain 14 geometries and 7 textures; saved profiles are untouched.
+- Full build, distribution verification, lint and 331 tests passed. These are
+  controlled visual and simulation checks, not a physical-device playtest.
+
 ## Consecutive-action reaction margin (2026-09-12)
 
 - Extending the real-input cue driver from 200ms to 250ms exposed late jumps
