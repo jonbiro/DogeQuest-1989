@@ -1,5 +1,14 @@
 # Puppy adventure goal
 
+## An optional daily shared trail
+
+How to Play now offers Today's shared trail: one deterministic starting layout
+per UTC day, using existing upgrades, retry and score-sharing rules. Selection
+returns to camp before starting and can be switched back to random adventures.
+Old links remain ordinary replayable trails; midnight never changes a selected
+run. There are no ranked claims, attendance streaks, extra currencies, accounts
+or new in-run panels, and no extra main-menu button.
+
 ## Practise the specific missed skill
 
 Missing a course rock now offers a ten-second lane-weave rehearsal with two

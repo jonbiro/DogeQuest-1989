@@ -13,6 +13,7 @@ import {masteryFrom,masteryCards} from './mastery.js';
 import {fetchReady} from './ability.js';
 import {createPowerHud} from './power-hud.js';
 import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLink} from './trail-link.js';
+import {dailyTrail} from './daily-trail.js';
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound,resumeSound} from "./sound.js";
@@ -481,6 +482,15 @@ function finish() {
   tone("finish");
 }
 $("play").onclick = start;
+$('daily-trail').onclick = () => {
+  const daily=dailyTrail(window.location.href);
+  if (!daily) return;
+  sharedSeed=daily.seed;sharedVersion=daily.version;sharedTarget=0;
+  window.history.replaceState(null,'',daily.url);
+  $('shared-description').textContent=`Daily trail · ${daily.day} UTC · your upgrades apply.`;
+  $('shared-trail').hidden=false;
+  setState('menu');updateRecords();$('play').focus({preventScroll:true});
+};
 $('shared-random').onclick = () => {
   sharedSeed=null;
   sharedVersion=null;

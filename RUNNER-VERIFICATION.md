@@ -1,5 +1,23 @@
 # Runner verification
 
+## Optional daily shared trail (2026-09-12)
+
+- The Help disclosure selects a deterministic UTC-day seed and current layout
+  version, removes any prior score target, and returns to camp with a dated
+  notice. Selection is explicit, so midnight does not mutate an active run or
+  retry. The ordinary trail URL survives reload and remains replayable on later
+  days; after reload it is honestly labelled Shared trail, not a live daily mode.
+- All 268 tests and build/lint/distribution checks pass. New tests cover UTC
+  boundaries across time-zone offsets, 366 distinct daily seeds, versioned links,
+  target removal, invalid inputs, matching generated objects after link parsing,
+  and the actual selector's camp/focus/state changes without run/bank calls.
+- At 320 × 568, actual Help disclosure and selection showed the 2026-09-12 UTC
+  notice with all camp controls reachable. The selected trail started and paused
+  normally. Reload retained the replay URL; Switch to random trails cleared it.
+  No save was created or changed, no browser errors/warnings were reported, and
+  the temporary tab and viewport were cleaned up. This is browser portrait QA,
+  not a physical-device or ranked cross-player comparison.
+
 ## Safer route-choice timing (2026-09-12)
 
 - Investigation reproduced the earlier seed-38 conflict: at 4489m the right lane
