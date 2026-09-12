@@ -1,5 +1,20 @@
 # Runner verification
 
+## CPU-throttled integration check (2026-09-12)
+
+- Ran the same local-only prompt-driven production-app probe for 60 seconds at
+  390x844 with tab-scoped `Emulation.setCPUThrottlingRate` configured to 4.
+  This is a desktop browser stress configuration, not an identified phone model
+  or proof of a particular real-device speed. Inputs were synthetic.
+- Reached 1,818m with three hearts, all regions, three correct turns and zero
+  misses, three Fetch activations, Challenge selection and zipline catch/landing.
+  Regional course totals were 2/1/1. Sampled HUD overlap checks found no issues.
+- 7,095 frame intervals averaged 8.457ms with p95 10.2ms. The randomized route
+  differs from the earlier run; these figures are not a controlled A/B comparison
+  or evidence of thermal endurance. No new gameplay defect was reproduced.
+- Restored CPU rate to 1, closed the paused unbanked probe and reset viewport.
+  The isolated saved-profile key remained absent throughout the completed run.
+
 ## Current-release 90-second integration run (2026-09-12)
 
 - Release `55025da`, 390x844 browser viewport, actual production app and renderer.
