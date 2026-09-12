@@ -12,7 +12,7 @@ import { bankRun } from "./rewards.js";
 import {masteryFrom,masteryCards} from './mastery.js';
 import {fetchReady} from './ability.js';
 import {createPowerHud} from './power-hud.js';
-import {readTrailSeed,readTrailVersion,trailLink} from './trail-link.js';
+import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLink} from './trail-link.js';
 import {REGIONS,regionAt} from "./regions.js";
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
@@ -25,7 +25,11 @@ const $ = (id) => document.getElementById(id);
 const updatePowerHud = createPowerHud($('power'));
 let sharedSeed = readTrailSeed(window.location.search);
 let sharedVersion = readTrailVersion(window.location.search);
+let sharedTarget = readTrailTarget(window.location.search);
 $('shared-trail').hidden = sharedSeed === null;
+$('shared-description').textContent = sharedTarget
+  ? `Beat ${sharedTarget.toLocaleString()} pts · friendly, unverified target. Your upgrades apply.`
+  : 'Shared trail · your upgrades apply.';
 const playLabel = () => sharedSeed === null ? `Run with ${PUPPIES[saved.collection.puppy].name} ↗` : 'Run shared trail ↗';
 let run = createRun(),
   state = "menu",
@@ -329,9 +333,11 @@ function start() {
   // Camp/help use random adventures unless an explicit shared trail is active.
   const retry = state === 'ended' && !run.practice;
   const rematchBest=retry ? Math.max(run.rematchBest || 0,run.score) : 0;
+  const challengeTarget=retry ? run.challengeTarget || 0 : sharedTarget;
   run = createRun(retry ? run.seed : sharedSeed ?? Date.now(), saved.upgrades,
     retry ? run.generatorVersion : sharedSeed === null ? undefined : sharedVersion);
   run.rematchBest=rematchBest;
+  run.challengeTarget=challengeTarget;
   run.puppy = saved.collection.puppy;
   run.appearance = { ...saved.collection };
   run.missions = missionPackFor(saved.challenges);
@@ -416,7 +422,9 @@ function finish() {
   }
   const receipt = bankRun(saved, run, run.missions);
   if (!receipt) return;
-  $('trail-link').value = trailLink(window.location.href,run.seed,run.generatorVersion);
+  $('trail-target').checked = validTrailTarget(run.score);
+  $('trail-target').disabled = !validTrailTarget(run.score);
+  updateTrailLink();
   $('trail-copy-status').textContent = '';
   showOverlay("ended");
   const rehearsal=practiceOffer(run);
@@ -457,7 +465,13 @@ function finish() {
     const difference=run.score-run.rematchBest;
     $("run-breakdown-copy").textContent += ` Rematch target: ${run.rematchBest.toLocaleString()} points. ${difference>0?`${difference.toLocaleString()} ahead`:difference===0?'Target tied':`${(-difference).toLocaleString()} short`}.`;
   }
+  if (run.challengeTarget>0) {
+    const difference=run.score-run.challengeTarget;
+    $("run-breakdown-copy").textContent += ` Shared target: ${run.challengeTarget.toLocaleString()} points. ${difference>0?`${difference.toLocaleString()} ahead`:difference===0?'Target tied — one more point to beat it':`${(-difference).toLocaleString()} short`}. This is a friendly, unverified score, not a ranked result.`;
+  }
   $("overlay-copy").textContent = `${receipt.personalBest ? 'New personal best! ' : run.rematchBest>0&&run.score>run.rematchBest ? 'Rematch best! ' : ''}Score banked. Retry the same trail, or head to camp ${sharedSeed === null ? 'for a fresh one' : 'to switch to random trails'}.`;
+  if (run.challengeTarget>0 && run.score>run.challengeTarget)
+    $("overlay-copy").textContent = `Target beaten! ${$("overlay-copy").textContent}`;
   const nextBond=dogCard?.tiers.find(tier=>dogCard.current<tier.target);
   $("run-highlights").textContent = nextBond
     ? `Next: ${dogCard.name} · ${Math.max(0,nextBond.target-dogCard.current)} clean clears or turns to ${nextBond.name}`
@@ -471,10 +485,17 @@ $("play").onclick = start;
 $('shared-random').onclick = () => {
   sharedSeed=null;
   sharedVersion=null;
+  sharedTarget=0;
   const url=new window.URL(window.location.href);url.searchParams.delete('trail');
+  url.searchParams.delete('target');
   window.history.replaceState(null,'',url);
   $('shared-trail').hidden=true;updateRecords();$('play').focus({preventScroll:true});
 };
+function updateTrailLink() {
+  $('trail-link').value = trailLink(window.location.href,run.seed,run.generatorVersion,$('trail-target').checked?run.score:0);
+  $('trail-copy-status').textContent='';
+}
+$('trail-target').onchange=updateTrailLink;
 $('trail-copy').onclick = async () => {
   const button=$('trail-copy'),field=$('trail-link');
   button.disabled=true;
@@ -787,7 +808,7 @@ function frame(now) {
       $("run-score").textContent =
         run.practice ? practiceProgress(run) : run.route && run.distance<run.route.until
           ? `${run.score.toLocaleString()} pts · ${run.route.kind==='challenge'?'CHALLENGE':'SCENIC'}`
-          : scoreChaseLabel(run.score, saved.best, run.rematchBest);
+          : scoreChaseLabel(run.score, saved.best, run.rematchBest, run.challengeTarget);
       const progress = missionProgress(run, currentMission);
       const courseStatus=courseProgress(run);
       $("mission-label").textContent = courseStatus?.label ??

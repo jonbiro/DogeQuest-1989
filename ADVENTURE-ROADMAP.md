@@ -1,5 +1,16 @@
 # Puppy adventure goal
 
+## Friendly shared score challenges
+
+Results links can include the sender's run score as an optional target. Opening
+one shows the target at camp and uses the existing score line for progress and
+beating it. Retries preserve the received target; sharing a reply uses the new
+runner's score instead. Unchecking the result option shares only the layout.
+Switching to random trails removes both the layout and target parameters.
+These are explicitly friendly, unverified challenges: each player retains their
+upgrades and route choices. Targets grant no extra currency, create no saved
+profile fields, and add no accounts, leaderboard or mid-trail panel.
+
 ## A target for same-trail rematches
 
 Consecutive results-screen retries retain the strongest score in that retry

@@ -13,7 +13,7 @@ test('results retry repeats the seed with a fresh simulation; camp starts a new 
   assert.ok(start>=0 && end>start);
   const original=createRun(1989);
   original.hearts=0;original.ended=true;original.score=250;
-  const context={run:original,state:'ended',graphicsReady:true,sharedSeed:null,sharedVersion:null,
+  const context={run:original,state:'ended',graphicsReady:true,sharedSeed:null,sharedVersion:null,sharedTarget:0,
     saved:{upgrades:{},collection:{puppy:'mochi'},challenges:0},
     createRun,Date:{now:()=>987654},missionPackFor,
     setText:()=>{},setState:value=>{context.state=value;},
@@ -53,11 +53,18 @@ test('results retry repeats the seed with a fresh simulation; camp starts a new 
   assert.equal(context.run.rematchBest,0);
   context.sharedSeed=0;
   context.sharedVersion=1;
+  context.sharedTarget=420;
   for(const state of ['menu','help']) {
     context.state=state;context.start();assert.equal(context.run.seed,0);assert.equal(context.run.generatorVersion,1);
+    assert.equal(context.run.challengeTarget,420);
   }
+  context.state='ended';context.run.ended=true;context.run.score=500;context.start();
+  assert.equal(context.run.challengeTarget,420,'retry preserves the original shared target');
+  assert.equal(context.run.rematchBest,500,'own rematch score remains independent');
   context.run.practice={correct:3};context.state='ended';context.start();
   assert.equal(context.run.seed,0,'practice does not consume the shared trail');
-  context.sharedSeed=null;context.state='menu';context.start();
+  assert.equal(context.run.challengeTarget,420);
+  context.sharedSeed=null;context.sharedTarget=0;context.state='menu';context.start();
   assert.equal(context.run.seed,987654,'leaving shared mode restores random starts');
+  assert.equal(context.run.challengeTarget,0);
 });

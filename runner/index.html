@@ -60,7 +60,7 @@
         </p>
         <div class="start-actions">
           <p id="menu-save-notice" class="save-notice" role="status" hidden>Saving is unavailable. You can play, but new points and unlocks last only for this visit.</p>
-          <p id="shared-trail" class="shared-notice" hidden>Shared trail · your upgrades apply.<button id="shared-random" type="button">Switch to random trails</button></p>
+          <p id="shared-trail" class="shared-notice" hidden><span id="shared-description">Shared trail · your upgrades apply.</span><button id="shared-random" type="button">Switch to random trails</button></p>
           <button id="play" class="primary" disabled>
             Preparing the trail…</button
           ><button id="help" class="text-button">
@@ -138,7 +138,7 @@
           </div>
           <p id="run-lesson" hidden></p>
           <p id="run-highlights" hidden></p>
-          <details id="run-breakdown" hidden><summary>Run rewards and details</summary><p id="run-breakdown-copy"></p><p>Invite someone to the same starting trail. They use their own upgrades; route choices can change later obstacles. Links work with this trail-generation version, not necessarily future versions.</p><input id="trail-link" type="url" readonly aria-label="Replay trail link"><div class="backup-actions"><button id="trail-copy" type="button">Copy trail link</button></div><p id="trail-copy-status" role="status"></p></details>
+          <details id="run-breakdown" hidden><summary>Run rewards and details</summary><p id="run-breakdown-copy"></p><p>Invite someone to the same starting trail, with an optional score to beat. Targets are friendly and unverified, not ranked. Players use their own upgrades; route choices can change later obstacles. Links preserve the trail-generation version.</p><label class="trail-target-option"><input id="trail-target" type="checkbox"> Include my score target</label><input id="trail-link" type="url" readonly aria-label="Replay trail link"><div class="backup-actions"><button id="trail-copy" type="button">Copy trail link</button></div><p id="trail-copy-status" role="status"></p></details>
           <div id="instructions" hidden>
             <div class="basic-moves">
               <p><img data-guide="lanes" alt="An open lane between two rocks" width="96" height="56"><kbd>←</kbd><kbd>→</kbd> <strong>Steer</strong><span>Swipe left / right into an open lane.</span></p>

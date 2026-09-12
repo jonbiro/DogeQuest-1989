@@ -6,6 +6,12 @@ import { missionFor, missionPackFor } from '../src/runner/missions.js';
 const profile = () => ({best: 0, distance: 0, bones: 0, credits: 0,
   challenges: 0, collection: collectionFrom()});
 const completed = () => ({ended: true, score: 2000, distance: 1100, bones: 50, gifts: 2});
+test('shared score targets are display-only and cannot mint currency or change saved records',()=>{
+  const ordinary=profile(),challenged=profile(),a=completed(),b={...completed(),challengeTarget:1};
+  assert.deepEqual(bankRun(challenged,b,missionFor(0)),bankRun(ordinary,a,missionFor(0)));
+  assert.deepEqual(challenged,ordinary);
+  assert.equal(Object.hasOwn(challenged,'challengeTarget'),false);
+});
 test('three-challenge chains bank once and stop at the first unfinished goal',()=>{
   const p=profile(),run={...completed(),clears:6},pack=missionPackFor(0);
   const receipt=bankRun(p,run,pack);

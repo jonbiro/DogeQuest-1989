@@ -1,5 +1,27 @@
 # Runner verification
 
+## Friendly shared score targets (2026-09-12)
+
+- Valid versioned trail links can carry one positive integer target, capped at
+  999,999,999. Missing/duplicate/malformed targets are ignored without discarding
+  a valid layout. Sharing removes unrelated URL data and uses the completed run's
+  score, never the received target. The checkbox can omit the score entirely.
+- Unit coverage checks parsing, boundary values, legacy layout-only links, the
+  real sharing/reset handlers, retry/practice transitions, tie-versus-beat labels
+  and identical reward transactions with or without a target. All 249 tests and
+  build/lint/distribution gates pass. Active route labels retain HUD priority.
+- At 320 × 568, opened a 200-point challenge and played to a natural 270m finish:
+  the existing score line showed TARGET BEAT, results scored 420 and explained
+  the 220-point lead. Sharing offered target=420; unchecking left only trail=2-1j9.
+  The checkbox, copy button, retry and camp actions remained reachable in the
+  scrollable result panel. Retry showed the original 200-point target, not 420.
+- Switching to random removed both URL parameters and restored the normal Play
+  label. The largest supported target also fit camp and the gameplay score line.
+  No browser warnings/errors were reported. The isolated local origin started
+  without a saved profile; only this check's disposable save was removed afterward.
+  No live or native Safari profile was touched. This is browser portrait evidence,
+  not physical-phone or ranked competitive validation.
+
 ## Forgiving thumb-arc release (2026-09-12)
 
 - Previously a 40 × 34 px swipe remained unresolved even on release. Movement

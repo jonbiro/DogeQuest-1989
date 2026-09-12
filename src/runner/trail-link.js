@@ -9,10 +9,20 @@ export function readTrailSeed(search) {
 export function readTrailVersion(search) {
   return readTrailSeed(search)===null?null:Number(new globalThis.URLSearchParams(search).get('trail')[0]);
 }
-export function trailLink(href,seed,version=CURRENT_TRAIL_VERSION) {
+export function validTrailTarget(value) {
+  return Number.isSafeInteger(value) && value > 0 && value <= 999999999;
+}
+export function readTrailTarget(search) {
+  if (readTrailSeed(search) === null) return 0;
+  const values = new globalThis.URLSearchParams(search).getAll('target');
+  if (values.length !== 1 || !/^[1-9][0-9]{0,8}$/.test(values[0])) return 0;
+  return Number(values[0]);
+}
+export function trailLink(href,seed,version=CURRENT_TRAIL_VERSION,target=0) {
   const url=new globalThis.URL(href);
   if(!['https:','http:'].includes(url.protocol)||!Number.isSafeInteger(seed)||![1,CURRENT_TRAIL_VERSION].includes(version))return '';
   url.search='';url.hash='';
   url.searchParams.set('trail',`${version}-${(seed>>>0).toString(36)}`);
+  if (validTrailTarget(target)) url.searchParams.set('target',String(target));
   return url.href;
 }

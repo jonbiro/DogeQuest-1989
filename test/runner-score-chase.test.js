@@ -28,3 +28,11 @@ test('invalid and fractional scores never produce misleading record claims',()=>
   assert.equal(scoreChaseLabel(-10,-1),'0 pts');
   assert.equal(scoreChaseLabel(1000.9,1000.9),'1 pt to best');
 });
+test('an explicit shared target stays visible, requires beating rather than tying, and never changes scores',()=>{
+  assert.equal(scoreChaseLabel(100,50,20,1000),'100 / 1,000 pts');
+  assert.equal(scoreChaseLabel(851,50,20,1000),'150 pts to target');
+  assert.equal(scoreChaseLabel(1000,50,20,1000),'1 pt to target');
+  assert.equal(scoreChaseLabel(1001,50,20,1000),'1,001 pts · TARGET BEAT');
+  assert.equal(scoreChaseLabel(100,1000,0,0),'100 pts');
+  assert.equal(scoreChaseLabel(100,1000,0,Infinity),'100 pts');
+});
