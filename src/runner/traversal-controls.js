@@ -1,5 +1,10 @@
 // Keep the layout stable while making unavailable cable actions honest.
 import {jumpLandingTime} from './motion.js';
+export function traversalDescription(run){
+  if(run.raft)return 'River raft. Swipe left or right, or use arrow buttons, to steer between rocks. Jump and slide return at the shore. Escape pauses.';
+  if(run.zipline)return 'Zipline ride. Swipe left or right, or use arrow buttons, to collect bones. Jump and slide return after the cable. Escape pauses.';
+  return '3D running trail. Left and right arrows change lanes. Up or Space jumps. Down slides. Escape pauses.';
+}
 export function updateTraversalControls(buttons, run) {
   const riding=Boolean(run.zipline||run.raft);
   for (const button of buttons) {

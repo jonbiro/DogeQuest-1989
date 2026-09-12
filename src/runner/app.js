@@ -16,7 +16,7 @@ import {fetchReady} from './ability.js';
 import {createPowerHud} from './power-hud.js';
 import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLink} from './trail-link.js';
 import {dailyTrail,selectedTrailDescription} from './daily-trail.js';
-import {updateTraversalControls} from './traversal-controls.js';
+import {updateTraversalControls,traversalDescription} from './traversal-controls.js';
 import {scoreBreakdown} from './score-breakdown.js';
 import {rematchFor} from './rematch.js';
 import {preferencesFrom} from "./preferences.js";
@@ -855,6 +855,8 @@ function frame(now) {
     }
     run.events = [];
     updateTraversalControls(traversalButtons,run);
+    const sceneDescription=traversalDescription(run);
+    if($('scene').getAttribute('aria-label')!==sceneDescription)$('scene').setAttribute('aria-label',sceneDescription);
     $("scene").dataset.lane = String(run.lane + 1);
     $("scene").dataset.turns = String(run.turns);
     $("scene").dataset.missedTurns = String(run.missedTurns);

@@ -1,12 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {updateTraversalControls} from '../src/runner/traversal-controls.js';
+import {updateTraversalControls,traversalDescription} from '../src/runner/traversal-controls.js';
 import {createRun,act,step} from '../src/runner/world.js';
 function button(action) {
   const label={textContent:action.toUpperCase()};
   return {dataset:{action},disabled:false,attributes:{},querySelector:()=>label,
     setAttribute(key,value){this.attributes[key]=value;},removeAttribute(key){delete this.attributes[key];}};
 }
+test('scene instructions match the available traversal actions',()=>{
+  assert.match(traversalDescription({raft:{}}),/Jump and slide return at the shore/);
+  assert.match(traversalDescription({zipline:{}}),/return after the cable/);
+  assert.match(traversalDescription({}),/Up or Space jumps/);
+});
 test('raft controls explain shore availability and restore after real dismount',()=>{
   const run=createRun(1989),buttons=['left','right','fetch','jump','slide'].map(button);
   Object.assign(run,{raftPrototype:true,distance:1289.9,raft:{index:0,start:1150,end:1290},objects:[],nextRow:Infinity});

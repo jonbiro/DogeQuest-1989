@@ -151,3 +151,22 @@ reuse opt-in sound cues; boarding adds no banner.
 Collision-driven regression tests cover both steering mistakes and the completion
 notice contract. Actual audio perception and portrait layout remain browser/device
 acceptance work, not something these tests establish.
+
+## Real controls with a stepped clock
+
+`node scripts/build-raft-input-qa.mjs` creates a local-only full-app fixture after
+the normal build. It disables profile reads/writes and offline registration and
+advances simulation only through an explicit QA clock. It uses the actual app
+input handlers, renderer and HUD; it is excluded from production builds.
+
+At 320 × 568 and 390 × 844, actual on-screen left/right button clicks completed
+Challenge rivers with all 12 bones, three hearts and one dismount. The narrow
+test then clicked Jump at shore and reached 1.66 m height. Screenshots confirmed
+visible rocks, bone lanes, raft, shore indicator and unobscured controls. Browser
+console errors were empty. The test exposed a stale scene accessibility label;
+it now describes river steering and restores normal movement guidance at shore.
+
+This verifies button wiring and portrait presentation, not continuous reaction
+timing, swipe gestures, native Safari frame pacing or physical-device usability.
+The temporary tab was closed and viewport override reset. The final normal build
+removes the generated fixture files.
