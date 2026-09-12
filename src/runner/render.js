@@ -27,6 +27,7 @@ import {detourCameraWeight} from './route-detour.js';
 import {createSurfaceTexture} from './surface.js';
 import {createWaterSurface} from './water.js';
 import {BANK_SURFACE_Y} from './terrain.js';
+import {trailColors,sampleTrailColor} from './trail-palette.js';
 
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -353,6 +354,7 @@ export function createView(canvas) {
     instanced.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     groupEntries.forEach((entry, i) => {
       entry.colors = regionColors.map((palette,index) => entry.terrain ? palette.ground : index===0 ? entry.color : entry.color.clone().lerp(palette.stone,entry.edge ? .08 : .72));
+      if(entry.road)entry.trailColors=trailColors(entry.color,entry.edge);
       instanced.setColorAt(i, entry.color);
     });
     instanced.frustumCulled = false;
@@ -916,6 +918,8 @@ export function createView(canvas) {
             const blend=areaBlend(menu?0:distance-z);
             areaGroundColor.copy(areaColors[blend.previous].ground).lerp(areaColors[blend.index].ground,blend.blend);
             instanced.setColorAt(i,areaGroundColor);
+          }else if(entry.road && !entry.bridge && !entry.cable){
+            instanced.setColorAt(i,sampleTrailColor(entry.trailColors,menu?0:distance-z,areaGroundColor));
           }else if(entry.road || entry.region === undefined) instanced.setColorAt(i,entry.bridge || entry.cable ? entry.color : entry.colors[region]);
           instanced.setMatrixAt(i, instanceMatrix);
         });

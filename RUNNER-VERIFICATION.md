@@ -1,5 +1,16 @@
 # Runner verification
 
+## Six coordinated trail palettes (2026-09-12)
+
+- Each visual area now colors the paving, with the same distance-based blend
+  used by straight sections and continuous corner geometry. Bridge wood stays
+  unchanged. Transitions use the existing 45m smooth blend, including wraparound.
+- A regression samples two complete area cycles at one-meter intervals for
+  border contrast above 2.5 and sub-centimeter color continuity.
+- Portrait browser previews of Bamboo Sanctuary and Mooncap Grove inspected;
+  24 km / 96 rendering checkpoints passed at unchanged peaks of 32 geometries,
+  8 textures, 238 draw calls and 107 objects, with stable repeated-lap resources.
+
 ## Dog directional lighting (2026-09-12)
 
 - Both dog rigs cast directional shadows from their existing body and head

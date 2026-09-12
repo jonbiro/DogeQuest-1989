@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { CORNER_ARC_LENGTH, cornersBetween } from "./turns.js";
-import { REGIONS, regionAt } from "./regions.js";
+import {trailColors,sampleTrailColor} from './trail-palette.js';
 import { isBridge } from "./bridges.js";
 
 const STEP = 0.5;
@@ -22,15 +22,8 @@ const baseColors = {
   paving: new THREE.Color("#c1ba88"),
   curb: new THREE.Color("#526453"),
 };
-const regionColors = REGIONS.map((region, index) => {
-  const stone = new THREE.Color(region.stone);
-  return {
-    base: index === 0 ? baseColors.base : baseColors.base.clone().lerp(stone, 0.72),
-    paving:
-      index === 0 ? baseColors.paving : baseColors.paving.clone().lerp(stone, 0.72),
-    curb: index === 0 ? baseColors.curb : baseColors.curb.clone().lerp(stone, 0.08),
-  };
-});
+const areaColors=Object.fromEntries(Object.entries(baseColors).map(([key,color])=>[key,trailColors(color,key==='curb')]));
+const landColors=Object.fromEntries(Object.keys(baseColors).map(key=>[key,new THREE.Color()]));
 const bridgeColors = {
   base: new THREE.Color('#64472e'),
   paving: new THREE.Color('#c9915e'),
@@ -125,7 +118,8 @@ export function createCornerRoad(scene) {
         const left = strip.center - halfWidth;
         const right = strip.center + halfWidth;
         const station = (stationA + stationB) / 2;
-        const palette = isBridge(station) ? bridgeColors : regionColors[regionAt(station)];
+        const palette = isBridge(station) ? bridgeColors : landColors;
+        if(palette===landColors)sampleTrailColor(areaColors[strip.color],station,palette[strip.color]);
         const color = strip.color==='curb' && Math.floor(station/2)%2===0 ? turnEdge
           : palette===bridgeColors && strip.color==='paving' && Math.floor(station)%2
           ? bridgeColors.pavingAlternate : palette[strip.color];
