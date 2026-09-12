@@ -49,6 +49,7 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     smashes: 0,
     bonusPoints: 0,
     bonePoints: 0,
+    streakPoints: 0,
     lane: 1,
     x: 0,
     vx: 0,
@@ -380,6 +381,7 @@ export function step(run, dt) {
         run.events.push("bone");
         if (run.combo % 10 === 0) {
           run.bonusPoints += 100;
+          run.streakPoints += 100;
           run.events.push("streak");
         }
         run.effects.push({

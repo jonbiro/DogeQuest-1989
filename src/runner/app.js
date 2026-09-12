@@ -15,6 +15,7 @@ import {createPowerHud} from './power-hud.js';
 import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLink} from './trail-link.js';
 import {dailyTrail} from './daily-trail.js';
 import {updateTraversalControls} from './traversal-controls.js';
+import {scoreBreakdown} from './score-breakdown.js';
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound,resumeSound} from "./sound.js";
@@ -462,7 +463,8 @@ function finish() {
     $("run-highlights").textContent += next ? ` · ${dogCard.name} bond: ${dogCard.current}/${next.target} toward ${next.name}` : ` · ${dogCard.name}: Trail legend`;
   }
   $("run-breakdown-copy").textContent = `${$("overlay-copy").textContent} ${$("run-highlights").textContent}`;
-  $("run-breakdown-copy").textContent += ` Best clean-move streak: ${run.bestCleanStreak}. Clean-move bonuses: +${run.flowPoints} points (included in score).`;
+  $("run-breakdown-copy").textContent += ` Best clean-move streak: ${run.bestCleanStreak}.`;
+  $('score-sources').textContent=scoreBreakdown(run);
   if (run.rematchBest>0) {
     const difference=run.score-run.rematchBest;
     $("run-breakdown-copy").textContent += ` Rematch target: ${run.rematchBest.toLocaleString()} points. ${difference>0?`${difference.toLocaleString()} ahead`:difference===0?'Target tied':`${(-difference).toLocaleString()} short`}.`;

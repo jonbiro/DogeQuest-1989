@@ -1,5 +1,28 @@
 # Runner verification
 
+## Understandable score sources without in-run noise (2026-09-12)
+
+- Expanded results now start with distance points + bone points + trail bonuses
+  = run score. Bone-streak and clean-move streak amounts are explicitly included
+  in trail bonuses, not additional awards. Challenge/passport rewards keep their
+  existing separate accounting. No in-run notices or HUD elements were added.
+- A run-local streakPoints counter records every earned ten-bone bonus even when
+  later misses reset the combo. It is explanatory only, is not saved as currency,
+  and does not change score or banking behavior.
+- All 273 tests and build/lint/distribution checks pass. New tests cover separate
+  streaks, resets, base and upgraded/doubled bone values, quiet in-run feedback,
+  empty runs, source sums, included amounts and exactly-once banking.
+- An input-driven 903m browser run earned 3,518 points: 903 distance + 975 bones
+  + 1,640 trail bonuses, including 200 from bone streaks and 150 from clean moves.
+  The original placement was too deep in the reward text, so the explanation was
+  moved to its own leading paragraph. A fresh short run on the final build verified
+  that placement at 320 × 568, with details scrolling and retry/camp fixed in view.
+  The screenshot is in the sibling readability audit folder as score-sources.png.
+- No browser warnings/errors appeared. The disposable local profile was restored
+  to its absent baseline after banking the test runs; temporary tab/viewport were
+  cleaned up. No native/live profile was touched. This is browser UI and accounting
+  evidence, not physical-phone or comparative player-satisfaction evidence.
+
 ## Grounded overhead-branch silhouette (2026-09-12)
 
 - A deterministic real-renderer approach fixture compared arch/gate/branch at
