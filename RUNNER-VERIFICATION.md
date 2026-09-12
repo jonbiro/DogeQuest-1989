@@ -1,5 +1,16 @@
 # Runner verification
 
+## Frame-limited reaction coverage (2026-09-12)
+
+- Confirmed urgent action hints update every draw before the 10Hz score/HUD
+  throttle. Added a structural regression check for that ordering.
+- Delayed-response tests now observe cues only at simulated 30 or 60fps, not
+  every 120Hz physics step. Eight 3km seeds, three response delays (100/150/200ms),
+  two upgrade levels and both display rates cover 288km with no hit or shield
+  break events. These display-sampling intervals model added input visibility
+  latency; they do not measure actual renderer FPS or hardware performance.
+- No production gameplay or visuals changed in this verification-only pass.
+
 ## Upgraded consecutive-slide recovery (2026-09-12)
 
 - Expanding delayed-response coverage to fully upgraded runs exposed an early
