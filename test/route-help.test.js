@@ -4,6 +4,15 @@ import {readFileSync} from 'node:fs';
 import {URL} from 'node:url';
 import {masteryCards} from '../src/runner/mastery.js';
 
+test('river help explains automatic boarding, steering-only hazards and banked rewards',()=>{
+  const html=readFileSync(new URL('../runner/index.html',import.meta.url),'utf8');
+  const guide=html.match(/<details id="river-help">([\s\S]*?)<\/details>/)?.[1];
+  assert.ok(guide);
+  for(const phrase of ['1,150 meters','boards the raft automatically','enabled tilt',
+    'carries momentum','cannot be jumped or slid under','+250 score points',
+    'Practice is unscored','Older shared trails'])assert.ok(guide.includes(phrase),phrase);
+});
+
 test('route help is directly discoverable and distinguishes optional encounters from mastery',()=>{
   const html=readFileSync(new URL('../runner/index.html',import.meta.url),'utf8');
   const guide=html.match(/<details id="route-help">([\s\S]*?)<\/details>/)?.[1];
