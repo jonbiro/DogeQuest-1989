@@ -60,6 +60,13 @@ the evidence behind each area, closure of the completion checks and explicit val
 
 ## Delivered implementation
 
+How to Play now includes an expandable guide for the current mission, with its
+target, reward and concrete scoring rules. It explains Fetch versus pickup
+magnets, zipline height and timing, clean-course beats and streak resets.
+Expanding the guide reveals it within the scrollable help panel while the play
+button stays reachable. Verified by actual clicks and screenshots at 320 × 568;
+all 163 checks pass. No in-run HUD elements were added.
+
 After the first six introductory missions, eight rotating adventure goals now
 cover clean turns, player-activated Fetch bursts, completed ziplines, clean
 regional courses, bone streaks, distance, bone collecting and obstacle clears.

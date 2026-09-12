@@ -1,7 +1,7 @@
 import { createRun, act, step } from "./world.js";
 import { createView } from "./render.js";
 import { UPGRADES, levels, price, purchase } from "./progression.js";
-import { missionFor, missionProgress } from "./missions.js";
+import { missionFor, missionProgress, missionTip } from "./missions.js";
 import { bankRun } from "./rewards.js";
 import {masteryFrom,masteryCards} from './mastery.js';
 import {FETCH_DURATION,fetchReady} from './ability.js';
@@ -72,6 +72,8 @@ function updateRecords() {
   const mission = missionFor(saved.challenges);
   $("mission-preview").textContent =
     `${mission.title}: ${mission.target} ${mission.unit} in one run · +${mission.reward} pts`;
+  $("mission-help-title").textContent = `Your challenge: ${mission.title}`;
+  $("mission-help-copy").textContent = `${mission.target} ${mission.unit} in one run · +${mission.reward} points. ${missionTip(mission)} Finish the run to bank your reward.`;
 }
 let clubhouseCategory = 'puppy';
 let previewRear = false;
@@ -386,6 +388,9 @@ function finish() {
 $("play").onclick = start;
 $("run-breakdown").addEventListener("toggle", () => {
   if ($("run-breakdown").open) $("run-breakdown").scrollIntoView({block:"start"});
+});
+$("mission-help").addEventListener("toggle", () => {
+  if ($("mission-help").open) $("mission-help").scrollIntoView({block:"start"});
 });
 $("help").onclick = () => {
   showOverlay("help");

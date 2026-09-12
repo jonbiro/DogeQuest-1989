@@ -4,8 +4,17 @@ import {
   missionFor,
   missionProgress,
   claimMission,
+  missionTip,
 } from "../src/runner/missions.js";
 import { createRun, act, step } from "../src/runner/world.js";
+test('every mission has actionable instructions for its actual scoring rule',()=>{
+  for(let i=0;i<14;i++) assert.ok(missionTip(missionFor(i)).length>60);
+  assert.match(missionTip(missionFor(7)),/Picked-up magnets do not count/);
+  assert.match(missionTip(missionFor(8)),/650 m/);
+  assert.match(missionTip(missionFor(9)),/all three beats/);
+  assert.match(missionTip(missionFor(10)),/Missing a bone resets/);
+  assert.match(missionTip({metric:'unknown'}),/bank the reward/);
+});
 test('adventure missions reward traversal, active powers and mastery after the introduction',()=>{
   assert.deepEqual([6,7,8,9,10].map(i=>missionFor(i).metric),
     ['turns','fetchUses','ziplines','regionalCourses','bestCombo']);
