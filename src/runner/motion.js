@@ -4,6 +4,7 @@ export const JUMP_DURATION = .72;
 export const JUMP_SPEED = 14;
 export const GRAVITY = 2 * JUMP_SPEED / JUMP_DURATION;
 export const JUMP_BUFFER = .24;
+export const SLIDE_BUFFER = .24;
 const LANE_SPRING = 26, DIVE_GRAVITY = 180, DIVE_TERMINAL = 28;
 
 function leapScale(run) {
@@ -24,6 +25,7 @@ export function jumpLandingTime(run) {
 export function jump(run) {
   run.slideExpiredAt = null;
   run.slide = 0;
+  run.slideNext = 0;
   run.diving = false;
   run.jumpBuffer = 0;
   run.vy = JUMP_SPEED * leapScale(run);
@@ -87,5 +89,10 @@ export function moveVertical(run, dt) {
 function tickSlide(run, dt) {
   const before = run.slide;
   run.slide = Math.max(0, before - dt);
+  if(before>0&&run.slide===0&&run.slideNext>0) {
+    run.slide=Math.max(0,run.slideNext-Math.max(0,dt-before));
+    run.slideNext=0;
+    run.events.push('slide');
+  }
   if (before > 0 && run.slide === 0) run.slideExpiredAt = run.time - Math.max(0, dt - before);
 }

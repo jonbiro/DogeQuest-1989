@@ -14,7 +14,7 @@ import {CURRENT_TRAIL_VERSION} from './trail-version.js';
 import {chargeFetch, activateFetch} from './ability.js';
 import {cleanMove} from './flow.js';
 import {mistakeDetail} from './mistakes.js';
-import { jump, steer, moveVertical, JUMP_BUFFER } from "./motion.js";
+import { jump, steer, moveVertical, JUMP_BUFFER, SLIDE_BUFFER } from "./motion.js";
 import { ZIPLINE_FIRST, ZIPLINE_PERIOD, ZIPLINE_LENGTH, ZIPLINE_HEIGHT } from "./ziplines.js";
 import {courseAt, COURSE_LENGTH, COURSE_RECOVERY, advanceCourse} from './courses.js';
 import {REGION_LENGTH} from './regions.js';
@@ -58,6 +58,7 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     diving: false,
     landing: null,
     slide: 0,
+    slideNext: 0,
     hearts: 3,
     invulnerable: 0,
     shield: 0,
@@ -225,9 +226,13 @@ export function act(run, action) {
     else run.jumpBuffer = JUMP_BUFFER;
   }
   if (action === "slide") {
-    // A slide is one timed move, not a hold-to-crouch action. Repeated taps
-    // must not extend it or erase a jump already buffered during a dive.
-    if (run.slide > 0) return;
+    // Early repeats never restart a slide. A deliberate late press can queue
+    // one follow-up, but cannot erase a jump already buffered during a dive.
+    if (run.slide > 0) {
+      if(run.slide<=SLIDE_BUFFER&&!run.diving&&!run.jumpBuffer)
+        run.slideNext=BASE_SLIDE_DURATION+run.upgrades.slide*SLIDE_UPGRADE_DURATION;
+      return;
+    }
     run.slideExpiredAt = null;
     if (run.slide === 0) run.events.push('slide');
     run.slide = BASE_SLIDE_DURATION + run.upgrades.slide * SLIDE_UPGRADE_DURATION;
@@ -330,6 +335,7 @@ export function step(run, dt) {
     run.vy = 0;
     run.diving = false;
     run.slide = 0;
+    run.slideNext = 0;
     run.jumpBuffer = 0;
     if (run.distance >= run.zipline.end) {
       run.zipline = null;
@@ -353,6 +359,7 @@ export function step(run, dt) {
       object.caught = true;
       run.zipline = {start: object.at, end: object.at + ZIPLINE_LENGTH};
       run.slide = 0;
+      run.slideNext = 0;
       run.jumpBuffer = 0;
       run.events.push("zipline-start");
     }

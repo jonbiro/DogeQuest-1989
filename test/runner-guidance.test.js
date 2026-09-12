@@ -207,7 +207,7 @@ test("slide guidance renews only when the current slide will expire before impac
   const expiring = emptyRun();
   expiring.slide = 0.1;
   expiring.objects = [hazard(expiring, "gate")];
-  assert.equal(actionCue(expiring), "OVERHEAD NEXT", "do not request an input that an active slide ignores");
+  assert.equal(actionCue(expiring), "↓ SLIDE", "late presses can queue the next slide");
   expiring.slide=0;
   assert.equal(actionCue(expiring), "↓ SLIDE", "a fresh slide gets its own actionable hint after expiration");
 

@@ -1,5 +1,20 @@
 # Runner verification
 
+## Upgraded consecutive-slide recovery (2026-09-12)
+
+- Expanding delayed-response coverage to fully upgraded runs exposed an early
+  slide failure on seed 4 at 1648m with 150ms response delay. The long upgraded
+  slide ended too close to the following overhead hazard for a fresh response.
+- Refined the fixed-duration rule: early repeats remain ignored, but a grounded
+  press in the final 240ms queues one follow-up slide without restarting the
+  active timer. Jump cancels the queue; cable transitions clear it. Dive repeats
+  still preserve buffered jumps. Guidance acknowledges the queued coverage.
+- Both upgrade levels 0 and 3 now pass eight 3km seeds at each of 100/150/200ms
+  input delay: 144km total, with neither hit nor shield-break events. This remains
+  bounded deterministic cue-response simulation, not a human-playability claim.
+- Dedicated 60/120/240Hz tests cover queue deduplication, exact transition timing,
+  no recursive extension and jump cancellation. Full check: 285 tests pass.
+
 ## Delayed-response consecutive hazards (2026-09-12)
 
 - Eight seeded 3km simulations at each of 100/150/200ms cue-response delays

@@ -1,6 +1,6 @@
 // One small, timely hint at the edge of the trail; never a stack of banners.
 import {LANES} from './world.js';
-import {steer,jumpLandingTime,JUMP_BUFFER} from './motion.js';
+import {steer,jumpLandingTime,JUMP_BUFFER,SLIDE_BUFFER} from './motion.js';
 import {turnPrompt} from './turns.js';
 import {courseCue} from './courses.js';
 import {timingLesson} from './mistakes.js';
@@ -48,8 +48,8 @@ export function actionCue(run) {
     return '';
   }
   if (danger && ['arch','branch','gate'].includes(danger.type) &&
-      run.slide > (danger.at - run.distance + .4) / run.speed) return '';
-  if (danger && ['arch','branch','gate'].includes(danger.type) && run.slide>0)
+      run.slide+(run.slideNext||0) > (danger.at - run.distance + .4) / run.speed) return '';
+  if (danger && ['arch','branch','gate'].includes(danger.type) && run.slide>SLIDE_BUFFER)
     return 'OVERHEAD NEXT';
   const intro = run.course && run.course.start-run.distance < 40 &&
     run.course.start-run.distance > run.speed*.5 ? `${run.course.name} · +180 clean` : '';

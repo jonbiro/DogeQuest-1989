@@ -29,7 +29,7 @@ function advance(run, seconds, dt = 1 / 120) {
   for (let index = 0; index < steps; index++) step(run, dt);
 }
 
-test('repeated slide presses preserve the original duration and allow a fresh next slide',()=>{
+test('early repeated slide presses preserve the original duration and allow a fresh next slide',()=>{
   for(const level of [0,1,2,3])for(const dt of [1/60,1/120,1/240]) {
     const run=cleanRun({slide:level});
     const duration=BASE_SLIDE_DURATION+level*SLIDE_UPGRADE_DURATION;
@@ -37,7 +37,7 @@ test('repeated slide presses preserve the original duration and allow a fresh ne
     let elapsed=0;
     while(run.slide>0&&elapsed<2) {
       const remaining=run.slide;
-      act(run,'slide');
+      if(remaining>.24)act(run,'slide');
       assert.equal(run.slide,remaining);
       step(run,dt);elapsed+=dt;
     }
@@ -47,6 +47,28 @@ test('repeated slide presses preserve the original duration and allow a fresh ne
     assert.equal(run.slide,duration);
     act(run,'jump');
     assert.equal(run.slide,0);assert.ok(run.vy>0,'jump still cancels a grounded slide immediately');
+  }
+});
+
+test('late slide presses queue only one follow-up and jump cancels the queue',()=>{
+  for(const level of [0,3])for(const dt of [1/60,1/120,1/240]) {
+    const run=cleanRun({slide:level});
+    const duration=BASE_SLIDE_DURATION+level*SLIDE_UPGRADE_DURATION;
+    act(run,'slide');
+    while(run.slide>.2)step(run,dt);
+    const remaining=run.slide;
+    for(let i=0;i<10;i++)act(run,'slide');
+    assert.equal(run.slide,remaining,'late presses do not restart the current move');
+    assert.equal(run.slideNext,duration);
+    while(run.slideNext)step(run,dt);
+    assert.ok(run.slide>duration-dt-1e-9);
+    assert.equal(run.events.filter(event=>event==='slide').length,2);
+    advance(run,1,dt);
+    assert.equal(run.slide,0,'a queued move cannot recursively queue itself');
+    act(run,'slide');
+    while(run.slide>.2)step(run,dt);
+    act(run,'slide');act(run,'jump');
+    assert.equal(run.slideNext,0);assert.equal(run.slide,0);
   }
 });
 
