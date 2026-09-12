@@ -9,9 +9,9 @@ test('old and malformed saves get safe mastery without inventing historical achi
   for(const value of [undefined,null,{},42]) assert.deepEqual(masteryFrom(value),masteryFrom());
   const input={dogs:{mochi:12.8,biscuit:-2,luna:Infinity,unknown:999},regions:[3.7,-1,NaN]};
   const output=masteryFrom(input);
-  assert.deepEqual(output,{dogs:{biscuit:0,mochi:12,pepper:0,luna:0},regions:[3,0,0]});
+  assert.deepEqual(output,{dogs:{biscuit:0,mochi:12,pepper:0,luna:0},regions:[3,0,0],rides:{rafts:0,ziplines:0}});
   assert.equal(input.dogs.mochi,12.8);
-  assert.equal(masteryCards(output).length,7);
+  assert.equal(masteryCards(output).length,9);
 });
 
 test('mastery follows the dog used on the run and each clean regional course',()=>{

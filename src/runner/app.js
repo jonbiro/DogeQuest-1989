@@ -125,10 +125,10 @@ function kennel() {
   const masteryIntro=document.createElement('p');
   masteryIntro.textContent='Your next milestone comes first. Finish runs to bank progress and earn permanent stamps and upgrade points.';
   const otherCards=document.createElement('details');otherCards.className='other-passport-cards';
-  const otherHeading=document.createElement('summary');otherHeading.textContent='Other puppies and regions';otherCards.append(otherHeading);
+  const otherHeading=document.createElement('summary');otherHeading.textContent='More passport milestones';otherCards.append(otherHeading);
   if(clubhouseCategory==='passport'){
     $("overlay-title").textContent='Trail passport.';
-    $("overlay-copy").textContent=`${collected}/21 stamps collected`;
+    $("overlay-copy").textContent=`${collected}/${cards.reduce((sum,card)=>sum+card.tiers.length,0)} stamps collected`;
     content.append(passport);
   }
   for(const card of cards) {

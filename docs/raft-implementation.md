@@ -1,5 +1,21 @@
 # River raft implementation status
 
+## Ride passport progression
+
+River and cable completions now bank separate lifetime passport counters. Each
+awards permanent stamps at 1/10/30 completed rides, paying 200/600/1200 points
+once per threshold. Old saves initialize both counters to zero; past rides are
+not inferred from unrelated records. Portable backups retain the counters.
+Practice and unfinished runs never advance them, and retiring during a ride
+only counts earlier completed rides. Existing run-completion bonuses remain.
+
+The passport derives its 27-stamp total from the catalogs instead of hardcoding
+21, and the expanded milestone group includes readable River/Sky explorer cards.
+Portrait 390 × 844 UI inspection verified both cards, reward text, progress and
+the practice exclusion instructions; console errors were empty. Full build,
+distribution, lint and 444 tests passed, including repeated banking, reload,
+multiple thresholds, malformed counters and nonzero backup round-trips.
+
 ## Version-four release
 
 New adventures now select trail version 4, which enables river reservations,

@@ -17,6 +17,7 @@ test('regional passport cards explain how to earn stamps without confusing dog b
     if(card.id.startsWith('region-')){
       assert.match(card.tip,/Choose Challenge/);assert.match(card.tip,/all three beats/);
       assert.match(card.tip,/Scenic encounters do not earn stamps/);
-    }else assert.equal(card.tip,undefined);
+    }else if(card.id.startsWith('ride-'))assert.match(card.tip,/Practice never counts/);
+    else assert.equal(card.tip,undefined);
   }
 });
