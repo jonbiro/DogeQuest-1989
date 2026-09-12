@@ -158,6 +158,7 @@ function kennel() {
     meter.max=next?.target||card.tiers.at(-1).target;meter.value=card.current;
     meter.setAttribute('aria-label',`${card.name}: ${status.textContent}`);
     section.append(title,status,meter,badges);
+    if(card.tip){const tip=document.createElement('p');tip.textContent=card.tip;section.append(tip);}
     (isCurrent?passport:otherCards).append(section);
   }
   passport.append(otherCards,masteryIntro);

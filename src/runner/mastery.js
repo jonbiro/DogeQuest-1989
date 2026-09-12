@@ -26,7 +26,8 @@ export function masteryCards(value) {
     ...Object.entries(PUPPIES).map(([id,dog])=>({id:`dog-${id}`,name:dog.name,
       current:mastery.dogs[id],unit:'clears + course weaves + correct turns',tiers:DOG_TIERS})),
     ...REGIONS.map((region,i)=>({id:`region-${i}`,name:region.name,
-      current:mastery.regions[i],unit:'clean regional courses',tiers:REGION_TIERS})),
+      current:mastery.regions[i],unit:'clean regional courses',tiers:REGION_TIERS,
+      tip:'Choose Challenge for more regional courses. Clear all three beats; optional Scenic encounters do not earn stamps.'})),
   ];
 }
 

@@ -2,6 +2,13 @@
 
 ## Implemented follow-up
 
+Route discovery follow-up: Help now exposes a standalone “Scenic or Challenge?”
+disclosure, explaining open lanes, default selection, rewards and replay limits.
+Regional passport cards explain how Challenge courses earn stamps; dog cards do
+not receive that advice. 365 tests passed. Actual 320 × 568 browser clicks verified
+opening the route help, returning to camp, opening Passport and expanding the
+regional cards. The Help action buttons remain reachable while its content scrolls.
+
 Version-three trails now generate gentle regional sequences inside Scenic
 sections. One blocked lane per beat leaves two escape lanes; safe-line bones
 invite steering but never require it. No full-width gaps, course bonuses or
