@@ -1158,6 +1158,7 @@ h1 { letter-spacing: -.055em; word-spacing: .07em; }
 #mission-label { color:#c4d7dc; }
 #route-choice { color:#cbe9e7; }
 .power-chip { background:#173440f2; border-color:#a2d3dc55; border-radius:12px; }
+.power-chip[data-expiring="true"] { border-color:#f4ca78; box-shadow:inset 0 0 0 1px #f4ca78; }
 #controls button { border-radius:16px; font-weight:650; }
 #controls button:not(.jump):not(.ready):not([data-control-state="queued"]):not(.turn-ready) { background:linear-gradient(155deg,#345563f5,#17323dfc); border-color:#aacbd055; color:#ecf7f8; }
 #controls button[data-action="slide"]:not(:disabled):not([data-control-state="queued"]) { border-color:#94d9e0aa; color:#b9f0ef; }

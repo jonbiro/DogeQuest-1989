@@ -41,6 +41,10 @@ test('power HUD reuses all elements through updates, expiration and reactivation
   assert.equal(nodes[4].attributes['aria-label'],'Double bone points: gems and trail bonuses are unchanged');
   assert.equal(nodes[4].attributes.title,nodes[4].attributes['aria-label']);
   assert.equal(nodes[4].children[1].attributes['aria-label'],'Double bone points time remaining');
+  Object.assign(run,{zoomies:2,magnet:1.5,double:1});update(run);
+  assert.deepEqual(nodes.map(n=>n.attributes['data-expiring']),['false','true','false','true','true']);
+  Object.assign(run,{zoomies:6,magnet:19,double:10});update(run);
+  assert.ok(nodes.every(n=>n.attributes['data-expiring']==='false'),'refresh clears the warning');
   for(let i=0;i<500;i++){run.magnet=19-i/100;run.distance=i/10;update(run);}
   assert.deepEqual(f.counts(),counts,'no nodes allocated or reinserted during updates');
   assert.equal(nodes[3].children[1].max,19);

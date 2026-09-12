@@ -1,5 +1,13 @@
 # Runner verification
 
+## Quiet power-expiry warning (2026-09-12)
+
+- Timed power chips gain a steady amber inset border in their final two seconds.
+  Existing countdown text remains; no animation, extra banner or size change.
+  Permanent shields and distance-based zipline chips are excluded.
+- HUD regression covers simultaneous expiry warnings and clears them on refresh,
+  while retaining stable reusable nodes. Full check: 351 tests passed.
+
 ## Compact portrait practice flow (2026-09-12)
 
 - Fresh 320 × 568 browser run ended at 200m/300 points and offered jump timing

@@ -35,6 +35,7 @@ export function createPowerHud(container) {
     chips.forEach(({node,text,progress},i)=>{
       const [visible,label,max,value]=values[i];
       node.hidden=!visible;active||=visible;
+      node.setAttribute('data-expiring',String(visible&&i!==0&&Boolean(progress)&&value<=2));
       if(!visible)return;
       if(text.nodeValue!==label)text.nodeValue=label;
       if(progress){if(progress.max!==max)progress.max=max;if(progress.value!==value)progress.value=value;}
