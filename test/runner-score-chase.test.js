@@ -8,6 +8,15 @@ test('record chase is quiet until the record is within reach',()=>{
   assert.equal(scoreChaseLabel(9400,10000),'9,400 pts');
   assert.equal(scoreChaseLabel(9600,10000),'401 pts to best');
 });
+test('rematches chase a nearer session target while all-time records take priority',()=>{
+  assert.equal(scoreChaseLabel(100,10000,1000),'100 pts');
+  assert.equal(scoreChaseLabel(851,10000,1000),'150 pts to rematch best');
+  assert.equal(scoreChaseLabel(1000,10000,1000),'1 pt to rematch best');
+  assert.equal(scoreChaseLabel(1001,10000,1000),'1,001 pts · REMATCH BEST');
+  assert.equal(scoreChaseLabel(9600,10000,1000),'401 pts to best');
+  assert.equal(scoreChaseLabel(10001,10000,1000),'10,001 pts · BEST');
+  assert.equal(scoreChaseLabel(100,10000,NaN),'100 pts');
+});
 test('a tied score still needs one point and a beaten score remains explicit',()=>{
   assert.equal(scoreChaseLabel(1000,1000),'1 pt to best');
   assert.equal(scoreChaseLabel(1001,1000),'1,001 pts · BEST');

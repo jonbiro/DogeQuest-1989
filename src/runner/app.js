@@ -328,8 +328,10 @@ function start() {
   // A results-screen retry is a rematch, not a new random obstacle layout.
   // Camp/help use random adventures unless an explicit shared trail is active.
   const retry = state === 'ended' && !run.practice;
+  const rematchBest=retry ? Math.max(run.rematchBest || 0,run.score) : 0;
   run = createRun(retry ? run.seed : sharedSeed ?? Date.now(), saved.upgrades,
     retry ? run.generatorVersion : sharedSeed === null ? undefined : sharedVersion);
+  run.rematchBest=rematchBest;
   run.puppy = saved.collection.puppy;
   run.appearance = { ...saved.collection };
   run.missions = missionPackFor(saved.challenges);
@@ -450,7 +452,11 @@ function finish() {
   }
   $("run-breakdown-copy").textContent = `${$("overlay-copy").textContent} ${$("run-highlights").textContent}`;
   $("run-breakdown-copy").textContent += ` Best clean-move streak: ${run.bestCleanStreak}. Clean-move bonuses: +${run.flowPoints} points (included in score).`;
-  $("overlay-copy").textContent = `${receipt.personalBest ? 'New personal best! ' : ''}Score banked. Retry the same trail, or head to camp ${sharedSeed === null ? 'for a fresh one' : 'to switch to random trails'}.`;
+  if (run.rematchBest>0) {
+    const difference=run.score-run.rematchBest;
+    $("run-breakdown-copy").textContent += ` Rematch target: ${run.rematchBest.toLocaleString()} points. ${difference>0?`${difference.toLocaleString()} ahead`:difference===0?'Target tied':`${(-difference).toLocaleString()} short`}.`;
+  }
+  $("overlay-copy").textContent = `${receipt.personalBest ? 'New personal best! ' : run.rematchBest>0&&run.score>run.rematchBest ? 'Rematch best! ' : ''}Score banked. Retry the same trail, or head to camp ${sharedSeed === null ? 'for a fresh one' : 'to switch to random trails'}.`;
   const nextBond=dogCard?.tiers.find(tier=>dogCard.current<tier.target);
   $("run-highlights").textContent = nextBond
     ? `Next: ${dogCard.name} · ${Math.max(0,nextBond.target-dogCard.current)} clean clears or turns to ${nextBond.name}`
@@ -780,7 +786,7 @@ function frame(now) {
       $("run-score").textContent =
         run.practice ? practiceProgress(run) : run.route && run.distance<run.route.until
           ? `${run.score.toLocaleString()} pts · ${run.route.kind==='challenge'?'CHALLENGE':'SCENIC'}`
-          : scoreChaseLabel(run.score, saved.best);
+          : scoreChaseLabel(run.score, saved.best, run.rematchBest);
       const progress = missionProgress(run, currentMission);
       const courseStatus=courseProgress(run);
       $("mission-label").textContent = courseStatus?.label ??

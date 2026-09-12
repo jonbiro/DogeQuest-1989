@@ -24,6 +24,7 @@ test('results retry repeats the seed with a fresh simulation; camp starts a new 
   assert.notEqual(context.run,original);
   assert.equal(context.run.hearts,3);
   assert.equal(context.run.score,0);
+  assert.equal(context.run.rematchBest,250);
   assert.equal(context.run.ended,false);
   assert.equal(context.run.puppy,'mochi');
   assert.equal(context.state,'playing');
@@ -33,15 +34,23 @@ test('results retry repeats the seed with a fresh simulation; camp starts a new 
     step(context.run,1/120);step(fresh,1/120);
   }
   assert.deepEqual(context.run.objects,fresh.objects);
+  for (const [score,target] of [[100,250],[500,500],[200,500]]) {
+    context.run.score=score;context.run.ended=true;context.state='ended';
+    context.start();
+    assert.equal(context.run.rematchBest,target,'retry streak keeps its best attempt');
+    assert.equal(context.run.seed,1989);
+  }
   for(const state of ['menu','help']){
     context.state=state;context.start();
     assert.equal(context.run.seed,987654);
+    assert.equal(context.run.rematchBest,0);
   }
   context.run.practice={correct:3};
   context.state='ended';
   context.start();
   assert.equal(context.run.seed,987654,'practice completion starts a fresh adventure');
   assert.equal(context.run.practice,undefined);
+  assert.equal(context.run.rematchBest,0);
   context.sharedSeed=0;
   context.sharedVersion=1;
   for(const state of ['menu','help']) {

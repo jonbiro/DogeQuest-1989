@@ -1,5 +1,23 @@
 # Runner verification
 
+## Same-trail rematch target (2026-09-12)
+
+- Results-screen retries preserve the strongest score in their current retry
+  streak. A fresh camp/help/practice adventure resets it. The existing score line
+  shows a nearby rematch target and a beaten-target label, while all-time record
+  cues retain priority. Results details give the exact score difference.
+- At 320x568, an isolated 10,000-point record fixture distinguished global from
+  rematch progress. A natural 420-point result was retried through visible UI;
+  rendered-cue-driven synthetic keyboard inputs reached the target and displayed
+  1,067 pts · REMATCH BEST. Its score-line bounds remained inside the viewport.
+- Finishing the paused run banked the final 1,068 score and showed Rematch best,
+  target 420 and 648 ahead. The all-time record stayed 10,000; rematchBest was not
+  added to the saved profile. The disposable profile was removed to restore the
+  verified absent-save baseline. No console warnings/errors, tab closed, viewport
+  restored. This is browser fixture evidence, not physical-phone play evidence.
+- All 241 tests/build/lint/dist gates pass, including increasing/decreasing retry
+  scores, target reset, ties, invalid targets and all-time record priority.
+
 ## Clean-course progress in the existing dock (2026-09-12)
 
 - Active courses reuse the normal challenge-progress slot to report clean moves

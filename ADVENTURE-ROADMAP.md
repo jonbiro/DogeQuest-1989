@@ -1,5 +1,13 @@
 # Puppy adventure goal
 
+## A target for same-trail rematches
+
+Consecutive results-screen retries retain the strongest score in that retry
+streak as an in-memory target. The existing score line shows points needed when
+close and acknowledges beating it; all-time record progress has
+priority. Results details include the exact difference. Camp, Help and completed
+practice start fresh targets. No new saved fields or reward currency are added.
+
 ## Understandable clean-course rewards
 
 During regional courses, the existing lower progress slot shows clean moves and
