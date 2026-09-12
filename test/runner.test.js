@@ -12,6 +12,24 @@ function obstacle(type) {
   run.nextRow = 500;
   return run;
 }
+test('heart pickups heal injuries or reward full health once without inflating bone rewards',()=>{
+  for(const hearts of [1,2,3]) {
+    const run=obstacle('heart');
+    Object.assign(run,{hearts,double:10,combo:7,fetchCharge:30});
+    advance(run,.3);
+    assert.equal(run.hearts,Math.min(3,hearts+1));
+    assert.equal(run.bonusPoints,hearts===3?100:0);
+    assert.equal(run.score,Math.floor(run.distance)+run.bonusPoints);
+    assert.equal(run.bones,0);
+    assert.equal(run.bonePoints,0);
+    assert.equal(run.combo,7);
+    assert.equal(run.fetchCharge,30);
+    assert.equal(run.events.filter(e=>e==='heart').length,1);
+    advance(run,.3);
+    assert.equal(run.bonusPoints,hearts===3?100:0);
+    assert.equal(run.events.filter(e=>e==='heart').length,1);
+  }
+});
 test("runner seeds reproduce solvable open-lane, uniform or split-choice action rows", () => {
   for (let seed = 0; seed < 50; seed++) {
     const a = createRun(seed),

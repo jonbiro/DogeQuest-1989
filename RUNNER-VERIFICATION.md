@@ -1,5 +1,15 @@
 # Runner verification
 
+## Useful spare hearts (2026-09-12)
+
+- Heart pickups now award 100 bonus points at full health instead of disappearing
+  without benefit. At one or two hearts they still heal exactly one heart and
+  award no bonus. The existing pickup sound/effect and score convey collection;
+  no new notice or panel was added. Help and README explain the conversion.
+- All 217 tests, build, lint and artifact checks passed. The added simulation
+  regression checks all three health states, single consumption, exact score,
+  no bone/count/combo/Fetch changes and no doubling of this non-bone reward.
+
 ## Optional-route collection fairness (2026-09-12)
 
 - Fixed a reproduced scoring bug: inaccessible airborne bones reset the ground

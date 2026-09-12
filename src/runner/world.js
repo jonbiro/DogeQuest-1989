@@ -404,7 +404,10 @@ export function step(run, dt) {
       if (object.type === "gem") run.bonusPoints += 250;
       if (object.type === "double") run.double = 10;
       if (object.type === "zoomies") run.zoomies = 6;
-      if (object.type === "heart") run.hearts = Math.min(3, run.hearts + 1);
+      if (object.type === "heart") {
+        if (run.hearts < 3) run.hearts++;
+        else run.bonusPoints += 100;
+      }
       if (object.type === 'gift') { run.gifts++;run.bonusPoints+=100; }
       run.events.push(object.type);
       run.effects.push({
