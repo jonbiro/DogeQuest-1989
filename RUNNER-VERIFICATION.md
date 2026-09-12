@@ -1,5 +1,18 @@
 # Runner verification
 
+## Airborne overhead escape guidance (2026-09-12)
+
+- Airborne movement previously suppressed all ordinary obstacle cues. An
+  approaching overhead arch, branch or gate now requests a downward dive in
+  the existing edge dock. Starting the dive immediately removes that hint;
+  jumping over low obstacles still does not repeat the jump instruction.
+- Simulation checks cover all three overhead types, base/max leap, ascending,
+  near-apex and descending jumps, and 22/36m/s running. In all 36 combinations,
+  acting 100ms after the hint clears the row without losing a heart. Safe lanes,
+  distant/used/passed gates and active Zoomies do not request a dive.
+- This validates the guidance and collision simulation, not human reaction time
+  or physical-device play. No movement timings or collision thresholds changed.
+
 ## Short-screen shared-camp reachability (2026-09-12)
 
 - Browser measurement reproduced clipped clubhouse/upgrades controls in shared

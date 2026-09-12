@@ -220,6 +220,47 @@ test("slide guidance renews only when the current slide will expire before impac
   assert.equal(actionCue(cable), "↑ JUMP · ZIPLINE", "a grounded slide never hides a zipline jump");
 });
 
+test('airborne overhead guidance offers a dive that clears the row without repeated hints', () => {
+  for (const type of ['arch', 'branch', 'gate']) {
+    for (const leap of [0, 3]) {
+      for (const jumpAge of [.1, .35, .55]) {
+        for (const speed of [22, 36]) {
+          const run = emptyRun();
+          run.upgrades.leap = leap;
+          run.distance = speed === 22 ? 0 : 3000;
+          run.speed = speed;
+          act(run, 'jump');
+          advance(run, jumpAge);
+          run.objects = [hazard(run, type)];
+          assert.equal(actionCue(run), '↓ DIVE · SLIDE');
+          advance(run, .1);
+          act(run, 'slide');
+          assert.equal(actionCue(run), '', 'acknowledge the dive immediately');
+          advance(run, .5);
+          assert.equal(run.hearts, 3, `${type}, leap ${leap}, age ${jumpAge}, speed ${speed}`);
+          assert.equal(run.clears, 1);
+        }
+      }
+    }
+  }
+});
+
+test('airborne dive hints ignore safe lanes, distant gates and protected Zoomies', () => {
+  for (const overrides of [{lane: 0}, {used: true}, {passed: true}]) {
+    const run = emptyRun();
+    act(run, 'jump');
+    run.objects = [hazard(run, 'gate', .4, overrides)];
+    assert.equal(actionCue(run), '');
+  }
+  const run = emptyRun();
+  act(run, 'jump');
+  run.objects = [hazard(run, 'gate', .6)];
+  assert.equal(actionCue(run), '');
+  run.objects = [hazard(run, 'gate', .4)];
+  run.zoomies = 1;
+  assert.equal(actionCue(run), '');
+});
+
 test("action guidance forecasts the physical lane while steering settles", () => {
   const run = emptyRun();
   run.x = LANES[0];

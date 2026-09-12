@@ -31,11 +31,15 @@ export function actionCue(run) {
     if (cable.at - run.distance >= run.speed * .45) return 'ZIPLINE AHEAD · high bones';
     return run.y > .05 || run.vy > 0 ? 'CATCH THE TURQUOISE HANDLE' : '↑ JUMP · ZIPLINE';
   }
-  if (run.y > .05 || run.vy > 0) return '';
   if (run.zoomies > 0) return '';
   const danger = run.objects.find(object => !object.used && !object.passed &&
     ['rock', 'log', 'arch', 'branch', 'gate', 'gap'].includes(object.type) &&
     object.at > run.distance && object.at - run.distance < run.speed * .45 && onApproach(run, object));
+  // Jumping already answers low hazards, but an overhead row needs a new
+  // downward input. Keep that escape visible until the dive is underway.
+  if (run.y > .05 || run.vy > 0) return danger &&
+    ['arch', 'branch', 'gate'].includes(danger.type) && !run.diving
+    ? '↓ DIVE · SLIDE' : '';
   if (danger && ['arch','branch','gate'].includes(danger.type) &&
       run.slide > (danger.at - run.distance + .4) / run.speed) return '';
   const intro = run.course && run.course.start-run.distance < 40 &&
