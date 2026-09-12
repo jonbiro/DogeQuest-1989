@@ -3,6 +3,11 @@ export function canStartSwipe(event, activePointer) {
   return !activePointer && event.isPrimary !== false && event.button === 0;
 }
 
+// Explicit controls support two thumbs; the trail still has one swipe owner.
+export function canPressAction(event) {
+  return event.button === 0 && (event.pointerType === 'touch' || event.isPrimary !== false);
+}
+
 export function ownsSwipe(event, activePointer) {
   return activePointer !== null && activePointer.id === event.pointerId;
 }

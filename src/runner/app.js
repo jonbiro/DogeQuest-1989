@@ -16,7 +16,7 @@ import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound} from "./sound.js";
 import {actionCue,eventNotice,dockMode,runLesson} from "./guidance.js";
 import {turnPrompt} from "./turns.js";
-import {swipeAction,canStartSwipe,ownsSwipe,isJumpTap} from "./gestures.js";
+import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,isJumpTap} from "./gestures.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
 const $ = (id) => document.getElementById(id);
 let run = createRun(),
@@ -605,14 +605,17 @@ $("scene").addEventListener("pointercancel", clearOwnedPointer);
 $("scene").addEventListener("lostpointercapture", clearOwnedPointer);
 for (const button of document.querySelectorAll("[data-action]")) {
   button.onpointerdown = (event) => {
-    if (state === "playing" && canStartSwipe(event, pointer)) {
+    if (state === "playing" && canPressAction(event)) {
       event.preventDefault();
+      pointer = null; // A button supersedes an unfinished trail tap, not a second move on release.
       act(run, button.dataset.action);
     }
   };
   button.onclick = (event) => {
-    if (state === "playing" && event.detail === 0)
+    if (state === "playing" && event.detail === 0) {
+      pointer = null;
       act(run, button.dataset.action);
+    }
   };
 }
 window.addEventListener("blur", pause);

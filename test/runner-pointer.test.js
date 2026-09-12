@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import {URL} from 'node:url';
-import {canStartSwipe,ownsSwipe,isJumpTap,swipeAction} from '../src/runner/gestures.js';
+import {canStartSwipe,canPressAction,ownsSwipe,isJumpTap,swipeAction} from '../src/runner/gestures.js';
 
 test('track listeners ignore holds but keep taps and deliberate swipes responsive',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
@@ -58,7 +58,7 @@ test('unrelated touch cancellation cannot clear the active swipe',()=>{
   assert.deepEqual(active,{id:7,x:20,y:30});
 });
 
-test('action buttons reject secondary pointers and preserve keyboard activation',()=>{
+test('action buttons support a second thumb while rejecting alternate mouse buttons and duplicate clicks',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('for (const button of document.querySelectorAll("[data-action]"))');
   const end=source.indexOf('window.addEventListener("blur", pause);',start);
@@ -66,17 +66,16 @@ test('action buttons reject secondary pointers and preserve keyboard activation'
   const button={dataset:{action:'jump'}};
   const actions=[];
   const context={document:{querySelectorAll:()=>[button]},state:'playing',pointer:null,
-    canStartSwipe,run:{},act:(_,action)=>actions.push(action)};
+    canPressAction,run:{},act:(_,action)=>actions.push(action)};
   runInNewContext(source.slice(start,end),context);
   const press=overrides=>button.onpointerdown({button:0,isPrimary:true,preventDefault(){},...overrides});
   press({button:2});
   press({button:1});
   press({isPrimary:false});
-  context.pointer={id:7};
-  press({});
   assert.deepEqual(actions,[]);
-  context.pointer=null;
-  press({});
+  context.pointer={id:7};
+  press({isPrimary:false,pointerType:'touch'});
+  assert.equal(context.pointer,null,'explicit controls cancel an unfinished trail tap');
   button.onclick({detail:1});
   assert.deepEqual(actions,['jump'],'pointer click does not double-trigger');
   button.onclick({detail:0});
@@ -85,4 +84,33 @@ test('action buttons reject secondary pointers and preserve keyboard activation'
   press({});
   button.onclick({detail:0});
   assert.equal(actions.length,2,'paused buttons cannot move the dog');
+});
+
+test('two-thumb buttons combine steering and jumping without a phantom trail release',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('window.addEventListener("blur", pause);',start);
+  const buttons=['left','jump','slide'].map(action=>({dataset:{action}}));
+  const handlers={},actions=[];
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
+    document:{querySelectorAll:()=>buttons},act:(_,action)=>actions.push(action),
+    canStartSwipe,canPressAction,ownsSwipe,isJumpTap,swipeAction});
+  const first={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100,preventDefault(){}};
+  const second={...first,pointerId:2,isPrimary:false};
+  buttons[0].onpointerdown(first);
+  buttons[1].onpointerdown(second);
+  buttons[1].onclick({detail:1});
+  assert.deepEqual(actions,['left','jump']);
+  handlers.pointerdown(first);
+  buttons[2].onpointerdown(second);
+  handlers.pointermove({...first,clientX:100,timeStamp:150});
+  handlers.pointerup({...first,timeStamp:200});
+  assert.deepEqual(actions,['left','jump','slide'],'the old trail finger cannot add a swipe or tap after a button');
+  handlers.pointerdown(second);
+  handlers.pointerup({...second,timeStamp:200});
+  assert.equal(actions.length,3,'secondary fingers still cannot initiate trail gestures');
+  handlers.pointerdown(first);
+  handlers.pointerup({...first,timeStamp:200});
+  assert.deepEqual(actions,['left','jump','slide','jump'],'the next deliberate trail tap still works');
 });

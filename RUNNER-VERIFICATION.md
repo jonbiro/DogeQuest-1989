@@ -1,5 +1,25 @@
 # Runner verification
 
+## Two-thumb controls (2026-09-12)
+
+- Explicit action buttons now accept a second touch contact, so one thumb on
+  a direction control cannot block the other thumb's jump, slide or Fetch.
+  Free trail gestures still require one primary owner. Alternate mouse buttons
+  and secondary non-touch pointers remain rejected.
+- An explicit action cancels an unfinished trail gesture. Releasing that old
+  finger cannot add an accidental tap-jump or swipe. Native click events do not
+  duplicate the pointer action; keyboard activation remains available.
+- All 204 tests, lint, build and distribution checks passed. Tests execute the
+  actual trail/button listeners together, including two-thumb left-plus-jump,
+  slide superseding a trail contact, stale release, next valid tap, pause and
+  keyboard activation.
+- At 390x844, synthetic browser PointerEvents with primary left and secondary
+  jump contacts produced rendered lane 1 and jumping posture. The observer
+  confirmed `isTrusted: false`; this is integration evidence, not hardware
+  multi-touch evidence. The in-app browser rejected native multi-touch dispatch
+  as unsupported. Native touchscreen verification remains open.
+- Disposable progress/cache from this local check were cleaned afterward.
+
 ## Finish on your own terms (2026-09-12)
 
 - Paused adventures now offer `Finish & bank points` instead of abandoning
