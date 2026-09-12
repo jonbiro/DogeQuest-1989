@@ -711,6 +711,8 @@ function frame(now) {
     $("scene").dataset.course = run.course?.name || '';
     $("scene").dataset.posture =
       run.zipline ? "zipline" : run.y > 0.05 ? "jump" : run.slide > 0 ? "slide" : "run";
+    // Decision cues follow each rendered frame; counters can wait for the HUD tick.
+    setText('cue', run.practice ? practiceCue(run) : actionCue(run));
     if (Math.floor(run.time * 10) !== lastHud || run.ended) {
       lastHud = Math.floor(run.time * 10);
       $("distance").innerHTML = `${Math.floor(run.distance-(run.practice?.start || 0))}<small> m</small>`;
@@ -738,7 +740,6 @@ function frame(now) {
         const next = run.missions[run.missions.indexOf(currentMission) + 1];
         if (next) { currentMission = next; missionAnnounced = false; }
       }
-      setText('cue', run.practice ? practiceCue(run) : actionCue(run));
       const fetchButton = $('fetch');
       $('scene').dataset.fetchUses = String(run.fetchUses);
       const ready = fetchReady(run);

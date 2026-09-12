@@ -1,5 +1,18 @@
 # Runner verification
 
+## Render-rate decision cues (2026-09-12)
+
+- Moved adventure/practice decision-cue evaluation outside the 10Hz counter
+  update. Previously a newly eligible cue or movement acknowledgement could
+  wait almost 100ms for the next counter tick. It now follows rendered frames;
+  score/progress counters retain their lower refresh rate. Existing `setText`
+  changes the DOM only when text differs, and the edge dock remains unchanged.
+- All 218 tests, build, lint and artifact checks passed. The regression executes
+  the actual pre-counter cue update with real adventure/practice cue functions,
+  crosses a jump deadline and starts a jump within one 100ms bucket. It verifies
+  immediate warning and in-progress/cleared-text transitions. This proves the
+  scheduling change, not a measured physical-device latency or frame-rate gain.
+
 ## Useful spare hearts (2026-09-12)
 
 - Heart pickups now award 100 bonus points at full health instead of disappearing
