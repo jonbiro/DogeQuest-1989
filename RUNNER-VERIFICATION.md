@@ -29,7 +29,9 @@
   succeeded afterward, but a new cold-cache timing comparison has not been
   measured. Do not claim the cold-start pause is eliminated or physical-phone
   performance is proven. Desktop sample also had one 133ms interval outlier.
-- Full build, distribution checks, lint and 316 tests passed. Temporary visual
+- Secondary Run actions stay disabled during startup; an early start request
+  cannot misreport shader preparation as a graphics failure.
+- Full build, distribution checks, lint and 317 tests passed. Temporary visual
   and timing fixture bundles were removed by the final production build.
 
 ## Optional swipe-only movement (2026-09-12)

@@ -335,7 +335,7 @@ function setState(next) {
   pointer = null;
 }
 function start() {
-  if(!graphicsReady){graphicsError();return;}
+  if(!graphicsReady)return;
   // A results-screen retry is a rematch, not a new random obstacle layout.
   // Camp/help use random adventures unless an explicit shared trail is active.
   const retry = state === 'ended' && !run.practice;
@@ -766,16 +766,19 @@ function graphicsError() {
         : 'The trail was interrupted. Earned rewards were counted for this visit, but saving is unavailable. Reloading may lose this progress.'
       : 'Graphics are unavailable or were interrupted. Reload to try again. Previously saved puppies, outfits and points stay in this browser; practice never changes your progress.';
   $("overlay-primary").textContent = "Reload trail";
+  $("overlay-primary").disabled = false;
   $("overlay-primary").onclick = () => window.location.reload();
 }
 let view;
 try {
   view = createView($("scene"));
   $("play").textContent = 'Preparing the trail…';
+  $("overlay-primary").disabled = true;
   void prepareFirstFrame(()=>view.prepareShaders()).then(()=>{
     if(state==='graphics-error')return;
     graphicsReady=true;
     $("play").disabled = false;
+    $("overlay-primary").disabled = false;
     $("play").textContent = playLabel();
     if(state==='menu')$("play").focus({preventScroll:true});
   });

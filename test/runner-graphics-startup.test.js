@@ -4,6 +4,13 @@ import {readFileSync} from 'node:fs';
 import {URL} from 'node:url';
 import {runInNewContext} from 'node:vm';
 
+test('an early start request does not misreport shader preparation as a graphics failure',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('function start() {');
+  const guard=source.slice(start,source.indexOf('// A results-screen retry',start))+'}';
+  runInNewContext(guard+';start();',{graphicsReady:false,graphicsError:()=>{throw Error('false failure');}});
+});
+
 test('startup keeps Play disabled during preparation and never overrides a graphics interruption',async()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const block=source.slice(source.indexOf('let view;'),source.indexOf('let currentMission ='));
