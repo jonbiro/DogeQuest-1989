@@ -34,7 +34,7 @@ test('prototype river uses actual controls, collisions and reward collection at 
 });
 
 test('ordinary version-three runs do not silently enable prototype river encounters',()=>{
-  const run=createRun(1989);
+  const run=createRun(1989,{},3);
   Object.assign(run,{distance:1090,nextRow:1090,objects:[],nextChoice:1750,nextZipline:2050});
   fillTrack(run);assert.ok(run.objects.every(object=>!object.raftHazard&&!object.raftPickup));
 });

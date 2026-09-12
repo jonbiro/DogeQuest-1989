@@ -4,7 +4,7 @@ import {createRun,fillTrack,act,step,LANES,HAZARDS} from '../src/runner/world.js
 import {actionCue} from '../src/runner/guidance.js';
 
 function fixture(route=null) {
-  const run=createRun(11);
+  const run=createRun(11,{},3); // This authored row is now inside the version-four river.
   Object.assign(run,{distance:1225,nextRow:1250,row:14,objects:[],route,
     lastCourseVisit:2,nextChoice:3000,nextZipline:4000,choicePending:null});
   fillTrack(run);

@@ -254,6 +254,7 @@ export function powerPreview(reducedMotion=false,combined=false) {
 }
 export function longRunCheck({rafts=false}={}) {
   const metersPerRun=rafts?18000:6000;
+  const puppies=Object.keys(PUPPIES),runs=puppies.length+1;
   const canvas=document.createElement("canvas");
   canvas.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;z-index:9999";
   document.body.append(canvas);
@@ -263,11 +264,10 @@ export function longRunCheck({rafts=false}={}) {
   const regionalCourses=[0,0,0];
   const splitRows=new Set(),courseNames=new Set();
   let warmed=null;
-  for(let attempt=0;attempt<4;attempt++) {
-    const variant=attempt%3;
-    const run=createRun(1989+variant);
-    run.raftPrototype=rafts;
-    run.appearance={puppy:["biscuit","mochi","pepper"][variant],costume:["scarf","hero","explorer"][variant]};
+  for(let attempt=0;attempt<runs;attempt++) {
+    const variant=attempt%puppies.length;
+    const run=createRun(1989+variant,{},rafts?4:3);
+    run.appearance={puppy:puppies[variant],costume:["scarf","hero","explorer","raincoat"][variant%4]};
     let nextSample=250;
     while(run.distance<metersPerRun && !run.ended) {
       if(run.course)courseNames.add(run.course.name);
@@ -317,10 +317,10 @@ export function longRunCheck({rafts=false}={}) {
     completedRafts+=run.rafts||0;
     turns+=run.turns;missedTurns+=run.missedTurns;
     run.regionalCourses.forEach((count,region)=>{regionalCourses[region]+=count;});
-    if(attempt===2)warmed={geometries:Math.max(...samples.map(s=>s.geometries)),textures:Math.max(...samples.map(s=>s.textures))};
+    if(attempt===puppies.length-1)warmed={geometries:Math.max(...samples.map(s=>s.geometries)),textures:Math.max(...samples.map(s=>s.textures))};
   }
   const peak=key=>Math.max(...samples.map(sample=>sample[key]));
-  const summary={runs:4,metersPerRun,completedZiplines,completedRafts,turns,missedTurns,renderedCheckpoints:samples.length,minimumHearts,hits,shieldSaves,peakSpeed,peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),warmed,repeatLapStable:true,final:samples.at(-1)};
+  const summary={runs,puppies,metersPerRun,completedZiplines,completedRafts,turns,missedTurns,renderedCheckpoints:samples.length,minimumHearts,hits,shieldSaves,peakSpeed,peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),warmed,repeatLapStable:true,final:samples.at(-1)};
   if(hits||shieldSaves)throw new Error(`Traversal collision between checkpoints: ${JSON.stringify(summary)}`);
   summary.regionalCourses=regionalCourses;
   if(rafts&&regionalCourses[2]<10)throw new Error(`Glade course pacing regression: ${regionalCourses[2]}`);

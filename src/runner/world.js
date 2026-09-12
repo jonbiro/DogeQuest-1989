@@ -32,9 +32,11 @@ export const SLIDE_UPGRADE_DURATION = .07;
 export const HAZARDS = [...SOLID_HAZARDS,"gap"];
 export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart", 'gift', 'zoomies'];
 export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = CURRENT_TRAIL_VERSION) {
+  generatorVersion=supportsTrailVersion(generatorVersion)?generatorVersion:CURRENT_TRAIL_VERSION;
   const run = {
     seed,
-    generatorVersion: supportsTrailVersion(generatorVersion) ? generatorVersion : CURRENT_TRAIL_VERSION,
+    generatorVersion,
+    raftPrototype:generatorVersion>=4,
     random: seededRandom(seed),
     distance: 0,
     time: 0,
@@ -131,8 +133,8 @@ export function fillTrack(run) {
       run.nextRow = Math.ceil((corner.recovery + .001) / 5) * 5;
       continue;
     }
-    // Developer prototype only until river rendering and versioned links are
-    // verified. No published UI or default run enables this flag.
+    // River reservations belong to version 4; historical shared trails retain
+    // their original generator, course sequencing and scenery-boundary rules.
     const river=run.raftPrototype&&raftIntersecting(run.nextRow,run.nextRow+19);
     if(river){
       const challenge=run.route?.kind==='challenge'&&river.start<run.route.until;

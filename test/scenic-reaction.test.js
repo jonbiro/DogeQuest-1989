@@ -54,12 +54,13 @@ for(const fps of [24,60])for(const level of [0,3])test(`Scenic cues tolerate 300
       }
       while(pending[0]?.at<=run.time)act(run,pending.shift().action);
       const from=run.events.length;
+      const scenic=run.course?.scenic,mastery=run.regionalCourses.reduce((a,b)=>a+b,0);
       step(run,1/120);
+      if(scenic)assert.equal(run.regionalCourses.reduce((a,b)=>a+b,0),mastery,'Scenic courses never award hard-course mastery');
       assert.ok(!run.events.slice(from).some(e=>e==='hit'||e==='shield-break'),
         `${seed} at ${run.distance}: ${JSON.stringify({mistake:run.lastMistake,detail:run.lastMistakeDetail,history})}`);
     }
     assert.ok(run.distance>=6000);
     assert.ok(seen.has(1)&&seen.has(2),'must exercise new canyon and glade encounters');
-    assert.equal(run.regionalCourses[1],0);assert.equal(run.regionalCourses[2],0);
   }
 });

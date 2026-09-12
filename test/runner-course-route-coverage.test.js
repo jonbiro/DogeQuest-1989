@@ -3,12 +3,13 @@ import assert from 'node:assert/strict';
 import {createRun,step,act} from '../src/runner/world.js';
 import {actionCue} from '../src/runner/guidance.js';
 
-test('cue-driven Challenge routes reach and reward every regional course family',()=>{
+for(const version of [3,4])test(`version ${version} Challenge routes reach and reward every regional course family`,()=>{
   const generated=new Set(),finished=new Set(),completed=[0,0,0];
   let weaves=0;
   for(const seed of [1989,1990,1991]) {
-    const run=createRun(seed);let previous='';
-    while(!run.ended&&run.distance<6000) {
+    const run=createRun(seed,{},version);let previous='';
+    const distance=version===3?6000:18000;
+    while(!run.ended&&run.distance<distance) {
       if(run.course)generated.add(run.course.name);
       // Select the explicit harder gate; a center-lane pilot silently chooses Scenic.
       if(run.choicePending!==null&&run.choicePending-run.distance<30&&run.lane<2)act(run,'right');
@@ -27,7 +28,7 @@ test('cue-driven Challenge routes reach and reward every regional course family'
       assert.ok(!events.some(e=>e==='hit'||e==='shield-break'),`seed ${seed} at ${run.distance}`);
       weaves+=events.filter(e=>e==='weave').length;
     }
-    assert.ok(run.distance>=6000);
+    assert.ok(run.distance>=distance);
     run.regionalCourses.forEach((count,i)=>{completed[i]+=count;});
   }
   assert.deepEqual([...generated].sort(),['Root scramble','Canopy shuffle','Root rhythm','Fern dash',

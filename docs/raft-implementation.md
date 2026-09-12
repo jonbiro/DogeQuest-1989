@@ -1,5 +1,36 @@
 # River raft implementation status
 
+## Version-four release
+
+New adventures now select trail version 4, which enables river reservations,
+raft steering and the revised course sequencing. Shared versions 1–3 remain
+supported with their fixed pre-river layouts. The historical `raftPrototype`
+field is retained internally, but its normal value is now determined by the
+generator version. Help includes River steering practice. Earlier prototype-only
+status notes below are chronological evidence, not the current rollout state.
+
+The refreshed portrait renderer matrix includes all four puppies plus a repeat
+lap (the previous matrix omitted Luna): 90 km, 30 raft completions, 65 ziplines,
+130 turns, 360 render checkpoints, three minimum hearts and zero damage, shield
+saves or missed turns. Peaks: 36 geometries, nine textures, 243 draw calls and
+115 objects, stable after warm-up. Regional completions were 48/41/12 and all
+twelve hard-course names appeared. Browser console errors were empty. This is
+accelerated simulation with rendered checkpoints, not real-time frame pacing.
+
+Rollout regression checks retain explicit version-three authored-location tests
+and six-kilometre course coverage. Version four checks all course families over
+18 km, reflecting its additional traversal reservations. The 150 ms reaction
+pilot now recognizes RAFT direction cues. Scenic reaction tests still reject all
+damage and now check mastery at each actual Scenic course rather than assuming
+an entire region contains no intervening hard courses. Full checks pass 442 tests.
+
+The same 90 km matrix was rerun using `createRun(...,4)` rather than manually
+enabling the flag, with identical totals and resource peaks. Regular production
+Help at 390 × 844 exposed River steering and launched a real-time practice run;
+a no-input crossing finished at 4/12 bones with steering advice, then returned
+to camp with its original zero points. Console errors were empty, and the
+temporary tabs and viewport were cleaned up.
+
 ## Historical layout lock
 
 Before introducing a river replay version, `legacy-layout.test.js` captures the

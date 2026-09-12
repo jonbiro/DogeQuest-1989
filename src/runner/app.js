@@ -563,6 +563,7 @@ $('practice-slide').onclick = () => startPractice('slide');
 $('practice-gap').onclick = () => startPractice('gap');
 $('practice-weave').onclick = () => startPractice('weave');
 $('practice-zipline').onclick = () => startPractice('zipline');
+$('practice-raft').onclick = () => startPractice('raft');
 $('practice-turn').onclick = () => startPractice('turn');
 $('practice-again').onclick = () => {
   if (!run.practice) {

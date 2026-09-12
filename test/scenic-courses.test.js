@@ -7,7 +7,7 @@ import {actionCue} from '../src/runner/guidance.js';
 test('gentle regional sequences always offer two escape lanes and never award hard-course mastery',()=>{
   const patterns=new Set();
   for(const start of [200,475,1120]){
-    const run=createRun(1989);
+    const run=createRun(1989,{},3); // Pin the original three authored course locations.
     Object.assign(run,{distance:start-25,nextRow:start,row:12,objects:[],course:null,
       nextChoice:3000,nextZipline:4000,choicePending:null,route:{kind:'scenic',until:start+150}});
     fillTrack(run);

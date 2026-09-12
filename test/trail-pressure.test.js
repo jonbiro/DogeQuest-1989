@@ -10,7 +10,7 @@ test("late ordinary rows block two lanes and move the escape lane", () => {
       objects: [], lastSafeLane: 1});
     fillTrack(run);
     const rows = new Map();
-    for (const object of run.objects.filter(o => HAZARDS.includes(o.type))) {
+    for (const object of run.objects.filter(o => HAZARDS.includes(o.type)&&!o.raftHazard)) {
       if (!rows.has(object.at)) rows.set(object.at, []);
       rows.get(object.at).push(object.lane);
     }

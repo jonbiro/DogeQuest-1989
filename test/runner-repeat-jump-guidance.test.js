@@ -28,8 +28,8 @@ test('closely spaced seeded obstacles remain clearable with a 150ms cue response
     while(!run.ended&&run.distance<5000) {
       const cue=actionCue(run);
       again ||= cue.includes('JUMP AGAIN');
-      const action=/TURN LEFT|WEAVE LEFT|BONES LEFT|GIFT LEFT/.test(cue)?'left'
-        :/TURN RIGHT|WEAVE RIGHT|BONES RIGHT|GIFT RIGHT/.test(cue)?'right'
+      const action=/TURN LEFT|WEAVE LEFT|BONES LEFT|GIFT LEFT|RAFT LEFT/.test(cue)?'left'
+        :/TURN RIGHT|WEAVE RIGHT|BONES RIGHT|GIFT RIGHT|RAFT RIGHT/.test(cue)?'right'
           :cue.includes('SLIDE')?'slide':cue.includes('JUMP')?'jump':null;
       if(action&&!pending&&run.time-last>.2)pending={action,at:run.time+.15};
       if(pending&&run.time>=pending.at){act(run,pending.action);pending=null;last=run.time;}
