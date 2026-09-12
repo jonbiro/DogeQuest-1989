@@ -330,7 +330,8 @@ function start() {
   lastHud = -1;
   toastUntil = 0;
   noticePriority = 0;
-  for (const id of ['cue','route-choice','toast','power']) setText(id, '');
+  for (const id of ['cue','route-choice','toast']) setText(id, '');
+  $('hud').classList.toggle('has-powers', updatePowerHud(run));
   setState("playing");
   $("scene").focus({ preventScroll: true });
   tone("yip");

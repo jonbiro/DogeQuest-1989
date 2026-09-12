@@ -1,5 +1,16 @@
 # Runner verification
 
+## Power-display start-path correction (2026-09-12)
+
+- Follow-up integration review found the old start reset still cleared `#power`
+  text, detaching the new reusable nodes. Start now resets powers through their
+  owner and updates the HUD class, without erasing its children.
+- The new regression executes the actual start-reset segment, checks node
+  retention and reactivation, and rejects clearing the power container. All
+  222 tests, build, lint and artifact checks passed. Real browser Play then
+  Escape confirmed five chip nodes and four progress elements still connected
+  while correctly hidden with no active powers. The unbanked test tab was closed.
+
 ## Stable power-up display elements (2026-09-12)
 
 - Replaced the 10Hz power-display HTML rebuild with five reusable chips and
