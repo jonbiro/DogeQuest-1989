@@ -43,3 +43,22 @@ test('gap practice leaves a short reaction margin with base and upgraded jumps',
     assert.equal(run.practice.correct,1);
   }
 });
+
+test('gap practice explains actual early, late and cancelled jumps through completion',()=>{
+  for(const [mode,distance,expected] of [['early',26,/Jump later/],['late',35,/Jump earlier/],['dive',31,/Stay airborne/]]) {
+    const run=createGapPracticeRun();
+    while(run.distance<distance)stepPractice(run,1/120);
+    act(run,'jump');
+    if(mode==='dive') {
+      while(run.distance<33.4)stepPractice(run,1/120);
+      act(run,'slide');
+    }
+    while(!run.practice.outcomes.length)stepPractice(run,1/120);
+    assert.equal(run.practice.correct,0,mode);
+    assert.match(practiceCue(run),expected,mode);
+    while(!run.ended)stepPractice(run,1/120);
+    assert.match(practiceResult(run).lesson,expected,mode);
+    assert.equal(run.hearts,3);
+    assert.equal(bankRun({},run,[]),null);
+  }
+});

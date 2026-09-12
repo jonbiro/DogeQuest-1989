@@ -1,5 +1,17 @@
 # Runner verification
 
+## Specific gap-jump rehearsal feedback (2026-09-12)
+
+- Gap practice now uses collision timing evidence for early jumps, late jumps,
+  cancelled jumps and sliding instead of jumping. The brief cue and final lesson
+  agree, and never suggest changing lanes as a solution to the full-width gap.
+- Full check: 311 tests pass. Tests perform actual early/late jumps and a dive
+  that cancels clearance, then verify failure feedback through completion,
+  preserved hearts and no banking. Existing base/upgraded successful gap tests
+  still pass. Checkpoint skipping was not a production bug: fixed simulation
+  steps and the world's timestep cap already prevent crossing multiple beats
+  in a single update. No physics changes were made.
+
 ## Carry steering timing lessons through practice (2026-09-12)
 
 - Weave practice now acknowledges a correctly selected lane reached too late,

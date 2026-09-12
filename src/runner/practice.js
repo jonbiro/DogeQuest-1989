@@ -23,7 +23,16 @@ export function practiceOffer(run) {
   return null;
 }
 function lessonFeedback(lesson,correct,detail) {
-  if (lesson.type==='gap') return correct ? '✓ Gap cleared' : 'Jump at the cue · do not slide';
+  if (lesson.type==='gap') {
+    if(correct)return '✓ Gap cleared';
+    const reason=Math.abs((detail?.distance ?? -100)-lesson.at)<2?detail.reason:'';
+    return {
+      'early-jump':'Jump later · nearer the striped edge',
+      'late-jump':'Jump earlier · before the striped edge',
+      'cancelled-jump':'Stay airborne · do not slide over gaps',
+      slid:'Swipe up to jump · sliding cannot cross gaps',
+    }[reason] || 'Jump at the cue · do not slide';
+  }
   if (correct) return lesson.type==='log' ? '✓ Jump cleared' : lesson.type==='gate' ? '✓ Slide cleared' : '✓ Open lane found';
   if (lesson.type==='rock') return 'Steer left into the open lane';
   const reason=Math.abs((detail?.distance ?? -100)-lesson.at)<2 ? detail.reason : '';
@@ -196,7 +205,7 @@ export function practiceResult(run) {
   if (run.practice.kind==='gap') return {
     title:run.practice.correct ? 'Gap cleared!' : 'Try the gap again',
     lesson:run.practice.correct ? 'Jump as the striped edge approaches, then stay airborne until you pass the gap. The adventure uses these same jump physics.'
-      : 'Wait for the jump cue near the striped edge. Jump across the full-width gap; sliding or switching lanes will not cross it.',
+      : `${lessonFeedback(GAP_LESSON,false,run.lastMistakeDetail)}. Jump across the full-width gap; switching lanes will not cross it.`,
   };
   if (run.practice.kind==='turn') return {
     title:run.practice.correct ? 'Corner cleared!' : 'Try the turn again',
