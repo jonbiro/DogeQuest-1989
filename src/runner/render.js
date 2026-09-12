@@ -15,6 +15,7 @@ import { isBridge } from "./bridges.js";
 import { ziplineAt, ZIPLINE_HEIGHT, cableSegment, CABLE_SEGMENT_LENGTH } from "./ziplines.js";
 import {createPuppyFramer,gameplayFov} from './framing.js';
 import {createQualityController} from './quality.js';
+import {contactShadow} from './contact-shadow.js';
 
 // Shared low-poly geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -867,8 +868,10 @@ export function createView(canvas) {
       scarf.rotation.x = reducedMotion ? 0 : Math.sin(time * 12) * 0.15;
       shadow.position.x = dog.position.x;
       shadow.rotation.x = -Math.PI / 2 + (menu ? 0 : groundFrame.pitch);
-      shadow.scale.setScalar(Math.max(0.45, 1 - y * 0.12));
-      shadow.material.opacity = 0.46 / (1 + y * 0.3);
+      const contact=contactShadow(y,distance,gaps);
+      shadow.scale.setScalar(contact.scale);
+      shadow.material.opacity = contact.opacity;
+      shadow.visible = contact.opacity > 0;
       aura.visible = !menu && run.shield > 0;
       magnetField.visible = !menu && run.magnet > 0;
       speedTrail.visible = !menu && run.zoomies > 0;

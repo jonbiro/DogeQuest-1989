@@ -1,5 +1,19 @@
 # Runner verification
 
+## Surface-aware puppy shadow (2026-09-12)
+
+- The contact shadow now fades across the approach to a missing 5m road slab,
+  disappears over the hole and returns smoothly at the far edge. Its existing
+  height-dependent size/opacity on solid trail and all collision rules remain.
+- Tests cover both lips, the whole absent slab, multiple gaps, continuity and
+  unchanged solid-ground height response. A local-only renderer fixture compared
+  the same airborne Mochi pose at 390x844 over paving and over a gap: the paving
+  retains a soft shadow and the gap has no floating contact disc.
+- The fixture intentionally loads its own Three.js bundle beside the app, which
+  emitted duplicate-library warnings; it is excluded from production artifacts.
+  No gameplay/save actions were performed. Temporary tab closed and viewport
+  reset. This is a rendered fixture comparison, not physical-phone play evidence.
+
 ## Contextual gap rehearsal (2026-09-12)
 
 - Missed-gap results now offer a five-second gap lesson. It uses a grid-aligned,
