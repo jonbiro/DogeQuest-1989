@@ -1,9 +1,9 @@
 :root {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   color: #f4f5e8;
   background: #102a28;
   color-scheme: dark;
-  --lime: #dcf78c;
+  --lime: #e2f7a5;
   --muted: #b6cbc0;
   --safe-top: env(safe-area-inset-top,0px);
   --safe-right: env(safe-area-inset-right,0px);
@@ -204,7 +204,7 @@ header {
 .eyebrow > span {
   width: 6px;
   height: 6px;
-  background: var(--lime);
+  background: linear-gradient(155deg, #f0ffcb, #cde997);
   border-radius: 50%;
 }
 h1 {
@@ -572,9 +572,9 @@ footer .text-button {
   flex-direction: column;
   overflow: hidden;
   overscroll-behavior: contain;
-  background: #173c32;
-  border: 1px solid #c9e9b82e;
-  box-shadow: 0 35px 100px #0004;
+  background: linear-gradient(155deg, #284e44, #112f2b 72%);
+  border: 1px solid #d8edcc55;
+  box-shadow: inset 0 1px 0 #ffffff12, 0 35px 100px #0007;
   border-radius: 28px;
   padding: 36px;
   text-align: center;
@@ -1131,3 +1131,19 @@ header {
 #controls.swipe-only { display: flex; right: auto; width: 64px; }
 #controls.swipe-only button[data-action]:not(#fetch) { display: none; }
 #controls.swipe-only #fetch { position: static; width: 64px; min-width: 64px; }
+
+/* Consistent raised surfaces, without extra panels over the playable trail. */
+h1 { letter-spacing: -.055em; word-spacing: .07em; }
+.primary { background: linear-gradient(150deg,#f0ffcb,#cde997); box-shadow: inset 0 1px 0 #fff9,0 5px 18px #092b2340; }
+.start-actions .text-button, .icon-button, .back-link {
+  border: 1px solid #e1f4df38;
+  box-shadow: inset 0 1px 0 #ffffff12,0 4px 12px #08272224;
+}
+#controls button:not(.jump):not(.ready):not([data-control-state="queued"]):not(.turn-ready) {
+  background: linear-gradient(160deg,#294b43f5,#112c29fa);
+  box-shadow: inset 0 1px 0 #ffffff20,0 4px 12px #09272235;
+}
+#controls .jump { background: linear-gradient(150deg,#f0ffcb,#cde997); box-shadow: inset 0 1px 0 #fff8,0 4px 12px #09272235; }
+#controls button:enabled:active { box-shadow: inset 0 0 0 3px currentColor; }
+.mastery-card { background: linear-gradient(145deg,#ffffff0c,#ffffff02); }
+#results > div { border-radius: 12px; background: #091f203d; padding: 10px 4px; }

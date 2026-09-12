@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createShaderPreparation} from '../src/runner/shader-preparation.js';
+import {createShaderPreparation,prepareFirstFrame} from '../src/runner/shader-preparation.js';
+
+test('first-frame preparation handles success, rejection and an unresponsive driver',async()=>{
+  assert.equal(await prepareFirstFrame(()=>Promise.resolve(true)),true);
+  assert.equal(await prepareFirstFrame(()=>{throw Error('unsupported');}),false);
+  assert.equal(await prepareFirstFrame(()=>new Promise(()=>{}),5),false);
+});
 
 test('shader preparation compiles scene and detached templates once using the same lighting',async()=>{
   const calls=[],scene={},camera={},templates={};

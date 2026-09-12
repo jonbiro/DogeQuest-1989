@@ -1,5 +1,37 @@
 # Runner verification
 
+## Runner-wide graphics overhaul (2026-09-12)
+
+- Rebalanced warm directional/cool ambient lighting, real 1024-pixel filtered
+  shadows, shared mipmapped surface grain, blue-tinted sky gradients and sun.
+  Road receivers are separated from scenery casters to avoid self-shadowing
+  between overlapping paving layers. Curved road and Mochi receive shadows too.
+- Rounded irregular forest canopies, tapered trunks and columns, layered canyon
+  mesas, broad eroded horizon ridges, sculpted boulders, cylindrical logs with
+  cut ends, detailed overhead gates, smoother puppy legs/tails/floppy ears and
+  richer bone highlights. No collision dimensions or physics constants changed.
+- Refreshed system typography, raised controls, softly graded modal/card
+  surfaces, and heading spacing. Kept portrait layout, movement cues, saved
+  swipe-only preference and original 2D Puppy Quest intact.
+- Browser review covered all three regional courses, 24 distinct rendered
+  puppy/outfit portraits, combined power lifecycle (three bones drawn toward the
+  dog, collected once, effects expired correctly), 320 × 568 camp/play/pause.
+  Final compact browser reported no warnings/errors; test storage was restored
+  to its original absent state. Screenshot: test-results/graphics/portrait.png.
+- Dedicated iOS 27 simulator A684C311-2581-42FF-8F83-9E38506B11B5 showed real
+  Safari camp, tap-to-play and pause frames; returned to camp with 1,360 points
+  unchanged. Scoped mirror closed and helper exited; other simulators untouched.
+- An intermediate renderer timing sample (8 seconds per phase, 2-second warmup)
+  measured native gameplay intervals mean 16.77ms / p95 17ms, one 60ms gap;
+  draw submission mean 3.22ms / p95 5ms. First camp draw took 2,144ms. This led
+  to bounded asynchronous shader preparation before enabling Play. Success,
+  failure, timeout and context-loss guards have regression tests; native startup
+  succeeded afterward, but a new cold-cache timing comparison has not been
+  measured. Do not claim the cold-start pause is eliminated or physical-phone
+  performance is proven. Desktop sample also had one 133ms interval outlier.
+- Full build, distribution checks, lint and 316 tests passed. Temporary visual
+  and timing fixture bundles were removed by the final production build.
+
 ## Optional swipe-only movement (2026-09-12)
 
 - How to play → Touch controls now offers a persisted swipe-only preference.

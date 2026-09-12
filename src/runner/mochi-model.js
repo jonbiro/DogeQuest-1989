@@ -67,6 +67,7 @@ export function createMochiModel() {
   function ellipsoid(parent, name, color, position, scale, roughness) {
     const mesh = new THREE.Mesh(sphere, material(color, roughness));
     mesh.name = name; mesh.position.set(...position); mesh.scale.set(...scale);
+    mesh.receiveShadow = true;
     parent.add(mesh); return mesh;
   }
   // Even surface coverage with gentle deterministic variation in curl size,

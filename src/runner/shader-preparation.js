@@ -1,5 +1,15 @@
-// Opportunistic camp work only. Unsupported/failed preparation never prevents
-// play, and each renderer owns exactly one preparation attempt.
+// Unsupported/failed preparation never prevents play. Each renderer owns one
+// attempt; startup can wait briefly without trusting a driver to finish forever.
+export async function prepareFirstFrame(prepare, timeout = 2000) {
+  let timer;
+  try {
+    return await Promise.race([
+      Promise.resolve().then(prepare).catch(()=>false),
+      new Promise(resolve=>{timer=setTimeout(()=>resolve(false),timeout);}),
+    ]);
+  } finally { clearTimeout(timer); }
+}
+
 export function createShaderPreparation(renderer,scene,camera,templates) {
   let status='idle',pending;
   return {

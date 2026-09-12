@@ -20,8 +20,9 @@ import {createQualityController} from './quality.js';
 import {contactShadow} from './contact-shadow.js';
 import {createBranchModel} from './branch-model.js';
 import {detourCameraWeight} from './route-detour.js';
+import {createSurfaceTexture} from './surface.js';
 
-// Shared low-poly geometry and materials keep the mobile scene inexpensive.
+// Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
   const renderer = new THREE.WebGLRenderer({
     canvas,
@@ -32,17 +33,28 @@ export function createView(canvas) {
   renderer.setPixelRatio(quality.ratio);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 1.12;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#8ec5aa");
   scene.fog = new THREE.Fog("#8ec5aa", 35, 145);
   const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 190);
   const sky=createSky();
   scene.add(sky);
-  scene.add(new THREE.HemisphereLight("#e9fff1", "#345342", 3));
-  const sun = new THREE.DirectionalLight("#ffe1a2", 4);
-  sun.position.set(-10, 20, 10);
-  scene.add(sun);
+  scene.add(new THREE.HemisphereLight("#c8e9ff", "#28493f", 1.65));
+  const sun = new THREE.DirectionalLight("#fff0ce", 3.2);
+  sun.position.set(-12, 24, 4);
+  sun.target.position.set(0, 0, -12);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  Object.assign(sun.shadow.camera, {left:-18,right:18,top:26,bottom:-18,near:1,far:90});
+  sun.shadow.bias = -.0003;
+  sun.shadow.normalBias = .045;
+  sun.shadow.radius = 2;
+  scene.add(sun, sun.target);
+  const surface = createSurfaceTexture();
+  surface.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
   const materialCache = new Map();
   const mat = (color) => {
     if (!materialCache.has(color))
@@ -50,19 +62,30 @@ export function createView(canvas) {
         color,
         new THREE.MeshStandardMaterial({
           color,
-          roughness: 0.88,
+          roughness: 0.72,
+          map: surface, bumpMap: surface, bumpScale: .025,
           flatShading: false,
         }),
       );
     return materialCache.get(color);
   };
   const boxGeometry = new RoundedBoxGeometry(1, 1, 1, 2, 0.055);
-  const sphereGeometry = new THREE.SphereGeometry(1, 12, 8);
+  const sphereGeometry = new THREE.SphereGeometry(1, 20, 14);
+  const trunkGeometry = new THREE.CylinderGeometry(.7, 1, 1, 10);
+  const canopyGeometry = new THREE.SphereGeometry(1, 20, 14);
+  const canopyVertices = canopyGeometry.attributes.position;
+  for (let i=0;i<canopyVertices.count;i++) {
+    const x=canopyVertices.getX(i),y=canopyVertices.getY(i),z=canopyVertices.getZ(i);
+    const radius=1+.07*Math.sin(x*5+y*3)*Math.sin(z*4-y*3);
+    canopyVertices.setXYZ(i,x*radius,y*radius,z*radius);
+  }
+  canopyGeometry.computeVertexNormals();
   const coneGeometry = new THREE.ConeGeometry(1, 1, 5);
   function mesh(parent, geometry, color, x, y, z, sx, sy, sz) {
     const item = new THREE.Mesh(geometry, mat(color));
     item.position.set(x, y, z);
     item.scale.set(sx, sy, sz);
+    item.receiveShadow = true;
     parent.add(item);
     return item;
   }
@@ -130,18 +153,16 @@ export function createView(canvas) {
       side = i % 2 ? 1 : -1,
       x = side * (6 + random() * 15);
     const height = 4 + random() * 6;
-    box(group, "#655c3b", 0, height / 2, 0, 0.5, height, 0.5);
-    for (let j = 0; j < 3; j++)
-      cone(
-        group,
-        ["#285947", "#3e7750", "#659459"][j],
-        0,
-        height - j * 1.1,
-        0,
-        2.5 - j * 0.25,
-        3,
-        2.8,
-      );
+    mesh(group,trunkGeometry,"#655c3b",0,height/2,0,.34,height,.34);
+    for (let j = 0; j < 5; j++)
+      mesh(group,canopyGeometry,["#246044", "#357751", "#4a8b5b", "#63995f", "#80ac70"][j],
+        Math.sin(j * 2.4) * 1.3,height - .8 + Math.cos(j * 1.7) * .75,
+        Math.cos(j * 2.4) * 1.2,1.9,1.5 + random() * .5,1.8);
+    for (const side of [-1,1]) {
+      const root = ball(group,"#5b563c",side*.38,.35,0,.22,.8,.32);
+      root.rotation.z = side * .45;
+      ball(group,"#3c8057",side*1.8,.35,.8,.8,.35,1.1);
+    }
     ball(group, "#5c8857", 1, 0.5, 1, 1.5, 1, 1.2);
     group.position.x = x;
     group.userData.offset = i * 3.8;
@@ -157,8 +178,9 @@ export function createView(canvas) {
     group.userData.region=region;
     if(region===1) {
       const height=2+random()*5;
-      box(group,"#b97750",0,height/2,0,2+random()*2,height,2.5);
-      box(group,"#dfa376",0,height+.2,0,3,.4,3);
+      mesh(group,trunkGeometry,"#a75c3d",0,height/2-.4,0,2+random(),height+.8,2);
+      mesh(group,trunkGeometry,"#d18d62",.05,height*.77,0,1.8,height*.3,1.7);
+      ball(group,"#ebba82",.1,height*.96,0,1.4,.24,1.3);
       if(i%3===0) {
         box(group,"#709567",2,1.6,0,.5,3.2,.5);
         box(group,"#709567",2.6,2,0,1.2,.35,.4);
@@ -177,7 +199,7 @@ export function createView(canvas) {
     const group = new THREE.Group();
     for (const side of [-1, 1]) {
       const x = side * 5.3;
-      box(group, "#8b9875", x, 1.6, 0, 1.15, 3.2, 1.1);
+      mesh(group,trunkGeometry,"#8b9875",x,1.6,0,.72,3.2,.7);
       box(group, "#b6bc92", x, 3.3, 0, 1.6, 0.35, 1.45);
       box(group, "#748762", x, 0.25, 0, 1.65, 0.5, 1.6);
       ball(group, "#799c55", x + 0.3, 3.65, 0, 0.9, 0.5, 0.7);
@@ -220,11 +242,13 @@ export function createView(canvas) {
     mountain.userData.depthHaze = (-mountain.position.z - 115) / 25 * .18;
     mountains.push(mountain);
   }
-  // Batch hundreds of trees, paving stones, and ruin pieces into three draws.
+  // Separate road receivers from scenery casters to avoid layered paving
+  // shadowing itself. Each geometry remains one shared instanced scenery draw.
   const batches = [];
   const batchMaterial = new THREE.MeshStandardMaterial({
-    roughness: 0.9,
-    flatShading: true,
+    roughness: 0.82,
+    flatShading: false,
+    map: surface, bumpMap: surface, bumpScale: .04,
   });
   // Keep a wider visual corridor around playable lanes without moving hazards.
   for (const group of decorations)
@@ -233,7 +257,7 @@ export function createView(canvas) {
       group.scale.setScalar(.82);
     }
   scenery.updateMatrixWorld(true);
-  for (const geometry of [boxGeometry, coneGeometry, sphereGeometry]) {
+  for (const geometry of [boxGeometry, coneGeometry, sphereGeometry, trunkGeometry, canopyGeometry]) {
     const entries = [];
     for (let i = 0; i < tiles.length; i++)
       tiles[i].traverse((item) => {
@@ -267,19 +291,24 @@ export function createView(canvas) {
             gateway: group.userData.gateway === true,
           });
       });
+    for (const groupEntries of [entries.filter(entry=>entry.road),entries.filter(entry=>!entry.road)]) {
+    if (!groupEntries.length) continue;
     const instanced = new THREE.InstancedMesh(
       geometry,
       batchMaterial,
-      entries.length,
+      groupEntries.length,
     );
     instanced.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-    entries.forEach((entry, i) => {
+    groupEntries.forEach((entry, i) => {
       entry.colors = regionColors.map((palette,index) => entry.terrain ? palette.ground : index===0 ? entry.color : entry.color.clone().lerp(palette.stone,entry.edge ? .08 : .72));
       instanced.setColorAt(i, entry.color);
     });
     instanced.frustumCulled = false;
+    instanced.castShadow = !groupEntries[0].road;
+    instanced.receiveShadow = true;
     scene.add(instanced);
-    batches.push({ instanced, entries });
+    batches.push({ instanced, entries:groupEntries });
+    }
   }
   scene.remove(scenery);
   const cornerRoad = createCornerRoad(scene);
@@ -310,7 +339,7 @@ export function createView(canvas) {
     for (const z of [-0.34, 0.64]) {
       const leg = new THREE.Group();
       leg.position.set(x, 0.68, z);
-      box(leg, "#c7823d", 0, -0.22, 0, 0.23, 0.5, 0.25);
+      ball(leg, "#c7823d", 0, -0.22, 0, 0.14, 0.29, 0.16);
       ball(leg, "#ffe3b1", 0, -0.46, -0.07, 0.16, 0.13, 0.22);
       dog.add(leg);
       legs.push(leg);
@@ -318,8 +347,8 @@ export function createView(canvas) {
   const tail = new THREE.Group();
   tail.position.set(0, 1.05, 0.85);
   tail.rotation.x = 0.5;
-  box(tail, "#db994e", 0, 0.24, 0.16, 0.25, 0.55, 0.3);
-  box(tail, "#ffe3b1", 0, 0.57, 0.16, 0.27, 0.2, 0.3);
+  ball(tail, "#db994e", 0, 0.24, 0.16, 0.18, 0.35, 0.2);
+  ball(tail, "#ffe3b1", 0, 0.57, 0.16, 0.17, 0.18, 0.19);
   dog.add(tail);
   const originalParts = dog.children.filter(part => part !== collar && part !== scarf);
   const furMeshes = [];
@@ -366,7 +395,8 @@ export function createView(canvas) {
     for (const {item,color} of furMeshes) if (palette[color]) item.material = mat(palette[color]);
     for (const {ear,inner,side} of ears) {
       const floppy = puppy.ears === "floppy";
-      ear.geometry = floppy ? boxGeometry : coneGeometry;
+      ear.geometry = floppy ? sphereGeometry : coneGeometry;
+      ear.scale.set(floppy ? .20 : .26, floppy ? .40 : .62, floppy ? .18 : .32);
       ear.position.set(side * (floppy ? .53 : .35), floppy ? 1.38 : 1.85, -.55);
       ear.rotation.z = side * (floppy ? .15 : -.15);
       inner.visible = !floppy;
@@ -462,7 +492,7 @@ export function createView(canvas) {
   boneGeometry.translate(0,0,-.07);
   const boneNormals=boneGeometry.attributes.normal;
   const boneColors=new Float32Array(boneNormals.count*3);
-  const boneFace=new THREE.Color('#ffe8aa'),boneEdge=new THREE.Color('#352619');
+  const boneFace=new THREE.Color('#fff0bb'),boneEdge=new THREE.Color('#69401c');
   const boneColor=new THREE.Color();
   // Baked side contrast keeps the bone readable without an outline draw per pickup.
   for(let i=0;i<boneNormals.count;i++) {
@@ -472,23 +502,32 @@ export function createView(canvas) {
   }
   boneGeometry.setAttribute('color',new THREE.BufferAttribute(boneColors,3));
   templates.bone = new THREE.Mesh(boneGeometry,
-    new THREE.MeshStandardMaterial({vertexColors:true,roughness:.55,metalness:.1}));
+    new THREE.MeshStandardMaterial({vertexColors:true,roughness:.28,metalness:.28}));
   templates.bone.scale.setScalar(1.3);
   const boneTransform=templates.bone.clone();
   const boneBatch=createInstanceBatch(scene,boneGeometry,templates.bone.material);
   templates.rock = new THREE.Group();
-  box(templates.rock, "#293e49", 0, 1.05, 0, 1.75, 2.1, 1.4);
-  box(templates.rock, "#aec191", 0, 2.13, 0, 1.9, 0.2, 1.5);
+  const boulder = mesh(templates.rock,new THREE.DodecahedronGeometry(1,1),"#293e49",0,1.05,0,.94,1.1,.8);
+  boulder.rotation.y = .35;
+  ball(templates.rock, "#77996b", -.12, 1.98, 0, .78, .2, .65);
   box(templates.rock, "#e9dca6", 0, 1.08, 0.72, 0.35, 0.7, 0.06);
   templates.log = new THREE.Group();
-  box(templates.log, "#542d18", 0, 0.48, 0, 1.95, 0.95, 0.8);
-  box(templates.log, "#b28850", 0, 0.98, 0, 1.9, 0.1, 0.7);
-  for (const x of [-0.7, 0.7])
-    box(templates.log, "#ebc078", x, 0.5, 0.41, 0.18, 0.65, 0.04);
+  const timber = mesh(templates.log,new THREE.CylinderGeometry(.46,.48,1.95,18),"#683a20",0,.48,0,1,1,1);
+  timber.rotation.z = Math.PI / 2;
+  for (const x of [-.98,.98]) {
+    const end = mesh(templates.log,new THREE.CylinderGeometry(.4,.4,.015,18),"#e4ba7a",x,.48,0,1,1,1);
+    end.rotation.z = Math.PI / 2;
+    const ring = mesh(templates.log,new THREE.TorusGeometry(.25,.018,4,18),"#9b6636",x*1.01,.48,0,1,1,1);
+    ring.rotation.y = Math.PI / 2;
+  }
+  box(templates.log,"#ad7b43",0,.82,.3,1.8,.08,.07);
+  box(templates.log,"#3f291b",0,.4,.47,1.7,.045,.025);
   templates.arch = new THREE.Group();
   for (const x of [-1, 1])
     box(templates.arch, "#154052", x, 1.45, 0, 0.3, 2.9, 0.6);
   box(templates.arch, "#175c70", 0, 1.95, 0, 2.2, 1.15, 0.7);
+  box(templates.arch, "#78a89a", 0, 2.56, 0, 2.3, .12, .78);
+  for (const x of [-1,1]) box(templates.arch,"#8fa98f",x,.15,0,.43,.3,.72);
   box(templates.arch, "#102b36", 0, 1.46, 0.38, 1.85, 0.22, 0.08);
   for(const x of [-.72,.72])
     box(templates.arch, "#b3ffe7", x, 1.48, .43, .2, .15, .04);
@@ -699,6 +738,11 @@ export function createView(canvas) {
   const framePuppy=createPuppyFramer();
   let puppyFrame=null;
   const templateScene=new THREE.Group();
+  for (const [type, template] of Object.entries(templates)) {
+    if (!PICKUPS.includes(type)) template.traverse(part => {
+      if (part.isMesh) { part.castShadow = true; part.receiveShadow = true; }
+    });
+  }
   templateScene.add(...Object.values(templates));
   const shaderPreparation=createShaderPreparation(renderer,scene,camera,templateScene);
   return {

@@ -12,7 +12,9 @@ test('sky uses a bounded texture-free gradient with a lighter horizon',()=>{
     const shade=colors.getX(i);
     assert.ok(Number.isFinite(shade)&&shade>=.51&&shade<=1);
     if(positions.getY(i)<=0)assert.equal(shade,1);
-    if(positions.getY(i)>.99)assert.ok(shade<.53);
+    if(positions.getY(i)>.99)assert.ok(shade<.57);
+    assert.ok(colors.getZ(i)>=colors.getY(i)&&colors.getY(i)>=shade);
   }
   sky.geometry.dispose();sky.material.dispose();
+  assert.equal(sky.getObjectByName('distant-sun').material.depthWrite,false);
 });

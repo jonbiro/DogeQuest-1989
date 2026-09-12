@@ -73,6 +73,7 @@ export function createCornerRoad(scene) {
   });
   const mesh = new THREE.Mesh(geometry, material);
   mesh.name = "smooth-corner-road";
+  mesh.receiveShadow = true;
   mesh.frustumCulled = false;
   mesh.visible = false;
   scene.add(mesh);

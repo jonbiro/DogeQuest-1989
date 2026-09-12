@@ -6,6 +6,7 @@ import {RESUME_DURATION,resumeStep} from './resume.js';
 import {installBackupControls} from './backup-ui.js';
 import {installOfflineSupport} from './offline.js';
 import { createView } from "./render.js";
+import {prepareFirstFrame} from './shader-preparation.js';
 import { UPGRADES, levels, price, purchase, refundUpgrade } from "./progression.js";
 import { missionFor, missionProgress, missionTip, missionPackFor } from "./missions.js";
 import { bankRun } from "./rewards.js";
@@ -770,9 +771,14 @@ function graphicsError() {
 let view;
 try {
   view = createView($("scene"));
-  graphicsReady=true;
-  $("play").disabled = false;
-  $("play").textContent = playLabel();
+  $("play").textContent = 'Preparing the trail…';
+  void prepareFirstFrame(()=>view.prepareShaders()).then(()=>{
+    if(state==='graphics-error')return;
+    graphicsReady=true;
+    $("play").disabled = false;
+    $("play").textContent = playLabel();
+    if(state==='menu')$("play").focus({preventScroll:true});
+  });
 } catch {
   graphicsError();
 }
