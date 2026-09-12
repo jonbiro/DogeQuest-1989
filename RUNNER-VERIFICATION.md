@@ -1,5 +1,14 @@
 # Runner verification
 
+## Persistent practice coaching (2026-09-12)
+
+- Basics practice retains the first missed move's coaching in its final
+  results, instead of losing the short feedback and showing only a generic tip.
+- Simulation regression misses the log, then clears the gate and lane change;
+  results correctly retain jump advice with a 2-of-3 score. All-missed practice
+  keeps the earliest lesson, and fresh attempts reset the captured feedback.
+- Full build, distribution verification, lint and all 345 tests passed.
+
 ## Actionable gap coaching (2026-09-12)
 
 - Corrected results feedback that could recommend an open lane after sliding

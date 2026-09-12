@@ -148,6 +148,8 @@ export function stepPractice(run, dt) {
     const correct = lesson.type === 'rock' ? Math.abs(run.x-LANES[0]) < .75 : run.clears > clears;
     run.practice.outcomes.push(correct);
     run.practice.feedback={text:lessonFeedback(lesson,correct,run.lastMistakeDetail),until:run.time+1};
+    if(!correct&&!run.practice.firstMiss)
+      run.practice.firstMiss={type:lesson.type,advice:run.practice.feedback.text};
     run.practice.correct += Number(correct);
     run.practice.index++;
   }
@@ -219,5 +221,9 @@ export function practiceResult(run) {
       : run.bones===18 ? 'Every high bone collected! Steer on the cable; landing happens automatically. The adventure uses these same moves.'
       : 'Handle caught! Follow the left and right bone prompts while riding. Landing is automatic; jumping from the ground cannot reach these bones.',
   };
-  return {title:`${run.practice.correct} of 3 moves cleared`,lesson:run.practice.correct===3 ? 'Nice paws! You are ready to take these moves onto the adventure trail.' : 'Watch the edge prompt for jump and slide timing. For the last move, steer left instead of jumping.'};
+  return {title:`${run.practice.correct} of 3 moves cleared`,lesson:run.practice.correct===3
+    ? 'Nice paws! You are ready to take these moves onto the adventure trail.'
+    : run.practice.firstMiss
+      ? `${run.practice.firstMiss.advice}. Try these same three moves again; practice does not spend hearts or award points.`
+      : 'Watch the edge prompt for jump and slide timing. For the last move, steer left instead of jumping.'};
 }
