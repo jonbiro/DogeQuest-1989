@@ -209,3 +209,13 @@ These were manually advanced simulation runs, not sustained real-time play or
 physical touch/sensor tests. This closes the revised-layout swipe-wiring recheck,
 not native Safari performance, tilt-device validation or versioned rollout.
 The temporary browser tab was closed and viewport override reset afterward.
+
+## Replay rollout preparation
+
+Supported replay versions now live in one explicit list shared by link writing,
+link parsing and run creation. Previously two sites used `[1,2,CURRENT]`, which
+would silently discard version 3 when CURRENT advanced. Contract tests now require
+historical versions 1/2/3 to survive full link round trips and preserve the chosen
+generator version, including zero and maximum seeds. Unknown/noncanonical versions
+remain rejected. Full checks passed with 432 tests. CURRENT remains 3 and the
+river remains disabled; this removes a rollout hazard without enabling it early.

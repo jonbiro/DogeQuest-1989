@@ -10,7 +10,7 @@ export function seededRandom(seed) {
   };
 }
 import { levels } from "./progression.js";
-import {CURRENT_TRAIL_VERSION} from './trail-version.js';
+import {CURRENT_TRAIL_VERSION,supportsTrailVersion} from './trail-version.js';
 import {chargeFetch, activateFetch} from './ability.js';
 import {cleanMove} from './flow.js';
 import {mistakeDetail} from './mistakes.js';
@@ -34,7 +34,7 @@ export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart", 'g
 export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = CURRENT_TRAIL_VERSION) {
   const run = {
     seed,
-    generatorVersion: [1,2].includes(generatorVersion) ? generatorVersion : CURRENT_TRAIL_VERSION,
+    generatorVersion: supportsTrailVersion(generatorVersion) ? generatorVersion : CURRENT_TRAIL_VERSION,
     random: seededRandom(seed),
     distance: 0,
     time: 0,

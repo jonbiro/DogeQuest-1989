@@ -1,8 +1,8 @@
 // Version the layout contract so future generators can reject incompatible links.
-import {CURRENT_TRAIL_VERSION} from './trail-version.js';
+import {CURRENT_TRAIL_VERSION,supportsTrailVersion} from './trail-version.js';
 export function readTrailSeed(search) {
   const values=new globalThis.URLSearchParams(search).getAll('trail');
-  if(values.length!==1||!/^[123]-[0-9a-z]{1,7}$/.test(values[0]))return null;
+  if(values.length!==1||!/^\d-[0-9a-z]{1,7}$/.test(values[0])||!supportsTrailVersion(Number(values[0][0])))return null;
   const code=values[0].slice(2),seed=Number.parseInt(code,36);
   return seed<=0xffffffff&&seed.toString(36)===code?seed:null;
 }
@@ -20,7 +20,7 @@ export function readTrailTarget(search) {
 }
 export function trailLink(href,seed,version=CURRENT_TRAIL_VERSION,target=0) {
   const url=new globalThis.URL(href);
-  if(!['https:','http:'].includes(url.protocol)||!Number.isSafeInteger(seed)||![1,2,CURRENT_TRAIL_VERSION].includes(version))return '';
+  if(!['https:','http:'].includes(url.protocol)||!Number.isSafeInteger(seed)||!supportsTrailVersion(version))return '';
   url.search='';url.hash='';
   url.searchParams.set('trail',`${version}-${(seed>>>0).toString(36)}`);
   if (validTrailTarget(target)) url.searchParams.set('target',String(target));
