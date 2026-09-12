@@ -1,5 +1,19 @@
 # Runner verification
 
+## Compact portrait practice flow (2026-09-12)
+
+- Fresh 320 × 568 browser run ended at 200m/300 points and offered jump timing
+  practice. Failed drill results retained the original-trail retry action.
+- Retried through the real page's jump buttons, dispatched by a cue-reading
+  automation: all three jumps cleared, then the original-trail action started
+  another adventure and pause worked. This is synthetic page-control coverage,
+  not physical touch or a human reaction benchmark. The initial observation
+  timed out; the already-running drill was allowed to finish, not restarted.
+- Screenshots confirmed readable practice HUD and results with visible actions.
+  Saved credits remained 300 after both drills; no browser errors. Restored the
+  isolated localhost profile to its verified initial null state and closed the
+  test tab/reset viewport. Production/user profiles were not touched.
+
 ## Practice-to-adventure speed progression (2026-09-12)
 
 - Focused jump/slide drills ease from 12 to 17 to 22m/s after successful moves,
