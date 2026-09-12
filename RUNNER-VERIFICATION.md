@@ -1,5 +1,15 @@
 # Runner verification
 
+## Keyboard practice navigation (2026-09-12)
+
+- At 320 × 568, used Tab/Enter to open Help, Shift-Tab/Space to expand practice,
+  and Tab through all seven drills in order. Each focused button scrolled into
+  view; Enter launched turn practice and Escape paused it.
+- The last button's focus outline initially clipped at the scroll boundary.
+  Added 8px block scroll padding; rechecked the focused button bottom at 378.82px
+  versus the panel bottom at 387px, leaving the outline clear.
+- Full check: 352 tests passed. Temporary tab closed and viewport reset.
+
 ## Practice library in Help (2026-09-12)
 
 - All seven skills are directly selectable without a failed run: basics,
