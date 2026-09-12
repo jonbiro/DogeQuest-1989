@@ -14,8 +14,9 @@
     <meta name="theme-color" content="#102a28" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'"
+      content="default-src 'self'; script-src 'self' 'sha256-k24E4tOnVQXsv6DVRykXoSP0pwTn5gNfIu1McplqFTM='; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'"
     />
+    <script id="runner-entry">if(location.pathname.endsWith("/runner")){const url=new URL(location.href);url.pathname+="/";location.replace(url.href);}</script>
     <link rel="icon" href="../favicon.svg" />
     <link rel="stylesheet" href="style.css" />
   </head>

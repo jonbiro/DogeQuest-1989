@@ -36,7 +36,20 @@ serve-sim helper. The dedicated simulator itself remains booted at camp.
 
 ## Remaining native-browser checks
 
-Use the correct trailing-slash address from the outset. Verify clear jump/slide
+Verify clear jump/slide
 frames and the new regional sequences with a more reliable input/inspection path,
 then measure a sustained run. Keep the old-origin save protected and distinguish
 the new 200-point QA profile from user progress.
+
+## Entry-path follow-up
+
+The runner now canonicalizes a `/runner` pathname to `/runner/` before relative
+assets load. The small inline redirect has an exact CSP hash, not an unrestricted
+inline-script permission. Origin, shared-trail query parameters and fragments are
+preserved; canonical paths do not redirect.
+
+All 375 tests, build, distribution validation and lint passed. A fresh in-app
+browser tab opened the slashless local URL with trail `3-1j9`, target `200` and
+`#help`; it reached the slash-terminated URL, rendered the shared-trail start
+button and 200-point target, and recorded no console errors. This follow-up is a
+desktop browser check, not a repeated native Safari test.
