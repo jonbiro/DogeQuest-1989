@@ -55,6 +55,15 @@ export function actionCue(run) {
     ? '↓ SLIDE' : danger.type === 'gap' ? '↑ JUMP GAP' : '↑ JUMP';
 }
 
+// Gates reserve the final 45m from obstacle rows. Keep the actionable choice
+// inside that clear stretch, with room for the last hazard's collision depth.
+export function routeChoiceCue(run) {
+  if (run.choicePending === null) return '';
+  const remaining=run.choicePending-run.distance;
+  return remaining>0 && remaining<=40
+    ? `GATES IN ${Math.ceil(remaining)}m · ← Scenic: fewer obstacles · Challenge: more points →` : '';
+}
+
 export function eventNotice(event, run) {
   if (event === 'hit' && run.lastMistake?.type === 'corner')
     return {text:`Missed ${run.lastMistake.direction} turn · ${run.hearts} ${run.hearts === 1 ? 'heart' : 'hearts'} left`, priority:3};

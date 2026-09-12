@@ -16,7 +16,7 @@ import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLin
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound,resumeSound} from "./sound.js";
-import {actionCue,eventNotice,dockMode,runLesson} from "./guidance.js";
+import {actionCue,eventNotice,dockMode,runLesson,routeChoiceCue} from "./guidance.js";
 import {turnPrompt} from "./turns.js";
 import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,isJumpTap} from "./gestures.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
@@ -809,8 +809,7 @@ function frame(now) {
       $("distance").innerHTML = `${Math.floor(run.distance-(run.practice?.start || 0))}<small> m</small>`;
       const labels=runHudLabels(run,saved.best);
       $("region-name").textContent = labels.region;
-      setText('route-choice', run.choicePending!==null && run.choicePending-run.distance<100
-        ? `GATES IN ${Math.max(0,Math.ceil(run.choicePending-run.distance))}m · ← Scenic: fewer obstacles · Challenge: more points →` : '');
+      setText('route-choice', routeChoiceCue(run));
       $("bones").textContent = run.bones;
       $("run-score").textContent = labels.score;
       const progress = missionProgress(run, currentMission);

@@ -1,5 +1,26 @@
 # Runner verification
 
+## Safer route-choice timing (2026-09-12)
+
+- Investigation reproduced the earlier seed-38 conflict: at 4489m the right lane
+  has a branch and the center has a rock, while the old 100m route prompt invites
+  movement toward the 4550m gates. This is a guidance conflict, not evidence that
+  the physical row itself is impossible.
+- Actionable route instructions now appear only in the final 40m, within the
+  existing 45m obstacle-free reservation. No generated row, seed, reward or
+  difficulty was changed. Hazard cues keep their existing priority.
+- All 265 tests and build/lint/distribution checks pass. Tests cover prompt
+  boundaries, both route choices with two delayed inputs at 46.8m/s (including
+  100ms HUD delay and 150ms initial reaction), and 48km of seeded generation over
+  both layout versions without an unpassed pre-gate hazard during a route prompt.
+  That generation check uses invulnerability and is not a survival claim.
+- Portrait browser play at 390 × 844 followed visible cues and reached the first
+  prompt at 310m, exactly 40m before the gates, with three hearts. No early route
+  prompt appeared while the preceding Root scramble was still active.
+  Resuming and steering right selected Jungle · Challenge at 351m. The run stayed
+  unbanked (save remained absent), browser warnings/errors were empty, and the
+  temporary tab and viewport were cleaned up. This is browser, not phone evidence.
+
 ## Rotation-safe mobile interruptions (2026-09-12)
 
 - Device orientation changes pause active play through the existing pause path,
