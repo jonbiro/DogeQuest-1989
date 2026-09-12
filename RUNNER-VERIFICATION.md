@@ -9,7 +9,9 @@
 - A pre-change SHA-256 geometry fixture covers 12,450 complete frames: base,
   Scenic and Challenge paths, hills/flat terrain, five depths and 415 distances
   spanning multiple gates, corners and regions. The optimized outputs match
-  exactly. Separate tests cover mutation isolation and non-finite coordinates.
+  exactly on the same local runtime. The portable fixture rounds to 1e-7 units:
+  the first CI attempt exposed platform differences in raw floating-point bits.
+  Separate tests cover mutation isolation and non-finite coordinates.
 - Identical local Node workloads (1,000 frames, 180 depths per frame, Challenge
   detour) produced warmed old timings 403/388/355ms and new timings 95/91/92ms,
   with identical accumulated results. These are CPU microbenchmark results,
