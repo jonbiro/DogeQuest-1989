@@ -59,6 +59,7 @@ test('authored lane weaves earn clean flow and Fetch once without becoming jump 
     assert.equal(run.flowPoints,50);
     assert.equal(run.fetchCharge,12);
     assert.equal(run.clears,0,'jump / slide missions keep their meaning');
+    assert.equal(run.weaves,1);
     assert.equal(run.events.filter(e=>e==='weave').length,1);
   }
 });
@@ -73,6 +74,7 @@ test('missed lanes and Zoomies do not earn weave charge; Fetch cannot refill its
     for(let i=0;i<30;i++)step(run,1/120);
     assert.equal(run.fetchCharge,0,mode);
     assert.equal(run.cleanStreak,mode==='fetch'?1:0,mode);
+    assert.equal(run.weaves,mode==='fetch'?1:0,mode);
   }
 });
 
@@ -91,6 +93,7 @@ test('a full slalom pays three weave credits and its course bonus without collis
   assert.equal(run.hearts,3);
   assert.equal(run.regionalCourses[2],1);
   assert.equal(run.cleanStreak,3);
+  assert.equal(run.weaves,3);
   assert.equal(run.fetchCharge,36);
   assert.equal(run.bonusPoints,180);
   assert.equal(run.events.filter(e=>e==='weave').length,3);

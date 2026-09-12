@@ -71,6 +71,7 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     flowPoints: 0,
     lastFlowBonus: 0,
     clears: 0,
+    weaves: 0,
     gifts: 0,
     score: 0,
     ended: false,
@@ -471,6 +472,7 @@ export function step(run, dt) {
   if (!run.ended) {
     const weaves=advanceCourse(run, LANES);
     for(let i=0;i<weaves;i++) {
+      run.weaves++;
       chargeFetch(run,12);
       cleanMove(run);
       run.events.push('weave');

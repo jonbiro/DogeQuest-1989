@@ -1,5 +1,19 @@
 # Runner verification
 
+## Include authored weaving in puppy bonds (2026-09-12)
+
+- Successful non-Zoomies course weave beats now contribute to the selected
+  puppy's bond, alongside existing clears and correct turns. They remain distinct
+  from jump/slide clear counters, so those missions do not change meaning.
+  Ordinary steering and missed beats do not count. Expanded run details show
+  earned weaves; passport/help/next-bond wording explains the contribution.
+- Simulation tests verify one weave per successful beat and none for misses or
+  Zoomies. Banking tests cross Mochi's first tier using three weaves, award 150
+  mastery points exactly once, preserve other puppies, and survive reload without
+  replaying the reward. Practice is excluded by the normal banking transaction.
+  Old runs without a weave count contribute zero; existing saves gain no invented
+  history. No new HUD panel, physics changes or persistent save schema added.
+
 ## Specific gap-jump rehearsal feedback (2026-09-12)
 
 - Gap practice now uses collision timing evidence for early jumps, late jumps,

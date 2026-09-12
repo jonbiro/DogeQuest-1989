@@ -24,7 +24,7 @@ export function masteryCards(value) {
   const mastery=masteryFrom(value);
   return [
     ...Object.entries(PUPPIES).map(([id,dog])=>({id:`dog-${id}`,name:dog.name,
-      current:mastery.dogs[id],unit:'clean clears + correct turns',tiers:DOG_TIERS})),
+      current:mastery.dogs[id],unit:'clears + course weaves + correct turns',tiers:DOG_TIERS})),
     ...REGIONS.map((region,i)=>({id:`region-${i}`,name:region.name,
       current:mastery.regions[i],unit:'clean regional courses',tiers:REGION_TIERS})),
   ];
@@ -37,7 +37,7 @@ export function bankMastery(profile,run) {
   const before=masteryCards(profile.mastery);
   const mastery=masteryFrom(profile.mastery);
   if (Object.hasOwn(PUPPIES,run.puppy))
-    mastery.dogs[run.puppy]=count(mastery.dogs[run.puppy]+count(run.clears)+count(run.turns));
+    mastery.dogs[run.puppy]=count(mastery.dogs[run.puppy]+count(run.clears)+count(run.weaves)+count(run.turns));
   mastery.regions=mastery.regions.map((value,i)=>count(value+count(run.regionalCourses?.[i])));
   profile.mastery=mastery;
   const earned=[];

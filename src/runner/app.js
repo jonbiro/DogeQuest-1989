@@ -446,7 +446,7 @@ function finish() {
   $("final-distance").textContent = `${Math.floor(run.distance)} m`;
   $("final-bones").textContent = run.bones;
   $("run-lesson").textContent = runLesson(run);
-  $("run-highlights").textContent = `${run.turns} clean ${run.turns === 1 ? 'turn' : 'turns'} · ${run.clears} obstacles cleared · Best bone streak: ${run.bestCombo}`;
+  $("run-highlights").textContent = `${run.turns} clean ${run.turns === 1 ? 'turn' : 'turns'} · ${run.clears} obstacles cleared${run.weaves?` · ${run.weaves} course ${run.weaves===1?'weave':'weaves'}`:''} · Best bone streak: ${run.bestCombo}`;
   const courses = run.regionalCourses.reduce((sum,count)=>sum+count,0);
   if (courses) $("run-highlights").textContent += ` · ${courses} clean regional ${courses === 1 ? 'course' : 'courses'}`;
   const {missionPoints: reward, prizes} = receipt;
@@ -479,7 +479,7 @@ function finish() {
   $("overlay-copy").textContent = `${resultChallenge(run)}${resultRecord(receipt,run)}${receipt.totalPoints.toLocaleString()} upgrade ${receipt.totalPoints===1?'point':'points'} banked. Retry the same trail, or head to camp ${sharedSeed === null ? 'for a fresh one' : 'to switch to random trails'}.`;
   const nextBond=dogCard?.tiers.find(tier=>dogCard.current<tier.target);
   $("run-highlights").textContent = nextBond
-    ? `Next: ${dogCard.name} · ${Math.max(0,nextBond.target-dogCard.current)} clean clears or turns to ${nextBond.name}`
+    ? `Next: ${dogCard.name} · ${Math.max(0,nextBond.target-dogCard.current)} clears, course weaves or turns to ${nextBond.name}`
     : `${run.clears} obstacles cleared · Best bone streak: ${run.bestCombo}`;
   persist();
   if (!storageAvailable) $("overlay-copy").textContent = 'Run complete. These rewards are available for this visit only; saving is unavailable.';

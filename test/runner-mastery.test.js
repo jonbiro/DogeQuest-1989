@@ -52,3 +52,24 @@ test('mastery is part of the stable end-of-run banking transaction and survives 
   assert.equal(JSON.stringify(profile),before);
   assert.deepEqual(masteryFrom(JSON.parse(before).mastery),profile.mastery);
 });
+
+test('course weaving advances only the selected dog and pays a crossed bond tier once',()=>{
+  const profile={best:0,distance:0,bones:0,credits:0,challenges:0,collection:collectionFrom(),
+    mastery:masteryFrom({dogs:{mochi:8}})};
+  const run={ended:true,puppy:'mochi',score:100,distance:100,bones:0,gifts:0,
+    clears:0,turns:0,weaves:3,regionalCourses:[0,0,0]};
+  const receipt=bankRun(profile,run,[]);
+  assert.equal(profile.mastery.dogs.mochi,11);
+  assert.equal(profile.mastery.dogs.biscuit,0);
+  assert.equal(receipt.mastery.points,150);
+  assert.equal(receipt.totalPoints,250);
+  bankRun(profile,run,[]);
+  assert.equal(profile.credits,250);
+  const restored=JSON.parse(JSON.stringify(profile));
+  bankMastery(restored,{ended:true,puppy:'mochi',weaves:1});
+  assert.equal(restored.mastery.dogs.mochi,12);
+  assert.equal(restored.credits,250);
+  const practiceProfile=JSON.stringify(profile);
+  assert.equal(bankRun(profile,{...run,receipt:undefined,practice:{}},[]),null);
+  assert.equal(JSON.stringify(profile),practiceProfile);
+});
