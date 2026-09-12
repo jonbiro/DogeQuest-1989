@@ -169,7 +169,9 @@ export function fillTrack(run) {
     const visit = Math.floor(start/REGION_LENGTH);
     if (start >= 195 && !run.course && visit !== run.lastCourseVisit && (route !== "scenic" || run.generatorVersion>=3) &&
         sequenceEnd < Math.min(run.nextChoice, run.nextZipline) - 45 &&
-        sequenceEnd <= (visit+1)*REGION_LENGTH &&
+        // A landscape transition is not a gameplay hazard. Prototype courses
+        // may finish across it; actual encounter reservations still take priority.
+        (run.raftPrototype || sequenceEnd <= (visit+1)*REGION_LENGTH) &&
         !cornerIntersecting(start, sequenceEnd) &&
         (!run.raftPrototype||!raftIntersecting(start,sequenceEnd)) &&
         (!run.route || start >= run.route.until || sequenceEnd - COURSE_RECOVERY <= run.route.until)) {

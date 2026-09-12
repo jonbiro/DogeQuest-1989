@@ -323,6 +323,7 @@ export function longRunCheck({rafts=false}={}) {
   const summary={runs:4,metersPerRun,completedZiplines,completedRafts,turns,missedTurns,renderedCheckpoints:samples.length,minimumHearts,hits,shieldSaves,peakSpeed,peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),warmed,repeatLapStable:true,final:samples.at(-1)};
   if(hits||shieldSaves)throw new Error(`Traversal collision between checkpoints: ${JSON.stringify(summary)}`);
   summary.regionalCourses=regionalCourses;
+  if(rafts&&regionalCourses[2]<10)throw new Error(`Glade course pacing regression: ${regionalCourses[2]}`);
   summary.courseNames=[...courseNames];
   for(const name of ['Root scramble','Canopy shuffle','Root rhythm','Fern dash','Canyon crossings','Ridge hop','Twin crossings','Ridge switch','Crystal slalom','Moonpaw weave','Crystal switchback','Moonlit hurdles'])
     if(!courseNames.has(name))throw new Error(`Missing course variation: ${name}`);

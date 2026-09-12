@@ -106,3 +106,21 @@ release gates; the prototype is still disabled for ordinary adventures.
 Final build, lint, distribution checks and all 398 tests passed. The extended
 browser run reported no console errors; its temporary tab and viewport override
 were cleaned up.
+
+## Landscape-boundary pacing
+
+Prototype courses may now finish across a scenery boundary. Previously the
+generator discarded otherwise safe opportunities simply because the background
+was changing. Turn, river, zipline, choice and difficulty reservations remain
+mandatory; default replay layouts retain the old boundary rule.
+
+A sweep of candidate starts through 18 km verifies that admitted courses never
+cross reserved turns, rivers, gates or ziplines. The same four-run renderer matrix
+now records 39/34/11 regional course completions (previously 32/37/6), all twelve
+hard-course families, 24 rafts, 52 ziplines and 104 turns without damage or missed
+turns. Peaks: 36 geometries, nine textures, 243 draw calls and 115 objects;
+repeat laps stable. The prototype check now requires at least ten glade course
+completions in that matrix to guard against the previous starvation.
+
+The glade still appears less often than the other course families. This is an
+improvement to the gated prototype, not a claim of final pacing balance.
