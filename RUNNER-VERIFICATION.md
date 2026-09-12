@@ -1,5 +1,21 @@
 # Runner verification
 
+## Portrait early-jump recovery in the production app (2026-09-12)
+
+- Tested build `e0958a2` at 390x844 on local shared trail `2-1j9`. A temporary
+  browser controller read the rendered cue and sent keyboard events, deliberately
+  choosing jump at the first slide prompt before following the resulting dive
+  prompt. It did not set simulation state or call movement functions directly.
+- The recorded sequence was turn-left, jump, deliberately wrong jump, dive,
+  jump, slide. The dive cue appeared while the rendered posture was `jump`, at
+  bounds x=32.5..357.5/y=725..739, inside the portrait lower dock.
+- After 14 seconds the actual app reached 330m, completed its first regional
+  course, accepted one corner with no misses and retained three hearts. It was
+  paused without banking. No browser warnings/errors were reported; the isolated
+  origin's save remained absent. The temporary tab was closed and viewport reset.
+- This is end-to-end rendered-app evidence with synthetic keyboard events,
+  not trusted touch input, human reaction-time evidence or physical-phone play.
+
 ## Airborne overhead escape guidance (2026-09-12)
 
 - Airborne movement previously suppressed all ordinary obstacle cues. An
