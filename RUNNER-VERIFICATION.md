@@ -1,5 +1,21 @@
 # Runner verification
 
+## Keyboard focus during graphics startup (2026-09-12)
+
+- Shader completion now focuses Play only if the player has not already
+  selected another control. Dialog entry chooses an enabled Run button, then
+  Back to camp, then the programmatically focusable heading. Graphics recovery
+  enables Reload before transferring focus into its dialog.
+- Tests execute the real startup callback with deferred preparation and an
+  audio-control focus fixture, plus all dialog fallback cases. The existing
+  dialog scroll regression includes the new focus helper rather than mocking it.
+- In an isolated browser, a deliberately disabled secondary Run button emulated
+  the pending-control state: opening Help focused Back to camp, Tab wrapped to
+  Touch controls, and Escape returned focus to Help. This is a controlled UI
+  state check, not a cold-driver timing measurement. Reload restored both Run
+  buttons; no warnings/errors or saved-profile mutations were observed.
+- Full build, distribution verification, lint and all 322 tests passed.
+
 ## Ground scenery on the bank surface (2026-09-12)
 
 - Matched forest screenshots exposed hovering trees and shrubs: scenery roots

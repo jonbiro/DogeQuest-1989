@@ -312,6 +312,11 @@ function syncDock() {
   for (const id of ['cue','route-choice','toast','mission-summary']) $(id).hidden = mode !== id;
   $("mission-hud").hidden = state !== 'playing' || !mode;
 }
+function focusOverlay() {
+  const primary = $("overlay-primary"), home = $("home");
+  const target = !primary.disabled ? primary : !home.hidden && !home.disabled ? home : $("overlay-title");
+  target.focus({preventScroll:true});
+}
 function setState(next) {
   const previous = state;
   state = next;
@@ -329,7 +334,7 @@ function setState(next) {
   $("hud").inert = modal;
   if (modal) {
     if (previous !== next) document.querySelector('.modal-content').scrollTop = 0;
-    $("overlay-primary").focus({preventScroll:true});
+    focusOverlay();
   }
   accumulator = 0;
   pointer = null;
@@ -756,6 +761,7 @@ function graphicsError() {
   if(audio)stopSound(audio);
   graphicsReady=false;
   $("play").disabled=true;
+  $("overlay-primary").disabled = false;
   showOverlay("graphics-error");
   $("overlay-label").textContent="LET’S GET YOUR PAWS BACK ON THE TRAIL";
   $("overlay-title").textContent="The 3D trail needs a restart.";
@@ -766,7 +772,6 @@ function graphicsError() {
         : 'The trail was interrupted. Earned rewards were counted for this visit, but saving is unavailable. Reloading may lose this progress.'
       : 'Graphics are unavailable or were interrupted. Reload to try again. Previously saved puppies, outfits and points stay in this browser; practice never changes your progress.';
   $("overlay-primary").textContent = "Reload trail";
-  $("overlay-primary").disabled = false;
   $("overlay-primary").onclick = () => window.location.reload();
 }
 let view;
@@ -780,7 +785,8 @@ try {
     $("play").disabled = false;
     $("overlay-primary").disabled = false;
     $("play").textContent = playLabel();
-    if(state==='menu')$("play").focus({preventScroll:true});
+    if(state==='menu' && (!document.activeElement || document.activeElement===document.body))
+      $("play").focus({preventScroll:true});
   });
 } catch {
   graphicsError();

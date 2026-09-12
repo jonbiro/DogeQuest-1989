@@ -6,7 +6,7 @@ import {runInNewContext} from 'node:vm';
 
 test('new dialogs start at the top while same-dialog updates preserve scroll',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
-  const start=source.indexOf('function setState(next) {');
+  const start=source.indexOf('function focusOverlay() {');
   const end=source.indexOf('function start()',start);
   assert.ok(start>=0 && end>start);
   const elements=new Map(),content={scrollTop:250},focus=[];
