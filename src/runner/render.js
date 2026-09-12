@@ -882,7 +882,7 @@ export function createView(canvas) {
         instanced.instanceColor.needsUpdate = true;
       }
       cornerRoad.update(distance, frameAt, menu);
-      water.update(distance, frameAt, menu);
+      water.update(distance, frameAt, menu, dt, state === 'playing' && !reducedMotion);
       dog.position.set(
         menu ? 0 : x,
         (menu ? 0 : y) +

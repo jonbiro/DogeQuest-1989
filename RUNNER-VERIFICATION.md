@@ -1,5 +1,21 @@
 # Runner verification
 
+## River surface highlights (2026-09-12)
+
+- Added subdued, broken ripple highlights to the continuous river mesh. River
+  coordinates anchor them to the crossing instead of the camera; distant
+  highlights fade out to avoid noisy horizon detail. No new mesh or texture.
+- Animation runs only during active play and freezes for pause/reduced motion.
+  A shared bounded uniform avoids per-frame material/program allocation. Tests
+  cover coordinate stability, pause, invalid time and capped time steps.
+- Actual renderer previews at 390 × 844 (225m) and 320 × 568 (1125m, 120
+  animated frames) show clear bridge obstacles and bones with ripples confined
+  below the running surface. Both have no browser warnings/errors; the preview
+  used 19 geometries, 7 textures and 100/101 draws respectively. These are
+  controlled scene checks, not human playtesting or physical-device evidence.
+- Build, distribution verification, lint and all 328 tests passed. Temporary
+  preview output was removed by the final build; saved profiles were untouched.
+
 ## Course recovery feedback (2026-09-12)
 
 - Completing two of three course beats now awards 60 points; a perfect course

@@ -4,6 +4,24 @@ import {Scene} from 'three';
 import {createWaterSurface} from '../src/runner/water.js';
 import {createRouteSampler} from '../src/runner/route.js';
 
+test('river ripples reuse a uniform, freeze when paused and keep anchored coordinates',()=>{
+  const water=createWaterSurface(new Scene()),shader={uniforms:{},vertexShader:'#include <begin_vertex>',fragmentShader:'#include <color_fragment>'};
+  water.mesh.material.onBeforeCompile(shader);
+  const phase=shader.uniforms.riverPhase,uv=water.mesh.geometry.attributes.uv;
+  const original=Array.from(uv.array);
+  water.update(225,createRouteSampler(225),false,1/60,true);
+  assert.equal(phase.value,.02);
+  water.update(230,createRouteSampler(230),false,1,false);
+  assert.equal(phase.value,.02);
+  water.update(1125,createRouteSampler(1125),false,NaN,true);
+  assert.equal(phase.value,.02);
+  water.update(1125,createRouteSampler(1125),false,20,true);
+  assert.ok(Math.abs(phase.value-.08)<1e-8);
+  assert.deepEqual(Array.from(uv.array),original);
+  assert.match(shader.fragmentShader,/length\(vViewPosition\)/);
+  assert.equal(water.mesh.material.map,null);
+});
+
 test('river uses shared indexed edges with no overlapping water slabs',()=>{
   const water=createWaterSurface(new Scene()),geometry=water.mesh.geometry;
   assert.equal(geometry.attributes.position.count,105);
