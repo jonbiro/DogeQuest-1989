@@ -738,6 +738,7 @@ kbd {
 }
 #controls #fetch.ready { background: #98f5e1; color: #123b32; border-color: #c5fff0; }
 #controls button[data-control-state="queued"] {
+  padding-inline: 2px;
   background: #98f5e1;
   color: #123b32;
   border-color: #c5fff0;

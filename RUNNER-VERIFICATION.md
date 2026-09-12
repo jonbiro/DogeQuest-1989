@@ -1,5 +1,17 @@
 # Runner verification
 
+## Compact queued-label visual correction (2026-09-12)
+
+- The actual queued-control fixture at 320x568 exposed 1px horizontal overflow
+  (51px scroll width in a 50px client area). Reduced only queued-state internal
+  horizontal padding to 2px; retained font size and all 52x60px touch targets.
+- Rebuilt and visually inspected the correction: both labels fit and every
+  control reports scroll width equal to client width. Additional 390x844 and
+  844x390 checks report no overflow, with 60px/56px tall targets respectively.
+- This was a deliberately staged control-state fixture using the production
+  updater and CSS, not a natural gameplay screenshot. Temporary DOM changes
+  disappeared when the tab closed; viewport reset and no save changes made.
+
 ## Buffered-action confirmation (2026-09-12)
 
 - Existing Jump/Slide controls now display QUEUED with a steady contrasting
