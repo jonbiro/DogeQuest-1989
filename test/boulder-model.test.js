@@ -20,3 +20,17 @@ test('weathered boulder preserves bounds and vertex budget while breaking the sp
   }
   assert.ok(Math.max(...radii)-Math.min(...radii)>.15,'visible chipped contours, not another sphere');
 });
+
+test('coincident stone vertices have continuous lighting while texture UVs remain intact',()=>{
+  const geometry=createBoulderGeometry(),source=new THREE.DodecahedronGeometry(1,1);
+  assert.deepEqual(geometry.attributes.uv.array,source.attributes.uv.array);
+  const positions=geometry.attributes.position,normals=geometry.attributes.normal,seen=new Map();
+  let duplicates=0;
+  for(let i=0;i<positions.count;i++){
+    const key=[positions.getX(i),positions.getY(i),positions.getZ(i)].map(n=>n.toFixed(5)).join(',');
+    const normal=[normals.getX(i),normals.getY(i),normals.getZ(i)];
+    if(seen.has(key)){assert.deepEqual(normal,seen.get(key));duplicates++;}
+    else seen.set(key,normal);
+  }
+  assert.ok(duplicates>100,'exercise shared triangle edges, including UV seams');
+});

@@ -22,3 +22,9 @@ bounds, determinism, finite unit normals, budget and non-spherical contours.
 All 359 tests and the complete check passed. A 390 × 844 canyon preview and the
 same 24 km rendering regression passed with unchanged resource peaks and no
 browser errors.
+
+The follow-up shading audit found that recomputing normals on the non-indexed
+stone introduced hard triangle seams. Coincident normals are now averaged once
+at model creation, leaving UV coordinates, positions and topology untouched.
+360 tests and the full check passed; a fresh 390 × 844 canyon preview showed
+continuous lighting with the chipped outline retained and no browser errors.
