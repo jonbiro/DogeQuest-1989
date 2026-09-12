@@ -66,3 +66,17 @@ test('sensitivity presets change the required lean without triggering a move dur
     assert.equal(f.tilt.setSensitivity('__proto__'),false);
   }
 });
+test('touch yields steering without shifting the neutral hold while leaning',async()=>{
+  const f=fixture();await f.tilt.enable();f.sample(0);f.sample(25,30);
+  assert.deepEqual(f.actions,['right']);
+  f.tilt.yieldToTouch();f.sample(25,30);
+  assert.deepEqual(f.actions,['right'],'holding the lean cannot fight a touch move');
+  f.sample(0,30);assert.deepEqual(f.actions,['right'],'returning to original neutral is not a left lean');
+  f.sample(-25,30);assert.deepEqual(f.actions,['right','left']);
+});
+test('touch suppresses immediate sensor motion for 350ms',async()=>{
+  const f=fixture();await f.tilt.enable();f.sample(0);f.tilt.yieldToTouch();
+  f.sample(30,10);assert.deepEqual(f.actions,[]);
+  f.sample(30,20);assert.deepEqual(f.actions,[],'neutral is required after cooldown');
+  f.sample(0,30);f.sample(30,30);assert.deepEqual(f.actions,['right']);
+});

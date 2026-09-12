@@ -12,8 +12,10 @@ Five tests cover jitter, neutral rearming, permission denial, cancellation durin
 a pending permission request, missing readings, invalid data and rotation.
 All 410 tests plus build, lint and distribution checks passed.
 
-Enable/off/recalibrate controls are wired. Direct pointer/keyboard input and state
-changes recalibrate the neutral hold. Steering is suppressed outside active play,
+Enable/off/recalibrate controls are wired. State changes recalibrate the neutral
+hold. Direct pointer/keyboard input instead suppresses tilt for 350 ms and requires
+returning to the original neutral hold before rearming. This avoids shifting the
+center when a player taps Jump while leaning. Steering is suppressed outside active play,
 in hidden documents and during corner prompts; corners still require a swipe or
 button. Settings are session-only, with no automatic permission requests on load.
 Portrait 390 × 844 browser inspection confirmed the controls and denied-access
@@ -42,6 +44,10 @@ validated ergonomic recommendations. The setting lasts for the current visit.
 The 320 × 568 browser check verified selection and a 44 px touch target after
 correcting the bundled stylesheet. All 416 tests passed before the CSS-only fix;
 the final stylesheet rebuild and distribution/lint checks were rerun.
+
+Two further sensor regressions verify that touch cannot shift neutral or allow an
+immediate competing tilt action. All 418 tests and full checks passed after this
+input-arbitration correction. Physical combined tilt/touch feel remains unverified.
 
 [MDN orientation permission](https://developer.mozilla.org/en-US/docs/Web/API/DeviceOrientationEvent/requestPermission_static).
 Where implemented, permission requests require a secure context and direct user

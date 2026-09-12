@@ -3,6 +3,7 @@
 export function createTiltSteering(host,{onAction,onStatus=()=>{}}){
   const thresholds={gentle:9,balanced:14,steady:20};
   let threshold=thresholds.balanced;
+  let blockedUntil=0;
   let enabled=false,pending=false,origin=null,filtered=0,armed=true,last=null,timer=null,generation=0,lastAngle=null;
   const status=value=>onStatus(value);
   const clearTimer=()=>{if(timer!==null)host.clearTimeout(timer);timer=null;};
@@ -28,6 +29,7 @@ export function createTiltSteering(host,{onAction,onStatus=()=>{}}){
     if(origin===null){origin=value;last=now;lastAngle=angle;clearTimer();status('ready');return;}
     const dt=Math.min(.1,Math.max(0,(now-last)/1000));last=now;
     filtered+=(value-origin-filtered)*(1-Math.exp(-dt/0.08));
+    if(now<blockedUntil)return;
     if(Math.abs(filtered)<threshold*.36)armed=true;
     if(armed&&Math.abs(filtered)>threshold){armed=false;onAction(filtered<0?'left':'right');}
   }
@@ -56,5 +58,10 @@ export function createTiltSteering(host,{onAction,onStatus=()=>{}}){
     if(!Object.hasOwn(thresholds,value))return false;
     threshold=thresholds[value];reorient();return true;
   }
-  return {enable,stop,recalibrate:reorient,setSensitivity};
+  function yieldToTouch(){
+    // Preserve the calibrated hold when jumping/sliding. Require neutral again
+    // after direct input rather than treating the current lean as a new center.
+    armed=false;blockedUntil=host.performance.now()+350;
+  }
+  return {enable,stop,recalibrate:reorient,setSensitivity,yieldToTouch};
 }

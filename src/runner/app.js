@@ -316,9 +316,9 @@ function syncDock() {
 const tilt=installTiltControls(window,{toggle:$('tilt-toggle'),recenter:$('tilt-recenter'),message:$('tilt-status'),
   sensitivity:$('tilt-sensitivity'),
   canSteer:()=>state==='playing'&&!document.hidden&&!run.ended&&!turnPrompt(run),onAction:action=>act(run,action)});
-// Direct input establishes a new neutral hold so tilt cannot fight that move.
-window.addEventListener('pointerdown',()=>tilt.recalibrate(),{capture:true,passive:true});
-window.addEventListener('keydown',()=>tilt.recalibrate(),{capture:true});
+// Touch/keyboard wins without moving the player's calibrated neutral position.
+window.addEventListener('pointerdown',()=>tilt.yieldToTouch(),{capture:true,passive:true});
+window.addEventListener('keydown',()=>tilt.yieldToTouch(),{capture:true});
 function focusOverlay() {
   const primary = $("overlay-primary"), home = $("home");
   const target = !primary.disabled ? primary : !home.hidden && !home.disabled ? home : $("overlay-title");
