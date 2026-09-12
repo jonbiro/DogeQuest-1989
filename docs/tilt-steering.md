@@ -24,6 +24,15 @@ Remaining acceptance work: physical sensor validation, orientation edge cases,
 sensitivity tuning, and real-time movement arbitration. These tests use
 synthetic sensor readings and do not establish physical gyroscope behavior.
 
+Sensor gaps longer than 500 ms, reversed timestamps and portrait-angle changes
+now reset the neutral reference before accepting a new lean. This prevents stale
+movement after background throttling and supports portrait inversion even if the
+legacy orientation-change event is absent. Explicit recalibration also starts a
+fresh four-second availability timeout, so missing readings cannot leave the
+interface indefinitely asking the player to hold steady. Three added regressions
+cover resumed streams, inversion and recalibration timeout. All 415 tests plus
+build, lint and distribution checks passed; real-device behavior remains unproven.
+
 Browser requirement reference:
 [MDN orientation permission](https://developer.mozilla.org/en-US/docs/Web/API/DeviceOrientationEvent/requestPermission_static).
 Where implemented, permission requests require a secure context and direct user

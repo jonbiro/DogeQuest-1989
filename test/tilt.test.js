@@ -9,7 +9,7 @@ function fixture(permission){
     addEventListener:(key,fn)=>listeners.set(key,fn),removeEventListener:key=>listeners.delete(key),
     setTimeout:fn=>{timers.set(++id,fn);return id;},clearTimeout:key=>timers.delete(key)};
   const tilt=createTiltSteering(host,{onAction:a=>actions.push(a),onStatus:s=>statuses.push(s)});
-  return {host,tilt,actions,statuses,listeners,timers,
+  return {host,tilt,actions,statuses,listeners,timers,elapse:ms=>{time+=ms;},
     sample(gamma,n=1){for(let i=0;i<n;i++){time+=20;listeners.get('deviceorientation')?.({gamma});}}};
 }
 test('calibrates natural hold, ignores jitter and emits one action per deliberate lean',async()=>{
@@ -41,4 +41,20 @@ test('unsupported devices, invalid data and landscape do not steer',async()=>{
 test('absence of sensor readings times out and cleans up',async()=>{
   const f=fixture();await f.tilt.enable();[...f.timers.values()][0]();
   assert.equal(f.listeners.size,0);assert.equal(f.statuses.at(-1),'unavailable');
+});
+test('a resumed sensor stream establishes neutral instead of replaying stale movement',async()=>{
+  const f=fixture();await f.tilt.enable();f.sample(0);f.sample(10,4);
+  f.elapse(1000);f.sample(40,20);assert.deepEqual(f.actions,[]);
+  f.sample(15,30);assert.deepEqual(f.actions,['left']);
+});
+test('portrait inversion recalibrates even without an orientationchange event',async()=>{
+  const f=fixture();await f.tilt.enable();f.sample(20);
+  f.host.screen.orientation.angle=180;f.sample(20,30);assert.deepEqual(f.actions,[]);
+  f.sample(-10,30);assert.deepEqual(f.actions,['right']);
+});
+test('recalibration without fresh readings cannot stay ready indefinitely',async()=>{
+  const f=fixture();await f.tilt.enable();f.sample(0);assert.equal(f.timers.size,0);
+  f.tilt.recalibrate();assert.equal(f.timers.size,1);
+  [...f.timers.values()][0]();assert.equal(f.statuses.at(-1),'unavailable');
+  assert.equal(f.listeners.size,0);
 });
