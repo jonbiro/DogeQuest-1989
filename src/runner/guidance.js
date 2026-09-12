@@ -90,6 +90,7 @@ export function eventNotice(event, run) {
     'route-scenic': {text: 'Scenic trail', priority: 1},
     'route-challenge': {text: 'Challenge trail · +60 per clear', priority: 1},
     'zipline-end': {text: 'Zipline complete · +250', priority: 1},
+    'raft-end': {text: 'Shore reached · +250', priority: 1},
     'course-complete': {text: 'Clean regional course · +180', priority: 1},
     'course-recovery': {text: 'Strong finish · 2/3 clean · +60', priority: 1},
   };
@@ -98,6 +99,9 @@ export function eventNotice(event, run) {
 
 export function runLesson(run) {
   if (run.retired) return 'Good dogs deserve a break. Only completed challenges and traversal rewards count; your next adventure is ready whenever you are.';
+  if(run.lastMistake?.raftHazard)return run.lastMistakeDetail?.reason==='late-raft-steer'
+    ? 'The raft was still drifting toward the open lane. Follow the arrow earlier; ×2 means two swipes. Jump and slide return at the shore.'
+    : 'Steer the raft into the open lane between the river rocks. Each swipe moves one lane; ×2 means swipe twice. Jump and slide return at the shore.';
   if (run.lastMistake?.type==='rock' && run.lastMistake.courseWeave)
     return run.lastMistakeDetail?.reason==='late-weave'
       ? 'You chose the open lane, but reached it too late. Start steering a little earlier; for a ×2 hint, make both swipes before the rocks reach your puppy.'

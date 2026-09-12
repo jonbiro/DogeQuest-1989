@@ -138,3 +138,16 @@ identifies rafting rather than incorrectly reporting running.
 All 401 tests, build, lint and distribution checks passed. These interface tests
 use lightweight DOM fixtures; actual portrait browser input and visual layout
 still require verification before enabling the prototype.
+
+## River feedback
+
+River-rock collisions now retain their traversal context in the mistake record.
+Post-run advice distinguishes choosing the wrong lane from steering toward the
+correct lane too late, even after the raft state is cleared. It no longer tells
+players to jump over a river rock. Completion uses the existing quiet notice dock
+and the run summary explains the included crossing bonus. Boarding and completion
+reuse opt-in sound cues; boarding adds no banner.
+
+Collision-driven regression tests cover both steering mistakes and the completion
+notice contract. Actual audio perception and portrait layout remain browser/device
+acceptance work, not something these tests establish.

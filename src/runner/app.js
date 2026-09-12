@@ -463,6 +463,7 @@ function finish() {
       ` ${receipt.missionCount} ${receipt.missionCount === 1 ? 'challenge' : 'challenges'} complete: +${reward} extra points!`;
   if (run.gifts) $("overlay-copy").textContent += ` ${run.gifts} gift boxes banked.`;
   if (run.ziplines) $("overlay-copy").textContent += ` ${run.ziplines} zipline ${run.ziplines === 1 ? "ride" : "rides"} completed (+${run.ziplines * 250} points included in your score).`;
+  if (run.rafts) $("overlay-copy").textContent += ` ${run.rafts} river ${run.rafts === 1 ? "crossing" : "crossings"} completed (+${run.rafts * 250} points included in your score).`;
   if (prizes.length) $("overlay-copy").textContent += ` Prizes earned: ${prizes.map(p => p.name).join(", ")}! Visit the clubhouse.`;
   const mastery=receipt.mastery;
   if(mastery.earned.length) $("overlay-copy").textContent += ` Passport rewards: ${mastery.earned.map(b=>b.name).join(', ')} (+${mastery.points} pts).`;
@@ -840,8 +841,8 @@ function frame(now) {
       if (event === "zoomies") tone("zoomies");
       if (event === "fetch") tone(900, .25);
       if (event === "smash") tone(260,.08);
-      if(event==="zipline-start") tone("zoomies");
-      if(event==="zipline-end") tone("reward");
+      if(event==="zipline-start"||event==="raft-start") tone("zoomies");
+      if(event==="zipline-end"||event==="raft-end") tone("reward");
       if (event === "double") {
         tone(880, 0.2);
       }
