@@ -60,6 +60,19 @@ the evidence behind each area, closure of the completion checks and explicit val
 
 ## Delivered implementation
 
+Portable progress backups are available under How to Play → Back up or move your
+progress. A local JSON file carries records, spendable points, puppies/outfits,
+upgrades, passport and settings. Import validates format/version/size/data, shows
+a preview, and requires an explicit replacement action; Cancel does not write.
+The previous raw save is retained before replacement, and access/quota failures
+leave it unchanged. No account, upload or automatic cloud sync is involved.
+All 179 checks pass. Actual browser file selection at 320 × 568 verified preview,
+Cancel, confirmed restore and reload with Mochi, the hero outfit, upgrades and
+1800 points. The exported download was inspected on disk and matched the test
+profile exactly. Test progress was removed and the disposable downloaded fixture
+moved to Trash. The live-origin save was not touched; native mobile file-picker
+and cross-device transfer remain separate acceptance checks.
+
 Progress integrity follow-up: malformed JSON and non-object saves are no longer
 treated as an empty first-time profile. Original bytes remain untouched and the
 game explains session-only rewards. Failed saves no longer produce an unqualified

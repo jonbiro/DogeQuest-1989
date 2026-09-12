@@ -145,6 +145,14 @@
               <p><img data-guide="slide" alt="An overhead arch with room to slide underneath" width="96" height="56"><kbd>↓</kbd> <strong>Slide</strong><span>Swipe down under overhead gates.</span></p>
             </div>
             <details id="mission-help"><summary id="mission-help-title">Your current challenge</summary><p id="mission-help-copy"></p></details>
+            <details id="save-backup">
+              <summary>Back up or move your progress</summary>
+              <p>Save a file with this visit’s puppies, outfits, points, upgrades and passport. Restore it in another browser or on another device. No account or upload is needed; this is not automatic cloud sync.</p>
+              <div class="backup-actions"><button id="backup-export" type="button">Download backup</button><button id="backup-choose" type="button">Choose backup</button></div>
+              <input id="backup-file" type="file" accept=".json,application/json" hidden>
+              <div id="restore-review" hidden><p id="restore-preview"></p><div class="backup-actions"><button id="backup-restore" type="button">Replace saved progress</button><button id="backup-cancel" type="button">Cancel</button></div></div>
+              <p id="backup-status" role="status" aria-live="polite"></p>
+            </details>
             <details><summary>Rewards, routes and special moves</summary>
             <p>
               <strong>Points and upgrades</strong><br>

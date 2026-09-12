@@ -643,6 +643,9 @@ footer .text-button {
   margin-top: 7px;
 }
 #instructions summary { padding: 14px 0; color: var(--lime); cursor: pointer; font-weight: bold; }
+.backup-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.backup-actions button { min-height:44px; flex:1 1 130px; padding:10px; border:1px solid #ffffff55; border-radius:12px; background:#173b34; color:#f6ffe9; font:inherit; cursor:pointer; }
+.backup-actions button:focus-visible { outline:3px solid var(--lime); outline-offset:2px; }
 #run-breakdown { text-align: left; font-size: 13px; line-height: 1.6; }
 #run-breakdown summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--lime); }
 #run-breakdown summary::before { content: '+ '; margin-right: 8px; }

@@ -1,0 +1,16 @@
+{
+  "format": "biscuit-dash-backup",
+  "version": 1,
+  "profile": {
+    "best": 2400,
+    "bones": 120,
+    "bestRunBones": 55,
+    "distance": 1100.5,
+    "credits": 1800,
+    "challenges": 7,
+    "upgrades": {"leap": 2, "slide": 0, "magnet": 0, "value": 0},
+    "collection": {"puppies": ["biscuit", "mochi"], "costumes": ["scarf", "hero"], "puppy": "mochi", "costume": "hero", "prizes": [], "gifts": 2},
+    "mastery": {"dogs": {"biscuit": 0, "mochi": 24, "luna": 0, "pepper": 0}, "regions": [2, 1, 0]},
+    "preferences": {"sound": false, "reducedMotion": true}
+  }
+}
