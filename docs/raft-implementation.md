@@ -1,5 +1,14 @@
 # River raft implementation status
 
+## Distinct traversal audio
+
+River boarding now uses a short descending two-tone cue instead of the Zoomies
+boost sound. Shore arrival has a separate two-note confirmation. Both use sine
+voices with lower explicit gains, last under 0.31 seconds, and pass through the
+existing opt-in sound/stop/voice-budget path. Cable cues remain unchanged. Tests
+cover event mapping and bounded cue parameters; full checks passed 451 tests.
+Phone-speaker sound quality has not been evaluated for these new cues.
+
 ## Finding the next reward
 
 The compact post-run hint now uses the same milestone selection as the passport,

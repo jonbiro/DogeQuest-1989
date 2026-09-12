@@ -22,7 +22,7 @@ import {scoreBreakdown} from './score-breakdown.js';
 import {rematchFor} from './rematch.js';
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
-import {CUES,playNotes,stopSound,resumeSound} from "./sound.js";
+import {CUES,playNotes,stopSound,resumeSound,traversalCue} from "./sound.js";
 import {actionCue,eventNotice,dockMode,runLesson,routeChoiceCue} from "./guidance.js";
 import {turnPrompt} from "./turns.js";
 import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,isJumpTap} from "./gestures.js";
@@ -850,8 +850,8 @@ function frame(now) {
       if (event === "zoomies") tone("zoomies");
       if (event === "fetch") tone(900, .25);
       if (event === "smash") tone(260,.08);
-      if(event==="zipline-start"||event==="raft-start") tone("zoomies");
-      if(event==="zipline-end"||event==="raft-end") tone("reward");
+      const rideSound=traversalCue(event);
+      if(rideSound)tone(rideSound);
       if (event === "double") {
         tone(880, 0.2);
       }
