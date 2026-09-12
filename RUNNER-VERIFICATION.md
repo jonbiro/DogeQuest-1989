@@ -1,5 +1,19 @@
 # Runner verification
 
+## Long-run route and course coverage (2026-09-12)
+
+- Investigated the earlier cue pilot's missing glade courses. It left gates near
+  center, selecting Scenic, which deliberately suppresses authored courses.
+  This was a test coverage gap, not evidence of broken glade generation.
+- Added a permanent three-seed, 18km Challenge-route regression using actual
+  movement actions driven by the game hints, plus explicit harder-gate selection.
+  It requires all twelve variants to be generated AND successfully completed,
+  completion credit in all three regions, at least twenty weave rewards, and
+  no collisions or shield saves. This does not claim delayed-input, rendering,
+  device-FPS or human difficulty coverage; those need their separate checks.
+- Production gameplay is unchanged in this pass. The regression protects the
+  course variety and clean-weave reward integration from the prior release.
+
 ## Reward authored lane-weave skill (2026-09-12)
 
 - Clean safe-lane beats in named courses now advance the clean-move streak and
