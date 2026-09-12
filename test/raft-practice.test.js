@@ -21,7 +21,7 @@ test('river rehearsal completes using actual steering cues with all bones and no
   assert.match(practiceProgress(run),/12\/12.*landed/);
   assert.match(practiceResult(run).lesson,/does not award points/);
   const profile={credits:200,bones:40,best:900};
-  const before=structuredClone(profile);
+  const before=globalThis.structuredClone(profile);
   assert.equal(bankRun(profile,run,[]),null);
   assert.deepEqual(profile,before);
 });

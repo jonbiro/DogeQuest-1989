@@ -1,5 +1,16 @@
 # River raft implementation status
 
+## Historical layout lock
+
+Before introducing a river replay version, `legacy-layout.test.js` captures the
+current obstacle/reward stream for versions 1, 2 and 3 with seeds 0, 1989 and the
+maximum unsigned seed. Each deterministic generation sweep covers 18 km with
+alternating Challenge/Scenic choices, at least 25 gates and over 2,000 objects.
+The fixed digests include complete generated object records, not merely version
+numbers. They must not be regenerated to accommodate new-version content. These
+are generator regression baselines, not recorded human runs or exhaustive seed
+coverage. Default version remains 3; river adventures are still gated.
+
 ## River rehearsal
 
 River-rock mistakes now offer dedicated river steering practice instead of basic
