@@ -124,3 +124,17 @@ completions in that matrix to guard against the previous starvation.
 
 The glade still appears less often than the other course families. This is an
 improvement to the gated prototype, not a claim of final pacing balance.
+
+## Traversal interface contracts
+
+Jump and slide now disable aboard the raft, explaining that they return at the
+shore; steering and Fetch remain available. A real simulated dismount test
+verifies that controls restore and jumping works again. The existing traversal
+chip is reused for `RAFT` distance to shore, including an accessible progress
+label, rather than adding HUD clutter. Switching back to a cable restores its
+labels without allocating or replacing any chip nodes. Scene posture also
+identifies rafting rather than incorrectly reporting running.
+
+All 401 tests, build, lint and distribution checks passed. These interface tests
+use lightweight DOM fixtures; actual portrait browser input and visual layout
+still require verification before enabling the prototype.

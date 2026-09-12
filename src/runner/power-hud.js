@@ -1,4 +1,6 @@
 import {FETCH_DURATION} from './ability.js';
+import {RAFT_LENGTH} from './rafts.js';
+import {ZIPLINE_LENGTH} from './ziplines.js';
 
 // Keep progress nodes alive between updates and activations, including their
 // accessibility identity. Only labels, values and visibility change at 10Hz.
@@ -23,9 +25,17 @@ export function createPowerHud(container) {
   });
   container.hidden=true;
   return run=>{
-    const cable=run.zipline?Math.max(0,run.zipline.end-run.distance):0;
+    const ride=run.raft||run.zipline;
+    const cable=ride?Math.max(0,ride.end-run.distance):0;
+    const rideLabel=run.raft?'Raft ride':'Zipline ride';
+    if(chips[0].rideLabel!==rideLabel){
+      chips[0].rideLabel=rideLabel;
+      chips[0].node.setAttribute('aria-label',rideLabel);
+      chips[0].node.setAttribute('title',rideLabel);
+      chips[0].progress.setAttribute('aria-label',run.raft?'Distance to shore':'Zipline distance remaining');
+    }
     const values=[
-      [Boolean(run.zipline),`🐾 ${Math.ceil(cable)}m`,140,cable],
+      [Boolean(ride),`${run.raft?'RAFT':'🐾'} ${Math.ceil(cable)}m`,run.raft?RAFT_LENGTH:ZIPLINE_LENGTH,cable],
       [run.zoomies>0,`🎾 ${Math.ceil(run.zoomies)}s`,6,run.zoomies],
       [Boolean(run.shield),'◇ SHIELD'],
       [run.magnet>0,`🧲 ${Math.ceil(run.magnet)}s`,run.fetchTime>0&&run.magnet<=FETCH_DURATION?FETCH_DURATION:10+run.upgrades.magnet*3,run.magnet],

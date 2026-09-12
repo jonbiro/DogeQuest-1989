@@ -15,6 +15,20 @@ function fixture() {
   const container=doc.createElement('div');container.ownerDocument=doc;
   return {container,counts:()=>[allocations,appends]};
 }
+test('raft distance reuses the traversal chip and restores cable semantics',()=>{
+  const f=fixture(),update=createPowerHud(f.container),run=createRun(1);
+  const nodes=[...f.container.children],counts=f.counts();
+  Object.assign(run,{raft:{start:1150,end:1290},distance:1200});update(run);
+  assert.equal(nodes[0].children[0].nodeValue,'RAFT 90m');
+  assert.equal(nodes[0].attributes['aria-label'],'Raft ride');
+  assert.equal(nodes[0].children[1].attributes['aria-label'],'Distance to shore');
+  assert.equal(nodes[0].children[1].value,90);
+  Object.assign(run,{raft:null,zipline:{end:2190},distance:2100});update(run);
+  assert.equal(nodes[0].attributes['aria-label'],'Zipline ride');
+  assert.equal(nodes[0].children[0].nodeValue,'🐾 90m');
+  run.zipline=null;update(run);assert.equal(nodes[0].hidden,true);
+  assert.deepEqual(f.counts(),counts);assert.deepEqual(f.container.children,nodes);
+});
 test('the actual start reset hides powers without detaching reusable elements',()=>{
   const f=fixture(),update=createPowerHud(f.container),run=createRun(1);
   run.magnet=10;update(run);

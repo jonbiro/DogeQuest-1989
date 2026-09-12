@@ -860,7 +860,7 @@ function frame(now) {
     $("scene").dataset.courses = run.regionalCourses.join(',');
     $("scene").dataset.course = run.course?.name || '';
     $("scene").dataset.posture =
-      run.zipline ? "zipline" : run.y > 0.05 ? "jump" : run.slide > 0 ? "slide" : "run";
+      run.raft ? "raft" : run.zipline ? "zipline" : run.y > 0.05 ? "jump" : run.slide > 0 ? "slide" : "run";
     // Decision cues follow each rendered frame; counters can wait for the HUD tick.
     setText('cue', run.practice ? practiceCue(run) : actionCue(run));
     if (Math.floor(run.time * 10) !== lastHud || run.ended) {

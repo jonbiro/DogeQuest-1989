@@ -7,6 +7,19 @@ function button(action) {
   return {dataset:{action},disabled:false,attributes:{},querySelector:()=>label,
     setAttribute(key,value){this.attributes[key]=value;},removeAttribute(key){delete this.attributes[key];}};
 }
+test('raft controls explain shore availability and restore after real dismount',()=>{
+  const run=createRun(1989),buttons=['left','right','fetch','jump','slide'].map(button);
+  Object.assign(run,{raftPrototype:true,distance:1289.9,raft:{index:0,start:1150,end:1290},objects:[],nextRow:Infinity});
+  updateTraversalControls(buttons,run);
+  assert.deepEqual(buttons.map(b=>b.disabled),[false,false,false,true,true]);
+  for(const b of buttons.slice(3))assert.match(b.attributes['aria-label'],/at the shore/);
+  act(run,'jump');act(run,'slide');assert.equal(run.jumpBuffer,0);assert.equal(run.slide,0);
+  step(run,1/30);assert.equal(run.raft,null);
+  updateTraversalControls(buttons,run);assert.ok(buttons.every(b=>!b.disabled));
+  act(run,'jump');assert.ok(run.vy>0);
+  run.zipline={end:2000};updateTraversalControls(buttons,run);
+  for(const b of buttons.slice(3))assert.match(b.attributes.title,/cable/);
+});
 test('buffered moves confirm acceptance without changing control availability',()=>{
   const buttons=['jump','slide'].map(button),run=createRun(1);
   act(run,'jump');act(run,'jump');
