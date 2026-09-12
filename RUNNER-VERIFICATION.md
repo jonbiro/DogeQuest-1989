@@ -1,5 +1,23 @@
 # Runner verification
 
+## Consecutive-action reaction margin (2026-09-12)
+
+- Extending the real-input cue driver from 200ms to 250ms exposed late jumps
+  at seeds 3/7 around 1.6–1.7km and an expired slide at seed 4 around 1.65km.
+  The old 240ms queue window could expire before a delayed follow-up input.
+- Jump and slide queues now accept a deliberate repeat in their final 320ms;
+  ordinary on-path hazard cues appear at 500ms instead of 450ms. No changes to
+  airtime, jump height, slide duration, speed, collision thresholds or layouts.
+  Early slide repeats still do not restart a move; only one follow-up queues.
+- Expanded regression coverage completes 128 three-kilometer input-driven runs
+  (384km total): eight seeds, 30/60 Hz hint updates, base/max upgrades, and
+  100/150/200/250ms response delays. Every run rejects both hits and shield saves.
+  Focused tests retain quiet off-path cues and immediate cue clearing on input,
+  and cover queuing a slide with 300ms remaining without recursive extension.
+- Build, distribution verification, lint and all 329 tests passed. These are
+  deterministic simulation checks, not evidence of physical-phone reaction time
+  or subjective difficulty; no new browser/device session was used for this pass.
+
 ## Sculpted regional ridgelines (2026-09-12)
 
 - Replaced stretched hemisphere mountains with a shared 273-vertex height field:

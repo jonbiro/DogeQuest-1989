@@ -13,6 +13,7 @@ import {
   JUMP_BUFFER,
   JUMP_DURATION,
   JUMP_SPEED,
+  SLIDE_BUFFER,
 } from "../src/runner/motion.js";
 
 function cleanRun(upgrades = {}) {
@@ -37,7 +38,7 @@ test('early repeated slide presses preserve the original duration and allow a fr
     let elapsed=0;
     while(run.slide>0&&elapsed<2) {
       const remaining=run.slide;
-      if(remaining>.24)act(run,'slide');
+      if(remaining>SLIDE_BUFFER)act(run,'slide');
       assert.equal(run.slide,remaining);
       step(run,dt);elapsed+=dt;
     }
@@ -55,7 +56,7 @@ test('late slide presses queue only one follow-up and jump cancels the queue',()
     const run=cleanRun({slide:level});
     const duration=BASE_SLIDE_DURATION+level*SLIDE_UPGRADE_DURATION;
     act(run,'slide');
-    while(run.slide>.2)step(run,dt);
+    while(run.slide>.3)step(run,dt);
     const remaining=run.slide;
     for(let i=0;i<10;i++)act(run,'slide');
     assert.equal(run.slide,remaining,'late presses do not restart the current move');

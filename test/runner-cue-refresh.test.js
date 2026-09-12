@@ -18,7 +18,7 @@ test('decision cues update between counter ticks and clear as soon as movement b
     const context={run,actionCue,practiceCue,setText:(id,text)=>{assert.equal(id,'cue');displayed=text;}};
     run.speed=practice?12:22;
     run.distance=practice?29.5:0;
-    if(!practice)run.objects=[{type:'log',lane:1,at:10}];
+    if(!practice)run.objects=[{type:'log',lane:1,at:11.1}];
     run.time=.01;
     runInNewContext(source.slice(start,end),context);
     assert.ok(!displayed.includes('NOW')&&!displayed.includes('↑ JUMP'));

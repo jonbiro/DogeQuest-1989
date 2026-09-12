@@ -13,7 +13,7 @@ test('urgent hints update before the score-display throttle',()=>{
 });
 
 for(const fps of [30,60])for(const level of [0,3])test(`delayed cues clear eight 3km trails at ${fps}fps and upgrade level ${level}`,()=>{
-  for(const delay of [.1,.15,.2])for(let seed=0;seed<8;seed++) {
+  for(const delay of [.1,.15,.2,.25])for(let seed=0;seed<8;seed++) {
     const run=createRun(seed,{leap:level,slide:level,magnet:level,value:level});
     let previous='';
     let tick=0;

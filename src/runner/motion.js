@@ -3,8 +3,10 @@
 export const JUMP_DURATION = .72;
 export const JUMP_SPEED = 14;
 export const GRAVITY = 2 * JUMP_SPEED / JUMP_DURATION;
-export const JUMP_BUFFER = .24;
-export const SLIDE_BUFFER = .24;
+// A quarter-second response plus one 30 Hz display frame still fits before
+// landing/slide expiry. Action duration stays unchanged.
+export const JUMP_BUFFER = .32;
+export const SLIDE_BUFFER = .32;
 const LANE_SPRING = 26, DIVE_GRAVITY = 180, DIVE_TERMINAL = 28;
 
 function leapScale(run) {

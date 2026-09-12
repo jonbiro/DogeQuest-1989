@@ -113,7 +113,7 @@ test("action guidance stays quiet without an immediate on-path hazard", () => {
   assert.equal(actionCue(createRun(1989)), "", "the safe opening has no prompt");
 
   for (const object of [
-    { type: "rock", secondsAway: 0.451 },
+    { type: "rock", secondsAway: 0.501 },
     { type: "rock", used: true },
     { type: "rock", passed: true },
     { type: "rock", lane: 0 },
