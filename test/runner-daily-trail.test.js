@@ -3,11 +3,19 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {URL} from 'node:url';
 import {runInNewContext} from 'node:vm';
-import {dailyTrail} from '../src/runner/daily-trail.js';
+import {dailyTrail,selectedTrailDescription} from '../src/runner/daily-trail.js';
 import {readTrailSeed,readTrailVersion} from '../src/runner/trail-link.js';
 import {createRun} from '../src/runner/world.js';
 
 const href='https://example.com/runner/?trail=1-abc&target=1000#old';
+test('reopened daily trails retain their identity without replacing score targets or old layouts',()=>{
+  const today=dailyTrail(href,Date.parse('2026-09-12T00:00:00Z'));
+  assert.match(selectedTrailDescription(today.seed,today.version,0,today),/Daily trail · 2026-09-12 UTC/);
+  assert.match(selectedTrailDescription(today.seed,today.version,200,today),/^Beat 200 pts/);
+  for(const [seed,version,daily] of [[today.seed,1,today],[123,today.version,today],[today.seed,today.version,null],
+    [today.seed,today.version,dailyTrail(href,Date.parse('2026-09-13T00:00:00Z'))]])
+    assert.equal(selectedTrailDescription(seed,version,0,daily),'Shared trail · your upgrades apply.');
+});
 test('daily trails share one UTC layout and change only at midnight',()=>{
   const first=dailyTrail(href,Date.parse('2026-09-12T00:00:00Z'));
   assert.deepEqual(dailyTrail(href,Date.parse('2026-09-12T16:59:59-07:00')),first);

@@ -18,3 +18,9 @@ The local illustrated audit is `test-results/daily-entry-audit/report.md`, with
 six saved and inspected screenshots. These ignored QA artifacts are not shipped.
 Physical touch, screen-reader speech, text enlargement and short landscape
 usability remain outside this bounded check; Help retains the alternate entry.
+
+Reload follow-up: a link matching today's seed and generator version now retains
+the dated Daily trail label at startup. Explicit score targets still take
+priority. Older seeds or generator versions remain ordinary shared trails; no
+URL or active run is changed at midnight. All 381 tests passed. Fresh browser
+navigation confirmed the daily date and, separately, the 200-point target label.

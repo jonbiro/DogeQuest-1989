@@ -15,7 +15,7 @@ import {masteryFrom,masteryCards} from './mastery.js';
 import {fetchReady} from './ability.js';
 import {createPowerHud} from './power-hud.js';
 import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLink} from './trail-link.js';
-import {dailyTrail} from './daily-trail.js';
+import {dailyTrail,selectedTrailDescription} from './daily-trail.js';
 import {updateTraversalControls} from './traversal-controls.js';
 import {scoreBreakdown} from './score-breakdown.js';
 import {rematchFor} from './rematch.js';
@@ -33,9 +33,7 @@ let sharedSeed = readTrailSeed(window.location.search);
 let sharedVersion = readTrailVersion(window.location.search);
 let sharedTarget = readTrailTarget(window.location.search);
 $('shared-trail').hidden = sharedSeed === null;
-$('shared-description').textContent = sharedTarget
-  ? `Beat ${sharedTarget.toLocaleString()} pts · friendly, unverified target. Your upgrades apply.`
-  : 'Shared trail · your upgrades apply.';
+$('shared-description').textContent = selectedTrailDescription(sharedSeed,sharedVersion,sharedTarget,dailyTrail(window.location.href));
 const playLabel = () => sharedSeed === null ? `Run with ${PUPPIES[saved.collection.puppy].name} ↗︎` : 'Run shared trail ↗︎';
 let run = createRun(),
   state = "menu",
