@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createQualityController} from '../src/runner/quality.js';
+import {readFileSync} from 'node:fs';
+import {URL} from 'node:url';
 
 function frames(controller, count, dt, playing = true) {
   const changes=[];
@@ -10,6 +12,16 @@ function frames(controller, count, dt, playing = true) {
   }
   return changes;
 }
+test('severe slowdown is measured in wall time rather than clamped physics time',()=>{
+  const quality=createQualityController(2);
+  assert.deepEqual(frames(quality,29,.1),[]);
+  assert.deepEqual(frames(quality,2,.1),[1]);
+  const app=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const render=readFileSync(new URL('../src/runner/render.js',import.meta.url),'utf8');
+  assert.match(app,/const dt = Math\.min\(0\.05, frameDt\)/,'physics retains its safety cap');
+  assert.match(app,/saved\.collection, frameDt\)/,'real display interval reaches renderer');
+  assert.match(render,/quality\.sample\(frameDt,/);
+});
 test('sustained slowdown lowers resolution and sustained recovery restores it',()=>{
   const quality=createQualityController(3);
   assert.equal(quality.ratio,1.5);

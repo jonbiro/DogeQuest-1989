@@ -802,7 +802,8 @@ let currentMission = missionFor(saved.challenges),
   missionAnnounced = false;
 let lastHud = -1;
 function frame(now) {
-  const dt = Math.min(0.05, (now - last) / 1000 || 0);
+  const frameDt = (now - last) / 1000 || 0;
+  const dt = Math.min(0.05, frameDt);
   last = now;
   time += dt;
   if (state === "playing") {
@@ -919,7 +920,7 @@ function frame(now) {
   if (time > toastUntil) setText('toast', '');
   syncDock();
   if (view && graphicsReady)
-    view.draw(run, time, state, reducedMotion, dt, accumulator / (1 / 120), saved.collection);
+    view.draw(run, time, state, reducedMotion, dt, accumulator / (1 / 120), saved.collection, frameDt);
   requestAnimationFrame(frame);
 }
 if(graphicsReady)$("play").focus({ preventScroll: true });

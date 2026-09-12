@@ -1,5 +1,16 @@
 # Runner verification
 
+## Wall-clock graphics adaptation (2026-09-12)
+
+- Fixed adaptive resolution receiving the capped 50ms physics timestep rather
+  than the actual display interval. At sustained 10fps the former wiring took
+  roughly six seconds to accumulate its three-second slowdown threshold.
+- Actual frame time now reaches the quality controller separately; physics,
+  animation and interpolation retain their existing capped timestep. The
+  controller still rejects long inactive gaps and preserves recovery hysteresis.
+- Regression checks 100ms samples and real app/renderer wiring. Full check:
+  355 tests passed. This is timing-policy verification, not a low-end GPU benchmark.
+
 ## Consistent reduced-motion pickups (2026-09-12)
 
 - Fixed non-bone pickups continuing to sway in reduced-motion mode. All eight

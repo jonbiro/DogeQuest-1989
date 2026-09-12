@@ -823,7 +823,7 @@ export function createView(canvas) {
         resize();
       }
     },
-    draw(run, time, state, reducedMotion, dt, alpha = 1, collection) {
+    draw(run, time, state, reducedMotion, dt, alpha = 1, collection, frameDt = dt) {
       const menu = ["menu", "help", "shop", "kennel"].includes(state);
       const fov=menu ? 52 : gameplayFov(camera.aspect);
       if(camera.fov!==fov) { camera.fov=fov;camera.updateProjectionMatrix(); }
@@ -1086,7 +1086,7 @@ export function createView(canvas) {
         camera.lookAt(cameraX * (camera.aspect < 0.85 ? 0.4 : 0.12) + look.x * detourCameraWeight(distance,run.route), 0.75 + cameraLift + look.y * .65, -13);
         puppyFrame=framePuppy(camera,dog.position);
       }
-      const nextRatio = quality.sample(dt, state === 'playing');
+      const nextRatio = quality.sample(frameDt, state === 'playing');
       if (nextRatio !== null) {
         renderer.setPixelRatio(nextRatio);
         resize();
