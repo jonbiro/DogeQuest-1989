@@ -1,5 +1,16 @@
 # Runner verification
 
+## Practice library in Help (2026-09-12)
+
+- All seven skills are directly selectable without a failed run: basics,
+  jumps, slides, gaps, lane weaves, high bones and turns. Collapsed by default.
+- Added actual handler routing regression for each Help button. Full check:
+  352 tests passed. At 320 × 568, inspection prompted a two-column layout with
+  48px minimum-height buttons; fixed navigation remains visible while scrolling.
+- Clicked Slide timing in the browser, confirmed “0/3 slides cleared,” paused
+  successfully and verified the isolated save remained null. Closed test tab
+  and reset viewport. This is browser portrait coverage, not physical touch.
+
 ## Quiet power-expiry warning (2026-09-12)
 
 - Timed power chips gain a steady amber inset border in their final two seconds.

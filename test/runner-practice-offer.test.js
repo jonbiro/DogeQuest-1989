@@ -5,6 +5,18 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import {URL} from 'node:url';
 
+test('help exposes and routes every practice skill without requiring a failed run',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const html=readFileSync(new URL('../runner/index.html',import.meta.url),'utf8');
+  const from=source.indexOf("$('practice-start').onclick"),to=source.indexOf("$('practice-again').onclick",from);
+  const buttons=new Map();let selected;
+  runInNewContext(source.slice(from,to),{$:id=>{const node={};buttons.set(id,node);return node;},startPractice:kind=>selected=kind});
+  for(const [suffix,kind] of [['start','moves'],['jump','jump'],['slide','slide'],['gap','gap'],['weave','weave'],['zipline','zipline'],['turn','turn']]){
+    const id=`practice-${suffix}`;
+    assert.ok(html.includes(`id="${id}"`));buttons.get(id).onclick();assert.equal(selected,kind);
+  }
+});
+
 test('collision results offer relevant practice without guessing an unsupported lesson', () => {
   for (const [direction,cornerIndex] of [['left',0],['right',1]])
     assert.deepEqual(practiceOffer({ended:true,lastMistake:{type:'corner',direction}}),

@@ -544,6 +544,10 @@ function startPractice(kind, cornerIndex=0) {
   missionAnnounced = true;
 }
 $('practice-start').onclick = () => startPractice('moves');
+$('practice-jump').onclick = () => startPractice('jump');
+$('practice-slide').onclick = () => startPractice('slide');
+$('practice-gap').onclick = () => startPractice('gap');
+$('practice-weave').onclick = () => startPractice('weave');
 $('practice-zipline').onclick = () => startPractice('zipline');
 $('practice-turn').onclick = () => startPractice('turn');
 $('practice-again').onclick = () => {
