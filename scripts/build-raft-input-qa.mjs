@@ -41,7 +41,11 @@ function riverPerfTick(frameDt){
       over50ms:sorted.filter(ms=>ms>50).length,rides:riverPerf.rides,
       bones:riverPerf.bones,hits:riverPerf.hits,renderer:view.diagnostics()};
     pause();
-    document.getElementById('overlay-copy').textContent=JSON.stringify(window.riverPerfResult);
+    const result=window.riverPerfResult;
+    document.getElementById('overlay-copy').textContent=
+      result.frames+' frames. Median '+result.medianMs.toFixed(1)+' ms; p95 '+result.p95Ms.toFixed(1)+
+      ' ms; p99 '+result.p99Ms.toFixed(1)+' ms. Over 50 ms: '+result.over50ms+
+      '. Crossings: '+result.rides+'. Bones: '+result.bones+'. Hits: '+result.hits+'.';
   }
 }
 window.raftInputQA={

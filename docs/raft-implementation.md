@@ -280,3 +280,17 @@ crossings, 50 bones, zero damage/shield saves; console errors empty. This measur
 the default puppy and current motion setting, not all dogs/powers or native iOS.
 The temporary tab and viewport override were cleaned up. Native Safari remains
 the next performance gate. Fixture bundling and lint passed.
+
+Native Safari on the dedicated iOS 27 simulator subsequently completed the same
+30-second measurement after two seconds of warm-up: 1,801 frames, median 17.0 ms,
+p95 17.0 ms, p99 19.0 ms, and zero frames over 50 ms. Five crossings collected
+50 bones with zero hits/shield saves. The benchmark report now uses concise text
+so these metrics are readable on the native portrait screen; full data remains
+available in the fixture result object. Screenshot evidence is locally retained
+at `test-results/river-native-performance.png`.
+
+This is a default-Biscuit simulator baseline, not physical-device performance or
+the all-dog/all-power long-run matrix. The normal production build and distribution
+verification passed afterward, removing the temporary benchmark entry and fixture.
+The ordinary Safari game was restored with its existing 200-point profile intact;
+only the dedicated simulator mirror helper was stopped. Fixture lint passed.
