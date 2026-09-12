@@ -60,6 +60,17 @@ the evidence behind each area, closure of the completion checks and explicit val
 
 ## Delivered implementation
 
+Clean-move streaks now reward sustained manual jumping, sliding and marked turns.
+Each five-move milestone earns 50/100/150 points, then a capped 200 points per
+milestone. Collisions and shield saves reset the streak; bone misses do not.
+Automatic Zoomies clears are excluded. Low-priority edge feedback and the results
+breakdown explain bonuses without adding a HUD panel. All 168 checks pass,
+including real simulation clears, turn credit, resets, exclusions and reward
+caps. A trusted portrait run reached 1116 m with full health, all regions,
+two Fetch uses, successful zipline catch/landing and no HUD overlaps. Its natural
+finish recorded a best streak of 14 and 150 bonus points included in the banked
+score. This was browser portrait verification, not physical-phone testing.
+
 Runs now offer a three-challenge chain instead of stopping after one goal.
 Whole-run progress counts, goals advance in order after the brief completion
 notice, and the finish transaction banks up to three earned bonuses exactly

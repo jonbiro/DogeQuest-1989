@@ -377,6 +377,7 @@ function finish() {
     $("run-highlights").textContent += next ? ` · ${dogCard.name} bond: ${dogCard.current}/${next.target} toward ${next.name}` : ` · ${dogCard.name}: Trail legend`;
   }
   $("run-breakdown-copy").textContent = `${$("overlay-copy").textContent} ${$("run-highlights").textContent}`;
+  $("run-breakdown-copy").textContent += ` Best clean-move streak: ${run.bestCleanStreak}. Clean-move bonuses: +${run.flowPoints} points (included in score).`;
   $("overlay-copy").textContent = `${receipt.personalBest ? 'New personal best! ' : ''}Score banked. Retry the same trail, or head to camp for a fresh one.`;
   const nextBond=dogCard?.tiers.find(tier=>dogCard.current<tier.target);
   $("run-highlights").textContent = nextBond
@@ -587,7 +588,7 @@ function frame(now) {
       const notice = eventNotice(event, run);
       if (notice) toast(notice.text, 1.5, notice.priority);
       if (event === "bone") tone(740 + Math.min(run.combo, 12) * 28, 0.055);
-      if (event === "streak") {
+      if (event === "streak" || event === 'flow') {
         tone("reward");
       }
       if (event === "clear") tone(540, 0.08);

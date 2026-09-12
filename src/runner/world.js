@@ -11,6 +11,7 @@ export function seededRandom(seed) {
 }
 import { levels } from "./progression.js";
 import {chargeFetch, activateFetch} from './ability.js';
+import {cleanMove} from './flow.js';
 import { jump, steer, moveVertical, JUMP_BUFFER } from "./motion.js";
 import { ZIPLINE_FIRST, ZIPLINE_PERIOD, ZIPLINE_LENGTH, ZIPLINE_HEIGHT } from "./ziplines.js";
 import {courseAt, COURSE_LENGTH, COURSE_RECOVERY, advanceCourse} from './courses.js';
@@ -59,6 +60,10 @@ export function createRun(seed = Date.now(), upgrades = {}) {
     bones: 0,
     combo: 0,
     bestCombo: 0,
+    cleanStreak: 0,
+    bestCleanStreak: 0,
+    flowPoints: 0,
+    lastFlowBonus: 0,
     clears: 0,
     gifts: 0,
     score: 0,
@@ -234,6 +239,7 @@ function syncUnvisitedCorners(run) {
 function harm(run, mistake) {
   if (run.invulnerable > 0) return false;
   run.lastMistake = mistake;
+  run.cleanStreak = 0;
   if (run.shield) {
     run.shield = 0;
     run.events.push("shield-break");
@@ -257,6 +263,7 @@ function resolveCorner(run, from, to) {
   const success = run.turnAttempt?.index === corner.index && run.turnAttempt.correct;
   if (success) {
     run.turns++;
+    cleanMove(run);
     chargeFetch(run, 20);
     run.bonusPoints += TURN_SKILL_REWARD;
     run.events.push(`turn-${corner.direction}`);
@@ -418,7 +425,7 @@ export function step(run, dt) {
           run.y < 0.2);
       if (sameLane && cleared) {
         run.clears++;
-        if (run.zoomies === 0) chargeFetch(run, 12);
+        if (run.zoomies === 0) { chargeFetch(run, 12); cleanMove(run); }
         run.bonusPoints += object.skillReward || 20;
         run.events.push("clear");
       }

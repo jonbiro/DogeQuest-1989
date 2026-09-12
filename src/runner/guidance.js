@@ -47,6 +47,7 @@ export function eventNotice(event, run) {
   if (event === 'hit' && run.lastMistake?.type === 'corner')
     return {text:`Missed ${run.lastMistake.direction} turn · ${run.hearts} ${run.hearts === 1 ? 'heart' : 'hearts'} left`, priority:3};
   const notices = {
+    flow: {text: `${run.cleanStreak} clean moves · +${run.lastFlowBonus}`, priority: 0},
     hit: {text: `${run.hearts} ${run.hearts === 1 ? 'heart' : 'hearts'} left`, priority: 3},
     'shield-break': {text: 'Shield used', priority: 2},
     'route-scenic': {text: 'Scenic trail', priority: 1},
