@@ -1,5 +1,19 @@
 # Runner verification
 
+## One press per focused action control (2026-09-12)
+
+- Suppressed repeated Enter/Space keydowns only on focused gameplay action
+  buttons, matching the existing one-press direct shortcuts. First presses,
+  subsequent fresh presses and unrelated native controls retain ownership.
+- All five action buttons have repeat regression coverage; 280 tests pass.
+- In the actual local browser, a native Enter press emitted one right-button
+  click, six synthetic repeat keydowns were default-prevented, and a fresh native
+  Enter emitted the second click. Raw native repeat injection was unavailable;
+  this verifies native first/fresh presses plus synthetic repeat suppression,
+  not physical held-key timing. An initial test outlived its run and was rejected;
+  its disposable save was restored to the confirmed absent baseline. The final
+  test paused immediately, left no save, and its temporary tab was closed.
+
 ## Shared route-frame computation (2026-09-12)
 
 - The renderer now prepares the player transform, detour reveal and player

@@ -42,3 +42,27 @@ test('Space leaves focused pause, audio and other native controls to their own a
   }
   assert.deepEqual(f.actions,[],'focusing an ordinary control must not add a jump');
 });
+
+test('held native action-button keys cannot repeat lane changes or extend slides',()=>{
+  const f=fixture();
+  for(const action of ['left','right','jump','slide','fetch']) {
+    f.document.activeElement={closest:selector=>selector.includes('button')?{dataset:{action}}:null};
+    for(const code of ['Enter','Space']) {
+      assert.equal(f.press({code,repeat:false}),false,'first press keeps native activation');
+      for(let repeat=0;repeat<8;repeat++)assert.equal(f.press({code,repeat:true}),true,'suppress native repeat');
+      assert.equal(f.press({code,repeat:false}),false,'a new physical press remains available');
+    }
+  }
+  assert.deepEqual(f.actions,[],'native controls retain ownership of their first activation');
+});
+
+test('repeat protection is scoped to action buttons, leaving ordinary controls alone',()=>{
+  const f=fixture();
+  f.document.activeElement={closest:selector=>selector==='button[data-action]'?null:{tagName:'BUTTON'}};
+  for(const code of ['Enter','Space'])assert.equal(f.press({code,repeat:true}),false);
+  f.document.activeElement={closest:()=>null};
+  for(const code of ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','KeyF']) {
+    assert.equal(f.press({code,repeat:true}),true);
+  }
+  assert.deepEqual(f.actions,[]);
+});

@@ -611,6 +611,13 @@ const keyActions = {
 };
 window.addEventListener("keydown", (event) => {
   if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
+  // Native Enter activation repeats on a focused button. Match the direct
+  // shortcuts: one physical press means one move, including lane changes.
+  if (event.repeat && ['Enter','Space'].includes(event.code) &&
+      document.activeElement?.closest?.('button[data-action]')) {
+    event.preventDefault();
+    return;
+  }
   // Focused controls own Space, including Pause and sound. Preventing their
   // native key event would turn activation into an accidental jump instead.
   if (event.code === 'Space' && document.activeElement?.closest?.('button,input,select,textarea,summary,a,[role="button"]')) return;
