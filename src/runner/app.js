@@ -696,7 +696,11 @@ let pointer = null;
 $("scene").addEventListener("pointerdown", (event) => {
   if (state !== "playing" || !canStartSwipe(event,pointer)) return;
   pointer = { x: event.clientX, y: event.clientY, id: event.pointerId, started: event.timeStamp, travel: 0 };
-  $("scene").setPointerCapture(event.pointerId);
+  try { $("scene").setPointerCapture(event.pointerId); }
+  catch {
+    pointer=null;
+    pause(); // A vanished touch must not leave the trail running without input.
+  }
 });
 $("scene").addEventListener("pointermove", (event) => {
   if (
@@ -731,16 +735,14 @@ $("scene").addEventListener("pointerup", (event) => {
     if (action) act(run, action);
   }
 });
-const clearOwnedPointer = event => {
-  if(ownsSwipe(event,pointer))pointer=null;
-};
-$("scene").addEventListener("pointercancel", event => {
+const cancelOwnedPointer = event => {
   if(!ownsSwipe(event,pointer))return;
   pointer=null;
   // The browser took over this gesture. Do not keep running under a system UI.
   pause();
-});
-$("scene").addEventListener("lostpointercapture", clearOwnedPointer);
+};
+$("scene").addEventListener("pointercancel", cancelOwnedPointer);
+$("scene").addEventListener("lostpointercapture", cancelOwnedPointer);
 for (const button of document.querySelectorAll("[data-action]")) {
   button.onpointerdown = (event) => {
     if (state === "playing" && canPressAction(event)) {
