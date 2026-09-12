@@ -1,5 +1,12 @@
 # Puppy adventure goal
 
+## Clear two-swipe decisions
+
+Weaving courses and aerial reward guidance now distinguish one-lane moves from
+two-lane moves. A ×2 hint becomes a single-move hint after the first swipe, then
+clears at the destination. This improves difficult-sequence readability without
+removing obstacles, changing steering, or adding another HUD element.
+
 ## Grounded movement feedback
 
 Optional sound now includes a quiet touchdown cue synchronized to the physics

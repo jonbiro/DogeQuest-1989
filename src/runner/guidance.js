@@ -4,6 +4,7 @@ import {steer,jumpLandingTime,JUMP_BUFFER} from './motion.js';
 import {turnPrompt} from './turns.js';
 import {courseCue} from './courses.js';
 import {timingLesson} from './mistakes.js';
+import {laneCue} from './lane-cue.js';
 
 function onApproach(run, object) {
   const projected = {x:run.x, vx:run.vx};
@@ -22,8 +23,7 @@ export function actionCue(run) {
       (object.type === 'gift' || run.magnet === 0) &&
       !object.used && !object.pull && object.at > run.distance &&
       object.at-run.distance < run.speed*.8).sort((a,b)=>a.at-b.at)[0];
-    return !bone || bone.lane === run.lane ? ''
-      : `${bone.lane < run.lane ? '←' : '→'} ${bone.type === 'gift' ? 'GIFT' : 'BONES'} ${bone.lane < run.lane ? 'LEFT' : 'RIGHT'}`;
+    return !bone ? '' : laneCue(run.lane,bone.lane,bone.type==='gift'?'GIFT':'BONES');
   }
   const cable = run.objects.find(object => object.type === 'zipline-start' && !object.caught &&
     object.at > run.distance && object.at - run.distance < run.speed * 1.6);

@@ -139,7 +139,7 @@ test('aerial bone guidance follows the nearest reward and stops after steering o
   act(run,'left');
   assert.equal(actionCue(run),'','no repeated input while steering settles');
   run.objects[1].used=true;
-  assert.equal(actionCue(run),'→ BONES RIGHT');
+  assert.equal(actionCue(run),'→ BONES RIGHT ×2');
   run.magnet=4;
   assert.equal(actionCue(run),'','active attraction needs no lane instruction');
   run.magnet=0;run.objects[0].pull={};

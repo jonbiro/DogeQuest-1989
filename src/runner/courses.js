@@ -1,5 +1,6 @@
 import {regionAt, REGION_LENGTH} from './regions.js';
 import {CURRENT_TRAIL_VERSION} from './trail-version.js';
+import {laneCue} from './lane-cue.js';
 
 const BEAT_OFFSETS = [0,35,70];
 export const COURSE_RECOVERY = 30;
@@ -70,7 +71,7 @@ export function courseCue(run) {
   const beat = course.beats[course.checked];
   if (!beat || beat.safeLane === undefined || beat.at < run.distance ||
       beat.at-run.distance > run.speed*.8 || run.lane === beat.safeLane) return '';
-  return beat.safeLane < run.lane ? '← WEAVE LEFT' : '→ WEAVE RIGHT';
+  return laneCue(run.lane,beat.safeLane,'WEAVE');
 }
 
 export function activeCourse(run) {

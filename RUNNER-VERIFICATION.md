@@ -1,5 +1,30 @@
 # Runner verification
 
+## Explicit two-swipe lane guidance (2026-09-12)
+
+- A delayed-input audit exposed a concrete ambiguity: the first Crystal slalom
+  beat at 1090m could require right-to-left traversal, but its hint did not change
+  after the first swipe left. Course and aerial-reward cues now append ×2 for a
+  two-lane move, shorten after the first accepted swipe, and disappear at the
+  target. One swipe still moves exactly one lane; no obstacle or physics change.
+- All 257 tests and build/lint/distribution checks pass. Tests cover both
+  directions, weave/bone/gift labels, actual two-input course clears with 150ms
+  reaction at 36 and 46.8m/s, and existing aerial cue/magnet behavior.
+- Repeating a 40-seed, 6,000m delayed-cue audit removed the missed two-lane
+  course moves. Thirty-nine runs had no hit; one had a nonfatal branch hit after
+  the controller changed route lanes mid-jump. That residual automation behavior
+  is not presented as a complete difficulty/fairness pass.
+- At 320 × 568, actual app play reached Crystal slalom, displayed LEFT ×2 in the
+  existing edge dock, changed to LEFT after a native keyboard move, and accepted
+  the second move. At 1095m it offered the next rightward two-swipe cue with all
+  three hearts. A timed observation expired while the controller was still live;
+  the same run was inspected and continued, not restarted on timeout.
+- An initial attempt ended before the controller was attached and was not counted
+  as passing evidence. Its disposable local save was removed back to the absent
+  baseline; the successful retry stayed unbanked. Temporary tab and viewport were
+  cleaned up. This combines synthetic cue-following setup with native keyboard
+  acceptance checks, not physical-phone touch validation.
+
 ## Quiet physics-timed touchdown sound (2026-09-12)
 
 - Actual vertical ground contact emits one landing cue, including normal jumps,
