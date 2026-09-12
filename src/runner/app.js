@@ -283,7 +283,9 @@ function setState(next) {
 }
 function start() {
   if(!graphicsReady){graphicsError();return;}
-  run = createRun(Date.now(), saved.upgrades);
+  // A results-screen retry is a rematch, not a new random obstacle layout.
+  // Camp and help starts remain fresh adventures.
+  run = createRun(state === 'ended' ? run.seed : Date.now(), saved.upgrades);
   run.puppy = saved.collection.puppy;
   run.appearance = { ...saved.collection };
   currentMission = missionFor(saved.challenges);
@@ -331,7 +333,7 @@ function showOverlay(kind) {
   $("home").textContent = kind === 'paused' ? 'Leave this run' : 'Back to camp';
   $("overlay-primary").textContent =
     kind === "ended"
-      ? "Run it back ↗"
+      ? "Retry this trail ↗"
       : kind === "help"
         ? "Let’s run ↗"
         : "Keep running →";
@@ -372,7 +374,7 @@ function finish() {
     $("run-highlights").textContent += next ? ` · ${dogCard.name} bond: ${dogCard.current}/${next.target} toward ${next.name}` : ` · ${dogCard.name}: Trail legend`;
   }
   $("run-breakdown-copy").textContent = `${$("overlay-copy").textContent} ${$("run-highlights").textContent}`;
-  $("overlay-copy").textContent = receipt.personalBest ? 'New personal best! Your score is banked.' : 'Your score is banked. Ready for another run?';
+  $("overlay-copy").textContent = `${receipt.personalBest ? 'New personal best! ' : ''}Score banked. Retry the same trail, or head to camp for a fresh one.`;
   const nextBond=dogCard?.tiers.find(tier=>dogCard.current<tier.target);
   $("run-highlights").textContent = nextBond
     ? `Next: ${dogCard.name} · ${Math.max(0,nextBond.target-dogCard.current)} clean clears or turns to ${nextBond.name}`

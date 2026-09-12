@@ -60,6 +60,15 @@ the evidence behind each area, closure of the completion checks and explicit val
 
 ## Delivered implementation
 
+Results now offer “Retry this trail”: a fresh run using the previous seed so
+players can learn an obstacle sequence instead of receiving a different layout
+after every mistake. Camp and help starts still generate fresh adventures.
+Route choices can still change subsequent obstacles. A regression test executes
+the real start handler, checks reset state and deterministic simulation, and
+checks fresh camp/help seeds. All 160 checks pass; a natural browser run and
+actual retry were verified at 320 × 568, including readable results and restored
+three-heart play. This is desktop portrait coverage, not a physical-phone test.
+
 Final acceptance combines the full four-puppy/six-outfit matrix, eight-pickup and overlapping-power checks, input-driven challenge/traversal tests, compact/mobile-sized UI checks, recovery tests and published play → rewards → purchases → reload. All 77 tests, lint, build/artifact checks and dependency audit pass. Final CI/Pages succeeded; live script/CSS hashes match the build, and the final audio-only repair passed live mute/resume checks. Physical-phone, exhaustive hardware and human-listening validation are not claimed.
 
 The full four-puppy × six-outfit rendering matrix is visually checked, including shared-renderer resets between contrasting puppies. Stronger opening and later bends plus progressively denser lane-switching rows address the request for a less straight, less easy trail. These features passed their unit, long-run and published browser checks; the final comprehensive audit is recorded separately.
