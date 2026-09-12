@@ -1,5 +1,26 @@
 # Runner verification
 
+## Native Safari camp-to-gameplay sequence (2026-09-12)
+
+- Two completed runs in the dedicated iOS 27 Biscuit Dash simulator used verified
+  configuration `seconds:8, warmup:1, prepare:false, camp:true`. Thus the menu
+  rendered for nine seconds before gameplay and prepared shaders automatically.
+
+  | Run | Setup CPU | Worst camp warmup draw | Worst gameplay warmup draw | Steady gameplay mean / p95 interval | Gameplay >50ms gaps |
+  | --- | --- | --- | --- | --- | --- |
+  | First | 282ms | 124ms | 28ms | 16.73 / 17ms | 1 (59ms) |
+  | Repeat | 173ms | 138ms | 14ms | 16.74 / 18ms | 0 |
+
+- Both reached 207.84m, with no ended run or visibility interruption. Largest
+  first-render work occurred in camp, not entry into gameplay. Idle baselines
+  also had >50ms gaps (two then one), so scheduler/mirroring/shared-host effects
+  cannot be excluded. This does not prove immediate-Play behavior, long-run or
+  physical-phone smoothness, and the isolated 59ms gameplay gap remains noted.
+- Native Safari returned to its actual portrait camp, visibly rendered, with
+  the original 1,360 points. The scoped helper and test tab were closed; other
+  simulators were untouched. Temporary fixture files were removed by rebuilding.
+  Production game code is unchanged by this verification pass.
+
 ## Separate camp startup from entry into play (2026-09-12)
 
 - The developer fixture now accepts `camp: true` to render the normal menu
