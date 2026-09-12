@@ -1,7 +1,7 @@
 // Current fixed renderer catalog includes surface grain and shadow resources.
 // These are allocation/draw budgets, not a promise of any device's frame rate.
 // One 54-vertex shared palm frond replaces the Oasis leaf spheres.
-export const RENDERER_BUDGET = Object.freeze({geometries:34,textures:9,drawCalls:260,objects:200});
+export const RENDERER_BUDGET = Object.freeze({geometries:35,textures:9,drawCalls:260,objects:200});
 export function checkRendererResources(sample,warmed=null) {
   const values={geometries:sample.geometries,textures:sample.textures,drawCalls:sample.drawCalls,
     objects:sample.activeObjects+sample.pooledObjects};

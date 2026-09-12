@@ -36,6 +36,7 @@ import {createBoulderGeometry} from './boulder-model.js';
 import {createPalmFrondGeometry} from './palm-frond.js';
 import {addBambooLeaves} from './bamboo-leaves.js';
 import {createMushroomCapGeometry} from './mushroom-cap.js';
+import {createTerrainMaterial,terrainStation} from './terrain-material.js';
 
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -311,6 +312,7 @@ export function createView(canvas) {
     flatShading: false,
     map: surface, bumpMap: surface, bumpScale: .04,
   });
+  const terrainMaterial=createTerrainMaterial(surface);
   // Keep a wider visual corridor around playable lanes without moving hazards.
   for (const group of decorations) {
     group.position.y = BANK_SURFACE_Y;
@@ -354,11 +356,14 @@ export function createView(canvas) {
             gateway: group.userData.gateway === true,
           });
       });
-    for (const groupEntries of [entries.filter(entry=>entry.road),entries.filter(entry=>!entry.road)]) {
+    for (const groupEntries of [entries.filter(entry=>entry.terrain),entries.filter(entry=>entry.road&&!entry.terrain),entries.filter(entry=>!entry.road)]) {
     if (!groupEntries.length) continue;
+    const isTerrain=groupEntries[0].terrain;
+    const batchGeometry=isTerrain?geometry.clone():geometry;
+    if(isTerrain)batchGeometry.setAttribute('terrainStation',new THREE.InstancedBufferAttribute(new Float32Array(groupEntries.length),1).setUsage(THREE.DynamicDrawUsage));
     const instanced = new THREE.InstancedMesh(
-      geometry,
-      batchMaterial,
+      batchGeometry,
+      isTerrain?terrainMaterial:batchMaterial,
       groupEntries.length,
     );
     instanced.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -920,6 +925,7 @@ export function createView(canvas) {
             instanceMatrix.scale(bendScale.set(0,0,0));
           if(entry.road && !entry.cable && gaps.some(gap => Math.abs(distance-z-gap.at)<.1)) instanceMatrix.scale(bendScale.set(0,0,0));
           if(entry.terrain){
+            instanced.geometry.attributes.terrainStation.setX(i,terrainStation(distance,z));
             const blend=areaBlend(menu?0:distance-z);
             areaGroundColor.copy(areaColors[blend.previous].ground).lerp(areaColors[blend.index].ground,blend.blend);
             instanced.setColorAt(i,areaGroundColor);
@@ -930,6 +936,7 @@ export function createView(canvas) {
         });
         instanced.instanceMatrix.needsUpdate = true;
         instanced.instanceColor.needsUpdate = true;
+        if(entries[0].terrain)instanced.geometry.attributes.terrainStation.needsUpdate=true;
       }
       cornerRoad.update(distance, frameAt, menu);
       water.update(distance, frameAt, menu, dt, state === 'playing' && !reducedMotion);
