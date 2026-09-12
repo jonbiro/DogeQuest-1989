@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
 import {levels,price,purchase,refundUpgrade,UPGRADES} from '../src/runner/progression.js';
 import {createRun,act,BASE_SLIDE_DURATION,SLIDE_UPGRADE_DURATION} from '../src/runner/world.js';
 const {structuredClone}=globalThis;
@@ -33,4 +35,26 @@ test('refunding slides restores the preferred timing on the next run only',()=>{
   assert.equal(next.slide,BASE_SLIDE_DURATION);
   assert.equal(existing.upgrades.slide,3);
   assert.equal(profile.credits,3300);
+});
+
+test('actual purchase handler keeps focus on the next usable action in its upgrade row',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('    button.onclick = () => {',source.indexOf('function shop()'));
+  const end=source.indexOf('    const actions =',start);
+  assert.ok(start>=0&&end>start);
+  for(const key of Object.keys(UPGRADES))for(const level of [0,1,2])for(const extra of [0,10000]) {
+    const saved={credits:price(level)+extra,upgrades:levels({[key]:level})};
+    const button={},focused=[];let persisted=0;
+    const target=name=>({focus:options=>focused.push({name,preventScroll:options.preventScroll})});
+    runInNewContext(source.slice(start,end),{button,key,saved,purchase,
+      persist:()=>persisted++,updateRecords(){},shop(){},tone(){},
+      document:{querySelector:selector=>selector.includes(':not(:disabled)')
+        ? price(saved.upgrades[key])!==null&&saved.credits>=price(saved.upgrades[key])?target('purchase'):null
+        : target('refund')}});
+    button.onclick();
+    assert.equal(saved.upgrades[key],level+1);
+    assert.equal(saved.credits,extra);
+    assert.equal(persisted,1);
+    assert.deepEqual(focused,[{name:level<2&&extra>0?'purchase':'refund',preventScroll:true}]);
+  }
 });

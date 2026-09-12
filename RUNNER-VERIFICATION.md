@@ -1,5 +1,16 @@
 # Runner verification
 
+## Keep upgrade purchase focus in place (2026-09-12)
+
+- Purchasing now focuses the next affordable level in the same row, or its
+  refund action when the next purchase is unavailable/maxed. It no longer sends
+  keyboard users back to Run after each level; focusing does not scroll the shop.
+- Tests execute the actual purchase handler for all four upgrades, all three
+  starting levels and both remaining-funds cases. A real browser click followed
+  by two Enter presses purchased Spring paws levels 1/2/3, focused the next
+  purchase each time then refund at max, and changed 10,000 points to 6,700.
+  The isolated profile was restored to absent and the test tab closed.
+
 ## Pause interrupted trail gestures (2026-09-12)
 
 - A browser `pointercancel` for the trail's active swipe now enters the existing

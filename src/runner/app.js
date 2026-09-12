@@ -254,6 +254,8 @@ function shop() {
         persist();
         updateRecords();
         shop();
+        const next = document.querySelector(`[data-upgrade="${key}"]:not(:disabled)`) || document.querySelector(`[data-refund="${key}"]`);
+        next?.focus({preventScroll:true});
         tone(880, 0.2);
       }
     };
