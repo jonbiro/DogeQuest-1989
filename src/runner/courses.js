@@ -30,7 +30,7 @@ const MIXED_COURSES = [
 ];
 const VARIATIONS=LEGACY_VARIATIONS.map((courses,i)=>[courses[0],MIXED_COURSES[i],...courses.slice(1)]);
 
-export function courseAt(start,version=CURRENT_TRAIL_VERSION,scenic=false) {
+export function courseAt(start,version=CURRENT_TRAIL_VERSION,scenic=false,ordinal=null) {
   const region = regionAt(start);
   if(scenic&&version>=3){
     const definitions=[
@@ -45,7 +45,8 @@ export function courseAt(start,version=CURRENT_TRAIL_VERSION,scenic=false) {
         blockedLane:[1,2,0][index],safeLane:[0,1,1][index]}))};
   }
   const variations=version===1?LEGACY_VARIATIONS:VARIATIONS;
-  const variant = Math.floor(start / (REGION_LENGTH * COURSES.length)) % variations[region].length;
+  const sequence=Number.isSafeInteger(ordinal)&&ordinal>=0?ordinal:Math.floor(start / (REGION_LENGTH * COURSES.length));
+  const variant = sequence % variations[region].length;
   const definition = variations[region][variant];
   return {
     start, end:start+COURSE_LENGTH, region, visit:Math.floor(start/REGION_LENGTH),

@@ -17,7 +17,7 @@ import {mistakeDetail} from './mistakes.js';
 import { jump, steer, moveVertical, JUMP_BUFFER, SLIDE_BUFFER } from "./motion.js";
 import { ZIPLINE_FIRST, ZIPLINE_PERIOD, ZIPLINE_LENGTH, ZIPLINE_HEIGHT } from "./ziplines.js";
 import {courseAt, COURSE_LENGTH, COURSE_RECOVERY, advanceCourse} from './courses.js';
-import {REGION_LENGTH} from './regions.js';
+import {REGION_LENGTH,regionAt} from './regions.js';
 import {raftIntersecting,raftEncounter,advanceRaft,moveRaft} from './rafts.js';
 import {
   TURN_SKILL_REWARD,
@@ -173,7 +173,12 @@ export function fillTrack(run) {
         !cornerIntersecting(start, sequenceEnd) &&
         (!run.raftPrototype||!raftIntersecting(start,sequenceEnd)) &&
         (!run.route || start >= run.route.until || sequenceEnd - COURSE_RECOVERY <= run.route.until)) {
-      run.course = courseAt(start,run.generatorVersion,route==='scenic');
+      const region=regionAt(start);
+      const ordinal=run.raftPrototype?(run.courseOrdinals?.[region]??0):null;
+      run.course = courseAt(start,run.generatorVersion,route==='scenic',ordinal);
+      if(run.raftPrototype&&!run.course.scenic){
+        run.courseOrdinals??=[0,0,0];run.courseOrdinals[region]++;
+      }
       run.lastCourseVisit = visit;
       for (const beat of run.course.beats) {
         for (let lane = 0; lane < 3; lane++)

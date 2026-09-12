@@ -11,6 +11,8 @@ import * as THREE from 'three';
 import {createMochiModel} from '../src/runner/mochi-model.js';
 import {createPowerHud} from '../src/runner/power-hud.js';
 import {checkRendererResources} from './runner-resource-budget.js';
+import {RAFT_FIRST,RAFT_LENGTH,RAFT_PERIOD} from '../src/runner/rafts.js';
+import {ZIPLINE_FIRST,ZIPLINE_LENGTH,ZIPLINE_PERIOD} from '../src/runner/ziplines.js';
 export function routeDetourPreview(kind='scenic',distance=435) {
   const canvas=document.createElement('canvas');
   canvas.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;z-index:9999';document.body.append(canvas);
@@ -251,6 +253,7 @@ export function powerPreview(reducedMotion=false,combined=false) {
   return {reducedMotion,combined,samples,...view.diagnostics()};
 }
 export function longRunCheck({rafts=false}={}) {
+  const metersPerRun=rafts?18000:6000;
   const canvas=document.createElement("canvas");
   canvas.style.cssText="position:fixed;inset:0;width:100vw;height:100vh;z-index:9999";
   document.body.append(canvas);
@@ -266,7 +269,7 @@ export function longRunCheck({rafts=false}={}) {
     run.raftPrototype=rafts;
     run.appearance={puppy:["biscuit","mochi","pepper"][variant],costume:["scarf","hero","explorer"][variant]};
     let nextSample=250;
-    while(run.distance<6000 && !run.ended) {
+    while(run.distance<metersPerRun && !run.ended) {
       if(run.course)courseNames.add(run.course.name);
       const corner=turnPrompt(run),turnLocked=Boolean(corner);
       if(corner&&corner.status!=="accepted")act(run,corner.direction);
@@ -305,22 +308,24 @@ export function longRunCheck({rafts=false}={}) {
       }
     }
     if(run.ended)throw new Error(`Input-driven run ended at ${run.distance} on seed ${run.seed}`);
-    if(run.ziplines!==4)throw new Error(`Expected four zipline finishes, got ${run.ziplines}`);
+    const expectedZips=Math.floor((metersPerRun-ZIPLINE_FIRST-ZIPLINE_LENGTH)/ZIPLINE_PERIOD)+1;
+    if(run.ziplines!==expectedZips)throw new Error(`Unexpected zipline finishes: ${run.ziplines}`);
     if(run.turns===0||run.missedTurns!==0)throw new Error(`Corner bot regression: ${run.turns} accepted, ${run.missedTurns} missed on seed ${run.seed}`);
     completedZiplines+=run.ziplines;
-    if(rafts&&run.rafts!==2)throw new Error(`Expected two raft finishes, got ${run.rafts}`);
+    const expectedRafts=Math.floor((metersPerRun-RAFT_FIRST-RAFT_LENGTH)/RAFT_PERIOD)+1;
+    if(rafts&&run.rafts!==expectedRafts)throw new Error(`Unexpected raft finishes: ${run.rafts}`);
     completedRafts+=run.rafts||0;
     turns+=run.turns;missedTurns+=run.missedTurns;
     run.regionalCourses.forEach((count,region)=>{regionalCourses[region]+=count;});
     if(attempt===2)warmed={geometries:Math.max(...samples.map(s=>s.geometries)),textures:Math.max(...samples.map(s=>s.textures))};
   }
   const peak=key=>Math.max(...samples.map(sample=>sample[key]));
-  const summary={runs:4,metersPerRun:6000,completedZiplines,completedRafts,turns,missedTurns,renderedCheckpoints:samples.length,minimumHearts,hits,shieldSaves,peakSpeed,peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),warmed,repeatLapStable:true,final:samples.at(-1)};
+  const summary={runs:4,metersPerRun,completedZiplines,completedRafts,turns,missedTurns,renderedCheckpoints:samples.length,minimumHearts,hits,shieldSaves,peakSpeed,peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),warmed,repeatLapStable:true,final:samples.at(-1)};
   if(hits||shieldSaves)throw new Error(`Traversal collision between checkpoints: ${JSON.stringify(summary)}`);
   summary.regionalCourses=regionalCourses;
   summary.courseNames=[...courseNames];
   for(const name of ['Root scramble','Canopy shuffle','Root rhythm','Fern dash','Canyon crossings','Ridge hop','Twin crossings','Ridge switch','Crystal slalom','Moonpaw weave','Crystal switchback','Moonlit hurdles'])
-    if(!rafts&&!courseNames.has(name))throw new Error(`Missing course variation: ${name}`);
+    if(!courseNames.has(name))throw new Error(`Missing course variation: ${name}`);
   summary.splitRowsSeen=splitRows.size;
   if(!splitRows.size)throw new Error('Missing split-decision coverage');
   if(regionalCourses.some(count=>count===0))throw new Error(`Missing regional course coverage: ${regionalCourses}`);

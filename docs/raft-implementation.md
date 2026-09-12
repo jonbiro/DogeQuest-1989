@@ -79,3 +79,30 @@ Full build/lint/distribution/tests passed: 393 tests. Browser console errors
 were empty; temporary tabs closed, viewport reset, final build removed fixture
 files. Sustained native performance and actual browser-input raft runs remain
 unverified. None of this is a claim of physical-device QA or goal completion.
+
+## Delayed steering and course sequencing
+
+Five additional tests cover 300 ms delayed responses to arrow cues at 24/60 Hz
+presentation rates over a fixed 120 Hz simulation, with Scenic/Challenge and
+boosted/unboosted rides. Every ride completes without damage, shield saves or
+boost-smashing a rock. These are simulated reaction checks, not human input QA.
+
+Prototype course variants now advance only when a hard course is generated,
+independently per region. Scenic courses do not consume a hard-course variant.
+Default trails retain their existing distance-based selection and replay layout.
+
+The renderer check now requires all twelve hard-course names for the prototype
+too. Four extended 18 km runs passed: 24 rafts, 52 ziplines, 104 turns, 288 render
+checkpoints, no damage/shield saves/missed turns. Peaks remained 36 geometries,
+nine textures and 257 draw calls, with 113 pooled plus active objects; repeat
+laps were stable. This longer check replaces the earlier prototype exemption.
+
+This does not resolve early-run variety: 7.5 km was insufficient to encounter
+every family, and the extended matrix recorded 32/37/6 completed regional
+courses. Glade windows remain crowded by reserved encounters. Course pacing,
+actual portrait control input, versioned rollout and native performance remain
+release gates; the prototype is still disabled for ordinary adventures.
+
+Final build, lint, distribution checks and all 398 tests passed. The extended
+browser run reported no console errors; its temporary tab and viewport override
+were cleaned up.
