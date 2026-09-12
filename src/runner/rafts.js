@@ -93,3 +93,15 @@ export function moveRaft(run,target,dt){
   clearRaftGroundActions(run);
   return true;
 }
+
+export function raftEncounter(section,challenge=false){
+  const objects=[];
+  for(const [index,safeLane] of [0,2,1].entries()){
+    const at=section.start+35+index*35;
+    for(let lane=0;lane<3;lane++)if(challenge?lane!==safeLane:lane===[1,0,2][index])
+      objects.push({type:'rock',lane,at,raftHazard:true,raftSafeLane:safeLane});
+    for(const offset of [-16,-10,-4,5])objects.push({type:'bone',lane:safeLane,at:at+offset,raftPickup:true});
+  }
+  objects.push({type:'gift',lane:1,at:section.end-12,raftPickup:true});
+  return objects;
+}

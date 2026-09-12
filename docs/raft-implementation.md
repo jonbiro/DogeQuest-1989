@@ -27,13 +27,23 @@ run keeps its raft pose. Seven raft tests cover these contracts using real
 `createRun` state; the full suite passed 388 tests, followed by the focused seven
 tests after strengthening the zero-distance-interval guard.
 
-No generator, collision loop, controls, model or water route currently calls
-this module. Its completion reward is unit-tested but cannot yet be earned in
-the published game. Existing published trails and saved progress are unaffected.
+The internal `raftPrototype` flag now connects generator reservations, steering,
+ground-action suppression, existing rock collisions, bone/power collection and
+completion rewards. No UI or default run enables it, and the renderer has no
+raft or river-route presentation yet. It cannot be played as a finished feature
+in the published game. Existing default trails and saved progress are unaffected.
+
+Prototype encounters have three steering beats at +35/+70/+105 m, with 12 bones
+marking safe lanes and a final gift. Scenic has one rock per row; Challenge has
+two. Integrated tests use real `act`, `step`, `fillTrack` and `actionCue` paths
+across base/max upgrades, boosted/unboosted conditions and 24/60/120 requested
+update rates (the world step retains its existing 1/30 s cap). Tests confirm
+successful dismount, reachable rewards and no buffered ground-action leakage.
+Separate non-steering runs test real damage, shield consumption and magnet
+collection; these are not visual or human-reaction-time acceptance checks.
 Do not report raft gameplay as shipped on the strength of these unit tests.
 
-Next work connects the state transitions and reserved generator rows under a
-new replay version, then adds the raft/water presentation and reachable reward
-paths. All gates in `comparative-gap-review.md` still apply. In particular,
-course reservations, safe dismounts, visual reaction distance, actual controls,
-power interactions and renderer resources need integrated verification.
+Next work adds the raft/water presentation, delayed-input checks and a new replay
+version before enabling the feature in ordinary adventures. All gates in
+`comparative-gap-review.md` still apply. Visual reaction distance, browser control
+coverage, full power combinations and renderer resources remain unverified.

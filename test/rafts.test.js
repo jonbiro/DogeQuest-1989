@@ -3,7 +3,53 @@ import assert from 'node:assert/strict';
 import {raftAt,raftByIndex,raftIntersecting,raftCurrent,steerRaft,clearRaftGroundActions,RAFT_BANK_LIMIT,advanceRaft,moveRaft,RAFT_REWARD} from '../src/runner/rafts.js';
 import {cornerIntersecting} from '../src/runner/turns.js';
 import {ZIPLINE_FIRST,ZIPLINE_PERIOD,ZIPLINE_LENGTH} from '../src/runner/ziplines.js';
-import {createRun} from '../src/runner/world.js';
+import {createRun,fillTrack,step,act} from '../src/runner/world.js';
+import {actionCue} from '../src/runner/guidance.js';
+
+test('prototype river uses actual controls, collisions and reward collection at base and upgraded speeds',()=>{
+  for(const hz of [24,60,120])for(const boosted of [false,true])for(const challenge of [false,true]){
+    const run=createRun(1989,boosted?{leap:3,slide:3,magnet:3,value:3}:{});
+    Object.assign(run,{raftPrototype:true,distance:1090,nextRow:1090,objects:[],nextChoice:1750,nextZipline:2050,
+      course:null,route:{kind:challenge?'challenge':'scenic',until:1270},zoomies:boosted?10:0});
+    run.previous.distance=run.distance;fillTrack(run);
+    const rocks=run.objects.filter(object=>object.raftHazard);
+    assert.equal(rocks.length,challenge?6:3);
+    assert.ok(run.objects.filter(o=>o.at>=1105&&o.at<=1325).every(o=>o.raftHazard||o.raftPickup));
+    let boarded=false;
+    for(let frame=0;frame<hz*12&&run.distance<1320;frame++){
+      // Follow real directional hints; ×2 naturally requires a second input.
+      const cue=actionCue(run);
+      if(cue.includes('←'))act(run,'left');
+      if(cue.includes('→'))act(run,'right');
+      if(run.raft){
+        boarded=true;act(run,'jump');act(run,'slide');
+        assert.equal(run.vy,0);assert.equal(run.slide,0);
+      }
+      step(run,1/hz);
+    }
+    assert.ok(boarded);assert.equal(run.rafts,1);assert.equal(run.raft,null);
+    assert.equal(run.hearts,3);assert.ok(run.bones>=9,`reachable bones at ${hz} Hz`);
+    assert.equal(run.gifts,1);assert.equal(run.jumpBuffer,0);assert.equal(run.slideNext,0);
+  }
+});
+
+test('ordinary version-three runs do not silently enable prototype river encounters',()=>{
+  const run=createRun(1989);
+  Object.assign(run,{distance:1090,nextRow:1090,objects:[],nextChoice:1750,nextZipline:2050});
+  fillTrack(run);assert.ok(run.objects.every(object=>!object.raftHazard&&!object.raftPickup));
+});
+
+test('river obstacles use normal damage and shields, while magnets collect the reachable bone line',()=>{
+  for(const shield of [0,1]){
+    const run=createRun(1989);
+    Object.assign(run,{raftPrototype:true,distance:1090,nextRow:1090,objects:[],nextChoice:1750,nextZipline:2050,
+      course:null,route:{kind:'scenic',until:1270},shield,magnet:20});
+    run.previous.distance=run.distance;fillTrack(run);
+    for(let frame=0;frame<1200&&run.distance<1320;frame++)step(run,1/120);
+    assert.equal(run.rafts,1);assert.equal(run.hearts,shield?3:2);
+    assert.equal(run.shield,0);assert.equal(run.bones,12);
+  }
+});
 
 test('raft lifecycle boards and rewards exactly once without leaking queued ground actions',()=>{
   const run=createRun(1989);run.time=40;run.y=2;run.jumpBuffer=.3;run.slideNext=.7;

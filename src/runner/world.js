@@ -18,6 +18,7 @@ import { jump, steer, moveVertical, JUMP_BUFFER, SLIDE_BUFFER } from "./motion.j
 import { ZIPLINE_FIRST, ZIPLINE_PERIOD, ZIPLINE_LENGTH, ZIPLINE_HEIGHT } from "./ziplines.js";
 import {courseAt, COURSE_LENGTH, COURSE_RECOVERY, advanceCourse} from './courses.js';
 import {REGION_LENGTH} from './regions.js';
+import {raftIntersecting,raftEncounter,advanceRaft,moveRaft} from './rafts.js';
 import {
   TURN_SKILL_REWARD,
   applyTurnInput,
@@ -130,6 +131,15 @@ export function fillTrack(run) {
       run.nextRow = Math.ceil((corner.recovery + .001) / 5) * 5;
       continue;
     }
+    // Developer prototype only until river rendering and versioned links are
+    // verified. No published UI or default run enables this flag.
+    const river=run.raftPrototype&&raftIntersecting(run.nextRow,run.nextRow+19);
+    if(river){
+      const challenge=run.route?.kind==='challenge'&&river.start<run.route.until;
+      for(const spec of raftEncounter(river,challenge))Object.assign(add(run,spec.type,spec.lane,spec.at),spec);
+      run.nextRow=river.recovery+5;
+      continue;
+    }
     if (run.nextRow >= run.nextZipline - 45) {
       const start = run.nextZipline;
       add(run, "zipline-start", 1, start);
@@ -161,6 +171,7 @@ export function fillTrack(run) {
         sequenceEnd < Math.min(run.nextChoice, run.nextZipline) - 45 &&
         sequenceEnd <= (visit+1)*REGION_LENGTH &&
         !cornerIntersecting(start, sequenceEnd) &&
+        (!run.raftPrototype||!raftIntersecting(start,sequenceEnd)) &&
         (!run.route || start >= run.route.until || sequenceEnd - COURSE_RECOVERY <= run.route.until)) {
       run.course = courseAt(start,run.generatorVersion,route==='scenic');
       run.lastCourseVisit = visit;
@@ -225,7 +236,7 @@ export function act(run, action) {
   if (action === 'fetch') { activateFetch(run); return; }
   if (action === "left" && !applyTurnInput(run, action)) run.lane = Math.max(0, run.lane - 1);
   if (action === "right" && !applyTurnInput(run, action)) run.lane = Math.min(2, run.lane + 1);
-  if (run.zipline) return;
+  if (run.zipline || run.raft) return;
   if (action === "jump") {
     if (run.y === 0 && run.vy === 0) jump(run);
     else run.jumpBuffer = JUMP_BUFFER;
@@ -332,7 +343,8 @@ export function step(run, dt) {
     return;
   }
   if(run.zoomies>0 && run.y===0 && run.objects.some(object=>object.type==="gap" && object.at-run.distance>0 && object.at-run.distance<run.speed*.45)) act(run,"jump");
-  steer(run, LANES[run.lane], dt);
+  if(run.raftPrototype)advanceRaft(run,run.previous.distance,run.distance);
+  if(!moveRaft(run,LANES[run.lane],dt))steer(run, LANES[run.lane], dt);
   if(run.choicePending!==null && run.distance>=run.choicePending) {
     const kind=run.x>1.2?"challenge":"scenic";
     run.route={kind,until:run.choicePending+220};
@@ -355,7 +367,7 @@ export function step(run, dt) {
       run.invulnerable = Math.max(run.invulnerable, 1.2);
       run.events.push("zipline-end");
     }
-  } else {
+  } else if(!run.raft) {
     moveVertical(run, dt);
   }
   run.invulnerable = Math.max(0, run.invulnerable - dt);
