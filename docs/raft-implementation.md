@@ -29,8 +29,8 @@ tests after strengthening the zero-distance-interval guard.
 
 The internal `raftPrototype` flag now connects generator reservations, steering,
 ground-action suppression, existing rock collisions, bone/power collection and
-completion rewards. No UI or default run enables it, and the renderer has no
-raft or river-route presentation yet. It cannot be played as a finished feature
+completion rewards. No UI or default run enables it. The renderer now has an
+initial raft and river-route presentation, but it is not a finished feature
 in the published game. Existing default trails and saved progress are unaffected.
 
 Prototype encounters have three steering beats at +35/+70/+105 m, with 12 bones
@@ -43,7 +43,39 @@ Separate non-steering runs test real damage, shield consumption and magnet
 collection; these are not visual or human-reaction-time acceptance checks.
 Do not report raft gameplay as shipped on the strength of these unit tests.
 
-Next work adds the raft/water presentation, delayed-input checks and a new replay
+Next work verifies delayed input, fills course-coverage gaps and adds a new replay
 version before enabling the feature in ordinary adventures. All gates in
 `comparative-gap-review.md` still apply. Visual reaction distance, browser control
 coverage, full power combinations and renderer resources remain unverified.
+
+## Initial visual integration
+
+The prototype now renders a seven-log raft with cross-planks and lashings,
+reusing existing geometries in twelve parts. A narrow river replaces the road
+during the encounter, river rocks sit at water height, and the dog uses a braced
+pose. The waiting raft is visible before boarding. A quarter-second visual
+blend preserves an incoming jump's height while the simulation boards safely.
+
+Portrait previews at 390 × 844 covered 1130/1170/1280 m. The first wide-water
+preview read as a lake; the channel was narrowed to 16 m and rechecked. Current
+prototype screenshot: local `test-results/raft-portrait.png` (not shipped).
+
+Two real-renderer matrices each covered four 6 km runs and 96 checkpoints:
+
+- Prototype: eight raft completions, 16 ziplines, 36 turns, zero damage/shield
+  saves/missed turns; peak 36 geometries, nine textures, 257 draw calls and 101
+  objects. Repeat laps stable. One new river geometry raises the explicit
+  geometry ceiling from 35 to 36; other ceilings stay unchanged.
+- Default trails: zero raft completions as intended; all twelve hard-course
+  names retained, 16 ziplines/36 turns, no damage, stable 35/9/243/105 peaks.
+
+The prototype displaced Crystal slalom and Moonpaw weave within this 6 km
+coverage window. Its optional renderer check reports encountered names and
+requires two raft finishes per run; it does not claim all-course coverage.
+The default check still requires all twelve. This gap must be investigated
+before general release, not hidden by the prototype-specific check.
+
+Full build/lint/distribution/tests passed: 393 tests. Browser console errors
+were empty; temporary tabs closed, viewport reset, final build removed fixture
+files. Sustained native performance and actual browser-input raft runs remain
+unverified. None of this is a claim of physical-device QA or goal completion.

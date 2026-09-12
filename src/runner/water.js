@@ -58,24 +58,24 @@ export function createWaterSurface(scene) {
   scene.add(mesh);
   return {
     mesh,
-    update(distance,frameAt,menu=false,dt=0,animate=false){
+    update(distance,frameAt,menu=false,dt=0,animate=false,section=null){
       if(animate&&Number.isFinite(dt)&&dt>0)phase.value=(phase.value+Math.min(dt,.05)*1.2)%(Math.PI*200);
       mesh.visible=false;
       if(menu||!Number.isFinite(distance)||distance<0)return;
       // The visible window is shorter than a bridge repeat; at most one river.
       let cycle=Math.floor((distance-12-BRIDGE_END)/BRIDGE_PERIOD)+1;
       cycle=Math.max(0,cycle);
-      const start=cycle*BRIDGE_PERIOD+BRIDGE_START-2.5;
-      const end=cycle*BRIDGE_PERIOD+BRIDGE_END-2.5;
+      const start=section?section.start:cycle*BRIDGE_PERIOD+BRIDGE_START-2.5;
+      const end=section?section.end:cycle*BRIDGE_PERIOD+BRIDGE_END-2.5;
       if(end<distance-12||start>distance+175)return;
       for(let row=0;row<ROWS;row++){
         const station=start+(end-start)*row/(ROWS-1);
         const frame=frameAt(distance-station);
         const cosine=Math.cos(frame.yaw),sine=Math.sin(frame.yaw);
         for(let column=0;column<ACROSS.length;column++){
-          const across=ACROSS[column];
+          const across=ACROSS[column]*(section?8/35:1);
           positions.setXYZ(row*ACROSS.length+column,
-            frame.x+across*cosine,frame.y+BANK_SURFACE_Y-.03,frame.z-across*sine);
+            frame.x+across*cosine,frame.y+(section?-.55:BANK_SURFACE_Y-.03),frame.z-across*sine);
         }
       }
       positions.needsUpdate=true;mesh.visible=true;

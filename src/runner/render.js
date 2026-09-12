@@ -37,6 +37,8 @@ import {createPalmFrondGeometry} from './palm-frond.js';
 import {addBambooLeaves} from './bamboo-leaves.js';
 import {createMushroomCapGeometry} from './mushroom-cap.js';
 import {createTerrainMaterial,terrainStation} from './terrain-material.js';
+import {raftAt,raftIntersecting} from './rafts.js';
+import {createRaftModel} from './raft-model.js';
 
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -382,6 +384,8 @@ export function createView(canvas) {
   scene.remove(scenery);
   const cornerRoad = createCornerRoad(scene);
   const water = createWaterSurface(scene);
+  const raftWater=createWaterSurface(scene);
+  const raftModel=createRaftModel(mesh,boxGeometry,trunkGeometry);scene.add(raftModel);
   // Biscuit is an original articulated model, not a billboard.
   const dog = new THREE.Group();
   scene.add(dog);
@@ -915,9 +919,11 @@ export function createView(canvas) {
           if(cableClip) instanceMatrix.scale(bendScale.set(cableClip.thicknessScale,cableClip.thicknessScale,cableClip.scale));
           const bridge = !menu && isBridge(distance-z);
           const cableSection = !menu && ziplineAt(distance-z);
+          const raftSection=!menu&&run.raftPrototype&&raftAt(distance-z);
           const corner = upcomingCorner(distance-z-70);
           const cornerSection = !menu && corner && distance-z > corner.at-45 && distance-z < corner.end+20;
           if (entry.cable ? !cableSection : (entry.road && entry.bridge !== bridge) || (!entry.road && (bridge || cableSection))) instanceMatrix.scale(bendScale.set(0,0,0));
+          if(raftSection&&(!entry.road||!entry.terrain))instanceMatrix.scale(bendScale.set(0,0,0));
           // Decorative gateways must not masquerade as playable slide gates.
           if (entry.gateway && (!menu || cornerSection || z > 0)) instanceMatrix.scale(bendScale.set(0,0,0));
           if (!menu && entry.road && !entry.terrain && !entry.cable &&
@@ -940,18 +946,21 @@ export function createView(canvas) {
       }
       cornerRoad.update(distance, frameAt, menu);
       water.update(distance, frameAt, menu, dt, state === 'playing' && !reducedMotion);
+      const river=run.raftPrototype&&!menu?raftIntersecting(distance-12,distance+170):null;
+      if(river)raftWater.update(distance,frameAt,false,dt,state==='playing'&&!reducedMotion,river);
+      else raftWater.mesh.visible=false;
       dog.position.set(
         menu ? 0 : x,
         (menu ? 0 : y) +
           Math.abs(Math.sin(time * 12)) *
-            (reducedMotion || (!menu && (state !== "playing" || y>.05 || run.slide>0 || run.zipline)) ? 0 : 0.045),
+            (reducedMotion || (!menu && (state !== "playing" || y>.05 || run.slide>0 || run.zipline || run.raft)) ? 0 : 0.045),
         0,
       );
       dog.rotation.y = menu ? -2.35 : lean;
       dog.rotation.z = menu || reducedMotion ? 0 : lean * 0.3;
       dog.rotation.x = menu ? 0 : groundFrame.pitch + (reducedMotion ? 0 : pitch);
       dog.scale.setScalar(1);
-      const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:y>.1,sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline)});
+      const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:y>.1,sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline),rafting:!menu&&Boolean(run.raft)});
       const crouch=activeRig===mochi?mochiCrouch((1-pose)/.54):null;
       dog.scale.y = ((crouch?.scaleY ?? pose) + personality.breathe) * (1-weight.compression);
       dog.scale.x = dog.scale.z = 1+weight.compression*.4;
@@ -961,6 +970,16 @@ export function createView(canvas) {
         if(y<=.1&&!run.zipline)personality.legs=personality.legs.map((angle,i)=>THREE.MathUtils.lerp(angle,crouch.legs[i],crouch.amount));
       }
       dog.visible = true;
+      raftModel.visible=!menu&&(Boolean(run.raft)||Boolean(river&&distance<river.start));
+      if(run.raft&&!menu){
+        raftModel.position.set(x,0,0);
+        raftModel.rotation.set(groundFrame.pitch,reducedMotion?0:lean*.5,0);
+        dog.position.y+=run.raft.boardingHeight*Math.max(0,1-(run.time-run.raft.boardedAt)/.25);
+      }else if(raftModel.visible){
+        const boarding=frameAt(distance-river.start);
+        raftModel.position.set(boarding.x+x*Math.cos(boarding.yaw),boarding.y,boarding.z-x*Math.sin(boarding.yaw));
+        raftModel.rotation.set(boarding.pitch,boarding.yaw,0,'YXZ');
+      }
       if (state === "playing" || menu) {
         const angles=smoothLegAngles(activeRig.legs.map(leg=>leg.rotation.x),personality.legs,dt);
         for (let i = 0; i < activeRig.legs.length; i++) activeRig.legs[i].rotation.x = angles[i];
@@ -981,7 +1000,7 @@ export function createView(canvas) {
       const contact=contactShadow(y,distance,gaps);
       shadow.scale.setScalar(contact.scale);
       shadow.material.opacity = contact.opacity;
-      shadow.visible = contact.opacity > 0;
+      shadow.visible = contact.opacity > 0 && !run.raft;
       aura.visible = !menu && run.shield > 0;
       magnetField.visible = !menu && run.magnet > 0;
       speedTrail.visible = !menu && run.zoomies > 0;
@@ -1048,7 +1067,7 @@ export function createView(canvas) {
             pickup
               ? (object.airborne ? ZIPLINE_HEIGHT + 1.1 : 1.1) +
                   (reducedMotion ? 0 : Math.sin(time * 3 + object.id) * 0.12)
-              : 0,
+              : object.raftHazard?-.55:0,
             -(object.at - distance),
           );
           if (object.pull) {
