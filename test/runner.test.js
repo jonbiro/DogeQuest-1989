@@ -30,6 +30,32 @@ test('heart pickups heal injuries or reward full health once without inflating b
     assert.equal(run.events.filter(e=>e==='heart').length,1);
   }
 });
+test('spare shields award points once without stacking protection or multiplying bone rewards', () => {
+  for (const shield of [0, 1]) {
+    const run = obstacle('shield');
+    Object.assign(run, {shield, double: 10, combo: 7, fetchCharge: 30});
+    advance(run, .3);
+    assert.equal(run.shield, 1);
+    assert.equal(run.bonusPoints, shield ? 100 : 0);
+    assert.equal(run.score, Math.floor(run.distance) + run.bonusPoints);
+    assert.equal(run.bones, 0);
+    assert.equal(run.bonePoints, 0);
+    assert.equal(run.combo, 7);
+    assert.equal(run.fetchCharge, 30);
+    advance(run, .3);
+    assert.equal(run.bonusPoints, shield ? 100 : 0);
+    assert.equal(run.events.filter(event => event === 'shield').length, 1);
+    run.objects = [{id: 1000, at: run.distance + 3, lane: 1, type: 'rock', used: false}];
+    advance(run, .3);
+    assert.equal(run.shield, 0);
+    assert.equal(run.hearts, 3);
+    advance(run, 2);
+    run.objects = [{id: 1001, at: run.distance + 3, lane: 1, type: 'rock', used: false}];
+    advance(run, .3);
+    assert.equal(run.hearts, 2, 'a spare shield did not buy a second protected hit');
+  }
+});
+
 test("runner seeds reproduce solvable open-lane, uniform or split-choice action rows", () => {
   for (let seed = 0; seed < 50; seed++) {
     const a = createRun(seed),

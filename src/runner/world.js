@@ -402,7 +402,10 @@ export function step(run, dt) {
     ) {
       object.used = true;
       if (object.type === "magnet") run.magnet = 10 + run.upgrades.magnet * 3;
-      if (object.type === "shield") run.shield = 1;
+      if (object.type === "shield") {
+        if (run.shield) run.bonusPoints += 100;
+        else run.shield = 1;
+      }
       if (object.type === "gem") run.bonusPoints += 250;
       if (object.type === "double") run.double = 10;
       if (object.type === "zoomies") run.zoomies = 6;

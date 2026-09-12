@@ -1,5 +1,17 @@
 # Runner verification
 
+## Useful spare shields (2026-09-12)
+
+- A shield collected while already protected now gives 100 bonus points instead
+  of being wasted. Protection still absorbs exactly one hit; spare pickups do
+  not stack lives or protection. The existing pickup feedback remains unchanged,
+  with the rule explained in Help rather than adding a mid-run banner.
+- Regression checks cover first/spare collection, single award, score inclusion,
+  unchanged bones/combo/Fetch charge and no double-token multiplier. Two later
+  collisions prove that only the first hit is protected. All 230 tests and the
+  build/distribution/lint gates passed. This is simulation evidence, not new
+  physical-device or human play evidence.
+
 ## Portrait early-jump recovery in the production app (2026-09-12)
 
 - Tested build `e0958a2` at 390x844 on local shared trail `2-1j9`. A temporary
