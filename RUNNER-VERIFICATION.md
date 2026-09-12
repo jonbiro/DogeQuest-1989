@@ -1,5 +1,20 @@
 # Runner verification
 
+## Space respects focused controls (2026-09-12)
+
+- A failing regression reproduced Space being prevented and interpreted as jump
+  when an ordinary button was focused. The shortcut now yields to native buttons,
+  form fields, disclosures, links and button-role controls, not only action buttons.
+- Browser keyboard presses on Pause opened the pause screen with the dog in its
+  running posture. Space on Keep running resumed, and Space on the Slide button
+  produced the slide posture. A fresh run verified Space on the trail produces
+  the jump posture, waiting for that actual rendered state rather than sampling
+  too early. No gameplay events or simulation state were injected.
+- Both runs were paused unbanked and temporary tabs closed. No settings were
+  changed. Unit regression covers native controls and retains action-button,
+  modifier/composition and ordinary trail-shortcut checks. All 244 tests and
+  build/lint/distribution gates passed. This is desktop browser keyboard evidence.
+
 ## Audio resumes with the player's resume action (2026-09-12)
 
 - Opted-in audio now resumes during Resume itself rather than waiting for the

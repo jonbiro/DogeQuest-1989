@@ -576,9 +576,9 @@ const keyActions = {
 };
 window.addEventListener("keydown", (event) => {
   if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return;
-  // Focused action buttons own Space; their native click invokes the named move.
-  // Elsewhere Space remains the quick jump shortcut.
-  if (event.code === 'Space' && document.activeElement?.closest?.('[data-action]')) return;
+  // Focused controls own Space, including Pause and sound. Preventing their
+  // native key event would turn activation into an accidental jump instead.
+  if (event.code === 'Space' && document.activeElement?.closest?.('button,input,select,textarea,summary,a,[role="button"]')) return;
   if (event.key === "Tab" && !$("overlay").hidden) {
     const buttons = [
       ...$("overlay").querySelectorAll("button:not(:disabled), a[href], summary, input:not(:disabled)"),

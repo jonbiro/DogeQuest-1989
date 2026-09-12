@@ -34,3 +34,11 @@ test('browser shortcuts and composition do not trigger gameplay or pause',()=>{
   f.press({code:'ArrowLeft'});f.press({code:'Escape'});
   assert.deepEqual(f.actions,['left','pause']);
 });
+test('Space leaves focused pause, audio and other native controls to their own activation',()=>{
+  const f=fixture();
+  for(const tag of ['button','input','select','textarea','summary','a']) {
+    f.document.activeElement={closest:selector=>selector.split(',').includes(tag)?{tagName:tag.toUpperCase()}:null};
+    assert.equal(f.press(),false,`${tag}: preserve native Space handling`);
+  }
+  assert.deepEqual(f.actions,[],'focusing an ordinary control must not add a jump');
+});
