@@ -1,5 +1,23 @@
 # Runner verification
 
+## Separate camp startup from entry into play (2026-09-12)
+
+- The developer fixture now accepts `camp: true` to render the normal menu
+  scene between idle and gameplay phases. Camp uses the production renderer and
+  its automatic shader preparation, but does not advance simulation. Default
+  two-phase measurements remain available. Reports include all selected options,
+  and non-boolean preparation/camp values are rejected before resource creation.
+- Full check: 307 tests pass. Deterministic orchestration tests cover both phase
+  plans, saved report options, zero camp distance and no simulation catchup when
+  play begins. A real desktop renderer run (2s sample/.25s warmup each) measured
+  75.4ms first/worst camp draw versus 10.6ms maximum gameplay warmup draw after
+  camp. Steady gameplay draw mean was 1.34ms, with no >50ms gameplay hitches;
+  distance reached 50m, ended/visibility-interrupted both false.
+- This localizes the desktop startup cost to camp within this short sample,
+  rather than proving a new speedup. It does not yet resolve native Safari's
+  timing. Fixture tab closed and temporary HTML removed by rebuild; no production
+  game source changes in this pass.
+
 ## Native Safari shader-preparation follow-up (2026-09-12)
 
 - Dedicated Biscuit Dash iOS 27 simulator, mirrored Safari; isolated production

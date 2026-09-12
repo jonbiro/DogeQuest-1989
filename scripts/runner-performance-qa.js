@@ -13,9 +13,10 @@ function summary(values) {
     max:sorted.at(-1),over50:values.filter(value=>value>50).length};
 }
 
-export function startPerformanceCheck({seconds=8,warmup=1,prepare=false}={}) {
+export function startPerformanceCheck({seconds=8,warmup=1,prepare=false,camp=false}={}) {
   if(!Number.isFinite(seconds)||seconds<2||seconds>30||!Number.isFinite(warmup)||warmup<0||warmup>5)
     throw Error('Use a 2–30 second sample and 0–5 second warmup');
+  if(typeof prepare!=='boolean'||typeof camp!=='boolean')throw Error('Preparation and camp options must be boolean');
   if(document.querySelector('#game'))throw Error('Use a blank standalone page, not the running app');
   if(document.querySelector('canvas[data-performance-fixture]'))throw Error('Reload the fixture page before another measurement');
   const setupStarted=performance.now();
@@ -25,18 +26,21 @@ export function startPerformanceCheck({seconds=8,warmup=1,prepare=false}={}) {
   document.body.append(canvas);
   const view=createView(canvas),run=createRun(1989);
   const result={status:'running',phase:'idle',phases:[],visibilityInterrupted:false,
+    configuration:{seconds,warmup,prepare,camp},
     setupCPU:performance.now()-setupStarted,hitches:{count:0,worst:[]}};
+  const stages=camp?['idle','camp','game']:['idle','game'];
   let phase=0,start=null,last=null,accumulator=0,lastCue='';
   let intervals=[],updates=[],draws=[];
   let warmUpdates=[],warmDraws=[],previousCPU=null;
   function frame(now) {
+    const phaseName=stages[phase];
     if(document.hidden)result.visibilityInterrupted=true;
     if(start===null)start=now;
     const elapsed=(now-start)/1000;
     const interval=last===null?0:now-last;
     last=now;
     const before=performance.now();
-    if(phase===1) {
+    if(phaseName==='game') {
       accumulator+=Math.min(.1,interval/1000);
       while(accumulator>=1/120) {
         const cue=actionCue(run);
@@ -50,10 +54,11 @@ export function startPerformanceCheck({seconds=8,warmup=1,prepare=false}={}) {
       }
     }
     const updated=performance.now();
-    if(phase===1)view.draw(run,run.time,'playing',false,Math.min(.1,interval/1000),accumulator/(1/120));
+    if(phaseName==='game')view.draw(run,run.time,'playing',false,Math.min(.1,interval/1000),accumulator/(1/120));
+    else if(phaseName==='camp')view.draw(run,elapsed,'menu',false,Math.min(.1,interval/1000),0);
     const drawn=performance.now();
     const cpu={updateCPU:updated-before,drawCPU:drawn-updated};
-    recordHitch(result.hitches,{phase:phase===0?'idle':'game',elapsed,interval,
+    recordHitch(result.hitches,{phase:phaseName,elapsed,interval,
       warmup:elapsed<warmup,distance:run.distance,...cpu,previousCPU});
     previousCPU=cpu;
     if(elapsed<warmup) {warmUpdates.push(cpu.updateCPU);warmDraws.push(cpu.drawCPU);}
@@ -61,12 +66,12 @@ export function startPerformanceCheck({seconds=8,warmup=1,prepare=false}={}) {
       intervals.push(interval);updates.push(updated-before);draws.push(drawn-updated);
     }
     if(elapsed<warmup+seconds) {requestAnimationFrame(frame);return;}
-    result.phases.push({phase:phase===0?'idle':'game',interval:summary(intervals),
+    result.phases.push({phase:phaseName,interval:summary(intervals),
       updateCPU:summary(updates),drawCPU:summary(draws),distance:run.distance,
       warmupCPU:{update:summary(warmUpdates),draw:summary(warmDraws)},
-      ...(phase===1?{renderer:view.diagnostics(),ended:run.ended}:{}) });
-    if(phase===0) {
-      phase=1;result.phase='game';start=null;last=null;
+      ...(phaseName!=='idle'?{renderer:view.diagnostics(),ended:run.ended}:{}) });
+    if(phase<stages.length-1) {
+      phase++;result.phase=stages[phase];start=null;last=null;
       intervals=[];updates=[];draws=[];warmUpdates=[];warmDraws=[];previousCPU=null;
       requestAnimationFrame(frame);
     } else {
