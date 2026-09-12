@@ -230,3 +230,17 @@ checks the shared banking guard; it is not a claim that raft practice UI exists.
 Score-source text now identifies river and zipline bonuses as already included.
 All 435 tests and full build/lint/distribution checks passed. This does not replace
 the pending actual pause/retirement UI and native performance checks.
+
+## Pause and retirement UI
+
+At 390 × 844, actual Pause → Keep running → Pause → Finish & bank points
+controls were exercised aboard the full-app river fixture at 1160 m. Resume
+preserved the lane, raft state, position, hearts and disabled ground controls.
+Retirement showed Home safe, 1160 score, zero bones and zero completed crossings;
+no unearned 250-point crossing bonus appeared. The fixture disables storage, so
+this verifies the actual finish UI path without modifying the saved profile.
+Console errors were empty; temporary tab closed and viewport reset.
+
+Pause copy now explains that unfinished raft/zipline completion bonuses require
+finishing the ride, while already-collected rewards are retained. The stepped
+clock does not establish real-time resume timing or native performance.

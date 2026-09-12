@@ -406,6 +406,8 @@ function showOverlay(kind) {
       : kind === "help"
         ? "Swipe anywhere on the trail, or use the buttons."
         : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
+  if(kind==='paused'&&!run.practice&&(run.raft||run.zipline))
+    $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
   $("home").textContent = kind === 'paused' ? run.practice ? 'Leave practice' : 'Finish & bank points' : 'Back to camp';
   $("overlay-primary").textContent =
     kind === "ended"
