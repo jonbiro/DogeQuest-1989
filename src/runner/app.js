@@ -34,7 +34,7 @@ $('shared-trail').hidden = sharedSeed === null;
 $('shared-description').textContent = sharedTarget
   ? `Beat ${sharedTarget.toLocaleString()} pts · friendly, unverified target. Your upgrades apply.`
   : 'Shared trail · your upgrades apply.';
-const playLabel = () => sharedSeed === null ? `Run with ${PUPPIES[saved.collection.puppy].name} ↗` : 'Run shared trail ↗';
+const playLabel = () => sharedSeed === null ? `Run with ${PUPPIES[saved.collection.puppy].name} ↗︎` : 'Run shared trail ↗︎';
 let run = createRun(),
   state = "menu",
   last = 0,
@@ -89,7 +89,7 @@ function updateRecords() {
     `${Math.floor(saved.best).toLocaleString()}<span> pts</span>`;
   $("bank").textContent = Math.floor(saved.bones).toLocaleString();
   $("shop").textContent =
-    `Upgrades · ${Math.floor(saved.credits).toLocaleString()} pts ↗`;
+    `Upgrades · ${Math.floor(saved.credits).toLocaleString()} pts ↗︎`;
   const mission = missionFor(saved.challenges);
   $("mission-preview").textContent =
     `${mission.title}: ${mission.target} ${mission.unit} in one run · +${mission.reward} pts`;
@@ -104,7 +104,7 @@ function kennel() {
   $("overlay-label").textContent = "YOUR VERY GOOD CREW";
   $("overlay-title").textContent = "The puppy clubhouse.";
   $("overlay-copy").textContent = `${Math.floor(saved.credits).toLocaleString()} points · ${saved.collection.gifts} gifts banked. Outfits and puppies are cosmetic; your upgrades work with everyone.`;
-  $("overlay-primary").textContent = "Run with your puppy ↗";
+  $("overlay-primary").textContent = "Run with your puppy ↗︎";
   const content = $("collection");
   content.replaceChildren();
   const categories=document.createElement('nav');
@@ -230,7 +230,7 @@ function shop() {
   $("overlay-title").textContent = "Upgrade your paws.";
   $("overlay-copy").textContent =
     `${Math.floor(saved.credits).toLocaleString()} points to spend · Remove a level for a full refund. Tune your paws freely; records and unlocks stay yours.`;
-  $("overlay-primary").textContent = "Run with your upgrades ↗";
+  $("overlay-primary").textContent = "Run with your upgrades ↗︎";
   $("upgrades").replaceChildren();
   for (const [key, upgrade] of Object.entries(UPGRADES)) {
     const level = saved.upgrades[key],
@@ -394,9 +394,9 @@ function showOverlay(kind) {
   $("home").textContent = kind === 'paused' ? run.practice ? 'Leave practice' : 'Finish & bank points' : 'Back to camp';
   $("overlay-primary").textContent =
     kind === "ended"
-      ? "Retry this trail ↗"
+      ? "Retry this trail ↗︎"
       : kind === "help"
-        ? "Let’s run ↗"
+        ? "Let’s run ↗︎"
         : "Keep running →";
   $("toast").textContent = "";
   setState(kind);
@@ -420,7 +420,7 @@ function finish() {
     $('overlay-title').textContent = result.title;
     $('overlay-copy').textContent = 'Practice never changes your points, records or challenges. Rehearse again or head into the adventure.';
     $('run-lesson').textContent = result.lesson;
-    $('overlay-primary').textContent = 'Run the adventure ↗';
+    $('overlay-primary').textContent = 'Run the adventure ↗︎';
     $('practice-again').hidden = false;
     $('practice-again').textContent = run.practice.kind==='turn' && run.practice.correct
       ? `Practise the ${run.practice.direction==='left' ? 'right' : 'left'} turn` : 'Practise again';

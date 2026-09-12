@@ -1,5 +1,17 @@
 # Runner verification
 
+## Monochrome action arrows on native Safari (2026-09-12)
+
+- Native portrait screenshots exposed blue emoji boxes where diagonal action
+  arrows were intended. Static HTML and dynamic labels now pair U+2197 with the
+  U+FE0E text-presentation selector. Intentional puppy/power-up emoji are unchanged.
+- Full check: 308 tests pass, including all diagonal arrows in both sources.
+  The dedicated iOS 27 simulator loaded the updated page; its DOM confirmed the
+  text selector in Play. A native screenshot visibly showed monochrome arrows
+  on Play, How to play, clubhouse, upgrades and the Puppy Quest link, replacing
+  the earlier blue boxes. The 1,360-point save remained unchanged. Scoped mirror
+  and temporary tab were closed without touching other simulators.
+
 ## Native Safari camp-to-gameplay sequence (2026-09-12)
 
 - Two completed runs in the dedicated iOS 27 Biscuit Dash simulator used verified
