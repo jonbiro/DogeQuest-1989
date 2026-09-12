@@ -33,7 +33,7 @@ export function createMochiModel() {
   function material(color, roughness = .94) {
     const key = `${color}:${roughness}`;
     if (!materials.has(key)) materials.set(key, new THREE.MeshStandardMaterial({color, roughness,
-      ...(roughness >= .9 ? {map: undercoat, bumpMap: undercoat, bumpScale: .016} : {})}));
+      ...(roughness >= .9 ? {map: undercoat, bumpMap: undercoat, bumpScale: .035} : {})}));
     return materials.get(key);
   }
   const strands = new Uint8Array(128 * 128 * 4);
@@ -101,7 +101,7 @@ export function createMochiModel() {
   const cream = ['#c3b08b', '#c8b58f', '#cbb893', '#bda985', '#c6b28d'];
 
   ellipsoid(group, 'ribcage', '#55585c', [0, .99, .17], [.405, .345, .79]);
-  fur(group, 'salt-and-pepper-body-curls', [0, .99, .17], [.41, .35, .79], 610, coat, .057);
+  fur(group, 'salt-and-pepper-body-curls', [0, .99, .17], [.42, .36, .80], 610, coat, .078);
   ellipsoid(group, 'chest', '#606266', [0, 1.05, -.39], [.33, .35, .34]);
   fur(group, 'soft-chest-curls', [0, 1.05, -.39], [.335, .35, .34], 180, coat, .046);
   ellipsoid(group, 'dark-face', '#33363a', [0, 1.39, -.64], [.405, .385, .43]);

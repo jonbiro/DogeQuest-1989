@@ -24,7 +24,7 @@ test('both routes retain shared targets, records and rematches across every regi
 test('route labels end at the exact boundary and practice remains explicitly unscored',()=>{
   const run=createRun(1989);
   run.distance=570;run.route={kind:'challenge',until:570};
-  assert.deepEqual(runHudLabels(run,0),{region:'Biscuit Canyon',score:'0 pts'});
+  assert.deepEqual(runHudLabels(run,0),{region:'Redrock Pass',score:'0 pts'});
   const practice=createPracticeRun();
   practice.route={kind:'challenge',until:1000};practice.challengeTarget=100;
   assert.deepEqual(runHudLabels(practice,100),{region:'Practice · no penalties',score:'0/3 moves cleared'});

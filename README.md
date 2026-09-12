@@ -6,6 +6,12 @@ Meet Biscuit: a small golden dog with a red scarf and five handcrafted trails to
 
 ## New companion: Biscuit Dash
 
+The runner now explores six visual destinations within its three mastery regions:
+Sunleaf Woods, Bamboo Sanctuary, Redrock Pass, Palm Oasis, Crystal Reach, and
+Mooncap Grove. Rounded 3D bones, articulated dogs, sculpted ridgelines, flowing
+river highlights, and a portrait-first expedition interface keep the trail
+readable. Area changes preserve existing seeds, upgrades, and passport progress.
+
 **Run challenges:** Complete a distance, bone-collection, or clean-clear goal in one run to earn additional upgrade points. Goals rotate and grow after each completion. Rewards are credited once when the run ends. A compact strip above the controls shows one useful item at a time: an action cue, route choice, important notice or unfinished goal. No center-screen banners or repeated run tutorials. Every ten consecutive bones grants +100 points; each successful jump/slide over an obstacle grants +20 points.
 
 Movement uses interpolated rendering, momentum-aware lane changes, smooth camera follow and accelerated airborne dives. A jump pressed just before landing is buffered for the next takeoff; diving preserves the full ground-slide duration. Velocity-driven leaning and a brief landing compression add weight without changing obstacle clearance. Decorative weight effects respect reduced-motion mode. Magnet bones curve toward Biscuit from all three lanes within 16 meters ahead; points are credited on arrival, once per bone. Already-attracted bones finish their trip if the magnet expires. Magnetic field rings, pickup halos, collection sparkles, and timer bars make power-up states visible.

@@ -1,5 +1,39 @@
 # Runner verification
 
+## Coordinated visual overhaul (2026-09-12)
+
+- Six visual areas now alternate every 225m within the original three mastery
+  regions: Sunleaf Woods, Bamboo Sanctuary, Redrock Pass, Palm Oasis, Crystal
+  Reach and Mooncap Grove. Bamboo stands, palms and mushroom groves have distinct
+  geometry silhouettes and ground dressing. Area sky/ground colors ease over
+  45m. Hidden regional scenery skips transforms; layout generation is unchanged.
+- Replaced the extruded bone cutout with one shared rounded shaft/four-lobe mesh,
+  retaining the existing instanced pickup batching and collection behavior.
+  Refined classic puppy proportions, eyes, scarf, hat and raincoat shapes; richer
+  Mochi undercoat/curls; curved hero cape and corrected Mochi explorer-hat height.
+- High-contrast bordered chevron signs and alternating dark bronze curbs clarify
+  corners. Existing curb luminance tests caught and rejected an overly pale first
+  version. Added amber primary actions, cool secondary controls, labeled steering
+  buttons that say TURN when relevant, circular Fetch, area names, and clearer
+  guidance/data hierarchy without new center-screen banners.
+- Six-area real-renderer comparison saved at test-results/overhaul/six-areas.png;
+  all 24 unique final dog/outfit portraits reviewed and saved alongside it.
+  Controlled previews covered each area and the first corner. No renderer errors.
+- Final 320 × 568 endurance fixture: four 6km runs, 96 rendered checkpoints,
+  36 turns, 16 ziplines, all 12 courses encountered, zero hits/shield saves.
+  Peak 32 geometries, 8 textures, 234 draws, 107 active/pooled objects; no repeat-
+  lap geometry/texture growth. No resource-budget increase was needed.
+- Actual page play at 320 × 568 ran 34 seconds to 907m with three hearts, one
+  accepted turn and a completed zipline. No layout overlaps. Observed desktop
+  frame intervals averaged 8.33ms, p95 10.1ms; this is not a mobile-device FPS
+  guarantee. The QA module produced its expected duplicate-Three import warning.
+- Compact help actions remained visible (bottoms 467/519 within 568px); HUD stress
+  checks with all powers and route guidance passed. Tested text contrast minima:
+  powers 10.52, hearts 6.75, area name 8.1. Local saved progress remained absent.
+- Build, distribution verification, lint and 334 tests passed. Final build removes
+  temporary preview bundles. Original 2D Puppy Quest and persistent save schema
+  remain unchanged; this pass is a runner overhaul, not a physical-device audit.
+
 ## Local impact and power feedback (2026-09-12)
 
 - Real damage now emits six short coral particles at the dog; shield rescue

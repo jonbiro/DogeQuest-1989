@@ -15,6 +15,7 @@ const STRIPS = [
 ];
 const VERTICES_PER_QUAD = 6;
 const VERTEX_COUNT = SEGMENTS * STRIPS.length * VERTICES_PER_QUAD;
+const turnEdge=new THREE.Color('#725026');
 
 const baseColors = {
   base: new THREE.Color("#526d49"),
@@ -125,7 +126,8 @@ export function createCornerRoad(scene) {
         const right = strip.center + halfWidth;
         const station = (stationA + stationB) / 2;
         const palette = isBridge(station) ? bridgeColors : regionColors[regionAt(station)];
-        const color = palette===bridgeColors && strip.color==='paving' && Math.floor(station)%2
+        const color = strip.color==='curb' && Math.floor(station/2)%2===0 ? turnEdge
+          : palette===bridgeColors && strip.color==='paving' && Math.floor(station)%2
           ? bridgeColors.pavingAlternate : palette[strip.color];
 
         offset = writeVertex(positions, normals, colors, offset, frameA, left, strip.height, color);

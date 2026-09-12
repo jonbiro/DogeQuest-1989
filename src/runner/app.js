@@ -898,6 +898,7 @@ function frame(now) {
         const button = document.querySelector(`[data-action="${direction}"]`);
         const active = turn && turn.status !== 'accepted' && turn.direction === direction;
         button.classList.toggle('turn-ready', Boolean(active));
+        button.querySelector('small').textContent=active?'TURN':direction.toUpperCase();
         button.setAttribute('aria-label', turn ? `Turn ${direction}` : `Move ${direction}`);
       }
       $("hearts").textContent =

@@ -1,4 +1,5 @@
-import {REGIONS,regionAt} from './regions.js';
+import {regionAt} from './regions.js';
+import {AREAS,areaAt} from './areas.js';
 import {practiceProgress} from './practice.js';
 import {scoreChaseLabel} from './score-chase.js';
 
@@ -10,7 +11,7 @@ export function runHudLabels(run, best) {
   return {
     region: route
       ? `${['Jungle','Canyon','Glade'][index]} · ${route==='challenge'?'Challenge':'Scenic'}`
-      : REGIONS[index].name,
+      : AREAS[areaAt(run.distance)].name,
     score:scoreChaseLabel(run.score,best,run.rematchBest,run.challengeTarget),
   };
 }

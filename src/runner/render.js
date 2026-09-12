@@ -8,7 +8,10 @@ import { upcomingCorner } from "./turns.js";
 import { objectVisible, ziplineSignVisible } from "./visibility.js";
 import { createCornerRoad } from "./corner-road.js";
 import { PUPPIES } from "./collection.js";
-import { REGIONS, regionAt, regionBlend, horizonProfile } from "./regions.js";
+import { REGIONS, regionAt, horizonProfile } from "./regions.js";
+import {AREAS,areaAt,areaBlend} from './areas.js';
+import {createBoneGeometry} from './bone-model.js';
+import {createCapeGeometry} from './cape-model.js';
 import {createSky} from './sky.js';
 import {createMountainGeometry} from './mountain.js';
 import { puppyPose, smoothLegAngles, bodyMotion, mochiCrouch } from "./puppy-pose.js";
@@ -101,6 +104,8 @@ export function createView(canvas) {
   const ground = box(scene, "#397d6e", 0, -1.4, -60, 200, 0.3, 220);
   ground.material = ground.material.clone();
   const regionColors = REGIONS.map(region => ({sky:new THREE.Color(region.sky),ground:new THREE.Color(region.ground),stone:new THREE.Color(region.stone)}));
+  const areaColors=AREAS.map(area=>({sky:new THREE.Color(area.sky),ground:new THREE.Color(area.ground)}));
+  const areaGroundColor=new THREE.Color();
   // Recycled slabs, lane inlays, and scenery are translated rather than rebuilt.
   const scenery = new THREE.Group();
   scene.add(scenery);
@@ -169,6 +174,7 @@ export function createView(canvas) {
     group.position.x = x;
     group.userData.offset = i * 3.8;
     group.userData.region = 0;
+    group.userData.variant = 0;
     scenery.add(group);
     decorations.push(group);
   }
@@ -178,6 +184,7 @@ export function createView(canvas) {
     group.position.x=(i%2?1:-1)*(6+random()*13);
     group.userData.offset=i*4.7;
     group.userData.region=region;
+    group.userData.variant=0;
     if(region===1) {
       const height=2+random()*5;
       mesh(group,trunkGeometry,"#a75c3d",0,height/2-.4,0,2+random(),height+.8,2);
@@ -194,6 +201,46 @@ export function createView(canvas) {
         shard.rotation.z=(j-1)*.22;
       }
       ball(group,"#ddd8f4",0,.4,0,1.8,.5,1.4);
+    }
+    scenery.add(group);decorations.push(group);
+  }
+  // Alternate destinations have genuinely different silhouettes, not just a
+  // color wash. They share the existing geometry/material batches.
+  for(let region=0;region<3;region++)for(let i=0;i<36;i++){
+    const group=new THREE.Group();
+    group.position.x=(i%2?1:-1)*(5+random()*9);
+    Object.assign(group.userData,{offset:i*5.2,region,variant:1});
+    if(region===0){
+      for(let j=0;j<4;j++){
+        const height=5+random()*7,x=(j-1.5)*.65;
+        mesh(group,trunkGeometry,'#688d44',x,height/2,0,.16,height,.16);
+        for(let y=1;y<height;y+=1.6)ball(group,'#b6c67b',x,y,0,.19,.065,.19);
+        const leaf=mesh(group,canopyGeometry,'#487445',x+.5,height*.8,0,1.4,.38,.65);
+        leaf.rotation.z=.4;
+        const lower=mesh(group,canopyGeometry,'#71954d',x-.45,height*.57,.2,1.1,.28,.5);lower.rotation.z=-.3;
+      }
+    }else if(region===1){
+      const height=5+random()*4;
+      const trunk=mesh(group,trunkGeometry,'#8b6941',0,height/2,0,.25,height,.25);trunk.rotation.z=.12;
+      for(let j=0;j<6;j++){
+        const a=j*Math.PI/3;
+        const leaf=mesh(group,canopyGeometry,'#477963',Math.cos(a)*1.25,height-.3,Math.sin(a)*1.25,2,.4,.65);
+        leaf.rotation.y=-a;leaf.rotation.z=.15;
+      }
+      ball(group,'#d8b783',0,.32,0,1.3,.32,1);
+    }else{
+      for(let j=0;j<3;j++){
+        const height=2+j*1.3,x=(j-1)*1.5;
+        mesh(group,trunkGeometry,'#b9b8d5',x,height/2,0,.3,height,.3);
+        ball(group,['#997dab','#b99bc9','#777cac'][j],x,height,0,1.5,.52,1.35);
+        ball(group,'#e0cbdc',x,height-.2,0,1.3,.1,1.15);
+        for(const offset of [-.5,.4])ball(group,'#dccfe9',x+offset,height+.42,.25,.17,.045,.18);
+      }
+    }
+    ball(group,region===1?'#d1ab73':region===2?'#77769b':'#506e44',.3,.22,.3,1.6,.24,1.2);
+    for(let leaf=0;leaf<3;leaf++){
+      const tuft=ball(group,region===2?'#a39ab8':'#70965e',(leaf-1)*.55,.4,1,.16,.7,.23);
+      tuft.rotation.z=(leaf-1)*.4;
     }
     scenery.add(group);decorations.push(group);
   }
@@ -292,6 +339,7 @@ export function createView(canvas) {
             period: 190,
             start: 14,
             region: group.userData.region,
+            variant: group.userData.variant,
             gateway: group.userData.gateway === true,
           });
       });
@@ -320,9 +368,10 @@ export function createView(canvas) {
   // Biscuit is an original articulated model, not a billboard.
   const dog = new THREE.Group();
   scene.add(dog);
-  ball(dog, "#d89043", 0, 0.82, 0.12, 0.51, 0.44, .85);
-  ball(dog, "#f2c67b", 0, 1.2, -0.62, 0.58, 0.52, 0.55);
-  ball(dog, "#ffe0a1", 0, 1.06, -1.13, 0.38, 0.25, 0.29);
+  ball(dog, "#d89043", 0, 0.88, 0.12, 0.47, 0.40, .88);
+  ball(dog, "#d89043", 0, 1.0, -.38, .37, .40, .35);
+  ball(dog, "#f2c67b", 0, 1.2, -0.62, 0.49, 0.46, 0.54);
+  ball(dog, "#ffe0a1", 0, 1.06, -1.13, 0.33, 0.23, 0.33);
   ball(dog, "#243b33", 0, 1.22, -1.36, 0.16, 0.12, 0.09);
   ball(dog,"#f5919d",0,.88,-1.32,.1,.12,.045);
   const ears = [], eyes = [];
@@ -333,11 +382,11 @@ export function createView(canvas) {
     inner.geometry = coneGeometry;
     ears.push({ear, inner, side});
     const eye = new THREE.Group(); eye.position.set(side*.25,1.39,-1.082);dog.add(eye);eyes.push(eye);
-    ball(eye,"#20352d",0,0,0,.08,.115,.05);
+    ball(eye,"#20352d",0,0,0,.067,.09,.05);
     ball(eye,"#fff7db",-.025,.04,-.044,.025,.033,.018);
   }
-  const collar = box(dog, "#ed734b", 0, 0.95, -0.26, 0.93, 0.25, 0.3);
-  const scarf = box(dog, "#d85235", 0.48, 0.82, 0.15, 0.13, 0.38, 0.85);
+  const collar = ball(dog, "#ed734b", 0, 0.95, -0.26, 0.49, 0.13, 0.24);
+  const scarf = ball(dog, "#d85235", 0.45, 0.82, 0.15, 0.09, 0.20, 0.48);
   scarf.rotation.z = -0.2;
   const legs = [];
   for (const x of [-0.29, 0.29])
@@ -369,14 +418,15 @@ export function createView(canvas) {
   const outfits = Object.fromEntries(["explorer", "hero", "raincoat", "royal", "party"].map(id => {
     const group = new THREE.Group(); dog.add(group); return [id, group];
   }));
-  box(outfits.explorer, "#8c673c", 0, 1.68, -.62, 1.12, .1, 1.02);
-  box(outfits.explorer, "#cba96e", 0, 1.84, -.55, .65, .32, .55);
+  ball(outfits.explorer, "#8c673c", 0, 1.68, -.62, .62, .07, .55);
+  ball(outfits.explorer, "#cba96e", 0, 1.79, -.55, .38, .25, .34);
   box(outfits.explorer, "#687e4b", 0, 1.28, .28, .75, .36, .7);
   box(outfits.explorer, "#e7c984", 0, 1.48, .3, .14, .04, .67);
-  const cape = box(outfits.hero, "#3988e8", 0, 1.23, .52, 1.07, .09, 1.48);
+  const cape = mesh(outfits.hero,createCapeGeometry(),"#3988e8",0,1.23,.52,1,1,1);
+  cape.material=cape.material.clone();cape.material.side=THREE.DoubleSide;
   cape.rotation.x = -.14;
   ball(outfits.hero, "#ffe577", 0, 1.33, .24, .18, .035, .18);
-  box(outfits.raincoat, "#ffd34e", 0, .91, .16, .94, .61, 1.34);
+  ball(outfits.raincoat, "#ffd34e", 0, .91, .16, .50, .36, .76);
   box(outfits.raincoat, "#fff1a0", 0, 1.24, .12, .08, .04, 1.25);
   box(outfits.royal, "#f8c648", 0, 1.69, -.58, .7, .14, .65);
   for (const x of [-.25, 0, .25]) cone(outfits.royal, "#ffe286", x, 1.9, -.65, .13, .38, .13);
@@ -413,7 +463,7 @@ export function createView(canvas) {
       group.scale.set(1, 1, 1); group.position.set(0, 0, 0);
       group.children.forEach((part, index) => {
         part.position.copy(outfitPositions[id][index]);
-        if (isMochi && (id === "royal" || id === "party" || (id === "explorer" && index < 2))) part.position.y += .24;
+        if (isMochi && (id === "royal" || id === "party" || (id === "explorer" && index < 2))) part.position.y += id==='explorer'?.16:.24;
       });
       if (isMochi && id === "raincoat") group.scale.set(1.05, 1.14, 1.08);
       if (isMochi && id === "hero") group.position.y = .12;
@@ -485,32 +535,9 @@ export function createView(canvas) {
   // Allocate instance colors before shader warmup, not on the first pickup/hit.
   flashes.setColorAt(0,flashColor);
   const templates = {};
-  const boneShape=new THREE.Shape();
-  boneShape.moveTo(-.22,.08);boneShape.lineTo(.22,.08);
-  boneShape.bezierCurveTo(.2,.25,.47,.28,.5,.14);
-  boneShape.bezierCurveTo(.58,.08,.56,.02,.48,0);
-  boneShape.bezierCurveTo(.56,-.02,.58,-.08,.5,-.14);
-  boneShape.bezierCurveTo(.47,-.28,.2,-.25,.22,-.08);
-  boneShape.lineTo(-.22,-.08);
-  boneShape.bezierCurveTo(-.2,-.25,-.47,-.28,-.5,-.14);
-  boneShape.bezierCurveTo(-.58,-.08,-.56,-.02,-.48,0);
-  boneShape.bezierCurveTo(-.56,.02,-.58,.08,-.5,.14);
-  boneShape.bezierCurveTo(-.47,.28,-.2,.25,-.22,.08);
-  const boneGeometry=new THREE.ExtrudeGeometry(boneShape,{depth:.14,bevelEnabled:true,bevelThickness:.035,bevelSize:.025,bevelSegments:2,steps:1,curveSegments:8});
-  boneGeometry.translate(0,0,-.07);
-  const boneNormals=boneGeometry.attributes.normal;
-  const boneColors=new Float32Array(boneNormals.count*3);
-  const boneFace=new THREE.Color('#fff0bb'),boneEdge=new THREE.Color('#69401c');
-  const boneColor=new THREE.Color();
-  // Baked side contrast keeps the bone readable without an outline draw per pickup.
-  for(let i=0;i<boneNormals.count;i++) {
-    // Keep the bevel dark too: pale bevels disappear against the cream road.
-    const face=THREE.MathUtils.smoothstep(Math.abs(boneNormals.getZ(i)),.94,.999);
-    boneColor.copy(boneEdge).lerp(boneFace,face).toArray(boneColors,i*3);
-  }
-  boneGeometry.setAttribute('color',new THREE.BufferAttribute(boneColors,3));
+  const boneGeometry=createBoneGeometry();
   templates.bone = new THREE.Mesh(boneGeometry,
-    new THREE.MeshStandardMaterial({vertexColors:true,roughness:.28,metalness:.28}));
+    new THREE.MeshStandardMaterial({vertexColors:true,roughness:.32,metalness:.05}));
   templates.bone.scale.setScalar(1.3);
   const boneTransform=templates.bone.clone();
   const boneBatch=createInstanceBatch(scene,boneGeometry,templates.bone.material);
@@ -687,11 +714,12 @@ export function createView(canvas) {
     const marker = new THREE.Group();
     templates[`corner-${direction}`] = marker;
     const sign = direction === 'right' ? 1 : -1;
-    for (const x of [-5.05, 5.05]) {
+    for (const x of [-4.8, 4.8]) {
       box(marker, '#65543c', x, 1.15, 0, .18, 2.3, .2);
-      box(marker, '#efffc9', x, 2.15, 0, 1.7, 1, .2);
+      box(marker, '#edc36d', x, 2.15, 0, 1.7, 1.1, .22);
+      box(marker, '#173b3e', x, 2.15, .13, 1.53, .91, .08);
       for (const offset of [-.38, .38]) for (const side of [-1, 1]) {
-        const stripe = box(marker, '#245745', x + offset + sign * .08, 2.15 + side * .17, .13, .52, .14, .06);
+        const stripe = box(marker, '#fff0b7', x + offset + sign * .08, 2.15 + side * .17, .20, .52, .14, .06);
         stripe.rotation.z = -sign * side * Math.PI / 4;
       }
     }
@@ -835,11 +863,11 @@ export function createView(canvas) {
       const smooth = 1 - Math.exp(-18 * dt);
       const weight = bodyMotion({vx:run.vx,vy:run.vy,y,time:run.time,landing:run.landing,
         ziplining:Boolean(run.zipline),reducedMotion:reducedMotion||menu});
-      const atmosphere = regionBlend(menu ? 0 : distance);
-      scene.background.copy(regionColors[atmosphere.previous].sky).lerp(regionColors[atmosphere.index].sky,atmosphere.blend);
+      const atmosphere = areaBlend(menu ? 0 : distance);
+      scene.background.copy(areaColors[atmosphere.previous].sky).lerp(areaColors[atmosphere.index].sky,atmosphere.blend);
       scene.fog.color.copy(scene.background);
       sky.material.color.copy(scene.background);
-      ground.material.color.copy(regionColors[atmosphere.previous].ground).lerp(regionColors[atmosphere.index].ground,atmosphere.blend);
+      ground.material.color.copy(areaColors[atmosphere.previous].ground).lerp(areaColors[atmosphere.index].ground,atmosphere.blend);
       horizonProfile(menu ? 0 : distance, horizon);
       for(const mountain of mountains) {
         mountain.material.color.copy(ground.material.color).lerp(scene.background,horizon.haze+mountain.userData.depthHaze);
@@ -858,6 +886,10 @@ export function createView(canvas) {
             entry.start -
             ((entry.offset - (distance % entry.period) + entry.period) %
               entry.period);
+          const region = regionAt(menu ? 0 : distance-z);
+          if(entry.region!==undefined&&(entry.region!==region||entry.variant!==areaAt(menu?0:distance-z)%2)){
+            instanced.setMatrixAt(i,instanceMatrix.makeScale(0,0,0));return;
+          }
           const cableClip = entry.cable ? cableSegment(z) : null;
           const frame = frameAt(cableClip ? cableClip.z : z);
           bendEuler.set(frame.pitch, frame.yaw, 0, 'YXZ');
@@ -867,7 +899,6 @@ export function createView(canvas) {
           bendMatrix.compose(routePosition.set(frame.x, frame.y, frame.z), routeRotation, bendScale.set(1, 1, overlap*(entry.road?(frame.stretch||1):1)));
           instanceMatrix.multiplyMatrices(bendMatrix, entry.matrix);
           if(cableClip) instanceMatrix.scale(bendScale.set(1,1,cableClip.scale));
-          const region = regionAt(menu ? 0 : distance-z);
           const bridge = !menu && isBridge(distance-z);
           const cableSection = !menu && ziplineAt(distance-z);
           const corner = upcomingCorner(distance-z-70);
@@ -878,9 +909,12 @@ export function createView(canvas) {
           if (!menu && entry.road && !entry.terrain && !entry.cable &&
               corner && distance-z >= corner.at && distance-z <= corner.end)
             instanceMatrix.scale(bendScale.set(0,0,0));
-          if(entry.region !== undefined && entry.region !== region) instanceMatrix.scale(bendScale.set(0,0,0));
           if(entry.road && !entry.cable && gaps.some(gap => Math.abs(distance-z-gap.at)<.1)) instanceMatrix.scale(bendScale.set(0,0,0));
-          if(entry.road || entry.region === undefined) instanced.setColorAt(i,entry.bridge || entry.cable ? entry.color : entry.colors[region]);
+          if(entry.terrain){
+            const blend=areaBlend(menu?0:distance-z);
+            areaGroundColor.copy(areaColors[blend.previous].ground).lerp(areaColors[blend.index].ground,blend.blend);
+            instanced.setColorAt(i,areaGroundColor);
+          }else if(entry.road || entry.region === undefined) instanced.setColorAt(i,entry.bridge || entry.cable ? entry.color : entry.colors[region]);
           instanced.setMatrixAt(i, instanceMatrix);
         });
         instanced.instanceMatrix.needsUpdate = true;

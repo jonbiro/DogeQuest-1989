@@ -632,7 +632,7 @@ export function uiPlayCheck(seconds=22) {
       regions.add(document.querySelector("#region-name").textContent);
       zipline ||= scene.dataset.posture === "zipline";
       landed ||= zipline && document.querySelector("#toast").textContent.includes("Zipline complete");
-      gate ||= route.includes("GATES IN");challenge ||= document.querySelector('#run-score').textContent.includes("CHALLENGE");
+      gate ||= route.includes("GATES IN");challenge ||= document.querySelector('#region-name').textContent.includes("Challenge");
       if(cue.includes("TURN LEFT"))turnDirections.add("left");
       if(cue.includes("TURN RIGHT"))turnDirections.add("right");
       turnAccepted ||= cue.includes("TURN SET");

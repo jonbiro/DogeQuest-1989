@@ -1139,3 +1139,30 @@ h1 { letter-spacing: -.055em; word-spacing: .07em; }
 #controls button:enabled:active { box-shadow: inset 0 0 0 3px currentColor; }
 .mastery-card { background: linear-gradient(145deg,#ffffff0c,#ffffff02); }
 #results > div { border-radius: 12px; background: #091f203d; padding: 10px 4px; }
+
+/* Expedition interface: amber actions, cool secondary controls, quiet data. */
+:root { --lime:#ffe0a0; --muted:#b8ccd2; }
+.primary, #controls .jump { background:linear-gradient(155deg,#ffe9b5,#edbd65); color:#263744; border-color:#fff0c7; }
+.start-actions .primary { border-radius:18px; }
+.start-actions .text-button,.icon-button,.back-link { background:#17333de8; border-color:#a6c6d044; }
+.modal { background:linear-gradient(145deg,#284551,#122832 75%); border-color:#b8d0d34d; border-radius:24px; }
+.mastery-card,#run-lesson,.upgrade { border-color:#b8d0d333; }
+.score { background:#112d39ed; outline-color:#112d39ed; border-radius:10px; }
+.score > span { letter-spacing:.08em; color:#c0dce0; font-size:10px; }
+.score strong { font-variant-numeric:tabular-nums; letter-spacing:-.04em; }
+#run-score { color:#f8e5bd; font-variant-numeric:tabular-nums; }
+.bones { background:#112d39ed; border-color:#e9c88670; color:#ffe3ad; border-radius:14px; }
+#hearts { background:#112d39ed; color:#ffb2a0; border-radius:10px; }
+#mission-hud { background:#112d39f2; border:1px solid #a6c6d040; border-radius:16px; box-shadow:0 5px 20px #071b262b; }
+#cue:not(:empty) { color:#ffe3a8; font-size:13px; letter-spacing:.03em; border-left:3px solid #efbf67; padding-left:8px; line-height:1.4; }
+#mission-label { color:#c4d7dc; }
+#route-choice { color:#cbe9e7; }
+.power-chip { background:#173440f2; border-color:#a2d3dc55; border-radius:12px; }
+#controls button { border-radius:16px; font-weight:650; }
+#controls button:not(.jump):not(.ready):not([data-control-state="queued"]):not(.turn-ready) { background:linear-gradient(155deg,#345563f5,#17323dfc); border-color:#aacbd055; color:#ecf7f8; }
+#controls button[data-action="slide"]:not(:disabled):not([data-control-state="queued"]) { border-color:#94d9e0aa; color:#b9f0ef; }
+#controls button.turn-ready { background:#f4cf84; color:#22343c; border-color:#fff0c7; box-shadow:0 0 0 3px #f4cf8426; }
+#controls small { letter-spacing:.08em; font-size:9px; font-weight:800; }
+#controls #fetch { border-radius:50%; font-size:10px; line-height:1.2; }
+#controls #fetch.ready { background:#94e6d8; border-color:#d8fff0; color:#183d3a; }
+@media(max-width:380px) { #cue:not(:empty) { font-size:12px; } #controls small { font-size:8px; } }
