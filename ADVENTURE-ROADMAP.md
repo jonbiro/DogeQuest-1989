@@ -1,6 +1,14 @@
 # Puppy adventure goal
 
-## Latest delivered increment: actionable retry coaching
+## Latest delivered increment: reversible upgrades
+
+Each purchased level can be removed for its full original points price. Players
+can restore short slides or redistribute points among all four tracks without
+losing records, puppies, outfits or mastery. Refunds persist, cannot remove an
+unowned level, and affect the next run rather than mutating an existing one.
+The shop keeps its primary Run action reachable in compact portrait layouts.
+
+## Actionable retry coaching
 
 Results now distinguish late takeoff, early landing, cancelled jumps, incorrect
 slide/jump choices, late aerial dives, naturally expired slides and wrong turns.

@@ -296,6 +296,8 @@ h1 em {
 .upgrade-copy strong { font-size: 15px; color: #f4f5e8; margin-bottom: 6px; }
 .upgrade-copy small { font-size: 12px; margin: 8px 0 4px; color: var(--lime); }
 .upgrade-copy progress { width: 100%; accent-color: #98f5e1; height: 7px; display: block; }
+.upgrade-actions { display: grid; gap: 8px; flex: 0 0 105px; }
+#upgrades .upgrade-refund { background: #173c32; color: #f4f5e8; border-color: #98f5e1; font-size: 11px; }
 .primary {
   background: var(--lime);
   border: 0;

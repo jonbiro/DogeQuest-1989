@@ -494,3 +494,20 @@ by the new contextual mission help, three-goal HUD and clean-move results text.
   playthroughs. Collision classification is verified separately by simulation.
   No jump, slide, speed or collision threshold was changed; slide-expiry
   timestamps record existing motion without extending or shortening it.
+
+### September 11: reversible upgrade tuning
+
+- All 190 checks pass. Tests buy and refund all three levels in every track,
+  proving exact balance restoration and unchanged unrelated profile data.
+  Invalid/unowned refunds fail without mutation. Removing three slide levels
+  restores the base .58-second slide for a new run; an existing run keeps its
+  snapshotted upgrades.
+- In an isolated 320 × 568 browser profile, real button clicks refunded slide
+  levels 3 → 2 → 1 → 0 for 1,800 + 1,000 + 500 points. Reloading preserved the
+  3,300-point balance and level zero. The fixture's 123-point record and seven
+  lifetime bones were unchanged. Focus followed the refund button and moved to
+  the corresponding purchase button when the last level was removed.
+- A screenshot confirmed readable buttons and an unobstructed Run action while
+  scrolled to Silky slides. Test profile and offline cache were removed afterward;
+  production saves were not modified. This is browser portrait evidence, not a
+  new native-phone performance measurement.

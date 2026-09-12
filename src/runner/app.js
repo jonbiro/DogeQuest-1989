@@ -3,7 +3,7 @@ import {RESUME_DURATION,resumeStep} from './resume.js';
 import {installBackupControls} from './backup-ui.js';
 import {installOfflineSupport} from './offline.js';
 import { createView } from "./render.js";
-import { UPGRADES, levels, price, purchase } from "./progression.js";
+import { UPGRADES, levels, price, purchase, refundUpgrade } from "./progression.js";
 import { missionFor, missionProgress, missionTip, missionPackFor } from "./missions.js";
 import { bankRun } from "./rewards.js";
 import {masteryFrom,masteryCards} from './mastery.js';
@@ -211,7 +211,7 @@ function shop() {
   $("overlay-label").textContent = "EARNED ON THE TRAIL. YOURS TO KEEP.";
   $("overlay-title").textContent = "Upgrade your paws.";
   $("overlay-copy").textContent =
-    `${Math.floor(saved.credits).toLocaleString()} points to spend · Earn your full score after each completed run.`;
+    `${Math.floor(saved.credits).toLocaleString()} points to spend · Remove a level for a full refund. Tune your paws freely; records and unlocks stay yours.`;
   $("overlay-primary").textContent = "Run with your upgrades ↗";
   $("upgrades").replaceChildren();
   for (const [key, upgrade] of Object.entries(UPGRADES)) {
@@ -239,7 +239,27 @@ function shop() {
         tone(880, 0.2);
       }
     };
-    row.append(copy, button);
+    const actions = document.createElement('div');
+    actions.className = 'upgrade-actions';
+    actions.append(button);
+    if (level > 0) {
+      const refund = document.createElement('button');
+      refund.className = 'upgrade-refund';
+      refund.type = 'button';
+      refund.textContent = `−1 level · +${price(level - 1).toLocaleString()} pts`;
+      refund.setAttribute('aria-label',`Remove one ${upgrade.name} level and refund ${price(level - 1)} points`);
+      refund.dataset.refund = key;
+      refund.onclick = () => {
+        if (refundUpgrade(saved, key)) {
+          persist(); updateRecords(); shop();
+          const target = document.querySelector(`[data-refund="${key}"]`) || document.querySelector(`[data-upgrade="${key}"]`);
+          target?.focus();
+          tone(660, .12);
+        }
+      };
+      actions.append(refund);
+    }
+    row.append(copy, actions);
     $("upgrades").append(row);
   }
 }
