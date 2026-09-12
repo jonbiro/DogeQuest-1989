@@ -225,6 +225,9 @@ export function act(run, action) {
     else run.jumpBuffer = JUMP_BUFFER;
   }
   if (action === "slide") {
+    // A slide is one timed move, not a hold-to-crouch action. Repeated taps
+    // must not extend it or erase a jump already buffered during a dive.
+    if (run.slide > 0) return;
     run.slideExpiredAt = null;
     if (run.slide === 0) run.events.push('slide');
     run.slide = BASE_SLIDE_DURATION + run.upgrades.slide * SLIDE_UPGRADE_DURATION;

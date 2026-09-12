@@ -29,6 +29,40 @@ function advance(run, seconds, dt = 1 / 120) {
   for (let index = 0; index < steps; index++) step(run, dt);
 }
 
+test('repeated slide presses preserve the original duration and allow a fresh next slide',()=>{
+  for(const level of [0,1,2,3])for(const dt of [1/60,1/120,1/240]) {
+    const run=cleanRun({slide:level});
+    const duration=BASE_SLIDE_DURATION+level*SLIDE_UPGRADE_DURATION;
+    act(run,'slide');
+    let elapsed=0;
+    while(run.slide>0&&elapsed<2) {
+      const remaining=run.slide;
+      act(run,'slide');
+      assert.equal(run.slide,remaining);
+      step(run,dt);elapsed+=dt;
+    }
+    assert.ok(Math.abs(elapsed-duration)<=dt+1e-9);
+    assert.equal(run.events.filter(event=>event==='slide').length,1);
+    act(run,'slide');
+    assert.equal(run.slide,duration);
+    act(run,'jump');
+    assert.equal(run.slide,0);assert.ok(run.vy>0,'jump still cancels a grounded slide immediately');
+  }
+});
+
+test('a repeated dive input cannot erase a late buffered jump',()=>{
+  const run=cleanRun();
+  act(run,'jump');advance(run,.2);act(run,'slide');
+  while(run.y>.4||run.vy>=0)step(run,1/120);
+  act(run,'jump');
+  const buffered=run.jumpBuffer;
+  act(run,'slide');
+  assert.equal(run.jumpBuffer,buffered);
+  advance(run,.1);
+  assert.equal(run.events.filter(event=>event==='jump').length,2);
+  assert.ok(run.y>0);assert.equal(run.slide,0);
+});
+
 test("critically damped steering and reversals are timestep equivalent", () => {
   const results = [];
   for (const dt of [1 / 120, 1 / 60, 1 / 30]) {

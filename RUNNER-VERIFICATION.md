@@ -1,5 +1,19 @@
 # Runner verification
 
+## Predictable slide duration (2026-09-12)
+
+- Repeated Slide actions no longer restart an active slide timer or erase a
+  jump buffered during a dive. Fresh slides remain available after expiration;
+  a grounded Jump still interrupts a slide immediately. Initial dive motion,
+  upgraded duration and collision rules remain unchanged.
+- Regression tests repeatedly press Slide at 60/120/240Hz for all four upgrade
+  levels and verify expiration within one simulation step of the original
+  duration, one start event, a fresh subsequent slide and immediate jump cancel.
+  A separate actual motion simulation proves a late buffered jump survives a
+  repeated dive input and launches on landing. Full check: 282 tests pass.
+- This change is verified through the production action/motion implementation;
+  no new physical-phone timing or human-playtest claim is made.
+
 ## One press per focused action control (2026-09-12)
 
 - Suppressed repeated Enter/Space keydowns only on focused gameplay action
