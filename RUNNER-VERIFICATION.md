@@ -1,5 +1,25 @@
 # Runner verification
 
+## Current-release 90-second integration run (2026-09-12)
+
+- Release `55025da`, 390x844 browser viewport, actual production app and renderer.
+  The local-only `uiPlayCheck(90)` responded to rendered prompts with synthetic
+  keyboard/pointer events; it did not read or change simulation state. This is
+  automated integration coverage, not trusted human input or mobile hardware.
+- Reached 2,901m with three hearts, four accepted turns, zero missed turns,
+  all three regions, Challenge selected, and zipline catch/landing observed.
+  Completed regional courses: jungle 3, canyon 2, glade 2. The rendered scene
+  counter confirmed five actual Fetch uses.
+- All sampled power/score/guidance/control overlap checks returned empty.
+  A gameplay screenshot at 1,972m showed active magnet and double-point chips;
+  the pause endpoint retained all five reusable chip elements. This supplements
+  the isolated power-HUD and start-path regressions with real-run integration.
+- 10,760 frame intervals: mean 8.365ms, p95 10.2ms on this Mac's browser.
+  These are animation-frame intervals, not GPU timings, not an A/B improvement
+  measurement, and not physical-phone performance evidence.
+- The run paused at the endpoint without banking. The isolated profile remained
+  absent. The temporary QA tab was closed and viewport override reset.
+
 ## Shareable starting trails (2026-09-12)
 
 - Added versioned, validated replay links in expanded run details. Shared mode
