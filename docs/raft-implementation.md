@@ -2,6 +2,12 @@
 
 ## Finding the next reward
 
+The compact post-run hint now uses the same milestone selection as the passport,
+including the remaining activity count and exact next point reward. It names
+river crossings, cable rides, clean courses or puppy skill moves, handles singular
+counts, and recognizes a fully completed passport. Full checks pass 448 tests;
+this text-only results change has not had a fresh rendered-layout check.
+
 The passport now features the unfinished milestone with the highest fraction of
 its next target completed; ties prefer the equipped puppy. Completed collections
 remain available in the expandable group. A mocked, storage-isolated profile at

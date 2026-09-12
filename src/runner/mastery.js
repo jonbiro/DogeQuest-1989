@@ -52,6 +52,17 @@ export function orderedMasteryCards(value,puppy) {
     Number(b.id===`dog-${puppy}`)-Number(a.id===`dog-${puppy}`));
 }
 
+export function nextMasteryHint(value,puppy) {
+  const card=orderedMasteryCards(value,puppy)[0];
+  const next=card.tiers.find(tier=>card.current<tier.target);
+  if(!next)return 'Passport complete · every stamp collected';
+  const remaining=next.target-card.current;
+  const unit=card.id==='ride-rafts'?'river crossing':card.id==='ride-ziplines'?'cable ride'
+    :card.id.startsWith('region-')?'clean course':'clear, weave or turn';
+  const plural=unit==='clear, weave or turn'?'clears, weaves or turns':`${unit}s`;
+  return `Next: ${card.name} · ${remaining} more ${remaining===1?unit:plural} for +${next.points} pts`;
+}
+
 // Called only by the one-shot completed-run transaction. Counters are the
 // entitlement record: crossing a threshold pays once, never again on reload.
 export function bankMastery(profile,run) {

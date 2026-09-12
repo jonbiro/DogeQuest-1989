@@ -11,7 +11,7 @@ import { UPGRADES, levels, price, purchase, refundUpgrade } from "./progression.
 import { missionFor, missionProgress, missionTip, missionPackFor } from "./missions.js";
 import { bankRun } from "./rewards.js";
 import {resultRecord,resultChallenge} from './result-record.js';
-import {masteryFrom,masteryCards,orderedMasteryCards} from './mastery.js';
+import {masteryFrom,masteryCards,orderedMasteryCards,nextMasteryHint} from './mastery.js';
 import {fetchReady} from './ability.js';
 import {createPowerHud} from './power-hud.js';
 import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLink} from './trail-link.js';
@@ -494,10 +494,7 @@ function finish() {
     $("run-breakdown-copy").textContent += ` Shared target: ${run.challengeTarget.toLocaleString()} points. ${difference>0?`${difference.toLocaleString()} ahead`:difference===0?'Target tied — one more point to beat it':`${(-difference).toLocaleString()} short`}. This is a friendly, unverified score, not a ranked result.`;
   }
   $("overlay-copy").textContent = `${resultChallenge(run)}${resultRecord(receipt,run)}${receipt.totalPoints.toLocaleString()} upgrade ${receipt.totalPoints===1?'point':'points'} banked. Retry the same trail, or head to camp ${sharedSeed === null ? 'for a fresh one' : 'to switch to random trails'}.`;
-  const nextBond=dogCard?.tiers.find(tier=>dogCard.current<tier.target);
-  $("run-highlights").textContent = nextBond
-    ? `Next: ${dogCard.name} · ${Math.max(0,nextBond.target-dogCard.current)} clears, course weaves or turns to ${nextBond.name}`
-    : `${run.clears} obstacles cleared · Best bone streak: ${run.bestCombo}`;
+  $("run-highlights").textContent = nextMasteryHint(saved.mastery,run.puppy);
   persist();
   if (!storageAvailable) $("overlay-copy").textContent = 'Run complete. These rewards are available for this visit only; saving is unavailable.';
   updateRecords();
