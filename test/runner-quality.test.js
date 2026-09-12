@@ -54,3 +54,14 @@ test('quality remains bounded and avoids pointless resizing on standard-density 
   assert.deepEqual(frames(quality,100,1/30),[1]);
   assert.deepEqual(frames(quality,1700,1/60),[1.25]);
 });
+test('failed high-resolution retries back off instead of repeating the same cycle',()=>{
+  const quality=createQualityController(2);
+  assert.deepEqual(frames(quality,100,1/30),[1]);
+  assert.deepEqual(frames(quality,1600,1/60),[1.5]);
+  assert.deepEqual(frames(quality,300,1/30),[1]);
+  assert.deepEqual(frames(quality,2000,1/60),[],'failed retry needs more than the original 20s recovery');
+  assert.deepEqual(frames(quality,1000,1/60),[1.5]);
+  frames(quality,2000,1/60);
+  assert.deepEqual(frames(quality,100,1/30),[1]);
+  assert.deepEqual(frames(quality,1600,1/60),[1.5],'sustained high-quality success restores normal recovery');
+});

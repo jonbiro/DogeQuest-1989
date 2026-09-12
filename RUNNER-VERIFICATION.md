@@ -1,5 +1,15 @@
 # Runner verification
 
+## Adaptive-resolution recovery backoff (2026-09-12)
+
+- A high-resolution retry that cannot sustain smooth rendering now doubles
+  the next recovery wait, up to 120 seconds. Thirty consecutive smooth seconds
+  at high resolution restore the normal 20-second recovery threshold.
+- Pauses/invalid frame gaps reset evidence of continuous stability. Physics,
+  geometry and the initial slowdown response are unchanged.
+- Synthetic timing regressions cover failed retry, delayed recovery and reset
+  after sustained success. Full check: 356 tests passed. No hardware FPS claim.
+
 ## Wall-clock graphics adaptation (2026-09-12)
 
 - Fixed adaptive resolution receiving the capped 50ms physics timestep rather
