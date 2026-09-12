@@ -9,6 +9,7 @@ import {UPGRADES} from '../src/runner/progression.js';
 import {turnPrompt,upcomingCorner,cornersBetween} from "../src/runner/turns.js";
 import * as THREE from 'three';
 import {createMochiModel} from '../src/runner/mochi-model.js';
+import {createPowerHud} from '../src/runner/power-hud.js';
 export function overheadApproachPreview(ahead=35) {
   const canvas=document.createElement('canvas');
   canvas.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;z-index:9999';document.body.append(canvas);
@@ -239,6 +240,7 @@ export function longRunCheck() {
   document.body.append(canvas);
   const view=createView(canvas),samples=[];
   let completedZiplines=0,turns=0,missedTurns=0;
+  let minimumHearts=3,hits=0,shieldSaves=0,peakSpeed=0;
   const regionalCourses=[0,0,0];
   const splitRows=new Set(),courseNames=new Set();
   for(let attempt=0;attempt<3;attempt++) {
@@ -267,7 +269,12 @@ export function longRunCheck() {
           act(run,['gate','branch','arch'].includes(occupied.type)?"slide":"jump");
         }
       }
-      step(run,1/120);run.events=[];
+      step(run,1/120);
+      minimumHearts=Math.min(minimumHearts,run.hearts);
+      hits+=run.events.filter(event=>event==='hit').length;
+      shieldSaves+=run.events.filter(event=>event==='shield-break').length;
+      peakSpeed=Math.max(peakSpeed,run.speed);
+      run.events=[];
       if(run.distance>=nextSample) {
         view.draw(run,run.time,"playing",attempt===2,1/60,1);
         const frame=view.diagnostics().puppyFrame;
@@ -284,7 +291,8 @@ export function longRunCheck() {
     run.regionalCourses.forEach((count,region)=>{regionalCourses[region]+=count;});
   }
   const peak=key=>Math.max(...samples.map(sample=>sample[key]));
-  const summary={runs:3,metersPerRun:6000,completedZiplines,turns,missedTurns,renderedCheckpoints:samples.length,minimumHearts:Math.min(...samples.map(sample=>sample.hearts)),peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),final:samples.at(-1)};
+  const summary={runs:3,metersPerRun:6000,completedZiplines,turns,missedTurns,renderedCheckpoints:samples.length,minimumHearts,hits,shieldSaves,peakSpeed,peakGeometries:peak("geometries"),peakTextures:peak("textures"),peakDrawCalls:peak("drawCalls"),peakObjects:Math.max(...samples.map(sample=>sample.activeObjects+sample.pooledObjects)),final:samples.at(-1)};
+  if(hits||shieldSaves)throw new Error(`Traversal collision between checkpoints: ${JSON.stringify(summary)}`);
   // One shared route-label atlas adds one fixed texture, never one per sign.
   if(summary.peakGeometries>32||summary.peakTextures>5||summary.peakObjects>200||summary.peakDrawCalls>220)throw new Error(`Renderer resource regression: ${JSON.stringify(summary)}`);
   summary.regionalCourses=regionalCourses;
@@ -520,7 +528,7 @@ export function instructionLayoutCheck() {
 export function hudStressCheck(routeChoice=false) {
   const game=document.querySelector("#game"),hud=document.querySelector("#hud");
   const ids=["power","cue","route-choice","toast","mission-summary","mission-label","mission-hud","controls"];
-  const saved=ids.map(id=>{const element=document.getElementById(id);return {element,html:element.innerHTML,hidden:element.hidden};});
+  const saved=ids.map(id=>{const element=document.getElementById(id);return {element,nodes:[...element.childNodes],hidden:element.hidden};});
   const state=game.dataset.state,hidden=hud.hidden,classes=hud.className;
   try {
     game.dataset.state="playing";hud.hidden=false;hud.classList.add("has-powers");
@@ -529,12 +537,18 @@ export function hudStressCheck(routeChoice=false) {
     document.querySelector("#cue").hidden=false;
     for(const id of ['route-choice','toast','mission-summary'])document.getElementById(id).hidden=true;
     document.querySelector("#cue").textContent="↑ JUMP · ZIPLINE";
-    document.querySelector("#route-choice").textContent="GATES IN 100m · ← Scenic: fewer obstacles · Challenge: more points →";
+    document.querySelector("#route-choice").textContent="GATES IN 40m · ← Scenic: fewer obstacles · Challenge: more points →";
     if(routeChoice){document.querySelector('#cue').hidden=true;document.querySelector('#route-choice').hidden=false;}
     document.querySelector("#mission-label").textContent="Trailblazer · 300/300 meters";
-    document.querySelector("#power").innerHTML=["🐾 140m","🎾 6s","◇ SHIELD","🧲 19s","×2 10s"].map(label=>`<span class="power-chip">${label}<progress max="10" value="8"></progress></span>`).join("");
+    const power=document.querySelector('#power');power.replaceChildren();
+    createPowerHud(power)({distance:0,zipline:{end:140},zoomies:6,shield:1,magnet:19,double:10,upgrades:{magnet:3}});
     const rect=id=>document.querySelector(id).getBoundingClientRect();
     const issues=[];
+    const activeCue=routeChoice?'#route-choice':'#cue';
+    for(const id of ['#power',activeCue,'#mission-hud','#controls']) {
+      const r=rect(id);
+      if(r.width<=0||r.height<=0)issues.push(`${id} is not visibly measurable`);
+    }
     const rootStyle=window.getComputedStyle(document.documentElement);
     const safeLeft=parseFloat(rootStyle.getPropertyValue('--safe-left'))||0;
     const safeRight=parseFloat(rootStyle.getPropertyValue('--safe-right'))||0;
@@ -552,7 +566,7 @@ export function hudStressCheck(routeChoice=false) {
       const a=rect(first),b=rect(second);
       if(a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top)issues.push(`${first} overlaps ${second}`);
     }
-    for(const id of ["#power","#cue","#mission-hud","#controls"]){const r=rect(id);if(r.top<0||r.bottom>window.innerHeight||r.left<0||r.right>window.innerWidth)issues.push(`${id} outside viewport`);}
+    for(const id of ["#power",activeCue,"#mission-hud","#controls"]){const r=rect(id);if(r.top<0||r.bottom>window.innerHeight||r.left<0||r.right>window.innerWidth)issues.push(`${id} outside viewport`);}
     const buttons=[...document.querySelectorAll('#controls button')];
     issues.push(...portraitControlIssues(buttons.map(button=>button.getBoundingClientRect()),{
       width:window.innerWidth,height:window.innerHeight,
@@ -570,10 +584,10 @@ export function hudStressCheck(routeChoice=false) {
     if(landscape){const r=rect('#mission-hud');if(r.left<window.innerWidth*.6&&r.right>window.innerWidth*.4)issues.push('Guidance covers puppy corridor');}
     if(landscape){if(rect('#mission-hud').bottom>window.innerHeight*.48)issues.push('Guidance enters the near-track area');}
     else if(rect(routeChoice?'#route-choice':'#cue').top<window.innerHeight*.65)issues.push('Guidance covers the center of the trail');
-    return {viewport:[window.innerWidth,window.innerHeight],issues,textChecks,powerBottom:rect("#power").bottom,cueTop:rect("#cue").top};
+    return {viewport:[window.innerWidth,window.innerHeight],issues,textChecks,powerBottom:rect("#power").bottom,cueTop:rect(activeCue).top};
   } finally {
     game.dataset.state=state;hud.hidden=hidden;hud.className=classes;
-    for(const {element,html,hidden:wasHidden} of saved){if(!['controls','mission-hud','mission-summary'].includes(element.id))element.innerHTML=html;element.hidden=wasHidden;}
+    for(const {element,nodes,hidden:wasHidden} of saved){if(!['controls','mission-hud','mission-summary'].includes(element.id))element.replaceChildren(...nodes);element.hidden=wasHidden;}
   }
 }
 export function uiPlayCheck(seconds=22) {

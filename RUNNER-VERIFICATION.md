@@ -1,5 +1,30 @@
 # Runner verification
 
+## Continuous long-run and honest HUD regression checks (2026-09-12)
+
+- Re-ran three 6,000m input-driven simulations in the actual renderer after the
+  recent gameplay/visual changes: all twelve course variants, 27 turns with no
+  missed turns, twelve zipline finishes and sixteen split-decision rows.
+- Tightened the helper to account for hearts, hit events and shield saves every
+  simulation step rather than only at 250m render checkpoints. The stricter run
+  reports zero hits, zero shield saves and minimum three hearts, reaching 46.8m/s.
+  Seventy-two rendered checkpoints peaked at 184 draw calls, 22 geometries, five
+  textures and 107 active/pooled objects. These are perfect-input simulation and
+  sampled-render resource results, not human reaction or physical-device FPS.
+- The HUD stress fixture was giving a false-clear result for the power panel:
+  it populated an element that remained hidden, yielding a zero-size rectangle.
+  It now uses the actual power-HUD builder, tests the visible active cue, and
+  rejects zero-size measured elements. Its cleanup restores original DOM nodes,
+  not HTML copies that detach the running app's cached power-chip references.
+- With all five power chips visible, both action-cue and route-choice modes pass
+  at 390 × 844, 320 × 568 and 844 × 390. Power panel bottoms were 224, 260 and 170px
+  respectively, no longer zero. A deliberately display:none panel correctly
+  reports “#power is not visibly measurable”; node identity and original hidden
+  state were verified unchanged after cleanup. No new product UI was needed.
+- All 273 tests and build/lint/distribution checks pass. No browser errors or
+  saved-profile changes occurred; the temporary tab and viewport were cleaned up.
+  Both helper repairs are development-only and excluded from the shipped game.
+
 ## Understandable score sources without in-run noise (2026-09-12)
 
 - Expanded results now start with distance points + bone points + trail bonuses
