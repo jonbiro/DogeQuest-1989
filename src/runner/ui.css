@@ -1127,3 +1127,7 @@ header {
 @media(max-height:520px) {
   .menu { left:max(6%,calc(var(--safe-left) + 12px)); }
 }
+/* Keep the cleared area available to the scene's swipe gestures. */
+#controls.swipe-only { display: flex; right: auto; width: 64px; }
+#controls.swipe-only button[data-action]:not(#fetch) { display: none; }
+#controls.swipe-only #fetch { position: static; width: 64px; min-width: 64px; }

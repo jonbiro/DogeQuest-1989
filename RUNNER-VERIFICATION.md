@@ -1,5 +1,20 @@
 # Runner verification
 
+## Optional swipe-only movement (2026-09-12)
+
+- How to play → Touch controls now offers a persisted swipe-only preference.
+  Existing saves retain all movement buttons by default. Fetch and Pause remain
+  available; keyboard and gesture handlers are unchanged.
+- At 320 × 568 in the isolated browser, the enabled mode showed only Fetch in
+  the lower controls, occupying 64 × 60 pixels. The cleared lower-right area
+  hit-tests to the scene, not an invisible controls container. Reload retained
+  the selection; turning it off restored all five buttons in gameplay.
+- Screenshot confirmed the clear portrait layout. Escape still paused. This
+  is browser coverage, not a new native or physical-phone validation. The test
+  profile was restored to its original absent state without banking test runs.
+- Full build, distribution checks, lint and all 313 tests passed, including
+  legacy-save defaults, invalid preferences and backup round-trip coverage.
+
 ## Include authored weaving in puppy bonds (2026-09-12)
 
 - Successful non-Zoomies course weave beats now contribute to the selected

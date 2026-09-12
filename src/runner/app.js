@@ -590,6 +590,13 @@ $("audio").onclick = () => {
 $("audio").setAttribute("aria-pressed", String(sound));
 $("audio").setAttribute("aria-label", sound ? "Mute sound" : "Enable sound");
 $("motion").setAttribute("aria-pressed", String(reducedMotion));
+$("swipe-only").checked = saved.preferences.swipeOnly;
+$("controls").classList.toggle("swipe-only", saved.preferences.swipeOnly);
+$("swipe-only").onchange = () => {
+  saved.preferences.swipeOnly = $("swipe-only").checked;
+  $("controls").classList.toggle("swipe-only", saved.preferences.swipeOnly);
+  persist();
+};
 $("motion").textContent = reducedMotion ? "Less motion: on" : "Less motion";
 $("motion").onclick = () => {
   reducedMotion = !reducedMotion;
