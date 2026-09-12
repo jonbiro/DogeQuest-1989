@@ -11,7 +11,7 @@ export function createTiltSteering(host,{onAction,onStatus=()=>{}}){
     host.removeEventListener('orientationchange',reorient);
     status('off');
   }
-  function reorient(){calibrate();status('hold-steady');}
+  function reorient(){calibrate();if(enabled)status('hold-steady');}
   function sample(event){
     if(!enabled)return;
     const angle=host.screen?.orientation?.angle??host.orientation??0;

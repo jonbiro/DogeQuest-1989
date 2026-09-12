@@ -17,6 +17,7 @@ import {createPowerHud} from './power-hud.js';
 import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLink} from './trail-link.js';
 import {dailyTrail,selectedTrailDescription} from './daily-trail.js';
 import {updateTraversalControls,traversalDescription} from './traversal-controls.js';
+import {installTiltControls} from './tilt-controls.js';
 import {scoreBreakdown} from './score-breakdown.js';
 import {rematchFor} from './rematch.js';
 import {preferencesFrom} from "./preferences.js";
@@ -312,6 +313,11 @@ function syncDock() {
   for (const id of ['cue','route-choice','toast','mission-summary']) $(id).hidden = mode !== id;
   $("mission-hud").hidden = state !== 'playing' || !mode;
 }
+const tilt=installTiltControls(window,{toggle:$('tilt-toggle'),recenter:$('tilt-recenter'),message:$('tilt-status'),
+  canSteer:()=>state==='playing'&&!document.hidden&&!run.ended&&!turnPrompt(run),onAction:action=>act(run,action)});
+// Direct input establishes a new neutral hold so tilt cannot fight that move.
+window.addEventListener('pointerdown',()=>tilt.recalibrate(),{capture:true,passive:true});
+window.addEventListener('keydown',()=>tilt.recalibrate(),{capture:true});
 function focusOverlay() {
   const primary = $("overlay-primary"), home = $("home");
   const target = !primary.disabled ? primary : !home.hidden && !home.disabled ? home : $("overlay-title");
@@ -320,6 +326,8 @@ function focusOverlay() {
 function setState(next) {
   const previous = state;
   state = next;
+  tilt.recalibrate();
+  $('tilt-settings').hidden=!['help','paused'].includes(state);
   $("game").dataset.state = state;
   $("menu").hidden = state !== "menu";
   $("buddy").hidden = state !== "menu";

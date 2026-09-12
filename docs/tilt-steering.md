@@ -1,7 +1,7 @@
 # Optional tilt steering
 
-The sensor adapter in `src/runner/tilt.js` is implemented but is not yet wired
-into the published controls. It requests orientation permission only when its
+The sensor adapter in `src/runner/tilt.js` is now connected to optional controls
+in Help and Pause. It requests orientation permission only when its
 enable method is called, calibrates relative to the first valid held angle,
 smooths readings over 80 ms and uses 14-degree activation / 5-degree rearm
 thresholds. One lean changes one lane; holding a lean cannot repeatedly steer.
@@ -12,9 +12,16 @@ Five tests cover jitter, neutral rearming, permission denial, cancellation durin
 a pending permission request, missing readings, invalid data and rotation.
 All 410 tests plus build, lint and distribution checks passed.
 
-Next acceptance work: accessible enable/disable/recalibrate controls, explicit
-gesture precedence, no accidental corner turns, pause/background lifecycle,
-permission-flow browser checks and real sensor validation. These tests use
+Enable/off/recalibrate controls are wired. Direct pointer/keyboard input and state
+changes recalibrate the neutral hold. Steering is suppressed outside active play,
+in hidden documents and during corner prompts; corners still require a swipe or
+button. Settings are session-only, with no automatic permission requests on load.
+Portrait 390 × 844 browser inspection confirmed the controls and denied-access
+fallback, without interrupting ordinary touch controls. Two UI-controller tests
+cover toggling, recalibration, suppressed input and denial retry.
+
+Remaining acceptance work: physical sensor validation, orientation edge cases,
+sensitivity tuning, and real-time movement arbitration. These tests use
 synthetic sensor readings and do not establish physical gyroscope behavior.
 
 Browser requirement reference:
