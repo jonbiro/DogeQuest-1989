@@ -8,6 +8,15 @@ const LESSONS = [
   {at:75,type:'gate',hint:'Gates ahead · wait for the cue'},
   {at:115,type:'rock',hint:'← Steer into the open left lane'},
 ];
+export function practiceOffer(run) {
+  if (!run.ended || run.practice || run.retired) return null;
+  const mistake=run.lastMistake;
+  if (mistake?.type==='corner' && ['left','right'].includes(mistake.direction))
+    return {kind:'turn',cornerIndex:mistake.direction==='right'?1:0,label:'Practise this turn'};
+  if (['log','rock','arch','branch','gate'].includes(mistake?.type))
+    return {kind:'moves',cornerIndex:0,label:'Practise the basics'};
+  return null;
+}
 function lessonFeedback(lesson,correct,detail) {
   if (correct) return lesson.type==='log' ? '✓ Jump cleared' : lesson.type==='gate' ? '✓ Slide cleared' : '✓ Open lane found';
   if (lesson.type==='rock') return 'Steer left into the open lane';

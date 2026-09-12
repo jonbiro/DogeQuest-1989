@@ -7,6 +7,9 @@ one-second input window and direction correction. It teaches the difference
 between early lane-changing swipes and a committed turn. Misses have no lasting
 penalty; a successful rehearsal offers the opposite corner next, while a miss
 retries the same direction. Practice never banks rewards or changes records.
+Collision results now offer this rehearsal directly for the missed direction,
+or the basic movement trail for logs, rocks and overhead obstacles. Retired runs
+do not receive unwanted coaching; unsupported mistakes do not invent a lesson.
 
 ## Mixed-action regional courses
 

@@ -1,5 +1,5 @@
 import { createRun, act, step } from "./world.js";
-import {createPracticeRun,createZiplinePracticeRun,createTurnPracticeRun,stepPractice,practiceCue,practiceProgress,practiceResult} from './practice.js';
+import {createPracticeRun,createZiplinePracticeRun,createTurnPracticeRun,stepPractice,practiceCue,practiceProgress,practiceResult,practiceOffer} from './practice.js';
 import {scoreChaseLabel} from './score-chase.js';
 import {RESUME_DURATION,resumeStep} from './resume.js';
 import {installBackupControls} from './backup-ui.js';
@@ -415,6 +415,9 @@ function finish() {
   $('trail-link').value = trailLink(window.location.href,run.seed,run.generatorVersion);
   $('trail-copy-status').textContent = '';
   showOverlay("ended");
+  const rehearsal=practiceOffer(run);
+  $('practice-again').hidden = !rehearsal;
+  if (rehearsal) $('practice-again').textContent = rehearsal.label;
   if (run.retired) {
     $('overlay-label').textContent = 'A GOOD RUN. ON YOUR TERMS.';
     $('overlay-title').textContent = 'Home safe.';
@@ -489,8 +492,15 @@ function startPractice(kind, cornerIndex=0) {
 $('practice-start').onclick = () => startPractice('moves');
 $('practice-zipline').onclick = () => startPractice('zipline');
 $('practice-turn').onclick = () => startPractice('turn');
-$('practice-again').onclick = () => startPractice(run.practice?.kind || 'moves',
-  run.practice?.kind==='turn' && run.practice.correct ? 1-run.practice.cornerIndex : run.practice?.cornerIndex || 0);
+$('practice-again').onclick = () => {
+  if (!run.practice) {
+    const offer=practiceOffer(run);
+    if (offer) startPractice(offer.kind,offer.cornerIndex);
+    return;
+  }
+  startPractice(run.practice.kind || 'moves',
+    run.practice.kind==='turn' && run.practice.correct ? 1-run.practice.cornerIndex : run.practice.cornerIndex || 0);
+};
 $("run-breakdown").addEventListener("toggle", () => {
   if ($("run-breakdown").open) $("run-breakdown").scrollIntoView({block:"start"});
 });

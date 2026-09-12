@@ -1,5 +1,21 @@
 # Runner verification
 
+## Collision-to-practice shortcut (2026-09-12)
+
+- Collision results offer a matching corner rehearsal or the basic movement
+  trail directly. Retirement, unknown mistakes and gaps (not covered by the
+  basic trail) do not fabricate a practice recommendation. Tests exercise the
+  actual results-button handler, direction selection and rehearsal retry routing.
+- At 320x568, a natural 270m collision result banked 420 points and showed
+  Practise the basics beside Back to camp, with the primary retry still visible.
+  Clicking it started unscored practice; after its natural 0/3 completion, the
+  saved profile was byte-for-byte unchanged. Run the adventure started a normal
+  run near zero distance with three hearts, zero Fetch uses, and challenge HUD.
+- This used visible browser clicks, not physical-phone touch. No console errors
+  or warnings were reported. The origin initially had no save: only the test
+  profile created during this check was removed afterward, restoring that exact
+  baseline. Temporary tab closed and viewport reset.
+
 ## Safe corner practice (2026-09-12)
 
 - Added an optional seven-second corner rehearsal with real left/right geometry,
