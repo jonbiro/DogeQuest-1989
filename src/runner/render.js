@@ -35,6 +35,7 @@ import {themeHazard} from './hazard-palette.js';
 import {createBoulderGeometry} from './boulder-model.js';
 import {createPalmFrondGeometry} from './palm-frond.js';
 import {addBambooLeaves} from './bamboo-leaves.js';
+import {createMushroomCapGeometry} from './mushroom-cap.js';
 
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -88,6 +89,7 @@ export function createView(canvas) {
   const trunkGeometry = new THREE.CylinderGeometry(.7, 1, 1, 10);
   const canopyGeometry = new THREE.SphereGeometry(1, 20, 14);
   const palmFrondGeometry=createPalmFrondGeometry();
+  const mushroomCapGeometry=createMushroomCapGeometry();
   const canopyVertices = canopyGeometry.attributes.position;
   for (let i=0;i<canopyVertices.count;i++) {
     const x=canopyVertices.getX(i),y=canopyVertices.getY(i),z=canopyVertices.getZ(i);
@@ -240,9 +242,9 @@ export function createView(canvas) {
       for(let j=0;j<3;j++){
         const height=2+j*1.3,x=(j-1)*1.5;
         mesh(group,trunkGeometry,'#b9b8d5',x,height/2,0,.3,height,.3);
-        ball(group,['#997dab','#b99bc9','#777cac'][j],x,height,0,1.5,.52,1.35);
-        ball(group,'#e0cbdc',x,height-.2,0,1.3,.1,1.15);
-        for(const offset of [-.5,.4])ball(group,'#dccfe9',x+offset,height+.42,.25,.17,.045,.18);
+        mesh(group,mushroomCapGeometry,['#997dab','#b99bc9','#777cac'][j],x,height,0,1.5,1,1.35);
+        ball(group,'#e0cbdc',x,height-.19,0,1.12,.055,1);
+        for(const offset of [-.5,.4])ball(group,'#dccfe9',x+offset,height+.52,.25,.17,.045,.18);
       }
     }
     ball(group,region===1?'#d1ab73':region===2?'#77769b':'#506e44',.3,.22,.3,1.6,.24,1.2);
@@ -317,7 +319,7 @@ export function createView(canvas) {
     }
   }
   scenery.updateMatrixWorld(true);
-  for (const geometry of [boxGeometry, coneGeometry, sphereGeometry, trunkGeometry, canopyGeometry,palmFrondGeometry]) {
+  for (const geometry of [boxGeometry, coneGeometry, sphereGeometry, trunkGeometry, canopyGeometry,palmFrondGeometry,mushroomCapGeometry]) {
     const entries = [];
     for (let i = 0; i < tiles.length; i++)
       tiles[i].traverse((item) => {
