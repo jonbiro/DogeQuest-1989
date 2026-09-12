@@ -1,5 +1,14 @@
 # Runner verification
 
+## Actionable gap coaching (2026-09-12)
+
+- Corrected results feedback that could recommend an open lane after sliding
+  into a full-width gap. Gap lessons now distinguish sliding, diving, early
+  landing and late takeoff, with advice tied to the striped edge and far bank.
+- Regression reproduces an actual slide-into-gap collision and checks the
+  resulting lesson. Low-obstacle steering advice remains unchanged.
+- Full build, distribution verification, lint and all 344 tests passed.
+
 ## Mobile reaction-timing audit (2026-09-12)
 
 - Expanded cue/response regression coverage to 24, 30, 50 and 60 fps, base and

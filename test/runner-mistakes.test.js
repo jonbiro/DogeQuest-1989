@@ -21,6 +21,17 @@ test('actual collisions retain specific late-jump and wrong-action coaching',()=
   const overhead=collision('gate',run=>act(run,'jump'));
   assert.equal(overhead.lastMistakeDetail.reason,'jumped');
 });
+
+test('gap coaching never recommends an impossible open lane',()=>{
+  const run=collision('gap',run=>act(run,'slide'));
+  assert.equal(run.lastMistakeDetail.reason,'slid');
+  assert.match(runLesson(run),/spans every lane/);
+  assert.doesNotMatch(runLesson(run),/open lane/);
+  assert.match(timingLesson({reason:'early-jump'},'gap'),/far side/);
+  assert.match(timingLesson({reason:'late-jump'},'gap'),/striped edge/);
+  assert.match(timingLesson({reason:'cancelled-jump'},'gap'),/Stay airborne/);
+  assert.match(timingLesson({reason:'slid'},'log'),/open lane/);
+});
 test('coaching distinguishes early landing, cancelled jumps and expired slides',()=>{
   const run=createRun(1);run.time=10;run.distance=121.8;
   run.y=.3;run.vy=-3;

@@ -16,7 +16,16 @@ export function mistakeDetail(run, mistake) {
   return {reason, distance: Math.floor(run.distance)};
 }
 
-export function timingLesson(detail) {
+export function timingLesson(detail, obstacleType) {
+  if(obstacleType==='gap'){
+    const gapLessons={
+      slid:'The broken trail spans every lane. Swipe up at the striped edge; sliding or changing lanes will not cross it.',
+      'cancelled-jump':'Swiping down ended your jump over the gap. Stay airborne until you reach the far side.',
+      'early-jump':'You landed before reaching the far side of the gap. Jump later, close to the striped edge.',
+      'late-jump':'You reached the gap before your jump was high enough. Swipe up just before the striped edge reaches your puppy.',
+    };
+    if(gapLessons[detail?.reason])return gapLessons[detail.reason];
+  }
   const lessons = {
     'late-jump': 'Your jump started too late to clear this obstacle. Jump a little earlier, as it approaches your puppy.',
     'early-jump': 'Your jump came down before the obstacle cleared. Wait a little longer before jumping on the retry.',
