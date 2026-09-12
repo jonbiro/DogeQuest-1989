@@ -495,7 +495,7 @@ function finish() {
   tone("finish");
 }
 $("play").onclick = start;
-$('daily-trail').onclick = () => {
+function chooseDailyTrail() {
   const daily=dailyTrail(window.location.href);
   if (!daily) return;
   sharedSeed=daily.seed;sharedVersion=daily.version;sharedTarget=0;
@@ -503,7 +503,9 @@ $('daily-trail').onclick = () => {
   $('shared-description').textContent=`Daily trail · ${daily.day} UTC · your upgrades apply.`;
   $('shared-trail').hidden=false;
   setState('menu');updateRecords();$('play').focus({preventScroll:true});
-};
+}
+$('daily-trail').onclick = chooseDailyTrail;
+$('daily-camp').onclick = chooseDailyTrail;
 $('shared-random').onclick = () => {
   sharedSeed=null;
   sharedVersion=null;
