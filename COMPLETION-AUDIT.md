@@ -6,8 +6,12 @@ The active objective is to make the game better than Temple Run. The historical
 feature audits below establish implemented capabilities within their stated
 test envelopes; they do not prove comparative superiority or complete that
 broader goal. Subsequent shipped improvements are recorded in the roadmap and
-verification log. The current addition addresses an onboarding gap with an
-optional playable, unscored practice trail. Overall superiority remains unproven.
+verification log. The latest source-and-code gap review is
+[`docs/comparative-gap-review.md`](docs/comparative-gap-review.md). It identifies
+additional traversal variety as the next substantial gameplay slice, alongside
+remaining audio-atmosphere and native-frame-pacing evidence gaps. Historical
+practice-trail and feature acceptance below does not close those gaps. Overall
+superiority remains unproven.
 
 ## Historical expanded skill-based runner audit
 
