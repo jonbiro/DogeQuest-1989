@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { createRun, act, step, LANES, HAZARDS } from "../src/runner/world.js";
 import { levels, purchase } from "../src/runner/progression.js";
 import {turnPrompt} from "../src/runner/turns.js";
+import {eventNotice,dockMode} from '../src/runner/guidance.js';
 function advance(run, seconds) {
   for (let i = 0; i < Math.ceil(seconds * 120); i++) step(run, 1 / 120);
 }
@@ -25,6 +26,7 @@ test('heart pickups heal injuries or reward full health once without inflating b
     assert.equal(run.combo,7);
     assert.equal(run.fetchCharge,30);
     assert.equal(run.events.filter(e=>e==='heart').length,1);
+    assert.equal(run.events.filter(e=>e==='full-heart').length,hearts===3?1:0);
     advance(run,.3);
     assert.equal(run.bonusPoints,hearts===3?100:0);
     assert.equal(run.events.filter(e=>e==='heart').length,1);
@@ -45,6 +47,7 @@ test('spare shields award points once without stacking protection or multiplying
     advance(run, .3);
     assert.equal(run.bonusPoints, shield ? 100 : 0);
     assert.equal(run.events.filter(event => event === 'shield').length, 1);
+    assert.equal(run.events.filter(event => event === 'spare-shield').length,shield?1:0);
     run.objects = [{id: 1000, at: run.distance + 3, lane: 1, type: 'rock', used: false}];
     advance(run, .3);
     assert.equal(run.shield, 0);
@@ -53,6 +56,15 @@ test('spare shields award points once without stacking protection or multiplying
     run.objects = [{id: 1001, at: run.distance + 3, lane: 1, type: 'rock', used: false}];
     advance(run, .3);
     assert.equal(run.hearts, 2, 'a spare shield did not buy a second protected hit');
+  }
+});
+test('bonus conversion feedback stays subordinate to urgent movement cues',()=>{
+  for(const event of ['full-heart','spare-shield']){
+    const notice=eventNotice(event,createRun(1));
+    assert.match(notice.text,/\+100 points/);
+    assert.equal(notice.priority,0);
+    assert.equal(dockMode({cue:'JUMP NOW',notice:notice.text}),'cue');
+    assert.equal(dockMode({route:'Choose a route',notice:notice.text}),'route-choice');
   }
 });
 

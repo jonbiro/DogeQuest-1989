@@ -1,5 +1,14 @@
 # Runner verification
 
+## Visible spare-pickup rewards (2026-09-12)
+
+- Full-health hearts and already-active shields now explain their existing
+  +100-point conversion through the low-priority edge notice. No extra reward,
+  sound, overlay or ordinary-bone notification was added.
+- Real pickup regressions verify the conversion event occurs once and only
+  when eligible. Dock tests preserve movement-cue and route-choice priority.
+- Full build, distribution verification, lint and all 348 tests passed.
+
 ## Cue-driven drill acceptance (2026-09-12)
 
 - Expanded delayed-reaction practice coverage to basics, focused jumps and

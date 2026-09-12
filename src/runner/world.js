@@ -418,7 +418,7 @@ export function step(run, dt) {
       object.used = true;
       if (object.type === "magnet") run.magnet = 10 + run.upgrades.magnet * 3;
       if (object.type === "shield") {
-        if (run.shield) run.bonusPoints += 100;
+        if (run.shield) { run.bonusPoints += 100; run.events.push('spare-shield'); }
         else run.shield = 1;
       }
       if (object.type === "gem") run.bonusPoints += 250;
@@ -426,7 +426,7 @@ export function step(run, dt) {
       if (object.type === "zoomies") run.zoomies = 6;
       if (object.type === "heart") {
         if (run.hearts < 3) run.hearts++;
-        else run.bonusPoints += 100;
+        else { run.bonusPoints += 100; run.events.push('full-heart'); }
       }
       if (object.type === 'gift') { run.gifts++;run.bonusPoints+=100; }
       run.events.push(object.type);
