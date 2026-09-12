@@ -1,5 +1,22 @@
 # Runner verification
 
+## Safe corner practice (2026-09-12)
+
+- Added an optional seven-second corner rehearsal with real left/right geometry,
+  turn acceptance and wrong-direction correction. Successful results offer the
+  opposite direction; missed results retry the same direction. No banking occurs.
+- Simulation regression covers both directions, early lane changes, accepted,
+  missed and corrected inputs, completion, unchanged hearts, empty obstacle
+  generation and no persistent rewards. All 231 tests/build/lint/dist checks pass.
+- At 320x568, shortened Help copy keeps all three practice choices visible after
+  expanding the disclosure. Actual browser menu clicks started the left rehearsal;
+  rendered-cue-driven synthetic keyboard events completed it and its right retry,
+  each with one accepted corner and zero misses. An unanswered left turn showed
+  missed-turn coaching, and its retry remained left. Results buttons fit on screen.
+- The local profile remained absent throughout; no browser errors/warnings.
+  Temporary tab closed and viewport restored. These are browser/simulation checks,
+  not physical-phone gesture or human learning-effectiveness measurements.
+
 ## Useful spare shields (2026-09-12)
 
 - A shield collected while already protected now gives 100 bonus points instead

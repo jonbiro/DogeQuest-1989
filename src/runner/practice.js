@@ -1,6 +1,7 @@
 import {createRun, fillTrack, step, LANES} from './world.js';
 import {actionCue} from './guidance.js';
 import {ZIPLINE_FIRST,ZIPLINE_LENGTH} from './ziplines.js';
+import {cornerByIndex,turnPrompt} from './turns.js';
 
 const LESSONS = [
   {at:35,type:'log',hint:'Logs ahead · wait for the cue'},
@@ -43,8 +44,31 @@ export function createZiplinePracticeRun(upgrades = {}) {
   run.speed=12;
   return run;
 }
+export function createTurnPracticeRun(upgrades = {}, cornerIndex = 0) {
+  const run = createRun(1989, upgrades);
+  const corner = cornerByIndex(cornerIndex === 1 ? 1 : 0);
+  Object.assign(run, {distance:corner.at-35, speed:12, objects:[],
+    nextCorner:corner.index, nextRow:Infinity, nextChoice:Infinity, nextZipline:Infinity,
+    choicePending:null});
+  run.previous = {x:run.x,y:run.y,distance:run.distance};
+  run.practice = {kind:'turn',cornerIndex:corner.index,start:run.distance,
+    direction:corner.direction,end:corner.end+15,correct:0,outcomes:[]};
+  return run;
+}
 export function stepPractice(run, dt) {
   if (!run.practice || run.ended) return;
+  if (run.practice.kind === 'turn') {
+    step(run, dt);
+    if (run.nextCorner > run.practice.cornerIndex) {
+      run.practice.correct = run.turns > 0 ? 1 : 0;
+      run.practice.outcomes = [Boolean(run.practice.correct)];
+    }
+    run.hearts = 3;
+    run.fetchCharge = 0;
+    run.events = run.events.filter(event => !['hit','flow','end'].includes(event));
+    if (run.distance >= run.practice.end) run.ended = true;
+    return;
+  }
   if (run.practice.kind === 'zipline') {
     step(run,dt);
     run.practice.caught ||= Boolean(run.zipline) || run.ziplines>0;
@@ -74,6 +98,13 @@ export function stepPractice(run, dt) {
   if (run.distance >= 130) run.ended = true;
 }
 export function practiceCue(run) {
+  if (run.practice.kind === 'turn') {
+    const prompt = turnPrompt(run);
+    if (prompt) return actionCue(run);
+    if (run.practice.outcomes.length) return run.practice.correct
+      ? '✓ CORNER CLEARED' : `Next try: swipe ${run.practice.direction} at the arrow`;
+    return `${run.practice.direction === 'left' ? '←' : '→'} Corner ahead · wait for the turn cue`;
+  }
   if (run.practice.kind === 'zipline') {
     if (run.ziplines) return '✓ LANDED · high bones belong to the cable';
     return actionCue(run) || (run.zipline ? 'Steer toward the high bones' : 'ZIPLINE AHEAD · wait for jump cue');
@@ -88,9 +119,16 @@ export function practiceCue(run) {
 }
 
 export function practiceProgress(run) {
+  if (run.practice.kind==='turn') return `${run.practice.direction} corner · ${run.practice.correct}/1 cleared`;
   return run.practice.kind==='zipline' ? `${run.bones}/18 high bones · ${run.ziplines ? 'landed' : run.practice.caught ? 'cable caught' : 'catch the cable'}` : `${run.practice.correct}/3 moves cleared`;
 }
 export function practiceResult(run) {
+  if (run.practice.kind==='turn') return {
+    title:run.practice.correct ? 'Corner cleared!' : 'Try the turn again',
+    lesson:run.practice.correct
+      ? 'One swipe locks in the corner when the arrow appears. Between corners, swipes change lanes. Try the opposite direction next.'
+      : `Wait for the ${run.practice.direction} turn arrow, then swipe ${run.practice.direction} once. An early swipe only changes lanes. A wrong direction can be corrected before the corner.`,
+  };
   if (run.practice.kind==='zipline') return {
     title:run.practice.caught ? `${run.bones} of 18 high bones` : 'Try catching the handle',
     lesson:!run.practice.caught ? 'Wait for the jump prompt, then jump to grab the turquoise handle. High bones can only be collected while riding the cable.'

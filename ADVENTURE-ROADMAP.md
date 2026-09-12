@@ -1,5 +1,13 @@
 # Puppy adventure goal
 
+## Safe corner rehearsal
+
+Help now offers a seven-second turn practice using the actual world corner,
+one-second input window and direction correction. It teaches the difference
+between early lane-changing swipes and a committed turn. Misses have no lasting
+penalty; a successful rehearsal offers the opposite corner next, while a miss
+retries the same direction. Practice never banks rewards or changes records.
+
 ## Mixed-action regional courses
 
 New adventures rotate twelve authored courses. On later laps, Fern dash combines

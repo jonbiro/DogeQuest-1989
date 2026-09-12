@@ -1,5 +1,5 @@
 import { createRun, act, step } from "./world.js";
-import {createPracticeRun,createZiplinePracticeRun,stepPractice,practiceCue,practiceProgress,practiceResult} from './practice.js';
+import {createPracticeRun,createZiplinePracticeRun,createTurnPracticeRun,stepPractice,practiceCue,practiceProgress,practiceResult} from './practice.js';
 import {scoreChaseLabel} from './score-chase.js';
 import {RESUME_DURATION,resumeStep} from './resume.js';
 import {installBackupControls} from './backup-ui.js';
@@ -406,6 +406,8 @@ function finish() {
     $('run-lesson').textContent = result.lesson;
     $('overlay-primary').textContent = 'Run the adventure ↗';
     $('practice-again').hidden = false;
+    $('practice-again').textContent = run.practice.kind==='turn' && run.practice.correct
+      ? `Practise the ${run.practice.direction==='left' ? 'right' : 'left'} turn` : 'Practise again';
     return;
   }
   const receipt = bankRun(saved, run, run.missions);
@@ -473,11 +475,12 @@ $('trail-copy').onclick = async () => {
     $('trail-copy-status').textContent='Copy the selected link to share this trail.';
   } finally {button.disabled=false;}
 };
-function startPractice(kind) {
+function startPractice(kind, cornerIndex=0) {
   if (!graphicsReady) return;
   start();
   const appearance = run.appearance;
-  run = kind==='zipline' ? createZiplinePracticeRun(saved.upgrades) : createPracticeRun(saved.upgrades);
+  run = kind==='turn' ? createTurnPracticeRun(saved.upgrades,cornerIndex)
+    : kind==='zipline' ? createZiplinePracticeRun(saved.upgrades) : createPracticeRun(saved.upgrades);
   run.puppy = saved.collection.puppy;
   run.appearance = appearance;
   run.missions = [currentMission];
@@ -485,7 +488,9 @@ function startPractice(kind) {
 }
 $('practice-start').onclick = () => startPractice('moves');
 $('practice-zipline').onclick = () => startPractice('zipline');
-$('practice-again').onclick = () => startPractice(run.practice?.kind || 'moves');
+$('practice-turn').onclick = () => startPractice('turn');
+$('practice-again').onclick = () => startPractice(run.practice?.kind || 'moves',
+  run.practice?.kind==='turn' && run.practice.correct ? 1-run.practice.cornerIndex : run.practice?.cornerIndex || 0);
 $("run-breakdown").addEventListener("toggle", () => {
   if ($("run-breakdown").open) $("run-breakdown").scrollIntoView({block:"start"});
 });
