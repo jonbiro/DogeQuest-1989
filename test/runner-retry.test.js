@@ -5,6 +5,8 @@ import {URL} from 'node:url';
 import {runInNewContext} from 'node:vm';
 import {createRun, step} from '../src/runner/world.js';
 import {missionPackFor} from '../src/runner/missions.js';
+import {rematchFor} from '../src/runner/rematch.js';
+import {createPracticeRun} from '../src/runner/practice.js';
 
 test('results retry repeats the seed with a fresh simulation; camp starts a new trail',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
@@ -15,7 +17,7 @@ test('results retry repeats the seed with a fresh simulation; camp starts a new 
   original.hearts=0;original.ended=true;original.score=250;
   const context={run:original,state:'ended',graphicsReady:true,sharedSeed:null,sharedVersion:null,sharedTarget:0,
     saved:{upgrades:{},collection:{puppy:'mochi'},challenges:0},
-    createRun,Date:{now:()=>987654},missionPackFor,
+    createRun,rematchFor,createPracticeRun,Date:{now:()=>987654},missionPackFor,
     setText:()=>{},setState:value=>{context.state=value;},
     $:()=>({focus:()=>{},classList:{toggle:()=>{}}}),updatePowerHud:()=>false,tone:()=>{}};
   runInNewContext(source.slice(start,end),context);
@@ -45,6 +47,18 @@ test('results retry repeats the seed with a fresh simulation; camp starts a new 
     assert.equal(context.run.seed,987654);
     assert.equal(context.run.rematchBest,0);
   }
+  context.run=createRun(123,{},1);context.run.score=900;context.run.challengeTarget=1500;context.state='ended';
+  const practiceStart=source.indexOf('function startPractice('),practiceEnd=source.indexOf("$('practice-start')",practiceStart);
+  runInNewContext(source.slice(practiceStart,practiceEnd),context);
+  context.startPractice('jump');
+  assert.equal(context.run.practice.kind,'jump');
+  context.state='ended';context.startPractice('slide');
+  assert.equal(context.run.practice.kind,'slide');
+  context.state='ended';context.start();
+  assert.equal(context.run.seed,123);
+  assert.equal(context.run.generatorVersion,1);
+  assert.equal(context.run.rematchBest,900);
+  assert.equal(context.run.challengeTarget,1500);
   context.run.practice={correct:3};
   context.state='ended';
   context.start();

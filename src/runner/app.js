@@ -18,6 +18,7 @@ import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLin
 import {dailyTrail} from './daily-trail.js';
 import {updateTraversalControls} from './traversal-controls.js';
 import {scoreBreakdown} from './score-breakdown.js';
+import {rematchFor} from './rematch.js';
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound,resumeSound} from "./sound.js";
@@ -343,11 +344,11 @@ function start() {
   if(!graphicsReady)return;
   // A results-screen retry is a rematch, not a new random obstacle layout.
   // Camp/help use random adventures unless an explicit shared trail is active.
-  const retry = state === 'ended' && !run.practice;
-  const rematchBest=retry ? Math.max(run.rematchBest || 0,run.score) : 0;
-  const challengeTarget=retry ? run.challengeTarget || 0 : sharedTarget;
-  run = createRun(retry ? run.seed : sharedSeed ?? Date.now(), saved.upgrades,
-    retry ? run.generatorVersion : sharedSeed === null ? undefined : sharedVersion);
+  const retry = rematchFor(run,state==='ended');
+  const rematchBest=retry?.rematchBest||0;
+  const challengeTarget=retry ? retry.challengeTarget : sharedTarget;
+  run = createRun(retry ? retry.seed : sharedSeed ?? Date.now(), saved.upgrades,
+    retry ? retry.generatorVersion : sharedSeed === null ? undefined : sharedVersion);
   run.rematchBest=rematchBest;
   run.challengeTarget=challengeTarget;
   run.puppy = saved.collection.puppy;
@@ -426,7 +427,7 @@ function finish() {
     $('overlay-title').textContent = result.title;
     $('overlay-copy').textContent = 'Practice never changes your points, records or challenges. Rehearse again or head into the adventure.';
     $('run-lesson').textContent = result.lesson;
-    $('overlay-primary').textContent = 'Run the adventure ↗︎';
+    $('overlay-primary').textContent = run.practice.returnTrail ? 'Retry your trail ↗︎' : 'Run the adventure ↗︎';
     $('practice-again').hidden = false;
     $('practice-again').textContent = run.practice.kind==='turn' && run.practice.correct
       ? `Practise the ${run.practice.direction==='left' ? 'right' : 'left'} turn` : 'Practise again';
@@ -529,6 +530,7 @@ $('trail-copy').onclick = async () => {
 };
 function startPractice(kind, cornerIndex=0) {
   if (!graphicsReady) return;
+  const returnTrail=rematchFor(run,state==='ended');
   start();
   const appearance = run.appearance;
   run = kind==='weave' ? createWeavePracticeRun(saved.upgrades)
@@ -537,6 +539,7 @@ function startPractice(kind, cornerIndex=0) {
     : kind==='zipline' ? createZiplinePracticeRun(saved.upgrades) : createPracticeRun(saved.upgrades,kind);
   run.puppy = saved.collection.puppy;
   run.appearance = appearance;
+  if(returnTrail)run.practice.returnTrail=returnTrail;
   run.missions = [currentMission];
   missionAnnounced = true;
 }

@@ -1,5 +1,16 @@
 # Runner verification
 
+## Practice preserves the rematch (2026-09-12)
+
+- Entering practice from run results retains the seed, generator version,
+  personal rematch best and shared target. Repeated drills preserve that context;
+  the practice results action says “Retry your trail.” Camp/standalone practice
+  still start new adventures as before. No saved-profile schema change.
+- Actual start/startPractice handler regression follows a completed version-1
+  trail through jump and slide drills back into a fresh run, preserving both
+  targets and seed. Practice scores cannot overwrite the real rematch best.
+- Full build, distribution verification, lint and all 350 tests passed.
+
 ## Accurate multiplier labels (2026-09-12)
 
 - The multiplier's accessible timer now specifies double bone points, matching
