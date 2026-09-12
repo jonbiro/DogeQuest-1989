@@ -9,6 +9,19 @@ import {UPGRADES} from '../src/runner/progression.js';
 import {turnPrompt,upcomingCorner,cornersBetween} from "../src/runner/turns.js";
 import * as THREE from 'three';
 import {createMochiModel} from '../src/runner/mochi-model.js';
+export function overheadApproachPreview(ahead=35) {
+  const canvas=document.createElement('canvas');
+  canvas.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;z-index:9999';document.body.append(canvas);
+  const view=createView(canvas),run=createRun(1989);
+  Object.assign(run,{distance:210,objects:[],appearance:{puppy:'mochi',costume:'none'}});
+  run.previous={x:run.x,y:run.y,distance:run.distance};
+  function draw(distanceAhead) {
+    run.objects=['arch','gate','branch'].map((type,lane)=>({id:lane,type,lane,at:run.distance+distanceAhead,used:false}));
+    view.draw(run,0,'paused',true,1/60,1);
+    return {ahead:distanceAhead,...view.diagnostics()};
+  }
+  return {initial:draw(ahead),draw};
+}
 export function boneBatchPreview() {
   const canvas=document.createElement('canvas');
   canvas.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;z-index:9999';

@@ -17,6 +17,7 @@ import { ziplineAt, ZIPLINE_HEIGHT, cableSegment, CABLE_SEGMENT_LENGTH } from ".
 import {createPuppyFramer,gameplayFov} from './framing.js';
 import {createQualityController} from './quality.js';
 import {contactShadow} from './contact-shadow.js';
+import {createBranchModel} from './branch-model.js';
 
 // Shared low-poly geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -529,13 +530,7 @@ export function createView(canvas) {
   box(templates.shield, "#d3fff3", 0, .02, .21, .12, .7, .05);
   box(templates.shield, "#d3fff3", 0, .16, .21, .58, .12, .05);
   templates.rock.scale.y = 0.72;
-  templates.branch = new THREE.Group();
-  box(templates.branch, "#6c4b2e", 0, 1.7, 0, 2.3, 0.8, 0.8);
-  for (const x of [-0.9, 0.6])
-    ball(templates.branch, "#4e744f", x, 2.13, 0, 0.35, 0.22, 0.32);
-  box(templates.branch, "#102b36", 0, 1.28, 0.43, 1.8, 0.2, 0.08);
-  for(const x of [-.72,.72])
-    box(templates.branch, "#b3ffe7", x, 1.3, .48, .2, .15, .04);
+  templates.branch = createBranchModel(box,ball);
   templates.gate = new THREE.Group();
   for (const x of [-1, 1])
     box(templates.gate, "#154052", x, 1.5, 0, 0.3, 3, 0.4);

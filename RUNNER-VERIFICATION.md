@@ -1,5 +1,26 @@
 # Runner verification
 
+## Grounded overhead-branch silhouette (2026-09-12)
+
+- A deterministic real-renderer approach fixture compared arch/gate/branch at
+  35m and 16m ahead, 390 × 844, with Mochi and the same bridge/background/camera.
+  The branch lacked the grounded uprights of the other overhead hazards and
+  could resemble a floating low log. Two slim supports now make the opening
+  underneath explicit. There are no new signs, animation, collision or cue rules.
+- All 271 tests and build/lint/distribution checks pass. The model test checks
+  ground contact, upright height, support clearance outside the 0.95m collision
+  corridor, neighboring-lane bounds, shared resources and exactly two new meshes.
+- Matched before/after captures show the opening at both distances. The fixture
+  rose from 94 to 96 draw calls while retaining 10 geometries and 4 textures.
+  This is a measured fixture cost, not an FPS or player-recognition claim.
+  Screenshots are in the sibling local DogeQuest-1989-overhead-check-2026-09-12
+  folder. The helper is development-only and excluded from the production build.
+- The only console warnings were the expected duplicate-Three imports caused
+  by the separately bundled diagnostic helper. No rendering errors occurred,
+  no save changed, and the temporary tab/viewport were cleaned up. This inspection
+  addresses the earlier silhouette concern, without claiming physical-phone
+  performance or universal recognition from a few screenshots.
+
 ## Screenshot-led traversal-control audit (2026-09-12)
 
 - Fresh 390 × 844 captures covered camp, a live ground course, and the actual
