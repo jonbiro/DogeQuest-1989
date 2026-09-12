@@ -368,9 +368,11 @@ export function createView(canvas) {
   // Biscuit is an original articulated model, not a billboard.
   const dog = new THREE.Group();
   scene.add(dog);
-  ball(dog, "#d89043", 0, 0.88, 0.12, 0.47, 0.40, .88);
+  // The two main volumes cast the moving silhouette without sending every
+  // eye, curl and accessory through a second mobile rendering pass.
+  ball(dog, "#d89043", 0, 0.88, 0.12, 0.47, 0.40, .88).castShadow = true;
   ball(dog, "#d89043", 0, 1.0, -.38, .37, .40, .35);
-  ball(dog, "#f2c67b", 0, 1.2, -0.62, 0.49, 0.46, 0.54);
+  ball(dog, "#f2c67b", 0, 1.2, -0.62, 0.49, 0.46, 0.54).castShadow = true;
   ball(dog, "#ffe0a1", 0, 1.06, -1.13, 0.33, 0.23, 0.33);
   ball(dog, "#243b33", 0, 1.22, -1.36, 0.16, 0.12, 0.09);
   ball(dog,"#f5919d",0,.88,-1.32,.1,.12,.045);

@@ -5,6 +5,14 @@ import { createMochiModel } from "../src/runner/mochi-model.js";
 
 const finite = (values) => values.every(Number.isFinite);
 
+test('Mochi casts an inexpensive anatomical shadow without transparent fur', () => {
+  const model = createMochiModel();
+  const casters = [];
+  model.group.traverse(node => { if (node.castShadow) casters.push(node); });
+  assert.deepEqual(casters.map(node => node.name), ['ribcage', 'dark-face']);
+  assert.ok(casters.every(node => node.isMesh && !node.material.transparent));
+});
+
 function modelSnapshot(model) {
   const nodes = [];
   const instances = [];

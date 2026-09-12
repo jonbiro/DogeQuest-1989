@@ -68,6 +68,9 @@ export function createMochiModel() {
     const mesh = new THREE.Mesh(sphere, material(color, roughness));
     mesh.name = name; mesh.position.set(...position); mesh.scale.set(...scale);
     mesh.receiveShadow = true;
+    // Keep the articulated body shadow, but leave hundreds of transparent
+    // fur locks out of the shadow pass to avoid shimmer and extra mobile work.
+    mesh.castShadow = name === 'ribcage' || name === 'dark-face';
     parent.add(mesh); return mesh;
   }
   // Even surface coverage with gentle deterministic variation in curl size,

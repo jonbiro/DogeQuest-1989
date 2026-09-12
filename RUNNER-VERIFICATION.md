@@ -1,5 +1,17 @@
 # Runner verification
 
+## Dog directional lighting (2026-09-12)
+
+- Both dog rigs cast directional shadows from their existing body and head
+  geometry. Transparent curls and tiny details remain excluded from shadow
+  rendering. No new geometry or texture is allocated.
+- Mochi's portrait render at 390 × 844 was inspected on the trail. The 24 km
+  browser fixture passed with 96 rendered checkpoints, 36 accepted turns,
+  16 ziplines, no hits, and no resource growth on the repeated lap.
+- Peak resources: 32 geometries, 8 textures, 238 draw calls, 107 objects;
+  all remain inside the unchanged budget. This is browser-emulated portrait
+  coverage, not a physical-phone performance result.
+
 ## Zipline exit artifact fix (2026-09-12)
 
 - A matched 390 × 844 preview at 800m exposed a black square floating in the
