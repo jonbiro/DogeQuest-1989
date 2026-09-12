@@ -32,9 +32,13 @@ test('the actual daily selector chooses a replayable trail without starting or b
   const context={$,sharedSeed:1,sharedVersion:1,sharedTarget:1000,dailyTrail:()=>daily,
     window:{location:{href},history:{replaceState:(_a,_b,url)=>calls.push(url)}},
     setState:value=>calls.push(value),updateRecords:()=>calls.push('records')};
-  const start=source.indexOf("$('daily-trail').onclick ="),end=source.indexOf("$('shared-random').onclick =",start);
+  const start=source.indexOf('function chooseDailyTrail()'),end=source.indexOf("$('shared-random').onclick =",start);
+  assert.ok(start>=0&&end>start);
   runInNewContext(source.slice(start,end),context);$('daily-trail').onclick();
   assert.equal(context.sharedSeed,daily.seed);assert.equal(context.sharedVersion,daily.version);assert.equal(context.sharedTarget,0);
   assert.match($('shared-description').textContent,/2026-09-12 UTC/);assert.equal($('shared-trail').hidden,false);
+  assert.deepEqual(calls,[daily.url,'menu','records','focus']);
+  assert.equal($('daily-camp').onclick,$('daily-trail').onclick);
+  calls.length=0;$('daily-camp').onclick();
   assert.deepEqual(calls,[daily.url,'menu','records','focus']);
 });
