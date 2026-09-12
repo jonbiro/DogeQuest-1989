@@ -33,6 +33,7 @@ import {magnetPulse} from './magnet-field.js';
 import {pickupYaw} from './pickup-motion.js';
 import {themeHazard} from './hazard-palette.js';
 import {createBoulderGeometry} from './boulder-model.js';
+import {createPalmFrondGeometry} from './palm-frond.js';
 
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -85,6 +86,7 @@ export function createView(canvas) {
   const sphereGeometry = new THREE.SphereGeometry(1, 20, 14);
   const trunkGeometry = new THREE.CylinderGeometry(.7, 1, 1, 10);
   const canopyGeometry = new THREE.SphereGeometry(1, 20, 14);
+  const palmFrondGeometry=createPalmFrondGeometry();
   const canopyVertices = canopyGeometry.attributes.position;
   for (let i=0;i<canopyVertices.count;i++) {
     const x=canopyVertices.getX(i),y=canopyVertices.getY(i),z=canopyVertices.getZ(i);
@@ -228,10 +230,11 @@ export function createView(canvas) {
     }else if(region===1){
       const height=5+random()*4;
       const trunk=mesh(group,trunkGeometry,'#8b6941',0,height/2,0,.25,height,.25);trunk.rotation.z=.12;
-      for(let j=0;j<6;j++){
-        const a=j*Math.PI/3;
-        const leaf=mesh(group,canopyGeometry,'#477963',Math.cos(a)*1.25,height-.3,Math.sin(a)*1.25,2,.4,.65);
-        leaf.rotation.y=-a;leaf.rotation.z=.15;
+      const crownX=-Math.sin(.12)*height/2,crownY=height/2+Math.cos(.12)*height/2;
+      for(let j=0;j<8;j++){
+        const a=j*Math.PI/4;
+        const leaf=mesh(group,palmFrondGeometry,j%2?'#5d8d60':'#477963',crownX+Math.cos(a)*1.6,crownY,Math.sin(a)*1.6,2,1,1.2);
+        leaf.rotation.y=-a;
       }
       ball(group,'#d8b783',0,.32,0,1.3,.32,1);
     }else{
@@ -315,7 +318,7 @@ export function createView(canvas) {
     }
   }
   scenery.updateMatrixWorld(true);
-  for (const geometry of [boxGeometry, coneGeometry, sphereGeometry, trunkGeometry, canopyGeometry]) {
+  for (const geometry of [boxGeometry, coneGeometry, sphereGeometry, trunkGeometry, canopyGeometry,palmFrondGeometry]) {
     const entries = [];
     for (let i = 0; i < tiles.length; i++)
       tiles[i].traverse((item) => {
