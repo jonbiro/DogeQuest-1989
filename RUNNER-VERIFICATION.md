@@ -433,3 +433,25 @@ Broader device/viewport coverage, longer worst-case frame-time profiling and phy
 - The rebuilt browser app passed enable → running, idle mute → suspended, re-enable → running, active-yip mute with both voices stopped/disconnected, and rapid off/on/off/on ending running with sound enabled. Preferences and ARIA matched; no browser errors or duplicate cleanup.
 - Full local build/artifact/lint gates and all 77 tests pass after the fix; dependency audit reports zero vulnerabilities. Human listening and physical-device audio remain explicitly unverified limitations rather than inferred results.
 - Final code release `52b02a1510c745764fdd5aea5e56f4f3a2169e6e` passed CI 34171529902 and Pages 34171529958. Production loaded script `a7934184b5900004` and stylesheet `1b29b96179d0ec91`, both matching the local build. An isolated live browser observed the actual lazily created AudioContext: enabled/running → muted/suspended → enabled/running, with matching pressed state and saved `sound:true`. No browser errors. The observer wrapped only the context constructor; it did not replace audio methods or game state.
+
+## September 11 follow-up: current build in isolated iPhone Safari
+
+Checked gameplay build `05fde6b` on the dedicated **Biscuit Dash QA — Sep 10**
+simulator (`A684C311-2581-42FF-8F83-9E38506B11B5`, iOS 27), using the simulator
+browser mirror and native on-screen touches. Other projects' simulators were
+not selected or controlled. Safari restored an older page; its visible reload
+control loaded the current local `http://127.0.0.1:3000/runner/` build, confirmed
+by the new contextual mission help, three-goal HUD and clean-move results text.
+
+- Portrait help expands and scrolls; the Run button stays reachable.
+- The five gameplay buttons remain above Safari's bottom toolbar.
+- Start, lane swipe, pause and resume responded; the resumed dog was in the
+  right lane. Exact resume timing remains covered by the separate browser and
+  simulation tests, not inferred from the mirrored screenshots.
+- The run naturally ended at 270 m with 420 points and six bones. Results,
+  expanded details, the clean-streak breakdown and Retry button remained usable.
+- Screenshots captured the actual simulator frame for menu, help, gameplay,
+  pause, results and expanded results. This was not a no-damage playthrough,
+  physical-device check, frame-rate measurement or jump-timing acceptance.
+- Mirror keyboard forwarding was unreliable and a stream interruption recovered
+  on the same running helper. These were tooling limitations, not game failures.
