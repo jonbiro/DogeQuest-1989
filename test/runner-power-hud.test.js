@@ -20,7 +20,7 @@ test('the actual start reset hides powers without detaching reusable elements',(
   run.magnet=10;update(run);
   const children=[...f.container.children];
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
-  const start=source.indexOf("for (const id of ['cue','route-choice','toast'"),end=source.indexOf('setState("playing")',start);
+  const start=source.indexOf("for (const id of ['cue','route-choice','toast'",source.indexOf('function start()')),end=source.indexOf('setState("playing")',start);
   assert.ok(start>=0&&end>start);
   let hasPowers=true;
   runInNewContext(source.slice(start,end),{run:createRun(2),updatePowerHud:update,

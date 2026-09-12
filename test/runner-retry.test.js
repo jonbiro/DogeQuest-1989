@@ -17,7 +17,7 @@ test('results retry repeats the seed with a fresh simulation; camp starts a new 
     saved:{upgrades:{},collection:{puppy:'mochi'},challenges:0},
     createRun,Date:{now:()=>987654},missionPackFor,
     setText:()=>{},setState:value=>{context.state=value;},
-    $:()=>({focus:()=>{}}),tone:()=>{}};
+    $:()=>({focus:()=>{},classList:{toggle:()=>{}}}),updatePowerHud:()=>false,tone:()=>{}};
   runInNewContext(source.slice(start,end),context);
   context.start();
   assert.equal(context.run.seed,1989);
