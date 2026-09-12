@@ -18,8 +18,18 @@ finite runner positions and velocities, as supplied by the existing simulation.
 
 ## Not yet playable
 
-No generator, collision loop, controls, model, water route or rewards currently
-uses this module. Existing published trails and saved progress are unaffected.
+The lifecycle foundation now emits one boarding event, preserves the prior jump
+height for a future visual boarding blend, clears ground-action queues, and
+awards 250 points plus a 1.2-second exit grace period once on a real dismount.
+Skipped encounters, restored mid-river positions, duplicate entry intervals,
+paused intervals and ended runs cannot manufacture completion rewards. A frozen
+run keeps its raft pose. Seven raft tests cover these contracts using real
+`createRun` state; the full suite passed 388 tests, followed by the focused seven
+tests after strengthening the zero-distance-interval guard.
+
+No generator, collision loop, controls, model or water route currently calls
+this module. Its completion reward is unit-tested but cannot yet be earned in
+the published game. Existing published trails and saved progress are unaffected.
 Do not report raft gameplay as shipped on the strength of these unit tests.
 
 Next work connects the state transitions and reserved generator rows under a

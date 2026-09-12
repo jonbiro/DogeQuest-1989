@@ -59,3 +59,37 @@ export function clearRaftGroundActions(run){
   run.y=0;run.vy=0;run.slide=0;run.slideNext=0;
   run.jumpBuffer=0;run.diving=false;run.slideExpiredAt=null;
 }
+
+export const RAFT_REWARD=250;
+
+// Call with the actual simulation interval, not a restored distance alone.
+// Skipping an entire ride cannot manufacture a completion reward.
+export function advanceRaft(run,from,to){
+  if(run.ended||!Number.isFinite(from)||!Number.isFinite(to)||to<=from)return null;
+  if(run.raft){
+    if(to<run.raft.end)return 'riding';
+    const completed=from<run.raft.end;
+    run.raft=null;
+    clearRaftGroundActions(run);
+    if(!completed)return 'aborted';
+    run.rafts=(run.rafts||0)+1;
+    run.bonusPoints+=RAFT_REWARD;
+    run.invulnerable=Math.max(run.invulnerable,1.2);
+    run.events.push('raft-end');
+    return 'exited';
+  }
+  const section=raftAt(to);
+  if(!section||from>section.start||section.index<=(run.lastRaftIndex??-1)||run.zipline)return null;
+  run.lastRaftIndex=section.index;
+  run.raft={...section,boardedAt:run.time,boardingHeight:run.y};
+  clearRaftGroundActions(run);
+  run.events.push('raft-start');
+  return 'entered';
+}
+
+export function moveRaft(run,target,dt){
+  if(!run.raft||run.ended||!Number.isFinite(dt)||dt<=0)return false;
+  steerRaft(run,target+raftCurrent(run.distance),dt);
+  clearRaftGroundActions(run);
+  return true;
+}

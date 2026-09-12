@@ -1,8 +1,49 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {raftAt,raftByIndex,raftIntersecting,raftCurrent,steerRaft,clearRaftGroundActions,RAFT_BANK_LIMIT} from '../src/runner/rafts.js';
+import {raftAt,raftByIndex,raftIntersecting,raftCurrent,steerRaft,clearRaftGroundActions,RAFT_BANK_LIMIT,advanceRaft,moveRaft,RAFT_REWARD} from '../src/runner/rafts.js';
 import {cornerIntersecting} from '../src/runner/turns.js';
 import {ZIPLINE_FIRST,ZIPLINE_PERIOD,ZIPLINE_LENGTH} from '../src/runner/ziplines.js';
+import {createRun} from '../src/runner/world.js';
+
+test('raft lifecycle boards and rewards exactly once without leaking queued ground actions',()=>{
+  const run=createRun(1989);run.time=40;run.y=2;run.jumpBuffer=.3;run.slideNext=.7;
+  assert.equal(advanceRaft(run,1149.8,1150.1),'entered');
+  assert.equal(run.raft.boardingHeight,2);assert.equal(run.raft.boardedAt,40);
+  assert.equal(run.jumpBuffer,0);assert.equal(run.slideNext,0);
+  assert.equal(advanceRaft(run,1150.1,1151),'riding');
+  assert.equal(advanceRaft(run,1289.9,1290),'exited');
+  assert.equal(run.raft,null);assert.equal(run.rafts,1);assert.equal(run.bonusPoints,RAFT_REWARD);
+  assert.equal(run.invulnerable,1.2);
+  assert.equal(advanceRaft(run,1289.9,1290),null);
+  assert.equal(advanceRaft(run,1149.8,1150.1),null,'same entry cannot be replayed');
+  assert.equal(run.events.filter(e=>e==='raft-start').length,1);
+  assert.equal(run.events.filter(e=>e==='raft-end').length,1);
+});
+
+test('teleports, ended runs and another traversal cannot award a raft ride',()=>{
+  for(const configure of [run=>{run.ended=true;},run=>{run.zipline={end:1400};}]){
+    const run=createRun(1989);configure(run);
+    assert.equal(advanceRaft(run,1149,1151),null);assert.equal(run.bonusPoints,0);
+  }
+  const run=createRun(1989);
+  assert.equal(advanceRaft(run,1150,1150),null,'paused intervals cannot board');
+  assert.equal(advanceRaft(run,1100,1300),null);
+  assert.equal(advanceRaft(run,1160,1170),null,'restored mid-river positions do not create a boarding event');
+  assert.equal(advanceRaft(run,1149,1151),'entered');
+  assert.equal(advanceRaft(run,1300,1301),'aborted');
+  assert.equal(run.bonusPoints,0);assert.equal(run.rafts,undefined);
+});
+
+test('raft motion clears ground actions but pause and ended states preserve the frozen pose',()=>{
+  const run=createRun(1989);advanceRaft(run,1149,1151);run.distance=1200;
+  run.jumpBuffer=.3;run.slide=.5;
+  assert.equal(moveRaft(run,2.4,1/60),true);assert.ok(run.x>0);
+  assert.equal(run.jumpBuffer,0);assert.equal(run.slide,0);
+  const pose={x:run.x,vx:run.vx};
+  assert.equal(moveRaft(run,-2.4,0),false);
+  run.ended=true;assert.equal(moveRaft(run,-2.4,1/60),false);
+  assert.deepEqual({x:run.x,vx:run.vx},pose);
+});
 
 test('raft windows reserve entry and recovery without corners, choices or cables',()=>{
   for(let index=0;index<100;index++){
