@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
+import {URL} from 'node:url';
 import {levels,price,purchase,refundUpgrade,UPGRADES} from '../src/runner/progression.js';
 import {createRun,act,BASE_SLIDE_DURATION,SLIDE_UPGRADE_DURATION} from '../src/runner/world.js';
 const {structuredClone}=globalThis;
