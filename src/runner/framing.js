@@ -1,5 +1,12 @@
 import {Vector3} from 'three';
 
+// Tall phones must retain enough horizontal view to read the opposite lane.
+// Preserve the established 52-degree view everywhere it is already wide enough.
+export function gameplayFov(aspect) {
+  if (!Number.isFinite(aspect) || aspect<=0) return 52;
+  return Math.max(52,2*Math.atan(Math.tan(Math.PI/12)/Math.max(.35,aspect))*180/Math.PI);
+}
+
 // A conservative puppy/outfit envelope, not a collision box. Translate only
 // along the camera's right vector, preserving pitch, yaw and the normal follow.
 // Reused vectors avoid mesh traversal or new geometry in the animation loop.

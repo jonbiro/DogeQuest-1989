@@ -1,5 +1,32 @@
 # Runner verification
 
+## Tall-phone decision-window framing (2026-09-12)
+
+- Projection diagnostics found opposite-lane bone centers outside the viewport
+  after a bend with the fixed 52-degree vertical field of view. These were
+  representative camera/route configurations, not a claim that every sampled
+  point contains a generated bone.
+- Gameplay now preserves a minimum 30-degree horizontal view for supported
+  portrait ratios. At 390x844 this uses a 60.22-degree vertical view; 320x568,
+  desktop and landscape keep 52 degrees. Menus and generated previews explicitly
+  retain their original framing. Extremely narrow/invalid dimensions are bounded.
+- A new projection regression samples 50–4,500m, three portrait ratios, all
+  three lanes, camera-follow offsets and 0.45/0.6/0.8-second approach windows.
+  It checks a conservative ground-bone envelope, excluding the deliberately
+  object-free corner reservations. Existing puppy-envelope checks retain jumps,
+  zipline height, lane lag and curves. This is not visibility certification for
+  every airborne/power-up shape or every possible long-run state.
+- A 390x844 browser keyboard run reached 1,008m with three hearts, two accepted
+  turns and zero missed turns. Canyon and left-lane glade screenshots confirmed
+  readable dog/controls and the opposite lane visible after the bend. Files are
+  in the sibling `DogeQuest-1989-camera-check-2026-09-12/` folder. Illustrated Help
+  images all loaded afterward. The local save remained absent throughout.
+- All 210 tests, build, lint and artifact checks pass. No pickup positions,
+  collision boxes, input windows, physics or reward rules changed. Very close
+  peripheral objects can still clip; this fix targets the earlier decision
+  window. These are desktop-browser and projection tests, not physical-phone,
+  glare or human motion-comfort evidence.
+
 ## Fresh portrait scene audit and cable cleanup (2026-09-12)
 
 - Used the screenshot-led product-design audit on the current 390x844 runner:

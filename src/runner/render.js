@@ -13,7 +13,7 @@ import { puppyPose, smoothLegAngles, bodyMotion, mochiCrouch } from "./puppy-pos
 import { createMochiModel } from "./mochi-model.js";
 import { isBridge } from "./bridges.js";
 import { ziplineAt, ZIPLINE_HEIGHT, cableSegment, CABLE_SEGMENT_LENGTH } from "./ziplines.js";
-import {createPuppyFramer} from './framing.js';
+import {createPuppyFramer,gameplayFov} from './framing.js';
 import {createQualityController} from './quality.js';
 
 // Shared low-poly geometry and materials keep the mobile scene inexpensive.
@@ -709,7 +709,7 @@ export function createView(canvas) {
       try {
         for(const item of scene.children)item.visible=item===subject||item.isLight===true;
         scene.background=new THREE.Color('#24483f');scene.fog=null;
-        camera.aspect=192/112;camera.position.set(0,2.6,5.2);camera.lookAt(0,1.1,0);
+        camera.fov=52;camera.aspect=192/112;camera.position.set(0,2.6,5.2);camera.lookAt(0,1.1,0);
         camera.updateProjectionMatrix();renderer.setSize(192,112,false);renderer.render(scene,camera);
         return canvas.toDataURL('image/png');
       } finally {
@@ -727,7 +727,7 @@ export function createView(canvas) {
         for (const item of scene.children) item.visible = item === dog || item.isLight === true;
         scene.background = new THREE.Color('#24483f'); scene.fog = null;
         dog.position.set(0,0,0); dog.rotation.set(0,rear ? .45 : -2.7,0);
-        camera.aspect = 1; camera.position.set(0,2.0,3.4); camera.lookAt(0,1.1,0);
+        camera.fov=52;camera.aspect = 1; camera.position.set(0,2.0,3.4); camera.lookAt(0,1.1,0);
         camera.updateProjectionMatrix(); renderer.setSize(192,192,false);
         renderer.render(scene,camera);
         return canvas.toDataURL('image/png');
@@ -739,6 +739,8 @@ export function createView(canvas) {
     },
     draw(run, time, state, reducedMotion, dt, alpha = 1, collection) {
       const menu = ["menu", "help", "shop", "kennel"].includes(state);
+      const fov=menu ? 52 : gameplayFov(camera.aspect);
+      if(camera.fov!==fov) { camera.fov=fov;camera.updateProjectionMatrix(); }
       dress(menu ? collection : run.appearance);
       if (visualRun !== run) {
         // IDs restart on a new route; never reuse an old obstacle under a new type.
