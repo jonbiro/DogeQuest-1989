@@ -3,6 +3,25 @@ import assert from 'node:assert/strict';
 import {createPracticeRun,createZiplinePracticeRun,stepPractice,practiceCue,practiceProgress,practiceResult} from '../src/runner/practice.js';
 import {act} from '../src/runner/world.js';
 import {bankRun} from '../src/runner/rewards.js';
+for(const kind of ['jump','slide'])test(`focused ${kind} drill teaches three real actions at all upgrade levels`,()=>{
+  for(const level of [0,1,2,3]){
+    const run=createPracticeRun({leap:level,slide:level},kind),used=new Set();
+    assert.equal(run.practice.kind,kind);
+    assert.ok(run.objects.every(object=>object.type===(kind==='jump'?'log':'gate')));
+    while(!run.ended){
+      const index=run.practice.index;
+      if(index<3&&[35,75,115][index]-run.distance<3&&!used.has(index)){
+        act(run,kind);used.add(index);
+      }
+      stepPractice(run,1/120);
+    }
+    assert.deepEqual(run.practice.outcomes,[true,true,true]);
+    assert.match(practiceResult(run).title,new RegExp(`3 of 3 ${kind}s`));
+    assert.match(practiceProgress(run),new RegExp(`3/3 ${kind}s`));
+    assert.equal(bankRun({},run,[]),null);
+    assert.equal(run.hearts,3);
+  }
+});
 test('practice completes without penalties even when every lesson is missed',()=>{
   const run=createPracticeRun();
   for(let i=0;i<1500&&!run.ended;i++)stepPractice(run,1/120);

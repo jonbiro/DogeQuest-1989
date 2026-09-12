@@ -9,8 +9,8 @@ test('collision results offer relevant practice without guessing an unsupported 
   for (const [direction,cornerIndex] of [['left',0],['right',1]])
     assert.deepEqual(practiceOffer({ended:true,lastMistake:{type:'corner',direction}}),
       {kind:'turn',cornerIndex,label:'Practise this turn'});
-  for (const type of ['log','rock','arch','branch','gate'])
-    assert.equal(practiceOffer({ended:true,lastMistake:{type}}).kind,'moves');
+  for (const [type,kind] of [['log','jump'],['rock','moves'],['arch','slide'],['branch','slide'],['gate','slide']])
+    assert.equal(practiceOffer({ended:true,lastMistake:{type}}).kind,kind);
   for (const run of [{}, {ended:true}, {ended:true,lastMistake:{type:'corner'}},
     {ended:true,lastMistake:{type:'unknown'}},
     {ended:false,lastMistake:{type:'log'}},
@@ -26,7 +26,10 @@ test('the actual results practice button routes collisions and rehearsal retries
   assert.ok(from>=0&&to>from);
   for (const [run,expected] of [
     [{ended:true,lastMistake:{type:'corner',direction:'right'}},['turn',1]],
-    [{ended:true,lastMistake:{type:'log'}},['moves',0]],
+    [{ended:true,lastMistake:{type:'log'}},['jump',0]],
+    [{ended:true,lastMistake:{type:'branch'}},['slide',0]],
+    [{practice:{kind:'jump'}},['jump',0]],
+    [{practice:{kind:'slide'}},['slide',0]],
     [{ended:true,lastMistake:{type:'gap'}},['gap',0]],
     [{ended:true,lastMistake:{type:'rock',courseWeave:true}},['weave',0]],
     [{practice:{kind:'weave'}},['weave',0]],

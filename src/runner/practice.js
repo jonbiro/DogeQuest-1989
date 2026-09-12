@@ -10,6 +10,12 @@ const LESSONS = [
   {at:115,type:'rock',hint:'← Steer into the open left lane'},
 ];
 const GAP_LESSON={at:35,type:'gap',hint:'Gap ahead · wait for the jump cue'};
+const FOCUSED_LESSONS={
+  jump:LESSONS.map(({at})=>({...LESSONS[0],at})),
+  slide:LESSONS.map(({at})=>({...LESSONS[1],at})),
+};
+function moveLessons(kind){return FOCUSED_LESSONS[kind]||LESSONS;}
+function moveName(run){return run.practice.kind==='jump'?'jumps':run.practice.kind==='slide'?'slides':'moves';}
 export function practiceOffer(run) {
   if (!run.ended || run.practice || run.retired) return null;
   const mistake=run.lastMistake;
@@ -18,7 +24,9 @@ export function practiceOffer(run) {
   if (mistake?.type==='gap') return {kind:'gap',cornerIndex:0,label:'Practise gap jumps'};
   if (mistake?.type==='corner' && ['left','right'].includes(mistake.direction))
     return {kind:'turn',cornerIndex:mistake.direction==='right'?1:0,label:'Practise this turn'};
-  if (['log','rock','arch','branch','gate'].includes(mistake?.type))
+  if(mistake?.type==='log')return {kind:'jump',cornerIndex:0,label:'Practise jump timing'};
+  if(['arch','branch','gate'].includes(mistake?.type))return {kind:'slide',cornerIndex:0,label:'Practise slide timing'};
+  if (mistake?.type==='rock')
     return {kind:'moves',cornerIndex:0,label:'Practise the basics'};
   return null;
 }
@@ -45,12 +53,13 @@ function lessonFeedback(lesson,correct,detail) {
   };
   return timing[reason] || (lesson.type==='log' ? 'Use ↑ to jump over logs' : 'Use ↓ to slide under gates');
 }
-export function createPracticeRun(upgrades = {}) {
+export function createPracticeRun(upgrades = {},kind='moves') {
   const run = createRun(1989, upgrades);
   run.practice = {index:0,correct:0,outcomes:[]};
+  if(kind==='jump'||kind==='slide')run.practice.kind=kind;
   run.objects = [];
   run.speed = 12;
-  for (const lesson of LESSONS) for (let lane=0;lane<3;lane++) {
+  for (const lesson of moveLessons(kind)) for (let lane=0;lane<3;lane++) {
     if (lesson.type === 'rock' && lane === 0) continue;
     run.objects.push({id:run.id++,type:lesson.type,lane,at:lesson.at,used:false});
   }
@@ -141,7 +150,7 @@ export function stepPractice(run, dt) {
         run.distance>=ZIPLINE_FIRST+ZIPLINE_LENGTH+20) run.ended=true;
     return;
   }
-  const lesson = (run.practice.kind==='gap' ? [GAP_LESSON] : LESSONS)[run.practice.index];
+  const lesson = (run.practice.kind==='gap' ? [GAP_LESSON] : moveLessons(run.practice.kind))[run.practice.index];
   const clears = run.clears;
   step(run, dt);
   if (lesson && run.distance > lesson.at + .4) {
@@ -181,7 +190,7 @@ export function practiceCue(run) {
     return actionCue(run) || (run.zipline ? 'Steer toward the high bones' : 'ZIPLINE AHEAD · wait for jump cue');
   }
   if (run.practice.feedback?.until>run.time) return run.practice.feedback.text;
-  const lesson = LESSONS[run.practice.index];
+  const lesson = moveLessons(run.practice.kind)[run.practice.index];
   if (!lesson) return `${run.practice.correct}/3 moves practised · trail complete`;
   if (lesson.type==='log' && (run.y>0 || run.vy>0)) return 'Jumping · wait for landing';
   if (lesson.type==='gate' && run.slide>0) return 'Sliding · stay low';
@@ -193,7 +202,7 @@ export function practiceProgress(run) {
   if(run.practice.kind==='weave')return `${run.practice.correct}/3 weaves cleared`;
   if (run.practice.kind==='gap') return `${run.practice.correct}/1 gap cleared`;
   if (run.practice.kind==='turn') return `${run.practice.direction} corner · ${run.practice.correct}/1 cleared`;
-  return run.practice.kind==='zipline' ? `${run.bones}/18 high bones · ${run.ziplines ? 'landed' : run.practice.caught ? 'cable caught' : 'catch the cable'}` : `${run.practice.correct}/3 moves cleared`;
+  return run.practice.kind==='zipline' ? `${run.bones}/18 high bones · ${run.ziplines ? 'landed' : run.practice.caught ? 'cable caught' : 'catch the cable'}` : `${run.practice.correct}/3 ${moveName(run)} cleared`;
 }
 export function practiceResult(run) {
   if(run.practice.kind==='weave')return {
@@ -221,7 +230,7 @@ export function practiceResult(run) {
       : run.bones===18 ? 'Every high bone collected! Steer on the cable; landing happens automatically. The adventure uses these same moves.'
       : 'Handle caught! Follow the left and right bone prompts while riding. Landing is automatic; jumping from the ground cannot reach these bones.',
   };
-  return {title:`${run.practice.correct} of 3 moves cleared`,lesson:run.practice.correct===3
+  return {title:`${run.practice.correct} of 3 ${moveName(run)} cleared`,lesson:run.practice.correct===3
     ? 'Nice paws! You are ready to take these moves onto the adventure trail.'
     : run.practice.firstMiss
       ? `${run.practice.firstMiss.advice}. Try these same three moves again; practice does not spend hearts or award points.`

@@ -1,5 +1,15 @@
 # Runner verification
 
+## Focused jump and slide drills (2026-09-12)
+
+- Log collisions offer jump timing practice; overhead collisions offer slide
+  timing practice. Each uses three repeated real obstacles at practice speed,
+  with normal physics, targeted results and retained first-mistake coaching.
+  Retry preserves the drill; the help menu still opens the full basics lesson.
+- Both drills clear all three obstacles at every upgrade level in simulation,
+  keep three hearts and cannot bank points. Actual results-button handler tests
+  cover collision routing and same-drill retries. Full check: 347 tests passed.
+
 ## Persistent practice coaching (2026-09-12)
 
 - Basics practice retains the first missed move's coaching in its final

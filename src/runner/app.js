@@ -534,7 +534,7 @@ function startPractice(kind, cornerIndex=0) {
   run = kind==='weave' ? createWeavePracticeRun(saved.upgrades)
     : kind==='gap' ? createGapPracticeRun(saved.upgrades)
     : kind==='turn' ? createTurnPracticeRun(saved.upgrades,cornerIndex)
-    : kind==='zipline' ? createZiplinePracticeRun(saved.upgrades) : createPracticeRun(saved.upgrades);
+    : kind==='zipline' ? createZiplinePracticeRun(saved.upgrades) : createPracticeRun(saved.upgrades,kind);
   run.puppy = saved.collection.puppy;
   run.appearance = appearance;
   run.missions = [currentMission];
