@@ -455,3 +455,25 @@ by the new contextual mission help, three-goal HUD and clean-move results text.
   physical-device check, frame-rate measurement or jump-timing acceptance.
 - Mirror keyboard forwarding was unreliable and a stream interruption recovered
   on the same running helper. These were tooling limitations, not game failures.
+
+### September 11: runner offline reopening
+
+- `npm run check` passes all 183 tests, including full-build integrity, failed
+  download/quota preservation, scoped request handling and generated-manifest
+  hashes matching the release files.
+- Browser QA used isolated `127.0.0.1:3012`, not the user's production save.
+  Installation and activation completed with four cached files. At 390 × 844,
+  the expanded offline help remained readable and the Run button reachable.
+- A stricter server-stopped reload initially exposed redirected HTML responses
+  being unsuitable for cached navigation. Normalizing verified response bodies
+  fixed this. With the local server completely stopped, the final worker
+  reopened the runner, rendered the game, accepted Start and Jump input, advanced
+  the distance HUD, and paused using Escape. No network was available to that
+  local origin. The initial network-emulation-only reload is not counted as
+  independent offline evidence.
+- Worker changes never request a page reload. Failed caching does not block
+  online play or touch local saved progress. Only known runner files are cached;
+  the root 2D game and arbitrary requests are excluded.
+- This is desktop browser offline coverage, not an iOS airplane-mode or native
+  installation test. Browser storage eviction can remove cached files; the help
+  explains this limitation. No cloud synchronization is implied.

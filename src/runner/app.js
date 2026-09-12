@@ -1,6 +1,7 @@
 import { createRun, act, step } from "./world.js";
 import {RESUME_DURATION,resumeStep} from './resume.js';
 import {installBackupControls} from './backup-ui.js';
+import {installOfflineSupport} from './offline.js';
 import { createView } from "./render.js";
 import { UPGRADES, levels, price, purchase } from "./progression.js";
 import { missionFor, missionProgress, missionTip, missionPackFor } from "./missions.js";
@@ -244,6 +245,7 @@ function shop() {
 }
 updateRecords();
 installBackupControls(()=>saved);
+installOfflineSupport();
 function tone(frequency, duration = 0.08) {
   if (!sound) return;
   try {

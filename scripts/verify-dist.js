@@ -45,6 +45,7 @@ export async function verifyDist() {
     "runner/index.html",
     "runner/game.js",
     "runner/THREE-LICENSE.txt",
+    "runner/offline-worker.js",
   ]) {
     const stats = await lstat(path.join(distDirectory, file));
     if (!stats.isFile() || stats.size === 0)

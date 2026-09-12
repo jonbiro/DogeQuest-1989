@@ -86,6 +86,15 @@ export async function build() {
     html=html.replace(`"${asset}"`,`"${asset}?v=${hash}"`);
   }
   await writeFile(htmlPath,html);
+  const assets=[];
+  for(const file of ['index.html','game.js','style.css','../favicon.svg']) {
+    const sha256=createHash('sha256').update(await readFile(path.join(distDirectory,'runner',file))).digest('hex');
+    const url=['game.js','style.css'].includes(file)?`${file}?v=${sha256.slice(0,16)}`:file;
+    assets.push({url,sha256});
+  }
+  const template=await readFile(path.join(projectRoot,'src/runner/offline-worker.js'),'utf8');
+  const version=createHash('sha256').update(JSON.stringify(assets)+template).digest('hex').slice(0,20);
+  await writeFile(path.join(distDirectory,'runner/offline-worker.js'),template.replace('/* build:assets */ []',JSON.stringify(assets)).replace('build:version',version));
 }
 
 if (

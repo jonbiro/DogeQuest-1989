@@ -1,5 +1,14 @@
 # Puppy adventure goal
 
+## Latest delivered increment: offline reopening
+
+The runner now downloads a small, build-versioned offline shell on an online
+visit. Each file is SHA-256 checked before installation; failed or mixed-release
+downloads preserve the previous cache. Updates do not reload an active run.
+Readiness and storage limits live in an expandable How to play section, not the
+playing area. This is runner-only browser offline support, not a native app or
+cloud save. See the verification record for the server-stopped reload check.
+
 ## Primary mobile orientation
 
 Design and verify portrait first: assume most phone sessions are vertical.
