@@ -131,3 +131,34 @@ test('two-thumb buttons combine steering and jumping without a phantom trail rel
   handlers.pointerup({...first,timeStamp:200});
   assert.deepEqual(actions,['left','jump','slide','jump'],'the next deliberate trail tap still works');
 });
+
+test('browser cancellation pauses only the owned gesture and cannot replay it after resume',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]"))',start);
+  const handlers={},actions=[];let pauses=0;
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  const context={$:()=>scene,state:'playing',run:{},act:(_,a)=>actions.push(a),
+    canStartSwipe,ownsSwipe,isJumpTap,swipeAction,pause(){pauses++;context.state='paused';}};
+  runInNewContext(source.slice(start,end),context);
+  const touch={pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointercancel({...touch,pointerId:2});
+  assert.equal(pauses,0,'a second finger must not interrupt the owner');
+  handlers.pointercancel(touch);
+  assert.equal(pauses,1);
+  context.state='playing';
+  handlers.pointermove({...touch,clientX:100});
+  handlers.pointerup({...touch,timeStamp:200});
+  assert.deepEqual(actions,[],'cancelled touch cannot act after resume');
+  handlers.pointerdown(touch);
+  handlers.pointerup({...touch,timeStamp:200});
+  handlers.lostpointercapture(touch);
+  assert.deepEqual(actions,['jump']);
+  assert.equal(pauses,1,'ordinary release does not pause');
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:100});
+  handlers.pointercancel(touch);
+  assert.deepEqual(actions,['jump','right'],'already accepted swipe stays single');
+  assert.equal(pauses,2,'interruption also pauses an already committed gesture');
+});

@@ -1,5 +1,17 @@
 # Runner verification
 
+## Pause interrupted trail gestures (2026-09-12)
+
+- A browser `pointercancel` for the trail's active swipe now enters the existing
+  pause flow instead of silently leaving the runner moving. It clears ownership
+  first, so delayed movement/release cannot replay after resume. Unrelated touch
+  cancellations and normal release/lost capture do not pause the game.
+- Full check: 305 tests pass. The actual registered handler is exercised for a
+  second finger, owned cancellation before/after a committed swipe, stale events
+  after resume, and a fresh normal tap. Existing pause/resume flow stops sound and
+  retains the gradual resume ramp. This is deterministic event-handler coverage,
+  not a new physical-phone or native system-gesture reproduction.
+
 ## Long-run route and course coverage (2026-09-12)
 
 - Investigated the earlier cue pilot's missing glade courses. It left gates near

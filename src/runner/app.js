@@ -701,7 +701,12 @@ $("scene").addEventListener("pointerup", (event) => {
 const clearOwnedPointer = event => {
   if(ownsSwipe(event,pointer))pointer=null;
 };
-$("scene").addEventListener("pointercancel", clearOwnedPointer);
+$("scene").addEventListener("pointercancel", event => {
+  if(!ownsSwipe(event,pointer))return;
+  pointer=null;
+  // The browser took over this gesture. Do not keep running under a system UI.
+  pause();
+});
 $("scene").addEventListener("lostpointercapture", clearOwnedPointer);
 for (const button of document.querySelectorAll("[data-action]")) {
   button.onpointerdown = (event) => {
