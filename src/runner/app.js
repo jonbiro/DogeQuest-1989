@@ -314,6 +314,7 @@ function syncDock() {
   $("mission-hud").hidden = state !== 'playing' || !mode;
 }
 const tilt=installTiltControls(window,{toggle:$('tilt-toggle'),recenter:$('tilt-recenter'),message:$('tilt-status'),
+  sensitivity:$('tilt-sensitivity'),
   canSteer:()=>state==='playing'&&!document.hidden&&!run.ended&&!turnPrompt(run),onAction:action=>act(run,action)});
 // Direct input establishes a new neutral hold so tilt cannot fight that move.
 window.addEventListener('pointerdown',()=>tilt.recalibrate(),{capture:true,passive:true});

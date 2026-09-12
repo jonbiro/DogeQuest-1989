@@ -34,6 +34,15 @@ cover resumed streams, inversion and recalibration timeout. All 415 tests plus
 build, lint and distribution checks passed; real-device behavior remains unproven.
 
 Browser requirement reference:
+
+Tilt response now offers Gentle (9 degrees), Balanced (14) and Steady (20).
+Each preset retains proportional neutral hysteresis and changing it recalibrates
+without generating a lane change. These are starting presets, not physically
+validated ergonomic recommendations. The setting lasts for the current visit.
+The 320 × 568 browser check verified selection and a 44 px touch target after
+correcting the bundled stylesheet. All 416 tests passed before the CSS-only fix;
+the final stylesheet rebuild and distribution/lint checks were rerun.
+
 [MDN orientation permission](https://developer.mozilla.org/en-US/docs/Web/API/DeviceOrientationEvent/requestPermission_static).
 Where implemented, permission requests require a secure context and direct user
 activation. API availability alone does not prove that a device emits readings.

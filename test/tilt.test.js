@@ -58,3 +58,11 @@ test('recalibration without fresh readings cannot stay ready indefinitely',async
   [...f.timers.values()][0]();assert.equal(f.statuses.at(-1),'unavailable');
   assert.equal(f.listeners.size,0);
 });
+test('sensitivity presets change the required lean without triggering a move during recalibration',async()=>{
+  for(const [preset,lean,expected] of [['gentle',11,1],['balanced',11,0],['steady',16,0],['steady',24,1]]){
+    const f=fixture();assert.equal(f.tilt.setSensitivity(preset),true);
+    await f.tilt.enable();f.sample(0);f.sample(lean,40);assert.equal(f.actions.length,expected,preset);
+    f.tilt.setSensitivity('gentle');f.sample(lean,40);assert.equal(f.actions.length,expected,'new setting recalibrates');
+    assert.equal(f.tilt.setSensitivity('__proto__'),false);
+  }
+});
