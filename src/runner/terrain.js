@@ -1,6 +1,8 @@
 // Gentle world-space rises and descents. The trail is eased back to level around
 // corners and special traversal so jumping keeps the same screen-space timing.
 const TAU = Math.PI * 2;
+// Render-only bank surface relative to the playable road, not collision height.
+export const BANK_SURFACE_Y = -1.05;
 
 function modulo(value, period) {
   return ((value % period) + period) % period;

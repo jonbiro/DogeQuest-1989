@@ -1,5 +1,21 @@
 # Runner verification
 
+## Ground scenery on the bank surface (2026-09-12)
+
+- Matched forest screenshots exposed hovering trees and shrubs: scenery roots
+  were placed at road-level zero while the terrain bank tops are at -1.05m.
+  All decorative groups now use a shared render-only BANK_SURFACE_Y, also used
+  to construct the bank and position water 0.03m below it. Hazards, physics,
+  scenery spacing and lane clearance are unchanged.
+- A regression test executes the actual renderer placement block and checks
+  transformed trunk bounds against the bank surface, with and without gateway
+  scaling and on both sides of the path.
+- Matched 700 × 600 forest views at 35m showed corrected root contact with the
+  same 102 draw calls and geometry/texture counts. A canyon view at 535m showed
+  grounded formations. No browser warnings/errors or saved-profile mutations.
+- Build, distribution verification, lint and all 320 tests passed. Temporary
+  browser fixture files were removed by rebuilding the publication artifact.
+
 ## Continuous river surface (2026-09-12)
 
 - Replaced overlapping textured water slabs with a single indexed ribbon for

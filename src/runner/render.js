@@ -22,6 +22,7 @@ import {createBranchModel} from './branch-model.js';
 import {detourCameraWeight} from './route-detour.js';
 import {createSurfaceTexture} from './surface.js';
 import {createWaterSurface} from './water.js';
+import {BANK_SURFACE_Y} from './terrain.js';
 
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -107,7 +108,7 @@ export function createView(canvas) {
     const tile = new THREE.Group();
     // A thick, height-following bank anchors trees and paving on hills. It uses
     // the existing box batch and gives way to water at river crossings.
-    box(tile, '#397d6e', 0, -7.05, 0, 60, 12, 5.4).userData.terrain = true;
+    box(tile, '#397d6e', 0, BANK_SURFACE_Y - 6, 0, 60, 12, 5.4).userData.terrain = true;
     box(tile, "#526d49", 0, -0.55, 0, 9.2, 1, 5.4);
     box(tile, "#c1ba88", 0, -0.04, 0, 7.8, 0.15, 5.4);
     for (const x of [-4.25, 4.25])
@@ -251,11 +252,13 @@ export function createView(canvas) {
     map: surface, bumpMap: surface, bumpScale: .04,
   });
   // Keep a wider visual corridor around playable lanes without moving hazards.
-  for (const group of decorations)
+  for (const group of decorations) {
+    group.position.y = BANK_SURFACE_Y;
     if (!group.userData.gateway) {
       group.position.x *= 1.4;
       group.scale.setScalar(.82);
     }
+  }
   scenery.updateMatrixWorld(true);
   for (const geometry of [boxGeometry, coneGeometry, sphereGeometry, trunkGeometry, canopyGeometry]) {
     const entries = [];

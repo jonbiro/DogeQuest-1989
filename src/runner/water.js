@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {BRIDGE_PERIOD,BRIDGE_START,BRIDGE_END} from './bridges.js';
+import {BANK_SURFACE_Y} from './terrain.js';
 
 const ROWS=21,ACROSS=[-35,-12,0,12,35];
 
@@ -47,7 +48,7 @@ export function createWaterSurface(scene) {
         for(let column=0;column<ACROSS.length;column++){
           const across=ACROSS[column];
           positions.setXYZ(row*ACROSS.length+column,
-            frame.x+across*cosine,frame.y-1.08,frame.z-across*sine);
+            frame.x+across*cosine,frame.y+BANK_SURFACE_Y-.03,frame.z-across*sine);
         }
       }
       positions.needsUpdate=true;mesh.visible=true;
