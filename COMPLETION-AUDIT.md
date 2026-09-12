@@ -1,6 +1,15 @@
 # Puppy adventure completion audit
 
-## Expanded skill-based runner goal — current audit
+## Current broader objective
+
+The active objective is to make the game better than Temple Run. The historical
+feature audits below establish implemented capabilities within their stated
+test envelopes; they do not prove comparative superiority or complete that
+broader goal. Subsequent shipped improvements are recorded in the roadmap and
+verification log. The current addition addresses an onboarding gap with an
+optional playable, unscored practice trail. Overall superiority remains unproven.
+
+## Historical expanded skill-based runner audit
 
 Audited against the full expanded objective, not the earlier scope below.
 Implementation baseline `579529d`, plus this audit's Fetch timer-scale correction.

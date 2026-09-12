@@ -525,3 +525,20 @@ by the new contextual mission help, three-goal HUD and clean-move results text.
 - Real browser Space input on focused Slide produced the rendered `slide`
   posture. After resuming with trail focus, Space produced `jump`. Escape
   paused both checks. No synthetic movement was injected for these observations.
+
+### September 12: optional unscored practice trail
+
+- `npm run check`: 195 tests pass. Tests exercise a full no-input practice and
+  successful jump/slide/steer rehearsals at all four movement upgrade levels.
+  Practice ends at 130 m, never loses its three hearts, and cannot enter the
+  reward transaction. Starting adventure afterward clears practice state.
+- Browser QA at 390 × 844 inspected the actual trail and single edge prompt.
+  A real-time keyboard run driven only by visible Jump now, Slide now and Steer
+  left prompts completed 3/3 moves. An unassisted run completed 0/3 without
+  ending early. The local save remained null after practice completion.
+- At 320 × 568, the success screen, Run the adventure, Practise again and camp
+  actions were readable and reachable. Rehearsal restarted at zero progress;
+  pause used unscored copy. Run the adventure restored normal points, three
+  hearts, region name and the first challenge, then paused normally.
+- These are actual browser input and rendering checks, not physical-device
+  performance or evidence that three practice moves teach every advanced feature.

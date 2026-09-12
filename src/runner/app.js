@@ -1,4 +1,5 @@
 import { createRun, act, step } from "./world.js";
+import {createPracticeRun,stepPractice,practiceCue} from './practice.js';
 import {RESUME_DURATION,resumeStep} from './resume.js';
 import {installBackupControls} from './backup-ui.js';
 import {installOfflineSupport} from './offline.js';
@@ -317,7 +318,7 @@ function start() {
   if(!graphicsReady){graphicsError();return;}
   // A results-screen retry is a rematch, not a new random obstacle layout.
   // Camp and help starts remain fresh adventures.
-  run = createRun(state === 'ended' ? run.seed : Date.now(), saved.upgrades);
+  run = createRun(state === 'ended' && !run.practice ? run.seed : Date.now(), saved.upgrades);
   run.puppy = saved.collection.puppy;
   run.appearance = { ...saved.collection };
   run.missions = missionPackFor(saved.challenges);
@@ -332,6 +333,7 @@ function start() {
   tone("yip");
 }
 function showOverlay(kind) {
+  $('practice-again').hidden = true;
   $("overlay").dataset.kind = kind;
   $("graphics-recovery").hidden = kind !== "graphics-error";
   $("home").hidden = kind === "graphics-error";
@@ -362,7 +364,7 @@ function showOverlay(kind) {
         : "The next great run is one tap away."
       : kind === "help"
         ? "Swipe anywhere on the trail, or use the buttons."
-        : "Leaving now won’t bank this run’s points or gifts.";
+        : run.practice ? "Practice is unscored. Leave whenever you like." : "Leaving now won’t bank this run’s points or gifts.";
   $("home").textContent = kind === 'paused' ? 'Leave this run' : 'Back to camp';
   $("overlay-primary").textContent =
     kind === "ended"
@@ -383,6 +385,17 @@ function resume() {
   $('scene').focus({preventScroll:true});
 }
 function finish() {
+  if (run.practice) {
+    showOverlay('ended');
+    for (const id of ['results','run-breakdown','run-highlights']) $(id).hidden = true;
+    $('overlay-label').textContent = 'NO PRESSURE. JUST PRACTICE.';
+    $('overlay-title').textContent = `${run.practice.correct} of 3 moves cleared`;
+    $('overlay-copy').textContent = 'Practice never changes your points, records or challenges. Rehearse again or head into the adventure.';
+    $('run-lesson').textContent = run.practice.correct === 3 ? 'Nice paws! You are ready to take these moves onto the adventure trail.' : 'Watch the edge prompt for jump and slide timing. For the last move, steer left instead of jumping.';
+    $('overlay-primary').textContent = 'Run the adventure ↗';
+    $('practice-again').hidden = false;
+    return;
+  }
   const receipt = bankRun(saved, run, run.missions);
   if (!receipt) return;
   showOverlay("ended");
@@ -424,6 +437,17 @@ function finish() {
   tone("finish");
 }
 $("play").onclick = start;
+$('practice-start').onclick = () => {
+  if (!graphicsReady) return;
+  start();
+  const appearance = run.appearance;
+  run = createPracticeRun(saved.upgrades);
+  run.puppy = saved.collection.puppy;
+  run.appearance = appearance;
+  run.missions = [currentMission];
+  missionAnnounced = true;
+};
+$('practice-again').onclick = () => $('practice-start').onclick();
 $("run-breakdown").addEventListener("toggle", () => {
   if ($("run-breakdown").open) $("run-breakdown").scrollIntoView({block:"start"});
 });
@@ -619,7 +643,8 @@ function frame(now) {
   if (state === "playing") {
     accumulator += resumeStep(run, dt);
     while (accumulator >= 1 / 120 && !run.ended) {
-      step(run, 1 / 120);
+      if (run.practice) stepPractice(run, 1 / 120);
+      else step(run, 1 / 120);
       accumulator -= 1 / 120;
     }
     for (const event of run.events) {
@@ -670,12 +695,12 @@ function frame(now) {
     if (Math.floor(run.time * 10) !== lastHud || run.ended) {
       lastHud = Math.floor(run.time * 10);
       $("distance").innerHTML = `${Math.floor(run.distance)}<small> m</small>`;
-      $("region-name").textContent = REGIONS[regionAt(run.distance)].name;
+      $("region-name").textContent = run.practice ? 'Practice · no penalties' : REGIONS[regionAt(run.distance)].name;
       setText('route-choice', run.choicePending!==null && run.choicePending-run.distance<100
         ? `GATES IN ${Math.max(0,Math.ceil(run.choicePending-run.distance))}m · ← Scenic: fewer obstacles · Challenge: more points →` : '');
       $("bones").textContent = run.bones;
       $("run-score").textContent =
-        `${run.score.toLocaleString()} pts${run.route && run.distance<run.route.until ? ` · ${run.route.kind==='challenge'?'CHALLENGE':'SCENIC'}` : ''}`;
+        run.practice ? `${run.practice.correct}/3 moves cleared` : `${run.score.toLocaleString()} pts${run.route && run.distance<run.route.until ? ` · ${run.route.kind==='challenge'?'CHALLENGE':'SCENIC'}` : ''}`;
       const progress = missionProgress(run, currentMission);
       $("mission-label").textContent =
         `${run.missions.indexOf(currentMission)+1}/3 · ${currentMission.title} · ${progress}/${currentMission.target} ${currentMission.unit}`;
@@ -692,7 +717,7 @@ function frame(now) {
         const next = run.missions[run.missions.indexOf(currentMission) + 1];
         if (next) { currentMission = next; missionAnnounced = false; }
       }
-      setText('cue', actionCue(run));
+      setText('cue', run.practice ? practiceCue(run) : actionCue(run));
       const fetchButton = $('fetch');
       $('scene').dataset.fetchUses = String(run.fetchUses);
       const ready = fetchReady(run);
@@ -716,6 +741,7 @@ function frame(now) {
       $("hearts").textContent =
         "♥ ".repeat(Math.max(0, run.hearts)) + "♡ ".repeat(3 - run.hearts);
       $("hearts").setAttribute("aria-label", `${run.hearts} hearts remaining`);
+      if (run.practice) { $('hearts').textContent = '∞'; $('hearts').setAttribute('aria-label','Practice: unlimited tries'); }
       $("power").innerHTML = [
         run.zipline
           ? `<span class="power-chip shield" aria-label="Zipline ride">🐾 ${Math.ceil(run.zipline.end-run.distance)}m<progress aria-label="Zipline distance remaining" max="140" value="${Math.max(0,run.zipline.end-run.distance)}"></progress></span>`

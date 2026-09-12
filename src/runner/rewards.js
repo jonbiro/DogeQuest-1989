@@ -5,7 +5,7 @@ import {bankMastery} from './mastery.js';
 // One completion transaction owns all record updates and earned currency.
 // Returning the original receipt also keeps repeated results renders stable.
 export function bankRun(profile, run, mission) {
-  if (!run.ended) return null;
+  if (!run.ended || run.practice) return null;
   if (run.receipt) return run.receipt;
   const personalBest = run.score > profile.best;
   profile.best = Math.max(profile.best, run.score);

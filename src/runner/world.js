@@ -105,6 +105,7 @@ function add(run, type, lane, at) {
   return object;
 }
 export function fillTrack(run) {
+  if (run.practice) return;
   if(run.choicePending!==null)return;
   // Mark upcoming turns independently from obstacle rows so the renderer can
   // telegraph them early even when generation resumes after a route choice.
@@ -294,7 +295,7 @@ export function step(run, dt) {
   const wasZooming = run.zoomies > 0;
   run.zoomies = Math.max(0, run.zoomies - dt);
   // Ease in and out; expiry cannot leave the puppy unprotected inside a row.
-  const targetSpeed = Math.min(36, 22 + run.distance / 90) * (run.zoomies > 0 ? 1.3 : 1);
+  const targetSpeed = run.practice ? 12 : Math.min(36, 22 + run.distance / 90) * (run.zoomies > 0 ? 1.3 : 1);
   run.speed += (targetSpeed - run.speed) * (1 - Math.exp(-6 * dt));
   if (wasZooming && run.zoomies === 0) {
     run.invulnerable = Math.max(run.invulnerable, 1.2);

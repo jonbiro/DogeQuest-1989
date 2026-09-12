@@ -1,5 +1,15 @@
 # Puppy adventure goal
 
+## Latest gameplay addition: optional practice trail
+
+How to play includes an optional, roughly eleven-second rehearsal at a gentle
+running pace: clear a log row, duck a gate row, then steer into an open lane.
+Jump and slide physics use the player's actual upgrades. Mistakes never end
+practice, practice never banks rewards, and results offer immediate rehearsal
+or a fresh scored adventure. Instructions use the existing edge dock, not an
+additional central banner. All three moves and the return to adventure were
+verified through visible browser controls.
+
 ## Latest delivered increment: reversible upgrades
 
 Each purchased level can be removed for its full original points price. Players

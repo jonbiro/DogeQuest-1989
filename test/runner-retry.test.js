@@ -37,4 +37,9 @@ test('results retry repeats the seed with a fresh simulation; camp starts a new 
     context.state=state;context.start();
     assert.equal(context.run.seed,987654);
   }
+  context.run.practice={correct:3};
+  context.state='ended';
+  context.start();
+  assert.equal(context.run.seed,987654,'practice completion starts a fresh adventure');
+  assert.equal(context.run.practice,undefined);
 });
