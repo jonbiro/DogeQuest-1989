@@ -1,5 +1,20 @@
 # River raft implementation status
 
+## River rehearsal
+
+River-rock mistakes now offer dedicated river steering practice instead of basic
+jump/slide lessons. The actual practice run uses the production encounter and raft
+physics at the existing 12 m/s practice pace, with automatic boarding, twelve bones,
+three steering beats, unlimited hearts and shore completion. Post-run advice teaches
+momentum and early steering; existing retry and return-to-trail controls are reused.
+This remains reachable only from a river mistake while the adventure feature is gated.
+
+Simulation tests follow the real cues through a complete clean crossing, collect all
+twelve bones, and verify banking cannot mutate an existing profile. A no-input run
+also completes without exhausting hearts and receives river-specific advice. Full
+build, distribution, lint and 440 tests pass; the final banking assertion additionally
+passes in the focused tests. The new lesson's rendered UI has not yet been checked.
+
 ## Movement and reservation foundation
 
 `rafts.js` supplies an exact damped steering oscillator, bounded banks and a

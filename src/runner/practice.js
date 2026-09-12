@@ -3,6 +3,7 @@ import {actionCue} from './guidance.js';
 import {ZIPLINE_FIRST,ZIPLINE_LENGTH} from './ziplines.js';
 import {cornerByIndex,turnPrompt} from './turns.js';
 import {courseAt,courseCue} from './courses.js';
+import {raftByIndex,raftEncounter} from './rafts.js';
 
 const LESSONS = [
   {at:35,type:'log',hint:'Logs ahead · wait for the cue'},
@@ -19,6 +20,7 @@ function moveName(run){return run.practice.kind==='jump'?'jumps':run.practice.ki
 export function practiceOffer(run) {
   if (!run.ended || run.practice || run.retired) return null;
   const mistake=run.lastMistake;
+  if(mistake?.raftHazard)return {kind:'raft',cornerIndex:0,label:'Practise river steering'};
   if (mistake?.type==='rock' && mistake.courseWeave)
     return {kind:'weave',cornerIndex:0,label:'Practise lane weaves'};
   if (mistake?.type==='gap') return {kind:'gap',cornerIndex:0,label:'Practise gap jumps'};
@@ -93,6 +95,16 @@ export function createZiplinePracticeRun(upgrades = {}) {
   run.speed=12;
   return run;
 }
+export function createRaftPracticeRun(upgrades = {}) {
+  const run=createRun(1989,upgrades),section=raftByIndex(0);
+  Object.assign(run,{raftPrototype:true,distance:section.approach,speed:12,
+    nextRow:Infinity,nextChoice:Infinity,nextZipline:Infinity,nextCorner:2,
+    choicePending:null,objects:[]});
+  run.previous={x:run.x,y:run.y,distance:run.distance};
+  run.objects=raftEncounter(section,true).map(object=>({...object,id:run.id++,used:false}));
+  run.practice={kind:'raft',start:run.distance,end:section.end+15,correct:0,outcomes:[],hits:0};
+  return run;
+}
 export function createTurnPracticeRun(upgrades = {}, cornerIndex = 0) {
   const run = createRun(1989, upgrades);
   const corner = cornerByIndex(cornerIndex === 1 ? 1 : 0);
@@ -106,6 +118,16 @@ export function createTurnPracticeRun(upgrades = {}, cornerIndex = 0) {
 }
 export function stepPractice(run, dt) {
   if (!run.practice || run.ended) return;
+  if(run.practice.kind==='raft') {
+    step(run,dt);
+    run.practice.hits+=run.events.filter(event=>event==='hit').length;
+    run.practice.outcomes=[Boolean(run.rafts),run.practice.hits===0,run.bones===12];
+    run.practice.correct=run.practice.outcomes.filter(Boolean).length;
+    run.hearts=3;run.fetchCharge=0;
+    run.events=run.events.filter(event=>!['hit','flow','end'].includes(event));
+    if(run.distance>=run.practice.end)run.ended=true;
+    return;
+  }
   if(run.practice.kind==='weave') {
     const course=run.course,checked=course.checked,clean=course.clean;
     step(run,dt);
@@ -170,6 +192,8 @@ export function stepPractice(run, dt) {
   if (run.distance >= (run.practice.kind==='gap' ? 55 : 130)) run.ended = true;
 }
 export function practiceCue(run) {
+  if(run.practice.kind==='raft')return run.rafts ? '✓ Shore reached · crossing complete'
+    : actionCue(run) || 'Follow the bone lanes · boarding is automatic';
   if(run.practice.kind==='weave') {
     if(run.practice.feedback?.until>run.time)return run.practice.feedback.text;
     return courseCue(run) || (run.practice.index===3?'Weave practice complete':'Open lane ahead · ×2 means two swipes');
@@ -201,12 +225,18 @@ export function practiceCue(run) {
 }
 
 export function practiceProgress(run) {
+  if(run.practice.kind==='raft')return `${run.bones}/12 river bones · ${run.rafts?'landed':'steer around rocks'}`;
   if(run.practice.kind==='weave')return `${run.practice.correct}/3 weaves cleared`;
   if (run.practice.kind==='gap') return `${run.practice.correct}/1 gap cleared`;
   if (run.practice.kind==='turn') return `${run.practice.direction} corner · ${run.practice.correct}/1 cleared`;
   return run.practice.kind==='zipline' ? `${run.bones}/18 high bones · ${run.ziplines ? 'landed' : run.practice.caught ? 'cable caught' : 'catch the cable'}` : `${run.practice.correct}/3 ${moveName(run)} cleared`;
 }
 export function practiceResult(run) {
+  if(run.practice.kind==='raft')return {
+    title:`${run.bones} of 12 river bones`,
+    lesson:run.practice.hits ? 'Steer earlier toward the open lane. The raft carries momentum; jumping and sliding cannot clear river rocks. Try again without spending hearts.'
+      : 'Follow the bone lanes with swipes, buttons or enabled tilt. Boarding and landing are automatic; jump and slide return at shore. Practice does not award points.',
+  };
   if(run.practice.kind==='weave')return {
     title:`${run.practice.correct} of 3 weaves cleared`,
     lesson:run.practice.correct===3

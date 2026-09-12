@@ -1,5 +1,5 @@
 import { createRun, act, step } from "./world.js";
-import {createPracticeRun,createZiplinePracticeRun,createTurnPracticeRun,createGapPracticeRun,createWeavePracticeRun,stepPractice,practiceCue,practiceResult,practiceOffer} from './practice.js';
+import {createPracticeRun,createZiplinePracticeRun,createRaftPracticeRun,createTurnPracticeRun,createGapPracticeRun,createWeavePracticeRun,stepPractice,practiceCue,practiceResult,practiceOffer} from './practice.js';
 import {runHudLabels} from './hud-labels.js';
 import {courseProgress,activeCourse} from './courses.js';
 import {RESUME_DURATION,resumeStep} from './resume.js';
@@ -546,7 +546,8 @@ function startPractice(kind, cornerIndex=0) {
   const returnTrail=rematchFor(run,state==='ended');
   start();
   const appearance = run.appearance;
-  run = kind==='weave' ? createWeavePracticeRun(saved.upgrades)
+  run = kind==='raft' ? createRaftPracticeRun(saved.upgrades)
+    : kind==='weave' ? createWeavePracticeRun(saved.upgrades)
     : kind==='gap' ? createGapPracticeRun(saved.upgrades)
     : kind==='turn' ? createTurnPracticeRun(saved.upgrades,cornerIndex)
     : kind==='zipline' ? createZiplinePracticeRun(saved.upgrades) : createPracticeRun(saved.upgrades,kind);
