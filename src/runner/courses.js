@@ -72,3 +72,14 @@ export function courseCue(run) {
       beat.at-run.distance > run.speed*.8 || run.lane === beat.safeLane) return '';
   return beat.safeLane < run.lane ? '← WEAVE LEFT' : '→ WEAVE RIGHT';
 }
+
+export function activeCourse(run) {
+  const course=run.course;
+  return !run.practice && course && run.distance>=course.start && run.distance<course.end ? course : null;
+}
+export function courseProgress(run) {
+  const course=activeCourse(run);
+  if (!course) return null;
+  return {label:`${course.name} · ${course.clean}/3 clean · ${course.clean===course.checked?'+180 possible':'bonus missed'}`,
+    value:course.clean,max:course.beats.length};
+}

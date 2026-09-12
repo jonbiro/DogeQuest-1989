@@ -1,6 +1,7 @@
 import { createRun, act, step } from "./world.js";
 import {createPracticeRun,createZiplinePracticeRun,createTurnPracticeRun,createGapPracticeRun,stepPractice,practiceCue,practiceProgress,practiceResult,practiceOffer} from './practice.js';
 import {scoreChaseLabel} from './score-chase.js';
+import {courseProgress,activeCourse} from './courses.js';
 import {RESUME_DURATION,resumeStep} from './resume.js';
 import {installBackupControls} from './backup-ui.js';
 import {installOfflineSupport} from './offline.js';
@@ -296,7 +297,7 @@ function toast(message, duration = 1.5, priority = 0) {
 }
 function syncDock() {
   const mode = dockMode({cue:$("cue").textContent,route:$("route-choice").textContent,
-    notice:$("toast").textContent,missionComplete:missionAnnounced});
+    notice:$("toast").textContent,missionComplete:missionAnnounced && !activeCourse(run)});
   for (const id of ['cue','route-choice','toast','mission-summary']) $(id).hidden = mode !== id;
   $("mission-hud").hidden = state !== 'playing' || !mode;
 }
@@ -781,10 +782,12 @@ function frame(now) {
           ? `${run.score.toLocaleString()} pts · ${run.route.kind==='challenge'?'CHALLENGE':'SCENIC'}`
           : scoreChaseLabel(run.score, saved.best);
       const progress = missionProgress(run, currentMission);
-      $("mission-label").textContent =
+      const courseStatus=courseProgress(run);
+      $("mission-label").textContent = courseStatus?.label ??
         `${run.missions.indexOf(currentMission)+1}/3 · ${currentMission.title} · ${progress}/${currentMission.target} ${currentMission.unit}`;
-      $("mission-progress").max = currentMission.target;
-      $("mission-progress").value = progress;
+      $("mission-progress").max = courseStatus?.max ?? currentMission.target;
+      $("mission-progress").value = courseStatus?.value ?? progress;
+      $("mission-progress").setAttribute('aria-label',courseStatus?'Clean course moves':'Challenge progress');
       if (progress === currentMission.target && !missionAnnounced) {
         missionAnnounced = true;
         toast(

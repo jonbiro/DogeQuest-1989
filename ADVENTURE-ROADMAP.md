@@ -1,5 +1,12 @@
 # Puppy adventure goal
 
+## Understandable clean-course rewards
+
+During regional courses, the existing lower progress slot shows clean moves and
+whether the +180 bonus remains possible. Action cues, route decisions and notices
+keep priority. Normal challenge progress returns after the course; no extra panel
+or central banner is introduced, and challenge rewards continue independently.
+
 ## Readable consecutive jumps
 
 Near the end of a jump, the edge dock can now cue a separate upcoming jump

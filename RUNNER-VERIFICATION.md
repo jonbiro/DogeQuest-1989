@@ -1,5 +1,21 @@
 # Runner verification
 
+## Clean-course progress in the existing dock (2026-09-12)
+
+- Active courses reuse the normal challenge-progress slot to report clean moves
+  and honest +180 eligibility; a missed beat reports bonus missed. The progress
+  meter changes its accessible name to Clean course moves, then restores Challenge
+  progress afterward. Challenge completion calculations remain independent.
+- A 320x568 actual-app run completed Root scramble while synthetic keyboard
+  events followed rendered cues. The display advanced through 1/3, 2/3 and 3/3
+  clean, with one course credited. Action prompts were never hidden by course
+  progress. The dock occupied x=16..304/y=432.5..472 without overlapping controls.
+  At course end the original challenge label and meter name returned.
+- No browser warnings/errors; run paused unbanked, save remained absent, tab
+  closed and viewport restored. Unit checks cover failed eligibility and inactive,
+  finished and practice states. All 240 tests/build/lint/dist checks pass. This is
+  browser/simulation evidence rather than physical-phone usability evidence.
+
 ## Consecutive-jump guidance timing (2026-09-12)
 
 - A 150ms delayed-cue simulation exposed late takeoffs on seeds 5, 7 and 8.
