@@ -1,5 +1,14 @@
 # Puppy adventure goal
 
+## Replay links without accounts
+
+Run details now include a copyable, versioned link to the same starting trail.
+Opening it selects shared-trail mode; camp can switch back to random runs.
+Practice does not consume the selected trail, and results retry it normally.
+Only the layout seed is shared, not saved progress or personal URL parameters.
+Players retain their own upgrades and route choices can change later obstacles;
+this is a friendly replay tool, not a ranked or equal-loadout leaderboard.
+
 ## Latest gameplay addition: optional practice trail
 
 How to play includes an optional, roughly eleven-second rehearsal at a gentle

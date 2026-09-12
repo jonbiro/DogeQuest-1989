@@ -505,6 +505,9 @@ footer .text-button {
 #power:empty {
   display: none;
 }
+#trail-link { width: 100%; min-width: 0; box-sizing: border-box; margin-bottom: 8px; padding: 10px; color: var(--lime); background: #102a28; border: 1px solid #bcece944; border-radius: 8px; font: inherit; }
+.shared-notice { grid-column: 1 / -1; margin: 0; padding: 4px 10px; border-radius: 10px; background: #102a28e6; color: #d9fff4; font-size: 11px; }
+#shared-random { display: block; min-height: 44px; padding: 4px 0; border: 0; background: none; color: var(--lime); font: inherit; text-decoration: underline; cursor: pointer; }
 .power-chip {
   display: block;
   padding: 6px 8px;

@@ -1,5 +1,24 @@
 # Runner verification
 
+## Shareable starting trails (2026-09-12)
+
+- Added versioned, validated replay links in expanded run details. Shared mode
+  is explicit at camp and can be switched off without reloading or changing
+  progress. Copy is user-triggered, with a selectable-field fallback when the
+  clipboard is unavailable; the modal focus trap includes that field.
+- All 225 tests, build, lint and artifact checks passed. Tests cover 32-bit seed normalization (including
+  timestamp seeds), matching generated objects over 3,000 simulation steps,
+  malformed/duplicate/incompatible codes, unrelated URL data removal, shared
+  starts/retries/practice exit and failed-clipboard fallback.
+- At 320x568, browser controls opened a shared trail, started and voluntarily
+  finished it, exposed the matching replay link and reported successful copy.
+  Link and primary actions remained reachable. Switching to random removed the
+  trail parameter/banner and restored the puppy's normal Run label. The local
+  test's initially absent profile was restored after its zero-score finish.
+- No account, leaderboard, invitation transmission or saved-profile transfer
+  was added. Links reproduce a starting layout for this generator version;
+  upgrades and later route choices remain player-specific.
+
 ## Power-display start-path correction (2026-09-12)
 
 - Follow-up integration review found the old start reset still cleared `#power`

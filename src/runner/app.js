@@ -11,6 +11,7 @@ import { bankRun } from "./rewards.js";
 import {masteryFrom,masteryCards} from './mastery.js';
 import {fetchReady} from './ability.js';
 import {createPowerHud} from './power-hud.js';
+import {readTrailSeed,trailLink} from './trail-link.js';
 import {REGIONS,regionAt} from "./regions.js";
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
@@ -21,6 +22,9 @@ import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,isJumpTap} from "./ge
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
 const $ = (id) => document.getElementById(id);
 const updatePowerHud = createPowerHud($('power'));
+let sharedSeed = readTrailSeed(window.location.search);
+$('shared-trail').hidden = sharedSeed === null;
+const playLabel = () => sharedSeed === null ? `Run with ${PUPPIES[saved.collection.puppy].name} ↗` : 'Run shared trail ↗';
 let run = createRun(),
   state = "menu",
   last = 0,
@@ -68,7 +72,7 @@ sound=saved.preferences.sound;
 reducedMotion=saved.preferences.reducedMotion;
 function updateRecords() {
   updateSaveNotice();
-  $("play").textContent = `Run with ${PUPPIES[saved.collection.puppy].name} ↗`;
+  $("play").textContent = playLabel();
   $("buddy").querySelector("strong").textContent = `${PUPPIES[saved.collection.puppy].name}.`;
   $("buddy").querySelector("p").textContent = PUPPIES[saved.collection.puppy].description;
   $("best").innerHTML =
@@ -320,8 +324,8 @@ function setState(next) {
 function start() {
   if(!graphicsReady){graphicsError();return;}
   // A results-screen retry is a rematch, not a new random obstacle layout.
-  // Camp and help starts remain fresh adventures.
-  run = createRun(state === 'ended' && !run.practice ? run.seed : Date.now(), saved.upgrades);
+  // Camp/help use random adventures unless an explicit shared trail is active.
+  run = createRun(state === 'ended' && !run.practice ? run.seed : sharedSeed ?? Date.now(), saved.upgrades);
   run.puppy = saved.collection.puppy;
   run.appearance = { ...saved.collection };
   run.missions = missionPackFor(saved.challenges);
@@ -403,6 +407,8 @@ function finish() {
   }
   const receipt = bankRun(saved, run, run.missions);
   if (!receipt) return;
+  $('trail-link').value = trailLink(window.location.href,run.seed);
+  $('trail-copy-status').textContent = '';
   showOverlay("ended");
   if (run.retired) {
     $('overlay-label').textContent = 'A GOOD RUN. ON YOUR TERMS.';
@@ -435,7 +441,7 @@ function finish() {
   }
   $("run-breakdown-copy").textContent = `${$("overlay-copy").textContent} ${$("run-highlights").textContent}`;
   $("run-breakdown-copy").textContent += ` Best clean-move streak: ${run.bestCleanStreak}. Clean-move bonuses: +${run.flowPoints} points (included in score).`;
-  $("overlay-copy").textContent = `${receipt.personalBest ? 'New personal best! ' : ''}Score banked. Retry the same trail, or head to camp for a fresh one.`;
+  $("overlay-copy").textContent = `${receipt.personalBest ? 'New personal best! ' : ''}Score banked. Retry the same trail, or head to camp ${sharedSeed === null ? 'for a fresh one' : 'to switch to random trails'}.`;
   const nextBond=dogCard?.tiers.find(tier=>dogCard.current<tier.target);
   $("run-highlights").textContent = nextBond
     ? `Next: ${dogCard.name} · ${Math.max(0,nextBond.target-dogCard.current)} clean clears or turns to ${nextBond.name}`
@@ -446,6 +452,23 @@ function finish() {
   tone("finish");
 }
 $("play").onclick = start;
+$('shared-random').onclick = () => {
+  sharedSeed=null;
+  const url=new window.URL(window.location.href);url.searchParams.delete('trail');
+  window.history.replaceState(null,'',url);
+  $('shared-trail').hidden=true;updateRecords();$('play').focus({preventScroll:true});
+};
+$('trail-copy').onclick = async () => {
+  const button=$('trail-copy'),field=$('trail-link');
+  button.disabled=true;
+  try {
+    await navigator.clipboard.writeText(field.value);
+    $('trail-copy-status').textContent='Trail link copied. Send it wherever you like.';
+  } catch {
+    field.focus();field.select();
+    $('trail-copy-status').textContent='Copy the selected link to share this trail.';
+  } finally {button.disabled=false;}
+};
 function startPractice(kind) {
   if (!graphicsReady) return;
   start();
@@ -530,7 +553,7 @@ window.addEventListener("keydown", (event) => {
   if (event.code === 'Space' && document.activeElement?.closest?.('[data-action]')) return;
   if (event.key === "Tab" && !$("overlay").hidden) {
     const buttons = [
-      ...$("overlay").querySelectorAll("button:not(:disabled), a[href], summary"),
+      ...$("overlay").querySelectorAll("button:not(:disabled), a[href], summary, input:not(:disabled)"),
     ].filter((button) => !button.closest("[hidden]") && button.getClientRects().length > 0);
     if (event.shiftKey && document.activeElement === buttons[0]) {
       event.preventDefault();
@@ -661,7 +684,7 @@ try {
   view = createView($("scene"));
   graphicsReady=true;
   $("play").disabled = false;
-  $("play").textContent = `Run with ${PUPPIES[saved.collection.puppy].name} ↗`;
+  $("play").textContent = playLabel();
 } catch {
   graphicsError();
 }

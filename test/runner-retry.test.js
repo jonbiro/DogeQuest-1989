@@ -13,7 +13,7 @@ test('results retry repeats the seed with a fresh simulation; camp starts a new 
   assert.ok(start>=0 && end>start);
   const original=createRun(1989);
   original.hearts=0;original.ended=true;original.score=250;
-  const context={run:original,state:'ended',graphicsReady:true,
+  const context={run:original,state:'ended',graphicsReady:true,sharedSeed:null,
     saved:{upgrades:{},collection:{puppy:'mochi'},challenges:0},
     createRun,Date:{now:()=>987654},missionPackFor,
     setText:()=>{},setState:value=>{context.state=value;},
@@ -42,4 +42,12 @@ test('results retry repeats the seed with a fresh simulation; camp starts a new 
   context.start();
   assert.equal(context.run.seed,987654,'practice completion starts a fresh adventure');
   assert.equal(context.run.practice,undefined);
+  context.sharedSeed=0;
+  for(const state of ['menu','help']) {
+    context.state=state;context.start();assert.equal(context.run.seed,0);
+  }
+  context.run.practice={correct:3};context.state='ended';context.start();
+  assert.equal(context.run.seed,0,'practice does not consume the shared trail');
+  context.sharedSeed=null;context.state='menu';context.start();
+  assert.equal(context.run.seed,987654,'leaving shared mode restores random starts');
 });
