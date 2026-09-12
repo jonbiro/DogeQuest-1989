@@ -6,6 +6,23 @@ import {bankRun} from '../src/runner/rewards.js';
 import {collectionFrom} from '../src/runner/collection.js';
 import {eventNotice} from '../src/runner/guidance.js';
 
+test('collectible bonus detail records actual awards once without changing the total',()=>{
+  const run=createRun(1);
+  Object.assign(run,{nextRow:Infinity,nextChoice:Infinity,nextZipline:Infinity,shield:1,double:10});
+  run.objects=['gem','gift','heart','shield','magnet'].map((type,id)=>({id,type,lane:1,at:.1}));
+  step(run,1/120);
+  assert.equal(run.pickupBonusPoints,550);
+  assert.equal(run.bonusPoints,550);
+  assert.equal(run.score,Math.floor(run.distance)+550);
+  assert.match(scoreBreakdown(run),/550 from gems, gifts and spare pickups/);
+  step(run,1/120);assert.equal(run.pickupBonusPoints,550);
+  run.hearts=1;run.shield=0;
+  run.objects=['heart','shield'].map((type,id)=>({id:10+id,type,lane:1,at:run.distance+.1}));
+  step(run,1/120);
+  assert.equal(run.pickupBonusPoints,550,'healing and new protection are not point awards');
+  assert.equal(createRun(1).pickupBonusPoints,0);
+});
+
 test('separate ten-bone streaks retain their actual bonuses through misses and banking',()=>{
   for(const boosted of [false,true]) {
     const run=createRun(1,{value:boosted?3:0});

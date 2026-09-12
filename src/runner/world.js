@@ -48,6 +48,7 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     fetchUses: 0,
     smashes: 0,
     bonusPoints: 0,
+    pickupBonusPoints: 0,
     bonePoints: 0,
     streakPoints: 0,
     lane: 1,
@@ -417,6 +418,7 @@ export function step(run, dt) {
     ) {
       object.used = true;
       if (object.type === "magnet") run.magnet = 10 + run.upgrades.magnet * 3;
+      const bonusesBeforePickup=run.bonusPoints;
       if (object.type === "shield") {
         if (run.shield) { run.bonusPoints += 100; run.events.push('spare-shield'); }
         else run.shield = 1;
@@ -429,6 +431,7 @@ export function step(run, dt) {
         else { run.bonusPoints += 100; run.events.push('full-heart'); }
       }
       if (object.type === 'gift') { run.gifts++;run.bonusPoints+=100; }
+      run.pickupBonusPoints+=run.bonusPoints-bonusesBeforePickup;
       run.events.push(object.type);
       run.effects.push({
         id: object.id,

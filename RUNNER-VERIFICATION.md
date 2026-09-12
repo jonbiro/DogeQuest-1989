@@ -1,5 +1,14 @@
 # Runner verification
 
+## Collectible score breakdown (2026-09-12)
+
+- Expanded results identify the existing bonus points from gems, gifts and
+  spare pickups. This is run-local accounting only, not a new currency or award.
+- Regression collects a gem, gift, full-health heart and spare shield together:
+  550 points are recorded once. Later healing/new protection do not inflate
+  that detail, and a fresh run resets it. Total scoring stays unchanged.
+- Full build, distribution verification, lint and all 349 tests passed.
+
 ## Visible spare-pickup rewards (2026-09-12)
 
 - Full-health hearts and already-active shields now explain their existing
