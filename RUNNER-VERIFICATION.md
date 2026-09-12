@@ -1,5 +1,19 @@
 # Runner verification
 
+## Course recovery feedback (2026-09-12)
+
+- Completing two of three course beats now awards 60 points; a perfect course
+  retains 180 points and is still the only result that earns regional mastery.
+  The existing progress label shows the remaining possible reward and switches
+  to “at finish” once the beats are checked. Feedback uses the existing quiet
+  notice area, with no additional center-screen overlay.
+- Input-driven simulations at 60, 120 and 240 Hz deliberately miss the middle
+  weave, recover for the third, finish with two hearts and bank the 60-point
+  bonus exactly once. Additional tests cover zero through three clean beats,
+  delayed payout, progress text and the ordinary score total.
+- Build, distribution verification, lint and all 327 tests passed. This pass
+  verifies game logic and feedback strings, not new hands-on device coverage.
+
 ## Post-overhaul endurance and repeat-lap allocation check (2026-09-12)
 
 - The old long-run fixture stopped at obsolete resource limits (5 textures,

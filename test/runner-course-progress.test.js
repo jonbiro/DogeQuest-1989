@@ -7,6 +7,12 @@ test('course progress reports clean moves and honest bonus eligibility only duri
   run.course.checked=2;run.course.clean=2;
   assert.match(courseProgress(run).label,/2\/3 clean.*180 possible/);
   run.course.clean=1;
+  assert.match(courseProgress(run).label,/1\/3 clean.*60 possible/);
+  run.course.checked=3;run.course.clean=2;
+  assert.match(courseProgress(run).label,/2\/3 clean.*60 at finish/);
+  run.course.clean=3;
+  assert.match(courseProgress(run).label,/3\/3 clean.*180 at finish/);
+  run.course.clean=1;
   assert.match(courseProgress(run).label,/1\/3 clean.*bonus missed/);
   for(const distance of [199,300]){run.distance=distance;assert.equal(courseProgress(run),null);}
   run.distance=210;run.practice={};assert.equal(courseProgress(run),null);

@@ -6,6 +6,7 @@ const BEAT_OFFSETS = [0,35,70];
 export const COURSE_RECOVERY = 30;
 export const COURSE_LENGTH = BEAT_OFFSETS.at(-1) + COURSE_RECOVERY;
 export const COURSE_BONUS = 180;
+export const COURSE_RECOVERY_BONUS = 60;
 export const COURSES = [
   {name:'Root scramble', types:['log','branch','log']},
   {name:'Canyon crossings', types:['gap','log','gap']},
@@ -64,6 +65,9 @@ export function advanceCourse(run, lanes) {
       run.regionalCourses[course.region]++;
       run.bonusPoints += COURSE_BONUS;
       run.events.push('course-complete');
+    } else if (course.beats.length === 3 && course.clean === 2) {
+      run.bonusPoints += COURSE_RECOVERY_BONUS;
+      run.events.push('course-recovery');
     }
     run.course = null;
   }
@@ -86,6 +90,11 @@ export function activeCourse(run) {
 export function courseProgress(run) {
   const course=activeCourse(run);
   if (!course) return null;
-  return {label:`${course.name} · ${course.clean}/3 clean · ${course.clean===course.checked?'+180 possible':'bonus missed'}`,
+  const total=course.beats.length;
+  const possible=course.clean+total-course.checked;
+  const bonus=course.clean===course.checked ? COURSE_BONUS
+    : total===3&&possible>=2 ? COURSE_RECOVERY_BONUS : 0;
+  const reward=bonus ? `+${bonus} ${course.checked===total?'at finish':'possible'}` : 'bonus missed';
+  return {label:`${course.name} · ${course.clean}/${total} clean · ${reward}`,
     value:course.clean,max:course.beats.length};
 }

@@ -77,6 +77,7 @@ export function eventNotice(event, run) {
     'route-challenge': {text: 'Challenge trail · +60 per clear', priority: 1},
     'zipline-end': {text: 'Zipline complete · +250', priority: 1},
     'course-complete': {text: 'Clean regional course · +180', priority: 1},
+    'course-recovery': {text: 'Strong finish · 2/3 clean · +60', priority: 1},
   };
   return notices[event] || null;
 }
