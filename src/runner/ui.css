@@ -1098,6 +1098,10 @@ header {
   right:max(5%,calc(var(--safe-right) + 12px));
 }
 @media (orientation: landscape) and (max-height: 340px) {
+  .menu { max-height: calc(80% - var(--safe-bottom) - 8px); overflow-y: auto; overscroll-behavior: contain; }
+  .menu .eyebrow { display: none; }
+  .menu h1 { font-size: 32px; letter-spacing: -1.5px; margin: 6px 0; }
+  .menu .start-actions { margin-top: 8px; }
   #mission-hud {
     top: calc(94px + var(--safe-top));
     padding-block: 5px;

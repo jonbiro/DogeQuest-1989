@@ -1,5 +1,18 @@
 # Runner verification
 
+## Short-screen shared-camp reachability (2026-09-12)
+
+- Browser measurement reproduced clipped clubhouse/upgrades controls in shared
+  mode at 844x320: their bottom edge was 361px, below the viewport. Below 340px
+  landscape height, camp now uses a smaller, readable title, omits the decorative
+  eyebrow and permits vertical menu scrolling as a fallback. Gameplay and
+  portrait styling are unchanged.
+- At 844x320 the final action bottom is 308.44px and the menu requires no scroll.
+  At 844x280 the browser successfully scrolled to and opened Upgrades. At
+  320x568 portrait the title remains 51.2px and all action bottoms are within
+  499.3px. No purchases or profile writes were made. Temporary tab/viewport
+  settings were cleaned up. These are browser viewport checks, not native zoom.
+
 ## Mixed-action course expansion (2026-09-12)
 
 - Added Fern dash (jump/right/duck), Ridge switch (gap/left/gap), and Moonlit
