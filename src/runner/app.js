@@ -11,7 +11,7 @@ import { UPGRADES, levels, price, purchase, refundUpgrade } from "./progression.
 import { missionFor, missionProgress, missionTip, missionPackFor } from "./missions.js";
 import { bankRun } from "./rewards.js";
 import {resultRecord,resultChallenge} from './result-record.js';
-import {masteryFrom,masteryCards} from './mastery.js';
+import {masteryFrom,masteryCards,orderedMasteryCards} from './mastery.js';
 import {fetchReady} from './ability.js';
 import {createPowerHud} from './power-hud.js';
 import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLink} from './trail-link.js';
@@ -119,8 +119,7 @@ function kennel() {
   content.append(categories);
   const passport=document.createElement('section');
   passport.id='trail-passport';
-  const cards=masteryCards(saved.mastery);
-  cards.sort((a,b)=>Number(b.id===`dog-${saved.collection.puppy}`)-Number(a.id===`dog-${saved.collection.puppy}`));
+  const cards=orderedMasteryCards(saved.mastery,saved.collection.puppy);
   const collected=cards.reduce((sum,card)=>sum+card.tiers.filter(tier=>card.current>=tier.target).length,0);
   const masteryIntro=document.createElement('p');
   masteryIntro.textContent='Your next milestone comes first. Finish runs to bank progress and earn permanent stamps and upgrade points.';
@@ -158,7 +157,7 @@ function kennel() {
     meter.setAttribute('aria-label',`${card.name}: ${status.textContent}`);
     section.append(title,status,meter,badges);
     if(card.tip){const tip=document.createElement('p');tip.textContent=card.tip;section.append(tip);}
-    (isCurrent?passport:otherCards).append(section);
+    (card===cards[0]?passport:otherCards).append(section);
   }
   passport.append(otherCards,masteryIntro);
   for (const [kind, catalog, title] of [["puppy", PUPPIES, "Meet the puppies"], ["costume", COSTUMES, "Dress for adventure"]]) {

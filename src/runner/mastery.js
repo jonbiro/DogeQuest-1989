@@ -42,6 +42,16 @@ export function masteryCards(value) {
   ];
 }
 
+export function orderedMasteryCards(value,puppy) {
+  const cards=masteryCards(value);
+  const progress=card=>{
+    const next=card.tiers.find(tier=>card.current<tier.target);
+    return next?card.current/next.target:-1;
+  };
+  return cards.sort((a,b)=>progress(b)-progress(a)||
+    Number(b.id===`dog-${puppy}`)-Number(a.id===`dog-${puppy}`));
+}
+
 // Called only by the one-shot completed-run transaction. Counters are the
 // entitlement record: crossing a threshold pays once, never again on reload.
 export function bankMastery(profile,run) {

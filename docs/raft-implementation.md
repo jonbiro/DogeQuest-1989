@@ -1,5 +1,15 @@
 # River raft implementation status
 
+## Finding the next reward
+
+The passport now features the unfinished milestone with the highest fraction of
+its next target completed; ties prefer the equipped puppy. Completed collections
+remain available in the expandable group. A mocked, storage-isolated profile at
+320 × 568 showed River explorer at 9/10 and +600 points above the fold, with the
+correct 2/27 stamp total and no browser errors. All 447 checks passed, including
+ordering, ties, completed collections and input immutability. This ordering does
+not claim that different activities take equal time to complete.
+
 ## Water contact
 
 A short, surface-bound V wake now trails the occupied raft. It follows the
