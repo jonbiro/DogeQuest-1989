@@ -28,6 +28,7 @@ import {createSurfaceTexture} from './surface.js';
 import {createWaterSurface} from './water.js';
 import {BANK_SURFACE_Y} from './terrain.js';
 import {trailColors,sampleTrailColor} from './trail-palette.js';
+import {createShieldMaterial} from './shield-material.js';
 
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -496,13 +497,7 @@ export function createView(canvas) {
   scene.add(shadow);
   const aura = new THREE.Mesh(
     new THREE.SphereGeometry(1.4, 20, 12),
-    new THREE.MeshBasicMaterial({
-      color: "#218dae",
-      wireframe: false,
-      transparent: true,
-      opacity: 0.18,
-      depthWrite: false,
-    }),
+    createShieldMaterial(),
   );
   aura.position.y = 0.9;
   dog.add(aura);

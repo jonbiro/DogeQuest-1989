@@ -1,5 +1,16 @@
 # Runner verification
 
+## Readable protective shield (2026-09-12)
+
+- Replaced the flat translucent blue shell with a view-dependent teal rim and
+  nearly clear center. Uses the existing sphere, one draw, no texture, no
+  animation, and depthWrite disabled; the dog stays visible through the shield.
+- The first pale rim was rejected after portrait inspection because it blended
+  into light paving. The darker revised rim was inspected at 390 × 844 with
+  Mochi on the forest trail, with no shader errors.
+- The 24 km browser rendering fixture retained its 32 geometry / 8 texture /
+  238 draw / 107 object peaks and stable repeat-lap resources.
+
 ## Six coordinated trail palettes (2026-09-12)
 
 - Each visual area now colors the paving, with the same distance-based blend
