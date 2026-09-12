@@ -2,6 +2,8 @@
 export function scoreBreakdown(run) {
   const format=value=>Math.floor(value||0).toLocaleString();
   const included=[];
+  if(run.rafts>0)included.push(`${format(run.rafts*250)} from river crossings`);
+  if(run.ziplines>0)included.push(`${format(run.ziplines*250)} from zipline rides`);
   if(run.streakPoints>0)included.push(`${format(run.streakPoints)} from bone streaks`);
   if(run.flowPoints>0)included.push(`${format(run.flowPoints)} from clean-move streaks`);
   if(run.pickupBonusPoints>0)included.push(`${format(run.pickupBonusPoints)} from gems, gifts and spare pickups`);

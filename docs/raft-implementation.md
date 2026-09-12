@@ -219,3 +219,14 @@ historical versions 1/2/3 to survive full link round trips and preserve the chos
 generator version, including zero and maximum seeds. Unknown/noncanonical versions
 remain rejected. Full checks passed with 432 tests. CURRENT remains 3 and the
 river remains disabled; this removes a rollout hazard without enabling it early.
+
+## Banking integration
+
+Three regression tests now connect a real simulated dismount to `bankRun`: the
+250-point crossing enters the score once, an unfinished run cannot bank, repeated
+receipt reads do not pay again, ended/retired state before shore cannot fabricate
+completion, and a practice-marked run cannot alter the profile. The practice test
+checks the shared banking guard; it is not a claim that raft practice UI exists.
+Score-source text now identifies river and zipline bonuses as already included.
+All 435 tests and full build/lint/distribution checks passed. This does not replace
+the pending actual pause/retirement UI and native performance checks.
