@@ -14,6 +14,7 @@ import { createMochiModel } from "./mochi-model.js";
 import { isBridge } from "./bridges.js";
 import { ziplineAt, ZIPLINE_HEIGHT } from "./ziplines.js";
 import {createPuppyFramer} from './framing.js';
+import {createQualityController} from './quality.js';
 
 // Shared low-poly geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -22,7 +23,8 @@ export function createView(canvas) {
     antialias: true,
     powerPreference: "high-performance",
   });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  const quality = createQualityController(window.devicePixelRatio || 1);
+  renderer.setPixelRatio(quality.ratio);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
@@ -680,8 +682,6 @@ export function createView(canvas) {
   }
   resize();
   window.addEventListener("resize", resize);
-  let slowFrames = 0,
-    qualityReduced = false;
   let visualRun = null,
     pose = 1,
     lean = 0,
@@ -969,11 +969,9 @@ export function createView(canvas) {
         camera.lookAt(cameraX * (camera.aspect < 0.85 ? 0.4 : 0.12) + look.x * .3, 0.75 + cameraLift + look.y * .65, -13);
         puppyFrame=framePuppy(camera,dog.position);
       }
-      if (state === "playing" && dt > 0.025) slowFrames++;
-      else slowFrames = Math.max(0, slowFrames - 1);
-      if (slowFrames > 100 && !qualityReduced) {
-        renderer.setPixelRatio(1);
-        qualityReduced = true;
+      const nextRatio = quality.sample(dt, state === 'playing');
+      if (nextRatio !== null) {
+        renderer.setPixelRatio(nextRatio);
         resize();
       }
       renderer.render(scene, camera);

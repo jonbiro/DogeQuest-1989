@@ -9,6 +9,28 @@ import {UPGRADES} from '../src/runner/progression.js';
 import {turnPrompt,upcomingCorner,cornersBetween} from "../src/runner/turns.js";
 import * as THREE from 'three';
 import {createMochiModel} from '../src/runner/mochi-model.js';
+export async function qualityRecoveryCheck() {
+  if(window.devicePixelRatio<=1) throw Error('Use a high-density viewport for this fixture');
+  const canvas=document.createElement('canvas');
+  canvas.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;z-index:9999';
+  document.body.append(canvas);
+  const view=createView(canvas),run=createRun(1989);
+  const capture=()=>({width:canvas.width,height:canvas.height,...view.diagnostics()});
+  view.draw(run,0,'playing',true,1/60);
+  const initial=capture();
+  for(let i=0;i<100;i++) view.draw(run,0,'playing',true,1/30);
+  const reduced=capture();
+  for(let i=0;i<1700;i++) {
+    view.draw(run,0,'playing',true,1/60);
+    if(i%100===0) await new Promise(requestAnimationFrame);
+  }
+  const recovered=capture();
+  if(reduced.width>=initial.width || recovered.width!==initial.width || recovered.height!==initial.height)
+    throw Error('Drawing buffer did not reduce and recover');
+  if(initial.geometries!==recovered.geometries || initial.textures!==recovered.textures)
+    throw Error('Quality change created additional scene resources');
+  return {initial,reduced,recovered,syntheticFrameTimes:true};
+}
 export function mochiPortraitPreview() {
   const canvas=document.createElement('canvas');
   canvas.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;z-index:9999';document.body.append(canvas);

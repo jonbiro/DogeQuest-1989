@@ -60,6 +60,15 @@ the evidence behind each area, closure of the completion checks and explicit val
 
 ## Delivered implementation
 
+Adaptive rendering quality is now reversible. Three seconds of sustained slow
+frames lower drawing density to 1×; after a five-second cooldown and twenty
+seconds of stable fast frames, the original density (up to 1.5×) returns. Brief
+hitches, menus and large timing gaps do not trigger changes. Tests cover timing,
+bounds, standard-density screens and recovery. The local-only real-WebGL fixture
+verified a 390 × 844 viewport changing its drawing buffer from 585 × 1266 to
+390 × 844 and back, with identical geometry/texture counts and puppy framing.
+Frame times were supplied synthetically; this is not physical-device FPS evidence.
+
 Clean-move streaks now reward sustained manual jumping, sliding and marked turns.
 Each five-move milestone earns 50/100/150 points, then a capped 200 points per
 milestone. Collisions and shield saves reset the streak; bone misses do not.
