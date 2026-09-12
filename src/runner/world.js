@@ -389,7 +389,8 @@ export function step(run, dt) {
         });
       } else if (dz < -2 && !object.pull && !object.missed) {
         object.missed = true;
-        run.combo = 0;
+        // Optional cable rewards cannot be missed by a puppy on the ground.
+        if (reachable) run.combo = 0;
       }
     } else if (
       Math.abs(dz) < 1.05 &&

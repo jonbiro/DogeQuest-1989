@@ -4,6 +4,38 @@ import {createRun, fillTrack, step, act, LANES, HAZARDS} from "../src/runner/wor
 import {ziplineAt, ZIPLINE_HEIGHT, cableSegment, CABLE_SEGMENT_LENGTH} from "../src/runner/ziplines.js";
 import {actionCue} from '../src/runner/guidance.js';
 
+test('unavailable cable bones preserve a ground streak, but reachable misses still break it',()=>{
+  for(const airborne of [false,true]) for(const riding of [false,true]) {
+    const run=createRun(1989);
+    Object.assign(run,{combo:9,bestCombo:9,nextRow:500,
+      objects:[{id:999,type:'bone',lane:0,at:0,airborne,used:false}],
+      zipline:riding?{start:0,end:100}:null});
+    while(run.distance<3)step(run,1/120);
+    assert.equal(run.combo,airborne&&!riding?9:0,`airborne=${airborne}, riding=${riding}`);
+    assert.equal(run.bones,0);
+    assert.equal(run.bestCombo,9);
+    assert.equal(run.objects[0].missed,true);
+  }
+});
+
+test('skipping a full optional cable preserves progress toward the next ten-bone bonus',()=>{
+  for(const start of [650,2050]) {
+    const run=approach({start});
+    run.objects=run.objects.filter(o=>o.airborne||o.type.startsWith('zipline-'));
+    run.nextRow=start+500;
+    run.combo=9;run.bestCombo=9;
+    while(run.distance<start+145)step(run,1/120);
+    assert.equal(run.combo,9);
+    assert.equal(run.bones,0);
+    assert.equal(run.ziplines,0);
+    const before=run.bonusPoints;
+    run.objects.push({id:10000,type:'bone',lane:run.lane,at:run.distance+1,used:false});
+    step(run,1/120);
+    assert.equal(run.combo,10);
+    assert.equal(run.bonusPoints,before+100);
+  }
+});
+
 test('cable clipping keeps an unbroken attachment while excluding the near-camera tail',()=>{
   for(let phase=0;phase<5;phase+=.025) {
     const segments=[];

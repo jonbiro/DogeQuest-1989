@@ -1,5 +1,19 @@
 # Runner verification
 
+## Optional-route collection fairness (2026-09-12)
+
+- Fixed a reproduced scoring bug: inaccessible airborne bones reset the ground
+  runner's collection combo when passing underneath an optional cable. Missed
+  bones now reset the combo only when their route is reachable. They still get
+  marked processed, cannot be collected from below, and award no free points.
+- Two regressions failed before the fix and passed afterward. Coverage checks
+  ground/airborne bones with and without an active cable, and skipping complete
+  generated cables at 650m and 2,050m followed by a real ground pickup that earns
+  the expected ten-bone bonus. Reachable misses continue to reset the combo.
+- All 216 tests, build, lint and artifact checks passed, including existing
+  18-bone cable steering and magnet isolation checks. This is simulation-backed
+  scoring verification; no visual or native-input behavior changed.
+
 ## Native portrait practice navigation (2026-09-12)
 
 - Real iOS 27 Simulator Safari on the dedicated Biscuit Dash QA device exposed
