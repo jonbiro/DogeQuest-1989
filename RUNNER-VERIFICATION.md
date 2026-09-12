@@ -1,5 +1,23 @@
 # Runner verification
 
+## Audio resumes with the player's resume action (2026-09-12)
+
+- Opted-in audio now resumes during Resume itself rather than waiting for the
+  next effect. The same guarded helper is used for effects; rejected requests,
+  synchronous failures, absent contexts and closed contexts remain non-fatal.
+  Resume is queued even if an earlier suspend has not yet changed context state.
+- In the browser, a temporary AudioContext subclass observed the actual context.
+  Pause left it suspended with two resume calls; clicking Keep running added one
+  resume and returned it to running at the opening 0m, before any pickup effect.
+  After muting, another pause/resume left the context suspended and the resume
+  call count unchanged. No browser warnings/errors were reported.
+- Unit checks cover suspended/interrupted/running contexts, rejected/thrown
+  requests and the actual application's muted/enabled resume handler. All 243
+  tests/build/lint/dist gates pass. This checks browser audio state, not listening
+  quality or native Safari/physical-speaker behavior.
+- The test initially had no local profile. The sound setting was returned to
+  muted, the disposable profile it created was removed, and the tab was closed.
+
 ## Same-trail rematch target (2026-09-12)
 
 - Results-screen retries preserve the strongest score in their current retry

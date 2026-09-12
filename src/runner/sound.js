@@ -8,6 +8,12 @@ export const CUES = {
   finish:[{from:523,to:440,at:0,duration:.15,type:"triangle"},{from:392,to:330,at:.17,duration:.2,type:"triangle"}],
 };
 const voices=new WeakMap();
+export function resumeSound(context) {
+  if (!context || context.state==='closed' || typeof context.resume!=='function') return;
+  // Also queue resume while a prior suspend is still pending. Checking only
+  // for 'suspended' can miss a rapid pause/resume pair.
+  try { context.resume().catch(()=>{}); } catch { /* Audio remains optional. */ }
+}
 export function playNotes(context,notes) {
   const now=context.currentTime;
   if(!voices.has(context))voices.set(context,new Set());

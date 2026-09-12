@@ -16,7 +16,7 @@ import {readTrailSeed,readTrailVersion,trailLink} from './trail-link.js';
 import {REGIONS,regionAt} from "./regions.js";
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
-import {CUES,playNotes,stopSound} from "./sound.js";
+import {CUES,playNotes,stopSound,resumeSound} from "./sound.js";
 import {actionCue,eventNotice,dockMode,runLesson} from "./guidance.js";
 import {turnPrompt} from "./turns.js";
 import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,isJumpTap} from "./gestures.js";
@@ -280,7 +280,7 @@ function tone(frequency, duration = 0.08) {
   if (!sound) return;
   try {
     audio ??= new (window.AudioContext || window.webkitAudioContext)();
-    audio.resume().catch(() => {});
+    resumeSound(audio);
     playNotes(audio,typeof frequency==="string"?CUES[frequency]:[{from:frequency,duration}]);
   } catch {
     /* Sound is optional. */
@@ -394,6 +394,7 @@ function pause() {
   if (state === "playing") showOverlay("paused");
 }
 function resume() {
+  if (sound) resumeSound(audio);
   run.resumeRemaining = RESUME_DURATION;
   setState('playing');
   $('scene').focus({preventScroll:true});
