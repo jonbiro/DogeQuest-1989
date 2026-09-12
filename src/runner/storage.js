@@ -1,9 +1,14 @@
 export function readStoredProfile(storage) {
   let raw;
   try { raw=storage.getItem("biscuit-dash-v1"); }
-  catch { return {available:false,value:null}; }
-  try { return {available:true,value:JSON.parse(raw)}; }
-  catch { return {available:true,value:null}; }
+  catch { return {available:false,readable:false,value:null}; }
+  if (raw === null) return {available:true,readable:true,value:null};
+  try {
+    const value=JSON.parse(raw);
+    if (!value || typeof value !== 'object' || Array.isArray(value))
+      return {available:true,readable:false,value:null};
+    return {available:true,readable:true,value};
+  } catch { return {available:true,readable:false,value:null}; }
 }
 export function writeStoredProfile(storage,value,readable=true) {
   if(!readable)return false;

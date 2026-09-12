@@ -43,9 +43,9 @@ let saved = {
   preferences: preferencesFrom(null,reducedMotion),
 };
 try {
-  const {value,available} = readStoredProfile(localStorage);
-  storageAvailable=available;
-  profileReadable=available;
+  const {value,available,readable} = readStoredProfile(localStorage);
+  storageAvailable=available && readable;
+  profileReadable=readable;
   for (const key of Object.keys(saved))
     if (key !== "upgrades" && Number.isFinite(value?.[key]) && value[key] >= 0)
       saved[key] = value[key];
@@ -197,7 +197,12 @@ function persist() {
 }
 function updateSaveNotice() {
   $("game").dataset.storage=storageAvailable?"available":"unavailable";
-  for(const id of ["menu-save-notice","overlay-save-notice"])$(id).hidden=storageAvailable;
+  for(const id of ["menu-save-notice","overlay-save-notice"]) {
+    $(id).hidden=storageAvailable;
+    $(id).textContent=profileReadable
+      ? 'Saving is unavailable. New points and unlocks last only for this visit.'
+      : 'Saved progress could not be read and will not be overwritten. New points and unlocks last only for this visit.';
+  }
 }
 function shop() {
   showOverlay("shop");
@@ -390,6 +395,7 @@ function finish() {
     ? `Next: ${dogCard.name} · ${Math.max(0,nextBond.target-dogCard.current)} clean clears or turns to ${nextBond.name}`
     : `${run.clears} obstacles cleared · Best bone streak: ${run.bestCombo}`;
   persist();
+  if (!storageAvailable) $("overlay-copy").textContent = 'Run complete. These rewards are available for this visit only; saving is unavailable.';
   updateRecords();
   tone("finish");
 }

@@ -60,6 +60,15 @@ the evidence behind each area, closure of the completion checks and explicit val
 
 ## Delivered implementation
 
+Progress integrity follow-up: malformed JSON and non-object saves are no longer
+treated as an empty first-time profile. Original bytes remain untouched and the
+game explains session-only rewards. Failed saves no longer produce an unqualified
+“Score banked” result. This addresses a reliability gap identified while reviewing
+[Imangi's progress-recovery guidance](https://imangistudios.com/faq/); it is not
+cloud sync or automatic recovery. The isolated browser check at 320 × 568 loaded
+a deliberately damaged save, completed a run and verified byte-for-byte
+preservation. Existing progress on the live origin was never modified.
+
 Regional courses now rotate through nine authored patterns across later laps:
 three jungle jump/duck rhythms, three canyon gap sequences and three crystal
 slaloms. The first lap stays familiar, while later visits change the required
