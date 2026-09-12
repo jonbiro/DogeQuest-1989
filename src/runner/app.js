@@ -365,8 +365,8 @@ function showOverlay(kind) {
         : "The next great run is one tap away."
       : kind === "help"
         ? "Swipe anywhere on the trail, or use the buttons."
-        : run.practice ? "Practice is unscored. Leave whenever you like." : "Leaving now won’t bank this run’s points or gifts.";
-  $("home").textContent = kind === 'paused' ? 'Leave this run' : 'Back to camp';
+        : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
+  $("home").textContent = kind === 'paused' ? run.practice ? 'Leave practice' : 'Finish & bank points' : 'Back to camp';
   $("overlay-primary").textContent =
     kind === "ended"
       ? "Retry this trail ↗"
@@ -400,6 +400,10 @@ function finish() {
   const receipt = bankRun(saved, run, run.missions);
   if (!receipt) return;
   showOverlay("ended");
+  if (run.retired) {
+    $('overlay-label').textContent = 'A GOOD RUN. ON YOUR TERMS.';
+    $('overlay-title').textContent = 'Home safe.';
+  }
   $("overlay-copy").textContent = receipt.personalBest
     ? "New personal best. Very good dog!" : "The next great run is one tap away.";
   $("final-score").textContent = run.score.toLocaleString();
@@ -465,6 +469,12 @@ $("shop").onclick = shop;
 $("kennel").onclick = kennel;
 $("pause-button").onclick = pause;
 $("home").onclick = () => {
+  if (state === 'paused' && !run.practice) {
+    run.retired = true;
+    run.ended = true;
+    finish();
+    return;
+  }
   setState("menu");
   $("play").focus();
 };

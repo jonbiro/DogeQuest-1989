@@ -1,5 +1,24 @@
 # Runner verification
 
+## Finish on your own terms (2026-09-12)
+
+- Paused adventures now offer `Finish & bank points` instead of abandoning
+  earned progress. This ends the simulation without removing hearts and uses
+  the normal, once-only reward transaction. Unfinished challenges, courses and
+  ziplines do not gain completion rewards. Practice still leaves without banking.
+- Voluntary results say `Home safe` and do not blame an earlier collision.
+  Resume stays the primary pause action; no new in-run controls or notices.
+- All 203 tests, lint, build and artifact checks passed. New tests execute the
+  actual camp-button handler, check once-only rewards, unchanged hearts,
+  frozen completed simulation, unfinished-goal exclusion and practice behavior.
+- A real browser run at 320x568 paused at 83m with three hearts. Finishing
+  banked 183 points and four bones, with zero challenges completed. Returning
+  to camp and reloading retained exactly those totals. Pause/results screenshots
+  showed reachable actions and readable content. This is browser-emulated
+  portrait evidence, not a native Safari or physical-phone result.
+- The isolated local playtest progress and runner cache were removed afterward;
+  production progress was not changed.
+
 ## Offline recovery follow-up (2026-09-12)
 
 - Temporary navigation failures (HTTP 500, 502, 503 and 504) now use the
