@@ -31,6 +31,7 @@ import {trailColors,sampleTrailColor} from './trail-palette.js';
 import {createShieldMaterial} from './shield-material.js';
 import {magnetPulse} from './magnet-field.js';
 import {pickupYaw} from './pickup-motion.js';
+import {themeHazard} from './hazard-palette.js';
 
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -1021,6 +1022,7 @@ export function createView(canvas) {
             const renderType = object.type === 'rock' && object.courseRegion === 2 ? 'crystal-rock' : object.type;
             item = pools[renderType].pop() || templates[renderType].clone();
             item.userData.type = renderType;
+            themeHazard(item,renderType,object.at,mat);
             active.set(object.id, item);
             scene.add(item);
           }
