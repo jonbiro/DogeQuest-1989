@@ -1,5 +1,13 @@
 # Puppy adventure goal
 
+## Route choices now change the trail
+
+Scenic takes a gentler left-hand detour and Challenge sweeps right, with smooth
+camera anticipation and a shared return to the main trail. The selected path
+changes shape; this is not a pair of simultaneously rendered fork branches.
+These bends steer automatically, while marked corners still require a swipe.
+Existing obstacle layouts, collision timing and replay versions remain intact.
+
 ## An optional daily shared trail
 
 How to Play now offers Today's shared trail: one deterministic starting layout

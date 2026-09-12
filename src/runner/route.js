@@ -4,6 +4,7 @@ import {
   CORNER_PERIOD,
 } from "./turns.js";
 import { terrainProfile } from "./terrain.js";
+import {routeDetour,detourReveal} from './route-detour.js';
 
 // The centerline is integrated once into a compact repeating lookup table.
 // Calls during rendering only interpolate two samples, even far into a run.
@@ -173,33 +174,53 @@ export function tangent(station) {
   return Number.isFinite(station) ? derivatives(station).x : 0;
 }
 
+function selectedFrame(station,route,reveal) {
+  const position=worldPosition(station),direction=absoluteFrame(station);
+  const detour=routeDetour(station,route);
+  const offset=detour.offset*reveal,slope=detour.slope*reveal,second=detour.second*reveal;
+  if(!offset&&!slope&&!second)return {...position,...direction};
+  const k=direction.curvature;
+  const kPrime=(absoluteFrame(station+.05).curvature-absoluteFrame(station-.05).curvature)/.1;
+  const forward=1+offset*k,forwardPrime=slope*k+offset*kPrime;
+  return {
+    x:position.x+Math.cos(direction.yaw)*offset,
+    z:position.z+Math.sin(direction.yaw)*offset,
+    yaw:direction.yaw-Math.atan2(slope,forward),
+    curvature:k-(forward*second-slope*forwardPrime)/(forward*forward+slope*slope),
+    stretch:Math.hypot(forward,slope),
+  };
+}
+
 // `z` is the renderer's current relative-depth coordinate (ahead is negative).
 // The returned position is in the player's horizontal tangent frame. Elevation
 // remains world-up so hills never alter jump physics or collision coordinates.
-export function routeFrame(distance, z, { flat = false } = {}) {
+export function routeFrame(distance, z, { flat = false, route = null } = {}) {
   if (!Number.isFinite(distance) || !Number.isFinite(z)) {
     return { x: 0, y: 0, z: 0, yaw: 0, pitch: 0, slope: 0, curvature: 0 };
   }
   const station = distance - z;
-  const playerPosition = worldPosition(distance);
-  const targetPosition = worldPosition(station);
-  const playerDirection = absoluteFrame(distance);
-  const targetDirection = absoluteFrame(station);
+  const reveal=detourReveal(distance,route);
+  const playerPosition = selectedFrame(distance,route,reveal);
+  const targetPosition = selectedFrame(station,route,reveal);
+  const playerDirection = playerPosition;
+  const targetDirection = targetPosition;
   const deltaX = targetPosition.x - playerPosition.x;
   const deltaZ = targetPosition.z - playerPosition.z;
   const cosine = Math.cos(playerDirection.yaw);
   const sine = Math.sin(playerDirection.yaw);
   const terrain = flat ? { height: 0, slope: 0 } : terrainProfile(station);
   const playerTerrain = flat ? { height: 0 } : terrainProfile(distance);
+  const stretch=targetPosition.stretch||1;
 
   return {
     x: cleanZero(deltaX * cosine + deltaZ * sine),
     y: cleanZero(terrain.height - playerTerrain.height),
     z: cleanZero(deltaX * sine - deltaZ * cosine),
     yaw: cleanZero(normalizeAngle(targetDirection.yaw - playerDirection.yaw)),
-    pitch: cleanZero(Math.atan(terrain.slope)),
-    slope: cleanZero(terrain.slope),
-    curvature: cleanZero(targetDirection.curvature),
+    pitch: cleanZero(Math.atan(terrain.slope/stretch)),
+    slope: cleanZero(terrain.slope/stretch),
+    curvature: cleanZero(targetDirection.curvature/stretch),
+    ...(Math.abs(stretch-1)>1e-12?{stretch}:{}),
   };
 }
 

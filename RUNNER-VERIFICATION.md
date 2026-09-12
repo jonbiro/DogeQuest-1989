@@ -1,5 +1,26 @@
 # Runner verification
 
+## Selected-route detours (2026-09-12)
+
+- Scenic moves up to 8m left and Challenge up to 12m right. The smooth detour
+  occupies gate +45m through +205m, rejoining 15m before route expiry. A 40m
+  distant-road reveal avoids a selection snap; underfoot geometry stays fixed.
+  Road stretch closes spacing gaps and all objects share the selected frame.
+- Initial bends clipped outside-lane rewards in narrow portrait at boosted
+  speed. Reduced excursions and smoothly blended camera anticipation fixed the
+  projection regression across both routes, four gates, three portrait aspects,
+  all player/reward lanes, camera lag and grounded/airborne player heights.
+- Full check passed: 276 tests. Three 6,000m input-driven runs with the real
+  renderer completed all twelve courses, 27 turns and twelve ziplines with zero
+  hits, zero shield saves and minimum three hearts. Across 72 render checkpoints,
+  peaks remained 184 draws, 22 geometries, five textures and 107 active/pooled
+  objects. This is perfect-input simulation, not human reaction or device FPS.
+- A fresh actual UI run selected Challenge and was captured at 440m with three
+  hearts in 390x844 portrait, then paused at 502m. The disposable save remained
+  absent. Final route comparison and actual-run screenshots are in the sibling
+  DogeQuest-1989-detours-2026-09-12 folder; earlier non-final images there show
+  intermediate tuning. Help explains automatic bends versus marked corners.
+
 ## Continuous long-run and honest HUD regression checks (2026-09-12)
 
 - Re-ran three 6,000m input-driven simulations in the actual renderer after the

@@ -4,6 +4,7 @@ import {PerspectiveCamera,Vector3} from 'three';
 import {createPuppyFramer,gameplayFov} from '../src/runner/framing.js';
 import {routeFrame} from '../src/runner/route.js';
 import {cornerIntersecting} from '../src/runner/turns.js';
+import {detourCameraWeight} from '../src/runner/route-detour.js';
 
 test('puppy envelope stays inside both edges through lane lag, curves and zipline height',()=>{
   const frame=createPuppyFramer();
@@ -62,4 +63,23 @@ test('already framed puppy leaves the camera untouched and reuses its result',()
   const before=camera.position.clone(),frame=createPuppyFramer(),first=frame(camera,center);
   assert.equal(first.shift,0);assert.deepEqual(camera.position.toArray(),before.toArray());
   assert.equal(frame(camera,center),first);
+});
+
+test('detours keep side-lane rewards visible at boosted decision distances',()=>{
+  const frame=createPuppyFramer(),point=new Vector3();
+  for(const kind of ['scenic','challenge'])for(const gate of [350,1050,1750,2450])
+    for(const aspect of [.35,390/844,320/568])for(const seconds of [.45,.8])
+      for(let distance=gate;distance<gate+220;distance+=5) {
+        const route={kind,until:gate+220};
+        const look=routeFrame(distance,-13,{route}),target=routeFrame(distance,-46.8*seconds,{route});
+        for(const x of [-2.4,0,2.4])for(const cameraX of [x-1,x+1])for(const y of [0,3.3]) {
+          const camera=new PerspectiveCamera(gameplayFov(aspect),aspect,.1,190);
+          camera.position.set(cameraX*.45,4.5,10.8);camera.lookAt(cameraX*.4+look.x*detourCameraWeight(distance,route),.75+look.y*.65,-13);
+          frame(camera,new Vector3(x,y,0));
+          for(const lane of [-2.4,0,2.4])for(const dx of [-.62,.62]) {
+            point.set(target.x+lane*Math.cos(target.yaw)+dx,target.y+1.1,target.z-lane*Math.sin(target.yaw)).project(camera);
+            assert.ok(Math.abs(point.x)<1,JSON.stringify({kind,gate,aspect,seconds,distance,x,cameraX,lane,projectedX:point.x}));
+          }
+        }
+      }
 });

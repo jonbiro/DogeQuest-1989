@@ -10,6 +10,21 @@ import {turnPrompt,upcomingCorner,cornersBetween} from "../src/runner/turns.js";
 import * as THREE from 'three';
 import {createMochiModel} from '../src/runner/mochi-model.js';
 import {createPowerHud} from '../src/runner/power-hud.js';
+export function routeDetourPreview(kind='scenic',distance=435) {
+  const canvas=document.createElement('canvas');
+  canvas.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;z-index:9999';document.body.append(canvas);
+  const view=createView(canvas);
+  function draw(routeKind,at) {
+    const run=createRun(1989);
+    Object.assign(run,{distance:at,nextRow:at+30,objects:[],nextChoice:1050,nextZipline:650,
+      choicePending:null,lastCourseVisit:Math.floor(at/450),route:{kind:routeKind,until:570},
+      appearance:{puppy:'mochi',costume:'none'}});
+    run.previous={x:run.x,y:run.y,distance:run.distance};fillTrack(run);
+    view.draw(run,0,'paused',true,1/60,1);
+    return {kind:routeKind,distance:at,...view.diagnostics()};
+  }
+  return {initial:draw(kind,distance),draw};
+}
 export function overheadApproachPreview(ahead=35) {
   const canvas=document.createElement('canvas');
   canvas.style.cssText='position:fixed;inset:0;width:100vw;height:100vh;z-index:9999';document.body.append(canvas);

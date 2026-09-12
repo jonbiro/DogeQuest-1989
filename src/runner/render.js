@@ -18,6 +18,7 @@ import {createPuppyFramer,gameplayFov} from './framing.js';
 import {createQualityController} from './quality.js';
 import {contactShadow} from './contact-shadow.js';
 import {createBranchModel} from './branch-model.js';
+import {detourCameraWeight} from './route-detour.js';
 
 // Shared low-poly geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -767,7 +768,7 @@ export function createView(canvas) {
       // Several hundred instanced pieces share fewer than 200 route frames.
       const frames = new Map();
       const frameAt = z => {
-        if (!frames.has(z)) frames.set(z, routeFrame(distance, z));
+        if (!frames.has(z)) frames.set(z, routeFrame(distance, z,{route:menu?null:run.route}));
         return frames.get(z);
       };
       const groundFrame = frameAt(0);
@@ -805,7 +806,7 @@ export function createView(canvas) {
           routeRotation.setFromEuler(bendEuler);
           // Extra overlap closes the outside edge of the short curved slabs.
           const overlap = entry.road && !entry.water && !entry.cable ? 1 + (entry.terrain ? 30 : 4.6) * Math.abs(frame.curvature) : 1;
-          bendMatrix.compose(routePosition.set(frame.x, frame.y, frame.z), routeRotation, bendScale.set(1, 1, overlap));
+          bendMatrix.compose(routePosition.set(frame.x, frame.y, frame.z), routeRotation, bendScale.set(1, 1, overlap*(entry.road?(frame.stretch||1):1)));
           instanceMatrix.multiplyMatrices(bendMatrix, entry.matrix);
           if(cableClip) instanceMatrix.scale(bendScale.set(1,1,cableClip.scale));
           const region = regionAt(menu ? 0 : distance-z);
@@ -980,7 +981,7 @@ export function createView(canvas) {
           camera.aspect < 0.85 ? 10.8 : 9,
         );
         const look = frameAt(-13);
-        camera.lookAt(cameraX * (camera.aspect < 0.85 ? 0.4 : 0.12) + look.x * .3, 0.75 + cameraLift + look.y * .65, -13);
+        camera.lookAt(cameraX * (camera.aspect < 0.85 ? 0.4 : 0.12) + look.x * detourCameraWeight(distance,run.route), 0.75 + cameraLift + look.y * .65, -13);
         puppyFrame=framePuppy(camera,dog.position);
       }
       const nextRatio = quality.sample(dt, state === 'playing');
