@@ -581,7 +581,7 @@ export function hudStressCheck(routeChoice=false) {
       if(check.fontSize<check.minimumFontSize)issues.push(`${check.text} label too small: ${check.fontSize}px`);
       if(check.minimumContrast<4.5)issues.push(`${check.text} worst-case text contrast below 4.5: ${check.minimumContrast}`);
     }
-    for(const [first,second] of [["#power",".score"],["#power","#mission-hud"],["#power","#controls"],["#mission-hud","#controls"]]){
+    for(const [first,second] of [[".score",".run-stats"],["#power",".score"],["#power","#mission-hud"],["#power","#controls"],["#mission-hud","#controls"]]){
       const a=rect(first),b=rect(second);
       if(a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top)issues.push(`${first} overlaps ${second}`);
     }

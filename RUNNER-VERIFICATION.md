@@ -1,5 +1,19 @@
 # Runner verification
 
+## Area identity during alternate routes (2026-09-12)
+
+- Scenic/Challenge labels now retain the specific area (for example, Bamboo ·
+  Challenge), rather than reverting to a generic mastery-region name. Compact
+  area names avoid adding another panel or lengthening the longest route label.
+- Expanded score-chase tests cover both routes in all six areas, including shared
+  targets, personal bests and rematches. Practice remains explicitly unscored.
+- Actual 320 × 568 HUD stress checks passed for all twelve area/route labels with
+  all power chips visible. Added an explicit location-card versus bones/hearts
+  overlap check to the browser fixture. No saved progress was changed.
+- Build, distribution verification, lint and all 334 tests passed. Final build
+  removes the temporary QA bundle. This is browser layout coverage, not a new
+  physical-device playtest.
+
 ## Coordinated visual overhaul (2026-09-12)
 
 - Six visual areas now alternate every 225m within the original three mastery

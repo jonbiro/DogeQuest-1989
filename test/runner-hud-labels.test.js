@@ -4,11 +4,11 @@ import {runHudLabels} from '../src/runner/hud-labels.js';
 import {createRun} from '../src/runner/world.js';
 import {createPracticeRun} from '../src/runner/practice.js';
 
-test('both routes retain shared targets, records and rematches across every region',()=>{
-  for (const [index,name] of ['Jungle','Canyon','Glade'].entries()) {
+test('both routes retain area identity, shared targets, records and rematches across all six areas',()=>{
+  for (const [index,name] of ['Sunleaf','Bamboo','Redrock','Oasis','Crystal','Mooncap'].entries()) {
     for (const kind of ['scenic','challenge']) {
       const run=createRun(1989);
-      run.distance=index*450+100;run.route={kind,until:run.distance+220};
+      run.distance=index*225+100;run.route={kind,until:run.distance+220};
       run.score=900;run.challengeTarget=1000;
       const location=`${name} · ${kind==='challenge'?'Challenge':'Scenic'}`;
       assert.deepEqual(runHudLabels(run,10000),{region:location,score:'101 pts to target'});
