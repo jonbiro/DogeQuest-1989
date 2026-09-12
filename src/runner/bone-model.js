@@ -1,6 +1,12 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
+const IVORY=new THREE.Color('#fff2ca'),RIM=new THREE.Color('#70451e');
+export function boneSurfaceColor(normalZ,target=new THREE.Color()){
+  const face=THREE.MathUtils.smoothstep(Math.abs(normalZ),.3,.9);
+  return target.copy(RIM).lerp(IVORY,face);
+}
+
 export function createBoneGeometry(){
   const shaft=new THREE.CylinderGeometry(.105,.105,.72,12,1);
   shaft.rotateZ(Math.PI/2);
@@ -12,10 +18,9 @@ export function createBoneGeometry(){
   const geometry=mergeGeometries(parts,false);
   for(const part of parts)part.dispose();
   const normal=geometry.attributes.normal,colors=new Float32Array(normal.count*3);
-  const ivory=new THREE.Color('#fff2ca'),edge=new THREE.Color('#a86d2f'),color=new THREE.Color();
+  const color=new THREE.Color();
   for(let i=0;i<normal.count;i++){
-    const face=.38+.62*Math.abs(normal.getZ(i));
-    color.copy(edge).lerp(ivory,face).toArray(colors,i*3);
+    boneSurfaceColor(normal.getZ(i),color).toArray(colors,i*3);
   }
   geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));
   geometry.computeBoundingSphere();return geometry;
