@@ -1,5 +1,22 @@
 # Runner verification
 
+## Rotation-safe mobile interruptions (2026-09-12)
+
+- Device orientation changes pause active play through the existing pause path,
+  stopping audio and clearing unfinished input. Modern screen-orientation events
+  are preferred, with the legacy window event as fallback. Ordinary resize is
+  deliberately excluded so browser address-bar changes do not interrupt play.
+- All 262 tests and build/lint/distribution checks pass. The actual event-binding
+  and pause functions are exercised for both APIs, repeated events and all
+  non-playing panels; rotation never resumes a paused game automatically.
+- A disposable browser run at 390 × 844 paused on a dispatched orientation event.
+  The pause controls remained reachable at 844 × 390. Keep running resumed play;
+  an ordinary resize event did not pause it. A second orientation event paused at
+  195m and distance remained 195m on the subsequent observation. No save was
+  created or changed, no browser errors/warnings appeared, and the temporary tab
+  and viewport were cleaned up. This is browser event/layout verification, not
+  a physical-device rotation or operating-system event-delivery test.
+
 ## Contextual lane-weave rehearsal (2026-09-12)
 
 - Course-rock collisions now preserve a run-local weave marker. Results explain

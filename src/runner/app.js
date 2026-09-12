@@ -699,6 +699,11 @@ for (const button of document.querySelectorAll("[data-action]")) {
   };
 }
 window.addEventListener("blur", pause);
+// Rotation can move hazards and touch targets beneath a player's thumb.
+// Listen to device orientation, not resize: mobile browser chrome resizes often.
+if (window.screen?.orientation?.addEventListener)
+  window.screen.orientation.addEventListener('change', pause);
+else window.addEventListener('orientationchange', pause);
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) pause();
 });
