@@ -1,5 +1,24 @@
 # Runner verification
 
+## Quiet physics-timed touchdown sound (2026-09-12)
+
+- Actual vertical ground contact emits one landing cue, including normal jumps,
+  dives, buffered rebounds and zipline dismounts. It does not change timing,
+  collision clearance, scores or HUD notices. Sound remains opt-in.
+- The 65ms descending sine uses a quieter per-note gain. All 255 tests and
+  build/lint/distribution checks pass, including base/max leap at 30/60/120Hz,
+  no repeated grounded cue, rebound event count and the existing output ceiling.
+- In the actual browser app, a native Space press during unscored practice
+  produced the jump posture, then the running posture and exactly one 180Hz
+  landing oscillator. A second jump with sound muted returned to the ground
+  without adding another oscillator. A temporary AudioContext wrapper observed
+  scheduling only; it did not inject movement or landing events.
+- OfflineAudioContext rendered all eight cues with finite, nonzero output. The
+  landing peak was 0.01447 versus jump's 0.03343, with lower RMS as intended.
+  These are audio-engine measurements, not human listening or physical-speaker
+  validation. The disposable local profile created by toggling sound was removed
+  back to its absent baseline and the temporary tab closed.
+
 ## Shared bone rendering batch (2026-09-12)
 
 - Bones now share one instanced draw while retaining the same beveled geometry,

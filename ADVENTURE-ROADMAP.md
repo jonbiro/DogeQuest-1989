@@ -1,5 +1,11 @@
 # Puppy adventure goal
 
+## Grounded movement feedback
+
+Optional sound now includes a quiet touchdown cue synchronized to the physics
+landing event. It complements the existing body compression after jumps, dives
+and cable dismounts without adding a mid-run message or changing movement timing.
+
 ## Lower-overhead collectible rendering
 
 Identical bones now share a reusable graphics batch instead of separate draw

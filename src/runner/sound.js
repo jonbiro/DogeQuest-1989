@@ -3,6 +3,7 @@ export const CUES = {
   reward:[{from:523,to:523,at:0,duration:.14,type:"triangle"},{from:659,to:659,at:.08,duration:.14,type:"triangle"},{from:784,to:1046,at:.16,duration:.23,type:"sine"}],
   zoomies:[{from:220,to:880,at:0,duration:.22,type:"triangle"},{from:440,to:1320,at:.12,duration:.25,type:"sine"}],
   jump:[{from:300,to:700,at:0,duration:.12,type:"sine"}],
+  land:[{from:180,to:100,at:0,duration:.065,type:"sine",volume:.016}],
   slide:[{from:420,to:140,at:0,duration:.10,type:"sine"}],
   ready:[{from:660,to:660,at:0,duration:.09,type:"sine"},{from:880,to:880,at:.09,duration:.12,type:"sine"}],
   finish:[{from:523,to:440,at:0,duration:.15,type:"triangle"},{from:392,to:330,at:.17,duration:.2,type:"triangle"}],
@@ -26,7 +27,8 @@ export function playNotes(context,notes) {
     osc.frequency.setValueAtTime(note.from,start);
     osc.frequency.exponentialRampToValueAtTime(note.to||note.from,end);
     gain.gain.setValueAtTime(.0001,start);
-    gain.gain.linearRampToValueAtTime(.035,start+.008);
+    const volume=Number.isFinite(note.volume)?Math.max(.0001,Math.min(.035,note.volume)):.035;
+    gain.gain.linearRampToValueAtTime(volume,start+.008);
     gain.gain.exponentialRampToValueAtTime(.0001,end);
     osc.connect(gain);gain.connect(context.destination);
     active.add(osc);

@@ -761,6 +761,7 @@ function frame(now) {
       if (event === "turn-left" || event === "turn-right") tone(680, 0.1);
       if (event === "course-complete") tone('reward');
       if (event === "jump") tone("jump");
+      if (event === "land") tone("land");
       if (event === "slide") tone("slide");
       if (event === "magnet") {
         tone(900, 0.25);

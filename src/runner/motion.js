@@ -71,6 +71,7 @@ export function moveVertical(run, dt) {
   if (result.landed) {
     const remaining = Math.max(0, dt - result.elapsed);
     run.landing = {time: run.time - remaining, speed: result.impact};
+    run.events.push('land');
     run.diving = false;
     // A late press belongs to the next takeoff, regardless of leap height.
     if (run.jumpBuffer > result.elapsed) {

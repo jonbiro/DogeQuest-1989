@@ -162,6 +162,7 @@ test("landing time and impact stay exact across timesteps and a boundary rebound
     assert.ok(Math.abs(boundary.y - (JUMP_SPEED * reboundTime - GRAVITY * reboundTime ** 2 / 2)) < 1e-12);
     assert.ok(Math.abs(boundary.vy - (JUMP_SPEED - GRAVITY * reboundTime)) < 1e-12);
     assert.equal(boundary.events.filter(event => event === "jump").length, 1);
+    assert.equal(boundary.events.filter(event => event === "land").length, 1,'buffered rebound has exactly one touchdown');
   }
 });
 
