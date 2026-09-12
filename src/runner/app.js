@@ -632,6 +632,12 @@ $("scene").addEventListener("webglcontextlost", (event) => {
   graphicsError();
 });
 function graphicsError() {
+  if (['playing','paused'].includes(state) && !run.practice) {
+    run.retired = true;
+    run.ended = true;
+    finish();
+    run.graphicsRescued = Boolean(run.receipt);
+  }
   if(audio)stopSound(audio);
   graphicsReady=false;
   $("play").disabled=true;
@@ -639,7 +645,11 @@ function graphicsError() {
   $("overlay-label").textContent="LET’S GET YOUR PAWS BACK ON THE TRAIL";
   $("overlay-title").textContent="The 3D trail needs a restart.";
   $("overlay-copy").textContent =
-    "Graphics are unavailable or were interrupted. Reload to try again. Saved puppies, outfits and points stay in this browser; the unfinished run is not banked.";
+    run.graphicsRescued
+      ? storageAvailable
+        ? 'The trail was interrupted, but your earned points, bones and completed challenges were saved. Reload to start a fresh adventure.'
+        : 'The trail was interrupted. Earned rewards were counted for this visit, but saving is unavailable. Reloading may lose this progress.'
+      : 'Graphics are unavailable or were interrupted. Reload to try again. Previously saved puppies, outfits and points stay in this browser; practice never changes your progress.';
   $("overlay-primary").textContent = "Reload trail";
   $("overlay-primary").onclick = () => window.location.reload();
 }

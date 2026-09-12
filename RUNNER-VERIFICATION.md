@@ -1,5 +1,19 @@
 # Runner verification
 
+## Preserve earned rewards after graphics loss (2026-09-12)
+
+- A graphics interruption now retires and finishes a playing/paused adventure
+  before showing reload recovery. It uses the existing completion transaction
+  and persistence path, preserving earned score, bones, gifts and completed
+  missions instead of discarding the unfinished run. Practice remains unscored.
+- Regression tests execute the actual recovery handler with the real banking
+  transaction: both active states bank once, duplicate errors do not replay
+  rewards, inactive/practice states do not bank, and unavailable storage shows
+  an explicit reload-loss warning rather than claiming persistence.
+- Recovery stops audio after finishing, so the finish cue cannot leave sound
+  running on the error screen. These are handler/transaction tests, not a new
+  native GPU-loss or physical-device persistence observation.
+
 ## Render-rate decision cues (2026-09-12)
 
 - Moved adventure/practice decision-cue evaluation outside the 10Hz counter
