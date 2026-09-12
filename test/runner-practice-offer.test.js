@@ -28,6 +28,8 @@ test('the actual results practice button routes collisions and rehearsal retries
     [{ended:true,lastMistake:{type:'corner',direction:'right'}},['turn',1]],
     [{ended:true,lastMistake:{type:'log'}},['moves',0]],
     [{ended:true,lastMistake:{type:'gap'}},['gap',0]],
+    [{ended:true,lastMistake:{type:'rock',courseWeave:true}},['weave',0]],
+    [{practice:{kind:'weave'}},['weave',0]],
     [{practice:{kind:'turn',cornerIndex:1,correct:1}},['turn',0]],
     [{practice:{kind:'turn',cornerIndex:1,correct:0}},['turn',1]],
     [{practice:{kind:'zipline'}},['zipline',0]],

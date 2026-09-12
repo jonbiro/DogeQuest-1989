@@ -2,6 +2,7 @@ import {createRun, fillTrack, step, LANES} from './world.js';
 import {actionCue} from './guidance.js';
 import {ZIPLINE_FIRST,ZIPLINE_LENGTH} from './ziplines.js';
 import {cornerByIndex,turnPrompt} from './turns.js';
+import {courseAt,courseCue} from './courses.js';
 
 const LESSONS = [
   {at:35,type:'log',hint:'Logs ahead · wait for the cue'},
@@ -12,6 +13,8 @@ const GAP_LESSON={at:35,type:'gap',hint:'Gap ahead · wait for the jump cue'};
 export function practiceOffer(run) {
   if (!run.ended || run.practice || run.retired) return null;
   const mistake=run.lastMistake;
+  if (mistake?.type==='rock' && mistake.courseWeave)
+    return {kind:'weave',cornerIndex:0,label:'Practise lane weaves'};
   if (mistake?.type==='gap') return {kind:'gap',cornerIndex:0,label:'Practise gap jumps'};
   if (mistake?.type==='corner' && ['left','right'].includes(mistake.direction))
     return {kind:'turn',cornerIndex:mistake.direction==='right'?1:0,label:'Practise this turn'};
@@ -50,6 +53,16 @@ export function createGapPracticeRun(upgrades = {}) {
   run.objects=[0,1,2].map(lane=>({id:run.id++,type:'gap',lane,at:GAP_LESSON.at,used:false}));
   return run;
 }
+export function createWeavePracticeRun(upgrades = {}) {
+  const run=createRun(1989,upgrades),course=courseAt(1020);
+  Object.assign(run,{distance:990,lane:2,x:LANES[2],vx:0,speed:12,course,
+    objects:[],nextRow:Infinity,nextChoice:Infinity,nextZipline:Infinity,nextCorner:2,choicePending:null});
+  run.previous={x:run.x,y:run.y,distance:run.distance};
+  run.practice={kind:'weave',start:run.distance,end:1105,index:0,correct:0,outcomes:[]};
+  for(const beat of course.beats)for(let lane=0;lane<3;lane++)if(lane!==beat.safeLane)
+    run.objects.push({id:run.id++,type:'rock',courseRegion:2,lane,at:beat.at,used:false});
+  return run;
+}
 export function createZiplinePracticeRun(upgrades = {}) {
   const run=createRun(1989,upgrades);
   const start=ZIPLINE_FIRST;
@@ -75,6 +88,20 @@ export function createTurnPracticeRun(upgrades = {}, cornerIndex = 0) {
 }
 export function stepPractice(run, dt) {
   if (!run.practice || run.ended) return;
+  if(run.practice.kind==='weave') {
+    const course=run.course,checked=course.checked,clean=course.clean;
+    step(run,dt);
+    if(course.checked>checked) {
+      const correct=course.clean>clean;
+      run.practice.outcomes.push(correct);
+      run.practice.feedback={text:correct?'✓ Open lane found':'Aim for the open lane · ×2 means two swipes',until:run.time+1};
+    }
+    run.practice.index=course.checked;run.practice.correct=course.clean;
+    run.hearts=3;run.fetchCharge=0;
+    run.events=run.events.filter(event=>!['hit','flow','end'].includes(event));
+    if(run.distance>=run.practice.end)run.ended=true;
+    return;
+  }
   if (run.practice.kind === 'turn') {
     step(run, dt);
     if (run.nextCorner > run.practice.cornerIndex) {
@@ -116,6 +143,10 @@ export function stepPractice(run, dt) {
   if (run.distance >= (run.practice.kind==='gap' ? 55 : 130)) run.ended = true;
 }
 export function practiceCue(run) {
+  if(run.practice.kind==='weave') {
+    if(run.practice.feedback?.until>run.time)return run.practice.feedback.text;
+    return courseCue(run) || (run.practice.index===3?'Weave practice complete':'Open lane ahead · ×2 means two swipes');
+  }
   if (run.practice.kind==='gap') {
     if (run.practice.feedback?.until>run.time) return run.practice.feedback.text;
     if (run.practice.outcomes.length) return 'Gap practice complete';
@@ -143,11 +174,18 @@ export function practiceCue(run) {
 }
 
 export function practiceProgress(run) {
+  if(run.practice.kind==='weave')return `${run.practice.correct}/3 weaves cleared`;
   if (run.practice.kind==='gap') return `${run.practice.correct}/1 gap cleared`;
   if (run.practice.kind==='turn') return `${run.practice.direction} corner · ${run.practice.correct}/1 cleared`;
   return run.practice.kind==='zipline' ? `${run.bones}/18 high bones · ${run.ziplines ? 'landed' : run.practice.caught ? 'cable caught' : 'catch the cable'}` : `${run.practice.correct}/3 moves cleared`;
 }
 export function practiceResult(run) {
+  if(run.practice.kind==='weave')return {
+    title:`${run.practice.correct} of 3 weaves cleared`,
+    lesson:run.practice.correct===3
+      ? 'Nice footwork! Two quick swipes cross from one outside lane to the other. The hint shortens after the first move; one swipe is enough for an adjacent lane.'
+      : 'Aim for the open lane, not the crystals. ×2 means two separate swipes in the same direction. After the first swipe, follow the remaining single-move hint.',
+  };
   if (run.practice.kind==='gap') return {
     title:run.practice.correct ? 'Gap cleared!' : 'Try the gap again',
     lesson:run.practice.correct ? 'Jump as the striped edge approaches, then stay airborne until you pass the gap. The adventure uses these same jump physics.'

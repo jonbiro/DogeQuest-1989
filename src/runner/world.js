@@ -447,7 +447,8 @@ export function step(run, dt) {
       }
       if (sameLane && !cleared && run.invulnerable === 0) {
         object.used = true;
-        harm(run, {type: object.type});
+        harm(run, object.type==='rock' && [0,1,2].includes(object.courseRegion)
+          ? {type:'rock',courseWeave:true} : {type: object.type});
         if (run.ended) break;
       }
     }

@@ -1,5 +1,29 @@
 # Runner verification
 
+## Contextual lane-weave rehearsal (2026-09-12)
+
+- Course-rock collisions now preserve a run-local weave marker. Results explain
+  open-lane movement and ×2, and offer Practise lane weaves rather than generic
+  jump/slide basics. Ordinary rocks and other collision shortcuts retain their
+  existing coaching. Retired runs still do not receive unsolicited rehearsal.
+- The roughly ten-second unscored lesson uses actual crystal course geometry,
+  steering and per-beat open-lane scoring: right edge to left, back to right, then
+  center. Five swipes clear three decisions. Misses never lose hearts or bank
+  rewards; the same controls return to a fresh adventure afterward.
+- At 320 × 568, input-driven play intentionally skipped weave moves and ended
+  naturally at 1160m with 3,875 points. The results showed the relevant coaching
+  and reachable lesson button. Following visible rehearsal hints with 150ms
+  delayed keyboard events completed 3/3 with exactly five inputs. The banked
+  profile was byte-for-byte unchanged through practice. Run the adventure then
+  restored normal scoring, three hearts, zero Fetch charge and a fresh challenge.
+- Unit coverage exercises base/max upgrades, successful and unanswered lessons,
+  contextual collision evidence across all regions, reward exclusion and the
+  actual result-button retry routing. No browser warnings/errors were reported.
+  All 260 tests and build, lint and distribution checks pass.
+  The disposable local save was removed to its absent baseline; temporary tab
+  and viewport were cleaned up. No native/live save was touched. This is browser
+  portrait evidence, not physical-phone usability verification.
+
 ## Explicit two-swipe lane guidance (2026-09-12)
 
 - A delayed-input audit exposed a concrete ambiguity: the first Crystal slalom

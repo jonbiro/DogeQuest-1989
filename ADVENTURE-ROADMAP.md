@@ -1,5 +1,12 @@
 # Puppy adventure goal
 
+## Practise the specific missed skill
+
+Missing a course rock now offers a ten-second lane-weave rehearsal with two
+outside-to-outside moves and one adjacent-lane move. It teaches the ×2 hint using
+real steering, without penalties or saved-progress changes. This shortcut lives
+on the relevant results screen rather than adding another main-menu choice.
+
 ## Clear two-swipe decisions
 
 Weaving courses and aerial reward guidance now distinguish one-lane moves from
