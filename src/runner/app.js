@@ -1,6 +1,6 @@
 import { createRun, act, step } from "./world.js";
-import {createPracticeRun,createZiplinePracticeRun,createTurnPracticeRun,createGapPracticeRun,stepPractice,practiceCue,practiceProgress,practiceResult,practiceOffer} from './practice.js';
-import {scoreChaseLabel} from './score-chase.js';
+import {createPracticeRun,createZiplinePracticeRun,createTurnPracticeRun,createGapPracticeRun,stepPractice,practiceCue,practiceResult,practiceOffer} from './practice.js';
+import {runHudLabels} from './hud-labels.js';
 import {courseProgress,activeCourse} from './courses.js';
 import {RESUME_DURATION,resumeStep} from './resume.js';
 import {installBackupControls} from './backup-ui.js';
@@ -13,7 +13,6 @@ import {masteryFrom,masteryCards} from './mastery.js';
 import {fetchReady} from './ability.js';
 import {createPowerHud} from './power-hud.js';
 import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLink} from './trail-link.js';
-import {REGIONS,regionAt} from "./regions.js";
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound,resumeSound} from "./sound.js";
@@ -801,14 +800,12 @@ function frame(now) {
     if (Math.floor(run.time * 10) !== lastHud || run.ended) {
       lastHud = Math.floor(run.time * 10);
       $("distance").innerHTML = `${Math.floor(run.distance-(run.practice?.start || 0))}<small> m</small>`;
-      $("region-name").textContent = run.practice ? 'Practice · no penalties' : REGIONS[regionAt(run.distance)].name;
+      const labels=runHudLabels(run,saved.best);
+      $("region-name").textContent = labels.region;
       setText('route-choice', run.choicePending!==null && run.choicePending-run.distance<100
         ? `GATES IN ${Math.max(0,Math.ceil(run.choicePending-run.distance))}m · ← Scenic: fewer obstacles · Challenge: more points →` : '');
       $("bones").textContent = run.bones;
-      $("run-score").textContent =
-        run.practice ? practiceProgress(run) : run.route && run.distance<run.route.until
-          ? `${run.score.toLocaleString()} pts · ${run.route.kind==='challenge'?'CHALLENGE':'SCENIC'}`
-          : scoreChaseLabel(run.score, saved.best, run.rematchBest, run.challengeTarget);
+      $("run-score").textContent = labels.score;
       const progress = missionProgress(run, currentMission);
       const courseStatus=courseProgress(run);
       $("mission-label").textContent = courseStatus?.label ??

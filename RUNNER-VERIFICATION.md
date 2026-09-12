@@ -1,5 +1,23 @@
 # Runner verification
 
+## Score chases remain visible on routes (2026-09-12)
+
+- Scenic/Challenge sections no longer replace the score-chase line. The existing
+  location line instead uses compact labels such as Jungle · Challenge. Full
+  region names return at route expiry; practice remains explicitly unscored.
+- All 251 tests and build/lint/distribution checks pass. New coverage exercises
+  both route kinds in all three regions with shared targets, personal records and
+  rematches, plus the exact expiry boundary and practice precedence.
+- Actual app play at 320 × 568 followed visible cues with synthetic keyboard
+  events, without editing simulation state. At 350m the Challenge route and
+  1,285 / 1,500 pts target progress were both present. The rendered location line
+  measured 119.4 × 11px and did not overlap the score, bones or controls.
+- Continuing the same run to 581m restored Biscuit Canyon and showed 2,216 pts ·
+  TARGET BEAT with all three hearts. The run was paused unbanked; the local save
+  remained absent, no warnings/errors appeared, and the temporary tab/viewport
+  were cleaned up. This is browser portrait evidence, not native touch or physical
+  phone validation. It supersedes the previous route-label-over-score priority.
+
 ## Friendly shared score targets (2026-09-12)
 
 - Valid versioned trail links can carry one positive integer target, capped at

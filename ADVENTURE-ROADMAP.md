@@ -10,6 +10,8 @@ Switching to random trails removes both the layout and target parameters.
 These are explicitly friendly, unverified challenges: each player retains their
 upgrades and route choices. Targets grant no extra currency, create no saved
 profile fields, and add no accounts, leaderboard or mid-trail panel.
+Route sections now put Scenic/Challenge beside the compact region name so the
+score line can keep shared targets, rematch goals and personal records visible.
 
 ## A target for same-trail rematches
 
