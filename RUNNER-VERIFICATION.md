@@ -1,5 +1,20 @@
 # Runner verification
 
+## Startup timing and bounded hitch context (2026-09-12)
+
+- The developer fixture now reports setup CPU and warmup CPU separately instead
+  of hiding startup costs behind the steady-state sample. It retains the sixteen
+  worst >50ms interval/update/draw observations, with phase, distance, warmup flag
+  and preceding-frame CPU costs; the total hitch count remains available.
+- A fresh desktop integration run (2s sample, .25s warmup per phase) recorded
+  85.8ms setup and an 86.2ms first draw. Later game drawing averaged 1.50ms with
+  2.1ms p95. All three retained hitches were during warmup, demonstrating the
+  earlier steady-state report's blind spot. No visibility interruption or ended
+  run occurred. This identifies startup CPU work, not the cause of Safari's 1s gap.
+- Unit tests cover first-frame costs, preceding-frame context, the 50ms threshold
+  and bounded worst-hitch retention. Full check: 296 tests pass. Fixture tab was
+  closed and temporary HTML removed by rebuild; production gameplay unchanged.
+
 ## Native isolated timing comparisons (2026-09-12)
 
 - Ran the standalone fixture in Safari on the dedicated Biscuit Dash simulator.
