@@ -1,5 +1,14 @@
 # Runner verification
 
+## Cue-driven drill acceptance (2026-09-12)
+
+- Expanded delayed-reaction practice coverage to basics, focused jumps and
+  focused slides at 24/60 fps, base/maximum upgrades and 0–300ms reaction delays.
+  All 48 drill runs clear their three lessons using displayed cues alone.
+- Removed the test's advance-knowledge lane change: steering now also waits
+  for its displayed hint and the configured response delay. Scheduled actions
+  retain the cue's action rather than deriving it from the lesson index.
+
 ## Focused jump and slide drills (2026-09-12)
 
 - Log collisions offer jump timing practice; overhead collisions offer slide

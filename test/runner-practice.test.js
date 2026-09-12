@@ -96,17 +96,21 @@ test('practice gives collision-specific coaching for early moves and missing inp
   }
 });
 
-test('a response delay after the actual practice cues still clears all three lessons',()=>{
+test('delayed display cues clear basics and focused drills without assisted input',()=>{
+  for(const kind of ['moves','jump','slide'])for(const fps of [24,60])
   for(const delay of [0,.1,.2,.3])for(const level of [0,3]) {
-    const run=createPracticeRun({leap:level,slide:level}),plans=new Map(),used=new Set();
+    const run=createPracticeRun({leap:level,slide:level},kind),plans=new Map(),used=new Set();
+    let nextFrame=0,cue='';
     while(!run.ended) {
-      const index=run.practice.index,cue=practiceCue(run);
-      if(index<2&&/NOW/.test(cue)&&!plans.has(index))plans.set(index,run.time+delay);
-      if(index<2&&run.time>=plans.get(index)&&!used.has(index)){act(run,index===0?'jump':'slide');used.add(index);}
-      if(index===2&&!used.has(index)){act(run,'left');used.add(index);}
+      const index=run.practice.index;
+      if(run.time+1e-9>=nextFrame){cue=practiceCue(run);nextFrame+=1/fps;}
+      const action=cue.includes('JUMP NOW')?'jump':cue.includes('SLIDE NOW')?'slide':cue.includes('Steer')?'left':null;
+      if(action&&!plans.has(index))plans.set(index,{at:run.time+delay,action});
+      const plan=plans.get(index);
+      if(plan&&run.time>=plan.at&&!used.has(index)){act(run,plan.action);used.add(index);}
       stepPractice(run,1/120);
     }
-    assert.deepEqual(run.practice.outcomes,[true,true,true],`delay ${delay}, level ${level}`);
+    assert.deepEqual(run.practice.outcomes,[true,true,true],`${kind}, ${fps}fps, delay ${delay}, level ${level}`);
   }
 });
 
