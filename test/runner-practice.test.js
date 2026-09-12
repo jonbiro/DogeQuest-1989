@@ -5,13 +5,13 @@ import {act} from '../src/runner/world.js';
 import {bankRun} from '../src/runner/rewards.js';
 for(const kind of ['jump','slide'])test(`focused ${kind} drill teaches three real actions at all upgrade levels`,()=>{
   for(const level of [0,1,2,3]){
-    const run=createPracticeRun({leap:level,slide:level},kind),used=new Set();
+    const run=createPracticeRun({leap:level,slide:level},kind),used=new Set(),speeds=[];
     assert.equal(run.practice.kind,kind);
     assert.ok(run.objects.every(object=>object.type===(kind==='jump'?'log':'gate')));
     while(!run.ended){
       const index=run.practice.index;
       if(index<3&&[35,75,115][index]-run.distance<3&&!used.has(index)){
-        act(run,kind);used.add(index);
+        speeds.push(run.speed);act(run,kind);used.add(index);
       }
       stepPractice(run,1/120);
     }
@@ -20,6 +20,18 @@ for(const kind of ['jump','slide'])test(`focused ${kind} drill teaches three rea
     assert.match(practiceProgress(run),new RegExp(`3/3 ${kind}s`));
     assert.equal(bankRun({},run,[]),null);
     assert.equal(run.hearts,3);
+    for(let index=0;index<3;index++)assert.ok(Math.abs(speeds[index]-(12+index*5))<.01);
+  }
+});
+test('missed focused moves keep the gentle pace rather than increasing pressure',()=>{
+  for(const kind of ['jump','slide']){
+    const run=createPracticeRun({},kind);
+    while(!run.ended){
+      stepPractice(run,1/120);
+      assert.equal(run.speed,12);
+      assert.doesNotMatch(practiceCue(run),/faster pace/);
+    }
+    assert.deepEqual(run.practice.outcomes,[false,false,false]);
   }
 });
 test('practice completes without penalties even when every lesson is missed',()=>{

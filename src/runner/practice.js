@@ -161,6 +161,8 @@ export function stepPractice(run, dt) {
       run.practice.firstMiss={type:lesson.type,advice:run.practice.feedback.text};
     run.practice.correct += Number(correct);
     run.practice.index++;
+    if(correct&&['jump','slide'].includes(run.practice.kind)&&run.practice.index<3)
+      run.practice.feedback.text+=' · Next: faster pace';
   }
   run.hearts = 3;
   run.fetchCharge = 0;

@@ -1,5 +1,15 @@
 # Runner verification
 
+## Practice-to-adventure speed progression (2026-09-12)
+
+- Focused jump/slide drills ease from 12 to 17 to 22m/s after successful moves,
+  ending at adventure starting pace. Existing speed smoothing prevents snaps;
+  success feedback announces the faster next attempt. Other drills remain 12m/s.
+- Tests measure all three approach speeds at every upgrade level. All-missed
+  drills remain at 12m/s with no faster-pace notice. The 48 display-cue/reaction
+  scenarios still clear at 24/60fps and up to 300ms response delay.
+- Full build, distribution verification, lint and all 351 tests passed.
+
 ## Practice preserves the rematch (2026-09-12)
 
 - Entering practice from run results retains the seed, generator version,
