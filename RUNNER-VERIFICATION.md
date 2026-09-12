@@ -1,5 +1,25 @@
 # Runner verification
 
+## Native Safari offline reopening (2026-09-12)
+
+- Tested release `c175da7` in iOS 27 Safari on the dedicated Biscuit Dash QA
+  simulator (A684C311-2581-42FF-8F83-9E38506B11B5). An online reload requested
+  the current script and offline shell; the game server was then stopped and
+  connection refusal verified before and during the offline check.
+- Native Safari reload displayed camp with the existing 1,380-point balance.
+  Native touch opened illustrated Help, scrolled, expanded practice and started
+  the basic trail. A live frame showed practice at 116m; it naturally completed
+  at 0/3 with all result actions visible. This proves executable cached content,
+  not only a retained menu screenshot. The saved result image is in the sibling
+  `DogeQuest-1989-native-qa-2026-09-12/offline-practice.png`.
+- The simulator mirror disconnected intermittently; reconnecting only the
+  viewer recovered the native Safari state. The game server remained stopped
+  throughout the reload, navigation and practice completion. It was restored
+  after the check. No profile was cleared and no other simulator was modified.
+- This closes native Simulator Safari basic offline reopening/practice coverage.
+  It does not prove cache retention after OS eviction, airplane-mode behavior
+  on physical hardware, offline scored-run persistence or native touch timing.
+
 ## Preserve earned rewards after graphics loss (2026-09-12)
 
 - A graphics interruption now retires and finishes a playing/paused adventure
