@@ -21,6 +21,7 @@ import {contactShadow} from './contact-shadow.js';
 import {createBranchModel} from './branch-model.js';
 import {detourCameraWeight} from './route-detour.js';
 import {createSurfaceTexture} from './surface.js';
+import {createWaterSurface} from './water.js';
 
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -132,7 +133,6 @@ export function createView(canvas) {
       part.userData.bridge = true;
       return part;
     };
-    bridgeBox("#327f91", 0, -1.12, 0, 70, .08, 5.4).userData.water = true;
     for (let plank = 0; plank < 6; plank++)
       bridgeBox(plank % 2 ? "#b77c4c" : "#c9915e", 0, .02, -2.08 + plank * .833, 7.8, .22, .79);
     for (const x of [-4.05, 4.05]) {
@@ -270,7 +270,6 @@ export function createView(canvas) {
             start: 10,
             road: true,
             bridge: item.userData.bridge === true,
-            water: item.userData.water === true,
             cable: item.userData.cable === true,
             terrain: item.userData.terrain === true,
             edge: item.userData.edge === true,
@@ -312,6 +311,7 @@ export function createView(canvas) {
   }
   scene.remove(scenery);
   const cornerRoad = createCornerRoad(scene);
+  const water = createWaterSurface(scene);
   // Biscuit is an original articulated model, not a billboard.
   const dog = new THREE.Group();
   scene.add(dog);
@@ -855,7 +855,7 @@ export function createView(canvas) {
           bendEuler.set(frame.pitch, frame.yaw, 0, 'YXZ');
           routeRotation.setFromEuler(bendEuler);
           // Extra overlap closes the outside edge of the short curved slabs.
-          const overlap = entry.road && !entry.water && !entry.cable ? 1 + (entry.terrain ? 30 : 4.6) * Math.abs(frame.curvature) : 1;
+          const overlap = entry.road && !entry.cable ? 1 + (entry.terrain ? 30 : 4.6) * Math.abs(frame.curvature) : 1;
           bendMatrix.compose(routePosition.set(frame.x, frame.y, frame.z), routeRotation, bendScale.set(1, 1, overlap*(entry.road?(frame.stretch||1):1)));
           instanceMatrix.multiplyMatrices(bendMatrix, entry.matrix);
           if(cableClip) instanceMatrix.scale(bendScale.set(1,1,cableClip.scale));
@@ -867,11 +867,11 @@ export function createView(canvas) {
           if (entry.cable ? !cableSection : (entry.road && entry.bridge !== bridge) || (!entry.road && (bridge || cableSection))) instanceMatrix.scale(bendScale.set(0,0,0));
           // Decorative gateways must not masquerade as playable slide gates.
           if (entry.gateway && (!menu || cornerSection || z > 0)) instanceMatrix.scale(bendScale.set(0,0,0));
-          if (!menu && entry.road && !entry.terrain && !entry.water && !entry.cable &&
+          if (!menu && entry.road && !entry.terrain && !entry.cable &&
               corner && distance-z >= corner.at && distance-z <= corner.end)
             instanceMatrix.scale(bendScale.set(0,0,0));
           if(entry.region !== undefined && entry.region !== region) instanceMatrix.scale(bendScale.set(0,0,0));
-          if(entry.road && !entry.water && !entry.cable && gaps.some(gap => Math.abs(distance-z-gap.at)<.1)) instanceMatrix.scale(bendScale.set(0,0,0));
+          if(entry.road && !entry.cable && gaps.some(gap => Math.abs(distance-z-gap.at)<.1)) instanceMatrix.scale(bendScale.set(0,0,0));
           if(entry.road || entry.region === undefined) instanced.setColorAt(i,entry.bridge || entry.cable ? entry.color : entry.colors[region]);
           instanced.setMatrixAt(i, instanceMatrix);
         });
@@ -879,6 +879,7 @@ export function createView(canvas) {
         instanced.instanceColor.needsUpdate = true;
       }
       cornerRoad.update(distance, frameAt, menu);
+      water.update(distance, frameAt, menu);
       dog.position.set(
         menu ? 0 : x,
         (menu ? 0 : y) +

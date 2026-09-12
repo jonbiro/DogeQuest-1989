@@ -1,5 +1,21 @@
 # Runner verification
 
+## Continuous river surface (2026-09-12)
+
+- Replaced overlapping textured water slabs with a single indexed ribbon for
+  each visible crossing. Shared edges remove the coplanar tile seams visible
+  beside bridges. Subtle vertex shading lightens the banks; there is no added
+  texture download, transparency pass, animation or gameplay change.
+- River geometry reuses 105 vertices / 160 triangles and the same position
+  buffer across frames. Shared bridge constants retain the existing 180–280m
+  interval and 900m repeat. Tests verify edge topology, finite curved-route
+  positions, later crossings, buffer reuse, and hiding outside crossings/camp.
+- Isolated 390 × 844 browser views at 225m and 1,125m showed continuous water
+  beside curved bridge decks, with no warnings/errors. These checks do not
+  establish new physical-device performance; no saved game was modified.
+- Full build, distribution checks, lint and all 319 tests passed. The production
+  build removed the temporary browser fixture bundle before release.
+
 ## Runner-wide graphics overhaul (2026-09-12)
 
 - Rebalanced warm directional/cool ambient lighting, real 1024-pixel filtered
