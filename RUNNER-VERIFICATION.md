@@ -1,5 +1,30 @@
 # Runner verification
 
+## Native Safari shader-preparation follow-up (2026-09-12)
+
+- Dedicated Biscuit Dash iOS 27 simulator, mirrored Safari; isolated production
+  renderer fixture, 1s warmup plus 8s samples per phase, three terminal runs:
+
+  | Configuration | Preparation | First/worst warmup draw | Steady game mean / p95 interval | Steady draw mean | Game gaps >50ms |
+  | --- | --- | --- | --- | --- | --- |
+  | Prepared first | 94ms | 101ms | 16.77 / 17ms | 2.36ms | 0 |
+  | Prepared warm repeat | 42ms | 32ms | 16.67 / 17ms | 2.46ms | 0 |
+  | Unprepared | none; status idle | 88ms | 16.70 / 17ms | 2.80ms | 0 |
+
+- The intended second comparison lost its query parameter through the local
+  server's .html redirect. It is correctly recorded as another prepared run,
+  not an unprepared measurement. Using the final extensionless URL preserved
+  the option; the final report confirmed shader preparation idle.
+- All finished without visibility interruption or an ended run, around 207m.
+  First prepared warmup had a 126ms interval; unprepared had 104ms. The earlier
+  1.18s gap did not recur, but these short, warmed, shared-host samples do NOT
+  establish a reliable Safari startup improvement or isolate the prior cause.
+  Steady gameplay was approximately 60fps; startup remains a watch item.
+- Returned native Safari to camp and confirmed its 1,360 points unchanged.
+  A live simulator screenshot confirmed game rendering. Other simulators were
+  untouched; the scoped mirror was stopped and temporary fixture files removed
+  by rebuilding. No production source changes in this verification pass.
+
 ## Keep upgrade purchase focus in place (2026-09-12)
 
 - Purchasing now focuses the next affordable level in the same row, or its
