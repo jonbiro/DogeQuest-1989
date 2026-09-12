@@ -252,3 +252,14 @@ before shore produces exactly one completion and bonus. The manual-clock fixture
 now applies that same recovery function instead of bypassing it. Full checks
 passed with 437 tests before the fixture-only correction; fixture bundling/lint
 were checked afterward. Sustained native frame pacing remains unverified.
+
+## Combined powers
+
+A 32-combination simulation matrix covers shield, magnet, double bones, Zoomies
+and requested Fetch on/off. The pilot follows directional cues but finishes nearby
+bones in its current lane before changing lanes. All runs collect 12 bones and one
+gift, complete once, retain three hearts and their original shield, and never use
+shield saves or boost-smashes to hide mistakes. Double bone points apply once;
+magnet/double timers retain normal expiry. Fetch cannot self-recharge, and an
+already-active magnet prevents spending Fetch charge. This is a collection pilot,
+not delayed human-reaction evidence; that remains the separate tilt matrix.
