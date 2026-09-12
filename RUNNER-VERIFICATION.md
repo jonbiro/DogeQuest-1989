@@ -1,5 +1,21 @@
 # Runner verification
 
+## Sculpted regional ridgelines (2026-09-12)
+
+- Replaced stretched hemisphere mountains with a shared 273-vertex height field:
+  multiple summits, eroded gullies, tapered foothills and restrained vertex-color
+  shading. Full-circle orientation variation breaks up repeated silhouettes.
+  Existing regional haze, palette and scale transitions remain intact.
+- Geometry tests prove deterministic finite positions, multiple crest peaks,
+  upward-facing normals, a grounded perimeter and bounded shading values.
+- Controlled real-renderer scenes reviewed at 390 × 844 (forest, 225m) and
+  320 × 568 (canyon, 535m; glade, 1125m). Obstacles and bones remain separated
+  from distant scenery. No browser warnings/errors; the scene retained 19
+  geometries, 7 textures and 100/101 draws. This is visual fixture coverage,
+  not a physical-device or real-time performance measurement.
+- Full build, distribution verification, lint and 329 tests passed. Final build
+  removes temporary preview output; no gameplay or saved-profile changes.
+
 ## River surface highlights (2026-09-12)
 
 - Added subdued, broken ripple highlights to the continuous river mesh. River

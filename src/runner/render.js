@@ -233,9 +233,10 @@ export function createView(canvas) {
       30 + random() * 30,
       22,
     );
-    mountain.rotation.y = random();
+    mountain.rotation.y = random() * Math.PI * 2;
     mountain.geometry = mountainGeometry;
     mountain.material = mountain.material.clone();
+    mountain.material.vertexColors = true;
     // Horizon haze is blended explicitly below; scene fog would erase these
     // distant silhouettes a second time, leaving the regional backdrop blank.
     mountain.material.fog = false;
