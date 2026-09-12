@@ -25,7 +25,10 @@ window.raftInputQA={
   },
   advance(seconds){
     if(state!=='playing')throw Error('Run is not playing');
-    for(let i=0;i<Math.round(seconds*120)&&!run.ended;i++)step(run,1/120);
+    for(let i=0;i<Math.round(seconds*120)&&!run.ended;i++){
+      accumulator+=resumeStep(run,1/120);
+      while(accumulator+1e-12>=1/120&&!run.ended){step(run,1/120);accumulator-=1/120;}
+    }
     lastHud=-1;return this.snapshot();
   },
   snapshot(){return {state,distance:run.distance,lane:run.lane,x:run.x,y:run.y,

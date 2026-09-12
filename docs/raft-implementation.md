@@ -244,3 +244,11 @@ Console errors were empty; temporary tab closed and viewport reset.
 Pause copy now explains that unfinished raft/zipline completion bonuses require
 finishing the ride, while already-collected rewards are retained. The stepped
 clock does not establish real-time resume timing or native performance.
+
+Resume integration now has dedicated 24/30/60/120 Hz tests using the production
+slow-speed recovery function and 120 Hz simulation accumulator. All rates produce
+matching raft trajectories, without ground-action leakage; resuming immediately
+before shore produces exactly one completion and bonus. The manual-clock fixture
+now applies that same recovery function instead of bypassing it. Full checks
+passed with 437 tests before the fixture-only correction; fixture bundling/lint
+were checked afterward. Sustained native frame pacing remains unverified.
