@@ -898,7 +898,7 @@ export function createView(canvas) {
           const overlap = entry.road && !entry.cable ? 1 + (entry.terrain ? 30 : 4.6) * Math.abs(frame.curvature) : 1;
           bendMatrix.compose(routePosition.set(frame.x, frame.y, frame.z), routeRotation, bendScale.set(1, 1, overlap*(entry.road?(frame.stretch||1):1)));
           instanceMatrix.multiplyMatrices(bendMatrix, entry.matrix);
-          if(cableClip) instanceMatrix.scale(bendScale.set(1,1,cableClip.scale));
+          if(cableClip) instanceMatrix.scale(bendScale.set(cableClip.thicknessScale,cableClip.thicknessScale,cableClip.scale));
           const bridge = !menu && isBridge(distance-z);
           const cableSection = !menu && ziplineAt(distance-z);
           const corner = upcomingCorner(distance-z-70);

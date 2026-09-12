@@ -8,7 +8,9 @@ export const CABLE_SEGMENT_LENGTH = 5.4;
 // Adjacent segments still overlap and the attachment at z=0 stays covered.
 export function cableSegment(z) {
   const length=Math.max(0,Math.min(CABLE_SEGMENT_LENGTH,1.5-z+CABLE_SEGMENT_LENGTH/2));
-  return {z:length<CABLE_SEGMENT_LENGTH ? 1.5-length/2 : z,scale:length/CABLE_SEGMENT_LENGTH};
+  // Zero length alone leaves the box's end face visible as a floating square.
+  return {z:length<CABLE_SEGMENT_LENGTH ? 1.5-length/2 : z,
+    scale:length/CABLE_SEGMENT_LENGTH,thicknessScale:length>0?1:0};
 }
 
 export function ziplineAt(distance) {

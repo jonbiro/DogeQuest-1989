@@ -1,5 +1,18 @@
 # Runner verification
 
+## Zipline exit artifact fix (2026-09-12)
+
+- A matched 390 × 844 preview at 800m exposed a black square floating in the
+  oasis sky. Fully clipped cable boxes had zero length but retained their width
+  and height, leaving the end face visible. Exhausted segments now collapse in
+  all three dimensions; partially clipped segments retain normal thickness.
+- The same rendered scene no longer shows the square. A separate actual riding
+  fixture at 700m retains the continuous cable and dog attachment. No browser
+  warnings/errors. Clip tests cover all phases of the five-meter segment repeat,
+  including intact attachment, overlap, and zero thickness for exhausted pieces.
+- Build, distribution verification, lint and all 334 tests passed. No gameplay,
+  timing, save or resource-budget changes; temporary previews are build-cleaned.
+
 ## Area identity during alternate routes (2026-09-12)
 
 - Scenic/Challenge labels now retain the specific area (for example, Bamboo ·

@@ -42,6 +42,7 @@ test('cable clipping keeps an unbroken attachment while excluding the near-camer
     for(let i=-6;i<=2;i++) {
       const z=phase+i*5,clip=cableSegment(z),half=CABLE_SEGMENT_LENGTH*clip.scale/2;
       assert.ok(clip.scale>=0&&clip.scale<=1);
+      assert.equal(clip.thicknessScale,clip.scale>0?1:0,'exhausted segments collapse in every dimension');
       if(clip.scale===0)continue;
       const start=clip.z-half,end=clip.z+half;
       assert.ok(end<=1.5+1e-10);
@@ -51,7 +52,7 @@ test('cable clipping keeps an unbroken attachment while excluding the near-camer
     assert.ok(segments.some(s=>s.start<=0&&s.end>=0),'dog attachment remains under the cable');
     for(let i=1;i<segments.length;i++)assert.ok(segments[i].start<=segments[i-1].end,'adjacent cable sections have no gap');
   }
-  assert.deepEqual(cableSegment(-20),{z:-20,scale:1});
+  assert.deepEqual(cableSegment(-20),{z:-20,scale:1,thicknessScale:1});
   assert.equal(cableSegment(10).scale,0);
 });
 
