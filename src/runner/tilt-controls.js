@@ -7,7 +7,7 @@ export function installTiltControls(host,{toggle,recenter,message,sensitivity,in
     denied:'Motion access was not granted. Use swipes or buttons.',
     unavailable:'Motion sensors are unavailable. Use swipes or buttons.',
     'portrait-required':'Hold the phone vertically for tilt steering.'};
-  const sensor=createTiltSteering(host,{onAction:action=>{if(canSteer())onAction(action);},onStatus:status=>{
+  const sensor=createTiltSteering(host,{canSteer,onAction:action=>{if(canSteer())onAction(action);},onStatus:status=>{
     active=['ready','hold-steady','portrait-required'].includes(status);
     toggle.textContent=active?'Turn tilt off':'Enable tilt';
     toggle.setAttribute('aria-pressed',String(active));

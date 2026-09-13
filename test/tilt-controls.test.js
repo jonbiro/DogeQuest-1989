@@ -10,6 +10,7 @@ function setup(permission='granted'){
     addEventListener:(k,v)=>listeners.set(k,v),removeEventListener:k=>listeners.delete(k)};
   const controller=installTiltControls(host,{toggle,recenter,message,onAction:a=>actions.push(a),canSteer:()=>allowed});
   return {toggle,recenter,message,controller,actions,listeners,block:()=>{allowed=false;},
+    unblock:()=>{allowed=true;},
     sample(gamma,n=1){for(let i=0;i<n;i++){now+=20;listeners.get('deviceorientation')?.({gamma});}}};
 }
 test('tilt UI enables, recalibrates, respects gameplay suppression and turns off',async()=>{
@@ -25,6 +26,14 @@ test('denied permission keeps fallback instructions and permits retry',async()=>
   const f=setup('denied');await f.toggle.onclick();
   assert.equal(f.toggle.disabled,false);assert.equal(f.toggle['aria-pressed'],'false');
   assert.match(f.message.textContent,/not granted/);assert.equal(f.listeners.size,0);
+});
+test('a partial lean during a corner cannot become a delayed lane change',async()=>{
+  const f=setup();await f.toggle.onclick();f.sample(0);
+  f.block();f.sample(25,2); // Smoothed angle is still below the activation threshold.
+  f.unblock();f.sample(25,30);
+  assert.deepEqual(f.actions,[],'holding the corner lean must not steer after the corner');
+  f.sample(0,30);f.sample(25,30);
+  assert.deepEqual(f.actions,['right'],'a fresh deliberate lean still works');
 });
 test('restored sensitivity configures the sensor without requesting motion access',async()=>{
   let requests=0;const changes=[],listeners=new Map();

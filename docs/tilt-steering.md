@@ -2,6 +2,12 @@
 
 ## Rotation recovery
 
+Corner/input suppression also disarms partial leans before they cross the
+smoothed activation threshold. Players return to neutral before starting a new
+lean after the corner; an unfinished suppressed lean cannot turn into a delayed
+lane change. A controller regression tests the below-threshold transition and
+subsequent neutral rearming.
+
 Landscape now suspends the sensor-availability timeout instead of treating an
 intentional sideways hold as sensor failure. Returning to portrait restarts the
 availability check and establishes a fresh neutral hold before steering. This

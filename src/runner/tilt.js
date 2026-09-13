@@ -1,6 +1,6 @@
 // Portrait-first, opt-in sensor adapter. No sensor data is saved or transmitted.
 // One deliberate lean emits one lane change; returning to neutral rearms it.
-export function createTiltSteering(host,{onAction,onStatus=()=>{}}){
+export function createTiltSteering(host,{onAction,onStatus=()=>{},canSteer=()=>true}){
   const thresholds={gentle:9,balanced:14,steady:20};
   let threshold=thresholds.balanced;
   let blockedUntil=0;
@@ -40,6 +40,9 @@ export function createTiltSteering(host,{onAction,onStatus=()=>{}}){
     if(origin===null){origin=value;last=now;lastAngle=angle;clearTimer();status('ready');return;}
     const dt=Math.min(.1,Math.max(0,(now-last)/1000));last=now;
     filtered+=(value-origin-filtered)*(1-Math.exp(-dt/0.08));
+    // A lean begun during a corner or paused play must not become a delayed
+    // lane change when normal running resumes. Keep neutral, but require rearm.
+    if(!canSteer()){armed=false;return;}
     if(now<blockedUntil)return;
     if(Math.abs(filtered)<threshold*.36)armed=true;
     if(armed&&Math.abs(filtered)>threshold){armed=false;onAction(filtered<0?'left':'right');}
