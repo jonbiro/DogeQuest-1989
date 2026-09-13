@@ -1176,6 +1176,8 @@ export function createView(canvas) {
       rasterArtwork.setPose({
         time,
         legs:rasterAngles,
+        verticalVelocity:run.vy,
+        impact:weight.compression,
         // `bodyMotion.lean` is already eased from the lane velocity, so use
         // the opposite signed velocity as a decisive turn impulse. The two
         // terms reinforce instead of cancelling during the first half of a
@@ -1229,9 +1231,14 @@ export function createView(canvas) {
       if (!menu && !reducedMotion && !run.ended)
         for (const effect of run.effects) {
           const age = run.time - effect.time;
+          if (age < 0 || age >= .45) continue;
           flashColor.set(effectColor(effect.type));
           const impact=effect.type==='hit'||effect.type==='shield-break';
-          const size=(impact?.14:.07)*(1-age/.45);
+          const landing=effect.type==='land';
+          const takeoff=effect.type==='jump';
+          const size=(impact?.14:landing?.075:takeoff?.052:.07)*(1-age/.45);
+          const spread=landing?4.5:takeoff?2.2:impact?5:3;
+          const lift=landing?1.4:takeoff?1.0:2;
           for (let i = 0; i < 6 && sparkCount < 192; i++) {
             const angle = (i * Math.PI) / 3;
             flashMatrix.makeScale(
@@ -1240,8 +1247,8 @@ export function createView(canvas) {
               size,
             );
             flashMatrix.setPosition(
-              effect.x + Math.cos(angle) * age * (impact?5:3),
-              effect.y + Math.sin(angle) * age * 2,
+              effect.x + Math.cos(angle) * age * spread,
+              effect.y + Math.sin(angle) * age * lift,
               age * 2,
             );
             flashes.setColorAt(sparkCount, flashColor);

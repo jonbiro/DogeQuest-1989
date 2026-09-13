@@ -846,6 +846,8 @@ export function createPuppyArtwork() {
   function setPose({
     time = 0,
     turn = 0,
+    verticalVelocity = 0,
+    impact = 0,
     airborne = false,
     sliding = false,
     menu = false,
@@ -853,6 +855,12 @@ export function createPuppyArtwork() {
   } = {}) {
     const motion = reducedMotion ? 0 : 1;
     const look = THREE.MathUtils.clamp(turn, -1, 1);
+    const vertical = Number.isFinite(verticalVelocity)
+      ? THREE.MathUtils.clamp(verticalVelocity / 14, -1, 1)
+      : 0;
+    const landingPulse = motion && Number.isFinite(impact)
+      ? THREE.MathUtils.clamp(impact * 4, 0, .36)
+      : 0;
     const gaitRate = menu ? 2.8 : sliding ? 8.8 : airborne ? 7.2 : 8.4;
     const gait = motion ? (Math.sin(time * gaitRate - Math.PI / 2) + 1) / 2 : 0;
     const turnAmount = motion ? THREE.MathUtils.clamp((Math.abs(look) - .16) / .64, 0, 1) : 0;
@@ -880,7 +888,13 @@ export function createPuppyArtwork() {
     if (!activePose && poseReady('slide')) activePose = 'slide';
     if (!activePose && poseReady('turn')) activePose = 'turn';
     group.userData.activePose = activePose || 'idle';
-    group.userData.poseState = {airborne: Boolean(airborne), sliding: Boolean(sliding), look};
+    group.userData.poseState = {
+      airborne: Boolean(airborne),
+      sliding: Boolean(sliding),
+      look,
+      verticalVelocity: vertical,
+      landingPulse,
+    };
 
     const cadence = Math.sin(time * gaitRate);
     const bounce = motion ? Math.abs(cadence) * (menu ? .008 : airborne ? .018 : sliding ? .010 : .018) : 0;
@@ -900,18 +914,30 @@ export function createPuppyArtwork() {
       const basePosition = poseBasePositions[pose] || bodyBasePosition;
       const flip = pose === 'turn' && look < 0 ? -1 : 1;
       const actionRotation = pose === 'jump'
-        ? jumpMotion * .045
+        ? jumpMotion * .045 - vertical * .055
         : pose === 'slide'
           ? -look * .035 + slideMotion * .018
           : 0;
-      const actionScaleX = pose === 'jump' ? .985 : pose === 'slide' ? 1.055 : 1;
-      const actionScaleY = pose === 'jump' ? 1.018 : pose === 'slide' ? .91 : 1;
-      const actionDrop = pose === 'jump' ? .058 + jumpMotion * .012 : pose === 'slide' ? -.078 + slideMotion * .008 : 0;
+      const actionScaleX = pose === 'jump'
+        ? .985 - vertical * .012
+        : pose === 'slide' ? 1.055 : 1;
+      const actionScaleY = pose === 'jump'
+        ? 1.018 + vertical * .025
+        : pose === 'slide' ? .91 : 1;
+      const actionDrop = pose === 'jump'
+        ? .058 + jumpMotion * .012 + vertical * .018
+        : pose === 'slide' ? -.078 + slideMotion * .008 : 0;
+      const impactRoll = landingPulse ? Math.sin(time * 28) * landingPulse * .12 : 0;
       sprite.material.rotation = lean * (pose === 'turn' ? .45 : .2) + actionRotation;
-      sprite.scale.set(scale.x * flip * actionScaleX * (1 - stretch), scale.y * actionScaleY * (1 + stretch), 1);
+      sprite.material.rotation += impactRoll;
+      sprite.scale.set(
+        scale.x * flip * actionScaleX * (1 - stretch) * (1 + landingPulse * .06),
+        scale.y * actionScaleY * (1 + stretch) * (1 - landingPulse * .1),
+        1,
+      );
       sprite.position.set(
         basePosition.x + sway + (pose === 'turn' ? look * .032 : 0),
-        basePosition.y + bounce + actionDrop,
+        basePosition.y + bounce + actionDrop - landingPulse * .04,
         basePosition.z,
       );
     }
@@ -921,14 +947,22 @@ export function createPuppyArtwork() {
     // different silhouette, while the dog's own painted collar stays sharp.
     const activeScale = poseBaseScales[activePose] || bodyBaseScale;
     const accessoryAlpha = activePose === 'idle' ? 1 : activePose === 'turn' ? .18 : .12;
-    const accessoryDrop = activePose === 'jump' ? .058 : activePose === 'slide' ? -.078 : 0;
-    const accessoryScaleX = activePose === 'slide' ? 1.055 : activePose === 'jump' ? .985 : 1;
-    const accessoryScaleY = activePose === 'slide' ? .91 : activePose === 'jump' ? 1.018 : 1;
-    accessorySprites.back.position.set(bodyBasePosition.x + sway, bodyBasePosition.y + bounce + accessoryDrop, -.018);
-    accessorySprites.mid.position.set(bodyBasePosition.x + sway, bodyBasePosition.y + bounce + accessoryDrop, .022);
-    accessorySprites.top.position.set(bodyBasePosition.x + sway + look * .02, bodyBasePosition.y + bounce + accessoryDrop, .055);
+    const accessoryDrop = activePose === 'jump'
+      ? .058 + vertical * .018
+      : activePose === 'slide' ? -.078 : 0;
+    const accessoryScaleX = activePose === 'slide' ? 1.055 : activePose === 'jump' ? .985 - vertical * .012 : 1;
+    const accessoryScaleY = activePose === 'slide' ? .91 : activePose === 'jump' ? 1.018 + vertical * .025 : 1;
+    const accessoryImpactDrop = -landingPulse * .04;
+    accessorySprites.back.position.set(bodyBasePosition.x + sway, bodyBasePosition.y + bounce + accessoryDrop + accessoryImpactDrop, -.018);
+    accessorySprites.mid.position.set(bodyBasePosition.x + sway, bodyBasePosition.y + bounce + accessoryDrop + accessoryImpactDrop, .022);
+    accessorySprites.top.position.set(bodyBasePosition.x + sway + look * .02, bodyBasePosition.y + bounce + accessoryDrop + accessoryImpactDrop, .055);
     for (const sprite of Object.values(accessorySprites)) {
-      sprite.scale.set(activeScale.x * accessoryScaleX * (1 - stretch), activeScale.y * accessoryScaleY, 1);
+      sprite.scale.set(
+        activeScale.x * accessoryScaleX * (1 - stretch) * (1 + landingPulse * .06),
+        activeScale.y * accessoryScaleY * (1 - landingPulse * .1),
+        1,
+      );
+      sprite.material.rotation = landingPulse ? Math.sin(time * 28) * landingPulse * .12 : 0;
       sprite.material.opacity = accessoryAlpha;
     }
   }

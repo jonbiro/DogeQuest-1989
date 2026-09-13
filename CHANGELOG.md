@@ -4,6 +4,10 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Added physics-timed puppy takeoff and touchdown feedback: authored jump poses now
+  react to ascent/descent velocity, landings get a restrained squash-and-roll, and
+  small local paw particles make both contacts readable without screen shake or
+  extra HUD copy.
 - Replaced the straight runner corridor with a continuously winding track; road sections, scenery, pickups, and hazards share the curved centerline.
 - Raised difficulty with a 22–36 m/s pace, earlier/denser obstacles, frequent two-lane blockages, full-width jump/slide rows, and riskier bone trails. Kept readable cues, forgiving inputs, and recovery space after action rows.
 

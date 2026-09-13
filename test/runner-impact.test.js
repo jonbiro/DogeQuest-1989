@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createRun,step} from '../src/runner/world.js';
+import {act,createRun,step} from '../src/runner/world.js';
 import {effectColor} from '../src/runner/impact-color.js';
 
 test('a real collision emits one local impact, distinguishes shields and expires',()=>{
@@ -27,4 +27,19 @@ test('impact colors distinguish damage, shield rescue and ordinary bone rewards'
   assert.equal(effectColor('shield-break'),effectColor('shield'));
   assert.equal(effectColor('magnet'),effectColor('fetch'));
   assert.equal(effectColor('unknown'),effectColor('bone'));
+});
+
+test('jump and landing emit timestamped local feedback without changing physics',()=>{
+  const run=createRun(1989);
+  run.objects=[];run.nextRow=Infinity;run.nextChoice=Infinity;run.nextZipline=Infinity;
+  const startingY=run.y;
+  run.events=[];
+  act(run,'jump');
+  assert.equal(run.y,startingY);
+  assert.equal(run.effects.length,1);
+  assert.equal(run.effects[0].type,'jump');
+  for(let i=0;i<120&&!run.landing;i++)step(run,1/120);
+  assert.ok(run.landing);
+  assert.ok(run.effects.some(effect=>effect.type==='land'));
+  assert.equal(run.landing.speed>0,true);
 });

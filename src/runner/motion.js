@@ -31,6 +31,10 @@ export function jump(run) {
   run.diving = false;
   run.jumpBuffer = 0;
   run.vy = JUMP_SPEED * leapScale(run);
+  // Keep the takeoff cue local to the runner. Rendering decides how subtle
+  // the particles are, while the simulation timestamp keeps the cue in sync
+  // with buffered jumps and fixed-step replay.
+  run.effects?.push({type: "jump", time: run.time, x: run.x, y: run.y});
   run.events.push('jump');
 }
 
@@ -75,6 +79,10 @@ export function moveVertical(run, dt) {
   if (result.landed) {
     const remaining = Math.max(0, dt - result.elapsed);
     run.landing = {time: run.time - remaining, speed: result.impact};
+    // A short landing puff makes paw contact legible without a banner or
+    // screen shake. Use the exact impact timestamp when a buffered rebound
+    // happens partway through a fixed step.
+    run.effects?.push({type: "land", time: run.landing.time, x: run.x, y: 0});
     run.events.push('land');
     run.diving = false;
     // A late press belongs to the next takeoff, regardless of leap height.
