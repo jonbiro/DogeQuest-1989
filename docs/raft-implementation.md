@@ -1,5 +1,18 @@
 # River raft implementation status
 
+## Shoreline scenery
+
+Low, unmarked shoreline stones frame both banks at lateral offsets beyond eight
+meters, outside all playable lanes. A single 36-instance batch reuses the existing
+sculpted boulder geometry, with muted colors distinct from marked river hazards.
+Portrait 390 × 844 inspection confirmed readable bones, hazards and river edges.
+The refreshed all-puppy 90 km check completed 30 rivers, 65 cables and 130 turns
+without damage, shield saves or missed turns. Peak resources remained 36
+geometries, nine textures, 243 draw calls and 115 pooled/active gameplay objects;
+the decorative bank batch adds one draw where visible, with no new geometry.
+Repeat lap stable; browser errors empty. Full checks passed 455 tests. These
+render checkpoints do not replace a new real-time native performance measurement.
+
 ## Mixed traversal challenge
 
 After the first 30 challenges, every ninth index offers River & sky: finish two

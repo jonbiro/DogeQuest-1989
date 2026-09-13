@@ -39,6 +39,7 @@ import {createMushroomCapGeometry} from './mushroom-cap.js';
 import {createTerrainMaterial,terrainStation} from './terrain-material.js';
 import {raftAt,raftIntersecting} from './rafts.js';
 import {createRaftModel} from './raft-model.js';
+import {createRiverBanks} from './river-banks.js';
 
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -560,6 +561,7 @@ export function createView(canvas) {
   const boneBatch=createInstanceBatch(scene,boneGeometry,templates.bone.material);
   templates.rock = new THREE.Group();
   const boulder = mesh(templates.rock,createBoulderGeometry(),"#293e49",0,1.05,0,.94,1.1,.8);
+  const riverBanks=createRiverBanks(scene,boulder.geometry);
   boulder.rotation.y = .35;
   ball(templates.rock, "#77996b", -.12, 1.98, 0, .78, .2, .65);
   box(templates.rock, "#e9dca6", 0, 1.08, 0.72, 0.35, 0.7, 0.06);
@@ -949,6 +951,7 @@ export function createView(canvas) {
       const river=run.raftPrototype&&!menu?raftIntersecting(distance-12,distance+170):null;
       if(river)raftWater.update(distance,frameAt,false,dt,state==='playing'&&!reducedMotion,river,run.raft?x:null);
       else raftWater.mesh.visible=false;
+      riverBanks.update(distance,frameAt,river);
       dog.position.set(
         menu ? 0 : x,
         (menu ? 0 : y) +
