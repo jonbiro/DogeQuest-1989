@@ -30,7 +30,7 @@ progress with exceptions for currency and challenge streaks.
 | Area identity | `areas.js`, `mountain.js`, `render.js`, `world.js`: six palettes/silhouettes, scenery, terrain and version-4 encounter rhythms | Each destination now has its own hazard cadence, safe-lane sequence and pickup emphasis while preserving the shared move vocabulary |
 | Replay motivation | `missions.js`, `daily-trail.js`, `rewards.js`: sequential challenge packs, daily seeds, mastery and same-trail retries | Useful local loop; no curated event itinerary or independent daily records |
 | Character progression | `progression.js`, clubhouse: four shared upgrades; dogs/outfits cosmetic | Deliberate fair-design distinction, not character-ability parity |
-| Audio atmosphere | `sound.js`, `soundscape.js`, app event wiring: short synthesized cues plus sparse area motifs | Lightweight area accents are present; this is intentionally not a full soundtrack or recorded ambience system |
+| Audio atmosphere | `sound.js`, `soundscape.js`, app event wiring: short synthesized cues plus layered area motifs | Distinct call-and-response accents are present; this is intentionally not a full soundtrack or recorded ambience system |
 | Social continuity | Shared seed/target URLs and local backup | Friendly challenges, not ranked competition or automatic cloud sync |
 | Mobile quality | Current browser checks plus a current-build portrait Safari simulator benchmark | Simulator evidence is now strong; physical-phone frame pacing remains unproven |
 

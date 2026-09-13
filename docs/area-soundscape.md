@@ -1,9 +1,11 @@
 # Area musical accents
 
-Each of the six landscapes now has an original three-note sine phrase with a
-distinct register and contour. These are sparse musical accents, not a full
-soundtrack or recorded nature ambience. Gain peaks at 0.006 versus the existing
-0.035 effects ceiling; ordinary voice limits reserve capacity for action sounds.
+Each of the six landscapes now has an original five-note call-and-response
+phrase with a distinct register and contour. A quiet triangle reply gives the
+melody a little more identity while effects remain much louder. These are still
+light synthesized accents, not a full soundtrack or recorded nature ambience.
+Gain peaks at 0.006 versus the existing 0.035 effects ceiling; ordinary voice
+limits reserve capacity for action sounds.
 
 The scheduler waits 1.25 seconds after entry/resume and at least 4.8 seconds
 between phrases. Visible action and route decisions defer new phrases. Practice
