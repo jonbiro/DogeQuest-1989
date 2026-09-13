@@ -906,6 +906,7 @@ function frame(now) {
       $("distance").innerHTML = `${Math.floor(run.distance-(run.practice?.start || 0))}<small> m</small>`;
       const labels=runHudLabels(run,saved.best);
       $("region-name").textContent = labels.region;
+      $("area-rhythm").textContent = labels.rhythm;
       setText('route-choice', routeChoiceCue(run));
       $("bones").textContent = run.bones;
       $("run-score").textContent = labels.score;

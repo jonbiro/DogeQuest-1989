@@ -15,12 +15,12 @@ export const AREAS=[
 // teaches one familiar move at a time while the scenery changes around it.
 // Legacy trail versions never consult this table and retain their exact rows.
 export const AREA_GAMEPLAY=[
-  {id:'roots-and-canopy',label:'roots and canopy',hazards:['branch','log','branch','log'],safeLanes:[1,0,2],pickupOffset:0},
-  {id:'bamboo-zigzag',label:'bamboo zigzag',hazards:['gate','branch','gate','log'],safeLanes:[0,2,1],pickupOffset:1},
-  {id:'broken-ridge',label:'broken ridge',hazards:['rock','log','rock','arch'],safeLanes:[2,1,0],pickupOffset:2},
-  {id:'oasis-stepping-stones',label:'oasis stepping stones',hazards:['rock','branch','log','rock'],safeLanes:[1,2,0],pickupOffset:3},
-  {id:'crystal-slalom',label:'crystal slalom',hazards:['rock','gate','rock','branch'],safeLanes:[0,1,2],pickupOffset:4},
-  {id:'moonlit-canopy',label:'moonlit canopy',hazards:['arch','branch','gate','rock'],safeLanes:[2,0,1],pickupOffset:5},
+  {id:'roots-and-canopy',label:'Roots + canopy',hazards:['branch','log','branch','log'],safeLanes:[1,0,2],pickupOffset:0},
+  {id:'bamboo-zigzag',label:'Bamboo zigzag',hazards:['gate','branch','gate','log'],safeLanes:[0,2,1],pickupOffset:1},
+  {id:'broken-ridge',label:'Broken ridge',hazards:['rock','log','rock','arch'],safeLanes:[2,1,0],pickupOffset:2},
+  {id:'oasis-stepping-stones',label:'Oasis stepping stones',hazards:['rock','branch','log','rock'],safeLanes:[1,2,0],pickupOffset:3},
+  {id:'crystal-slalom',label:'Crystal slalom',hazards:['rock','gate','rock','branch'],safeLanes:[0,1,2],pickupOffset:4},
+  {id:'moonlit-canopy',label:'Moonlit canopy',hazards:['arch','branch','gate','rock'],safeLanes:[2,0,1],pickupOffset:5},
 ];
 export function areaAt(distance){return Math.floor(Math.max(0,distance)/AREA_LENGTH)%AREAS.length;}
 export function areaGameplayAt(distance){return AREA_GAMEPLAY[areaAt(distance)];}

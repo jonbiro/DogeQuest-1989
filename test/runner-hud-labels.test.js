@@ -11,7 +11,7 @@ test('both routes retain area identity, shared targets, records and rematches ac
       run.distance=index*225+100;run.route={kind,until:run.distance+220};
       run.score=900;run.challengeTarget=1000;
       const location=`${name} · ${kind==='challenge'?'Challenge':'Scenic'}`;
-      assert.deepEqual(runHudLabels(run,10000),{region:location,score:'101 pts to target'});
+      assert.deepEqual(runHudLabels(run,10000),{region:location,rhythm:['Roots + canopy','Bamboo zigzag','Broken ridge','Oasis stepping stones','Crystal slalom','Moonlit canopy'][index],score:'101 pts to target'});
       run.score=1001;
       assert.equal(runHudLabels(run,10000).score,'1,001 pts · TARGET BEAT');
       run.challengeTarget=0;run.score=900;
@@ -24,8 +24,8 @@ test('both routes retain area identity, shared targets, records and rematches ac
 test('route labels end at the exact boundary and practice remains explicitly unscored',()=>{
   const run=createRun(1989);
   run.distance=570;run.route={kind:'challenge',until:570};
-  assert.deepEqual(runHudLabels(run,0),{region:'Redrock Pass',score:'0 pts'});
+  assert.deepEqual(runHudLabels(run,0),{region:'Redrock Pass',rhythm:'Broken ridge',score:'0 pts'});
   const practice=createPracticeRun();
   practice.route={kind:'challenge',until:1000};practice.challengeTarget=100;
-  assert.deepEqual(runHudLabels(practice,100),{region:'Practice · no penalties',score:'0/3 moves cleared'});
+  assert.deepEqual(runHudLabels(practice,100),{region:'Practice · no penalties',rhythm:'',score:'0/3 moves cleared'});
 });

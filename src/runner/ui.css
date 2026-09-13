@@ -193,7 +193,7 @@ header {
   max-width: 560px;
 }
 .eyebrow {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: bold;
   letter-spacing: 2px;
   color: var(--lime);
@@ -461,6 +461,17 @@ footer .text-button {
   font-size: 10px;
   letter-spacing: 2px;
 }
+#area-rhythm {
+  display: block;
+  margin-top: 3px;
+  color: #b9d8d4;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  line-height: 1.15;
+  text-transform: uppercase;
+}
+#area-rhythm:empty { display: none; }
 .score {
   background: #102a28ed;
   outline: 6px solid #102a28ed;
@@ -1158,6 +1169,7 @@ h1 { letter-spacing: -.055em; word-spacing: .07em; }
 .mastery-card,#run-lesson,.upgrade { border-color:#b8d0d333; }
 .score { background:#112d39ed; outline-color:#112d39ed; border-radius:10px; }
 .score > span { letter-spacing:.08em; color:#c0dce0; font-size:10px; }
+#area-rhythm { color:#f5d58f; font-size:10px; letter-spacing:.11em; }
 .score strong { font-variant-numeric:tabular-nums; letter-spacing:-.04em; }
 #run-score { color:#f8e5bd; font-variant-numeric:tabular-nums; }
 .bones { background:#112d39ed; border-color:#e9c88670; color:#ffe3ad; border-radius:14px; }

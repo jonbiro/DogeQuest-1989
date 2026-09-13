@@ -37,5 +37,6 @@ test('runner headline and onboarding name bones as the core collectible',()=>{
   assert.match(html,/<h1 id="title">Run wild\.<br \/>Fetch <em>bones\.<\/em><\/h1>/);
   assert.match(html,/chase glowing bones/);
   assert.match(html,/Zipline bones ↗︎/);
+  assert.match(html,/id="area-rhythm"/);
   assert.doesNotMatch(html,/Fetch gold/);
 });
