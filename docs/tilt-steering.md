@@ -1,5 +1,16 @@
 # Optional tilt steering
 
+## Mobile default
+
+On coarse-pointer devices, the first Play (including practice) enables tilt and
+requests motion permission directly in that user gesture when required. The
+simulation does not advance while permission is pending. Loading the page alone
+does not request permission. Desktop keeps manual opt-in. Declining permission
+or turning tilt off prevents further automatic attempts for the visit; Help and
+Pause still allow an explicit retry. Touch controls remain available. This
+supersedes the older opt-in-only descriptions below; sensor permission cannot
+be bypassed, and reloads still require the first Play activation.
+
 ## Rotation recovery
 
 Corner/input suppression also disarms partial leans before they cross the

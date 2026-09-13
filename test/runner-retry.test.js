@@ -15,7 +15,7 @@ test('results retry repeats the seed with a fresh simulation; camp starts a new 
   assert.ok(start>=0 && end>start);
   const original=createRun(1989);
   original.hearts=0;original.ended=true;original.score=250;
-  const context={run:original,state:'ended',graphicsReady:true,sharedSeed:null,sharedVersion:null,sharedTarget:0,
+  const context={tilt:{enableDefault(){}},run:original,state:'ended',graphicsReady:true,sharedSeed:null,sharedVersion:null,sharedTarget:0,
     saved:{upgrades:{},collection:{puppy:'mochi'},challenges:0},
     createRun,rematchFor,createPracticeRun,Date:{now:()=>987654},missionPackFor,
     setText:()=>{},setState:value=>{context.state=value;},

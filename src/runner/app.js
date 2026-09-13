@@ -351,6 +351,7 @@ function setState(next) {
 }
 function start() {
   if(!graphicsReady)return;
+  tilt.enableDefault();
   // A results-screen retry is a rematch, not a new random obstacle layout.
   // Camp/help use random adventures unless an explicit shared trail is active.
   const retry = rematchFor(run,state==='ended');
@@ -821,7 +822,7 @@ function frame(now) {
   const dt = Math.min(0.05, frameDt);
   last = now;
   time += dt;
-  if (state === "playing") {
+  if (state === "playing" && !tilt.isRequesting()) {
     accumulator += resumeStep(run, dt);
     while (accumulator >= 1 / 120 && !run.ended) {
       if (run.practice) stepPractice(run, 1 / 120);

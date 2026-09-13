@@ -1,6 +1,10 @@
 import {createTiltSteering} from './tilt.js';
 export function installTiltControls(host,{toggle,recenter,message,sensitivity,initialSensitivity='balanced',onSensitivity=()=>{},onAction,canSteer}){
-  let active=false;
+  let active=false,attempted=false,requesting=false;
+  async function enable(){
+    requesting=true;toggle.disabled=true;
+    try{return await sensor.enable();}finally{requesting=false;toggle.disabled=false;}
+  }
   const labels={off:'Tilt is off. Swipes and buttons always work.',
     'hold-steady':'Hold your phone comfortably upright to calibrate.',
     ready:'Tilt ready. Lean to change one lane; return upright before leaning again. Swipe for corners, jumps and slides.',
@@ -14,9 +18,9 @@ export function installTiltControls(host,{toggle,recenter,message,sensitivity,in
     recenter.disabled=!active;message.textContent=labels[status];
   }});
   toggle.onclick=async()=>{
+    attempted=true;
     if(active){sensor.stop();return;}
-    toggle.disabled=true;
-    try{await sensor.enable();}finally{toggle.disabled=false;}
+    await enable();
   };
   recenter.onclick=()=>sensor.recalibrate();
   if(sensitivity){
@@ -26,5 +30,11 @@ export function installTiltControls(host,{toggle,recenter,message,sensitivity,in
     };
   }
   sensor.stop();
-  return sensor;
+  return {...sensor,isRequesting:()=>requesting,
+    enableDefault(){
+      if(attempted||!host.matchMedia?.('(pointer: coarse)').matches)return;
+      attempted=true;
+      // Called directly from Play, retaining the browser's user activation.
+      void enable();
+    }};
 }
