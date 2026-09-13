@@ -6,11 +6,12 @@ test("old and malformed saves receive safe collection defaults", () => {
   for (const value of [undefined,null,5,"bad",{}]) {
     const c = collectionFrom(value);
     assert.deepEqual(c.puppies,["biscuit","mochi"]);
-    assert.equal(c.puppy,"biscuit");
+    assert.equal(c.puppy,"mochi");
   }
   const c = collectionFrom({puppies:["pepper","pepper","__proto__"], puppy:"luna", costumes:["hero"], costume:"hero",gifts:-1,prizes:["long-run","long-run","bad"]});
   assert.deepEqual(c.puppies,["biscuit","mochi","pepper"]);
-  assert.equal(c.puppy,"biscuit"); assert.equal(c.costume,"hero");
+  assert.equal(c.puppy,"mochi"); assert.equal(c.costume,"hero");
+  assert.equal(collectionFrom({puppy:"biscuit"}).puppy,"biscuit","explicit selections remain respected");
   assert.equal(c.gifts,0); assert.deepEqual(c.prizes,["long-run"]);
 });
 test("puppies and outfits buy once, persist and reject locked prizes", () => {

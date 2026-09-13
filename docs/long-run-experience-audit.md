@@ -78,7 +78,8 @@ runs remain recorded in `sustained-mobile-qa.md` rather than hidden.
 ## Next design priority
 
 Repeat this matrix on physical hardware when available, including a complete
-touch-and-default-tilt pass. Keep the swipe fallback when sensors are denied or
+touch-and-optional-tilt pass. Keep swipes as the default and retain the tilt
+fallback when sensors are denied or
 unavailable, and preserve generous warning distance around turns, rafts,
 ziplines and full-width action beats. Any generator change still needs a new
 replay version so old shared trails remain stable.

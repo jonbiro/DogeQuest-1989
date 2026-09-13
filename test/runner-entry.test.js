@@ -35,6 +35,8 @@ test('only the exact entry script is permitted by CSP and it precedes relative a
 test('runner headline and onboarding name bones as the core collectible',()=>{
   assert.match(html,/<title>Biscuit Dash — Run wild\. Fetch bones\.<\/title>/);
   assert.match(html,/<h1 id="title">Run wild\.<br \/>Fetch <em>bones\.<\/em><\/h1>/);
+  assert.match(html,/<span>MEET YOUR RUNNING BUDDY<\/span><strong>Mochi\.<\/strong>/);
+  assert.match(html,/Swipes and buttons are the default controls/);
   assert.match(html,/chase glowing bones/);
   assert.match(html,/Zipline bones ↗︎/);
   assert.match(html,/id="area-rhythm"/);

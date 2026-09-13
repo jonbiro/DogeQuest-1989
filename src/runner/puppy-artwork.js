@@ -14,11 +14,15 @@ export const PUPPY_ARTWORK = Object.freeze({
 // windows turn it into a small 2.5D puppet at runtime: the torso stays a
 // cohesive painted shape, while the four painted legs and tail get their own
 // joints. No dog anatomy is recreated with boxes, cones or low-poly vectors.
-// The windows are deliberately generous so the inked fur edge remains intact.
+// Leg and tail windows stay deliberately generous so the inked fur edge
+// remains intact; the head uses a tighter crop to avoid transparent padding.
 export const PUPPY_ARTWORK_LAYOUTS = Object.freeze({
   biscuit: {
     body: {
       face: [.34, .27, .32, .29],
+      // Tight head windows keep transparent source padding from becoming a
+      // visible halo while leaving a little painted fur overlap at the neck.
+      head: [.025, .035, .65, .56],
       root: [.34, .53],
       ears: [
         { crop: [.05, .12, .25, .42], root: [.20, .34] },
@@ -36,6 +40,9 @@ export const PUPPY_ARTWORK_LAYOUTS = Object.freeze({
   mochi: {
     body: {
       face: [.34, .28, .33, .30],
+      // Mochi's portrait has a generous transparent border in the source;
+      // this crop hugs the curls and collar so his face reads immediately.
+      head: [.035, .035, .62, .53],
       root: [.34, .54],
       ears: [
         { crop: [.04, .12, .27, .44], root: [.20, .35] },
@@ -53,6 +60,7 @@ export const PUPPY_ARTWORK_LAYOUTS = Object.freeze({
   pepper: {
     body: {
       face: [.34, .28, .32, .30],
+      head: [.025, .045, .65, .54],
       root: [.34, .54],
       ears: [
         { crop: [.06, .14, .25, .42], root: [.21, .35] },
@@ -70,6 +78,7 @@ export const PUPPY_ARTWORK_LAYOUTS = Object.freeze({
   luna: {
     body: {
       face: [.32, .30, .33, .30],
+      head: [.02, .005, .65, .52],
       root: [.32, .57],
       ears: [
         { crop: [.05, .01, .25, .35], root: [.18, .29] },
@@ -153,12 +162,12 @@ function drawBodyMask(context, width, height, layout) {
   context.fill();
 }
 
-function drawHeadMask(context, width, height, layout) {
+function drawHeadMask(context, width, height, layout, cropRect = {x:0,y:0}) {
   const [faceX, faceY, faceWidth, faceHeight] = layout.body.face;
   context.beginPath();
   context.ellipse(
-    faceX * width,
-    faceY * height,
+    faceX * width - cropRect.x,
+    faceY * height - cropRect.y,
     faceWidth * width,
     faceHeight * height,
     0,
@@ -167,6 +176,18 @@ function drawHeadMask(context, width, height, layout) {
   );
   context.fillStyle = '#fff';
   context.fill();
+}
+
+function headRectFor(layout, width, height) {
+  const crop = layout?.body?.head;
+  if (Array.isArray(crop) && crop.length === 4) return pixelRect(crop, width, height);
+  const [x, y, radiusX, radiusY] = layout.body.face;
+  return pixelRect([
+    Math.max(0, x - radiusX - .02),
+    Math.max(0, y - radiusY - .02),
+    Math.min(1, radiusX * 2 + .04),
+    Math.min(1, radiusY * 2 + .04),
+  ], width, height);
 }
 
 function maskedBodyTexture(texture, key) {
@@ -189,15 +210,20 @@ function maskedBodyTexture(texture, key) {
 function maskedHeadTexture(texture, key) {
   const {width, height} = sourceSize(texture);
   if (!width || !height || typeof document === 'undefined') return texture;
+  const rect = headRectFor(PUPPY_ARTWORK_LAYOUTS[key], width, height);
   const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
+  canvas.width = Math.max(1, Math.round(rect.width));
+  canvas.height = Math.max(1, Math.round(rect.height));
   const context = canvas.getContext('2d');
   if (!context) return texture;
   context.save();
-  drawHeadMask(context, width, height, PUPPY_ARTWORK_LAYOUTS[key]);
+  drawHeadMask(context, width, height, PUPPY_ARTWORK_LAYOUTS[key], rect);
   context.clip();
-  context.drawImage(texture.image, 0, 0, width, height);
+  context.drawImage(
+    texture.image,
+    rect.x, rect.y, rect.width, rect.height,
+    0, 0, canvas.width, canvas.height,
+  );
   context.restore();
   const head = new THREE.CanvasTexture(canvas);
   return prepareTexture(head);
@@ -317,9 +343,15 @@ export function createPuppyArtwork() {
     const faceRoot = pixelPoint(layout.body.root, width, height);
     headBasePosition.set(worldX(faceRoot.x, width, unit), worldY(faceRoot.y, height, unit), .045);
     headGroup.position.copy(headBasePosition);
-    headBaseScale.copy(bodyBaseScale);
+    const headRect = headRectFor(layout, width, height);
+    headBaseScale.set(headRect.width * unit, headRect.height * unit, 1);
     headSprite.scale.copy(headBaseScale);
-    headSprite.center.set(faceRoot.x / width, 1 - faceRoot.y / height);
+    // The head texture is cropped to its painted pixels. Re-anchor its center
+    // to the same cheek root so tightening the crop never shifts the puppy.
+    headSprite.center.set(
+      (faceRoot.x - headRect.x) / headRect.width,
+      1 - (faceRoot.y - headRect.y) / headRect.height,
+    );
     headSprite.position.set(0, 0, 0);
     setSpriteMap(headSprite, headTextures.get(key) || texture);
 

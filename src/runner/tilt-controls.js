@@ -17,7 +17,7 @@ export function installTiltControls(host,{toggle,recenter,message,sensitivity,in
     toggle.setAttribute('aria-pressed',String(active));
     recenter.disabled=!active;
     message.textContent=status==='off'&&!attempted&&host.matchMedia?.('(pointer: coarse)').matches
-      ? 'Tilt starts when you play. Allow motion access if asked, or keep using swipes and buttons.'
+      ? 'Swipes and buttons are ready by default. Enable tilt here any time for optional motion steering.'
       : labels[status];
   }});
   toggle.onclick=async()=>{

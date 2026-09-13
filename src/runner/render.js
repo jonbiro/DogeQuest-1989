@@ -7,7 +7,7 @@ import { createRouteSampler } from "./route.js";
 import { upcomingCorner } from "./turns.js";
 import { objectVisible, ziplineSignVisible } from "./visibility.js";
 import { createCornerRoad } from "./corner-road.js";
-import { PUPPIES } from "./collection.js";
+import { PUPPIES, DEFAULT_PUPPY } from "./collection.js";
 import { puppyVisual } from "./puppy-visuals.js";
 import { REGIONS, regionAt, horizonProfile } from "./regions.js";
 import {AREAS,areaAt,areaBlend} from './areas.js';
@@ -510,9 +510,10 @@ export function createView(canvas) {
     const key = `${appearance.puppy}:${appearance.costume}`;
     if (key === appearanceKey) return;
     appearanceKey = key;
-    const puppy = PUPPIES[appearance.puppy] || PUPPIES.biscuit;
-    const isMochi = appearance.puppy === "mochi";
-    const visual = puppyVisual(appearance.puppy);
+    const puppyId = Object.hasOwn(PUPPIES, appearance.puppy) ? appearance.puppy : DEFAULT_PUPPY;
+    const puppy = PUPPIES[puppyId];
+    const isMochi = puppyId === "mochi";
+    const visual = puppyVisual(puppyId);
     mochi.group.visible = isMochi;
     for (const part of originalParts) part.visible = !isMochi;
     classicFur.group.visible = !isMochi;
@@ -637,7 +638,7 @@ export function createView(canvas) {
     // Costumes are still available as progression items, but the dog itself
     // is now one cohesive illustrated asset. Hiding the legacy geometry keeps
     // ears, legs and accessories from becoming detached vector fragments.
-    rasterArtwork.apply(appearance.puppy);
+    rasterArtwork.apply(puppyId);
     for (const part of legacyDogParts) part.visible = false;
     rasterArtwork.group.visible = true;
   }

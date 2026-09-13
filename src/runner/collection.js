@@ -4,6 +4,10 @@ export const PUPPIES = {
   pepper: { name:'Pepper', breed:'Spotted puppy', description:'A little chaos. A lot of spots.', cost:1500, fur:'#ecebe3', head:'#fffdf2', muzzle:'#e3dfcf', paws:'#f8f7ed', ears:'floppy', spots:true },
   luna: { name:'Luna', breed:'Moonlight husky', description:'Born to chase the horizon.', cost:2500, fur:'#6b8190', head:'#8fa6b1', muzzle:'#eff1e6', paws:'#f4f2e5', ears:'pointy' },
 };
+// Mochi is the face of the runner and the most familiar starter. Keep both
+// starter puppies unlocked, but make a missing/invalid selection land on him
+// so a fresh browser and older saves get the same welcoming first run.
+export const DEFAULT_PUPPY = 'mochi';
 export const COSTUMES = {
   scarf:{name:'Adventure scarf',description:'The classic red scarf.',cost:0},
   explorer:{name:'Trail explorer',description:'A little hat and a ready-for-anything backpack.',cost:700},
@@ -33,7 +37,7 @@ export function collectionFrom(value={}) {
   // during loading without replaying rewards or modifying the supplied save.
   for(const prize of PRIZES)
     if(prize.costume&&prizes.includes(prize.id)&&!costumes.includes(prize.costume))costumes.push(prize.costume);
-  return {puppies,costumes,puppy:puppies.includes(value?.puppy)?value.puppy:'biscuit',costume:costumes.includes(value?.costume)?value.costume:'scarf',prizes,gifts:Math.max(0,Math.floor(Number.isFinite(value?.gifts)?value.gifts:0))};
+  return {puppies,costumes,puppy:puppies.includes(value?.puppy)?value.puppy:DEFAULT_PUPPY,costume:costumes.includes(value?.costume)?value.costume:'scarf',prizes,gifts:Math.max(0,Math.floor(Number.isFinite(value?.gifts)?value.gifts:0))};
 }
 export function equipOrBuy(profile,kind,id) {
   const catalog=kind==='puppy'?PUPPIES:kind==='costume'?COSTUMES:null;
