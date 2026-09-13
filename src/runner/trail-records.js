@@ -20,7 +20,8 @@ export function trailBest(records,seed,version){
 export function bankTrailRecord(profile,run,timestamp=Date.now()){
   if(!run.ended||run.practice)return;
   const records=trailRecordsFrom(profile.trailRecords);
-  const best=Math.max(trailBest(records,run.seed,run.generatorVersion),Math.floor(run.score));
+  const previous=trailBest(records,run.seed,run.generatorVersion);
+  const best=Math.max(previous,Math.floor(run.score));
   const next=[{seed:run.seed,version:run.generatorVersion,best},
     ...records.filter(r=>r.seed!==run.seed||r.version!==run.generatorVersion)];
   // Keep today's challenge available even after many random adventures.
@@ -28,4 +29,5 @@ export function bankTrailRecord(profile,run,timestamp=Date.now()){
   const today=dailySeed(timestamp);
   profile.trailRecords=trailRecordsFrom([
     ...next.filter(r=>r.seed===today),...next.filter(r=>r.seed!==today)]);
+  return {previous,best,improved:best>previous};
 }

@@ -9,7 +9,7 @@ export function bankRun(profile, run, mission) {
   if (!run.ended || run.practice) return null;
   if (run.receipt) return run.receipt;
   const creditsBefore=profile.credits;
-  bankTrailRecord(profile,run);
+  const trailRecord=bankTrailRecord(profile,run);
   const personalBest = run.score > profile.best;
   const distanceBest = Math.floor(run.distance)>Math.floor(profile.distance);
   const bonesBest = run.bones>(profile.bestRunBones||0);
@@ -28,6 +28,6 @@ export function bankRun(profile, run, mission) {
   const prizes = awardPrizes(profile, run);
   const mastery = bankMastery(profile, run);
   run.receipt = {scorePoints: run.score, missionPoints, missionCount, prizes, personalBest, mastery,
-    totalPoints:profile.credits-creditsBefore,distanceBest,bonesBest};
+    totalPoints:profile.credits-creditsBefore,distanceBest,bonesBest,trailRecord};
   return run.receipt;
 }

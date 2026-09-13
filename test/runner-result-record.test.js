@@ -3,6 +3,21 @@ import assert from 'node:assert/strict';
 import {resultRecord,resultChallenge} from '../src/runner/result-record.js';
 import {bankRun} from '../src/runner/rewards.js';
 import {collectionFrom} from '../src/runner/collection.js';
+import {createRun} from '../src/runner/world.js';
+
+test('beating a saved trail best is recognized once without extra currency',()=>{
+  for(const score of [2400,2401,2300]){
+    const profile={best:10000,distance:10000,bones:0,bestRunBones:100,credits:0,challenges:0,
+      collection:collectionFrom(),trailRecords:[{seed:1989,version:4,best:2400}]};
+    const run=createRun(1989,{},4);run.ended=true;run.score=score;
+    const receipt=bankRun(profile,run,[]);
+    assert.equal(resultRecord(receipt,run),score>2400?'New best on this trail! ':'');
+    assert.equal(receipt.totalPoints,score);
+    assert.equal(receipt.trailRecord.previous,2400);
+    assert.equal(bankRun(profile,run,[]),receipt);
+    assert.equal(resultRecord(receipt,run),score>2400?'New best on this trail! ':'');
+  }
+});
 
 test('distance and bone records recognize a good run without beating score',()=>{
   for(const [distance,bones,expected] of [[100.9,10,''],[101,10,'New distance best! '],
@@ -26,9 +41,9 @@ test('record messaging stays compact and prioritizes score and rematch achieveme
 });
 
 test('close retry results explain points to beat, including ties and shared priority',()=>{
-  assert.equal(resultChallenge({score:100,challengeTarget:100}),'1 more point to beat the shared target. ');
+  assert.equal(resultChallenge({score:100,challengeTarget:100}),'1 more point to beat the score target. ');
   assert.equal(resultChallenge({score:90,rematchBest:100}),'11 more points to beat your rematch best. ');
-  assert.equal(resultChallenge({score:90,challengeTarget:120,rematchBest:100}),'31 more points to beat the shared target. ');
+  assert.equal(resultChallenge({score:90,challengeTarget:120,rematchBest:100}),'31 more points to beat the score target. ');
   assert.equal(resultChallenge({score:101,challengeTarget:100}),'Target beaten! ');
   assert.equal(resultChallenge({score:101,rematchBest:100}),'','record helper owns rematch wins');
 });

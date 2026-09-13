@@ -10,11 +10,12 @@ export function resultChallenge(run) {
   // Match the in-run chase window. A tied score still needs one more point.
   const needed=target-run.score+1;
   if(needed>Math.min(500,Math.max(150,target*.1)))return '';
-  return `${needed.toLocaleString()} more ${needed===1?'point':'points'} to beat ${shared?'the shared target':'your rematch best'}. `;
+  return `${needed.toLocaleString()} more ${needed===1?'point':'points'} to beat ${shared?'the score target':'your rematch best'}. `;
 }
 
 export function resultRecord(receipt,run) {
   if(receipt.personalBest)return 'New personal best! ';
+  if(receipt.trailRecord?.previous>0&&receipt.trailRecord.improved)return 'New best on this trail! ';
   if(run.rematchBest>0&&run.score>run.rematchBest)return 'Rematch best! ';
   if(receipt.distanceBest&&receipt.bonesBest)return 'New distance and bone bests! ';
   if(receipt.distanceBest)return 'New distance best! ';

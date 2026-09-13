@@ -1,5 +1,12 @@
 # Daily trail personal records
 
+Completed-run receipts now retain the previous and updated trail best. The
+existing result sentence recognizes “New best on this trail!” when improving an
+established record below the overall personal best. A tie or lower score does
+not trigger it, and rereading a completion receipt retains the same result without
+adding currency. Close misses say “score target”, covering both local daily
+records and explicit shared targets without mislabeling local records as shared.
+
 Today's UTC daily seed is retained ahead of ordinary recent trails when banking,
 so repeated random adventures cannot evict the current daily target. The history
 still holds at most 32 records. After the UTC day changes, the old day's entry
