@@ -2,6 +2,20 @@
 
 ## Mobile default
 
+Native Safari follow-up after `75dd225`: the dedicated iOS 27 Biscuit Dash
+simulator loaded the localhost runner and entered Three basic moves practice
+without using Enable tilt. Pause showed “Motion sensors are unavailable. Use
+swipes or buttons.” with Recalibrate disabled, confirming the automatic attempt
+and no-reading fallback. Practice again entered play without another prompt;
+returning to camp retained the original 200 points. Screenshot:
+`test-results/tilt-default-native-fallback.png` (local QA artifact).
+
+The simulator had prior motion permission, so this pass does not prove a fresh
+permission-dialog wait. The attempted lane tap arrived too late to establish
+successful steering; neither that interaction nor physical tilt feel is claimed
+as verified. The simulator mirror was scoped to this game's device and closed
+after the check; the other project's running simulator was not controlled.
+
 On coarse-pointer devices, the first Play (including practice) enables tilt and
 requests motion permission directly in that user gesture when required. The
 simulation does not advance while permission is pending. Loading the page alone
