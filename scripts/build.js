@@ -95,9 +95,17 @@ export async function build() {
     'style.css',
     '../favicon.svg',
     'puppies/biscuit.webp',
+    'puppies/biscuit-run-front.webp',
+    'puppies/biscuit-turn.webp',
     'puppies/mochi.webp',
+    'puppies/mochi-run-front.webp',
+    'puppies/mochi-turn.webp',
     'puppies/pepper.webp',
+    'puppies/pepper-run-front.webp',
+    'puppies/pepper-turn.webp',
     'puppies/luna.webp',
+    'puppies/luna-run-front.webp',
+    'puppies/luna-turn.webp',
   ]) {
     const sha256=createHash('sha256').update(await readFile(path.join(distDirectory,'runner',file))).digest('hex');
     const url=['game.js','style.css'].includes(file)?`${file}?v=${sha256.slice(0,16)}`:file;

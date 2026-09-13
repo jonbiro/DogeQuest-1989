@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPuppyArtwork, PUPPY_ARTWORK, PUPPY_ARTWORK_LAYOUTS, puppyArtworkUrl } from '../src/runner/puppy-artwork.js';
+import { createPuppyArtwork, PUPPY_ARTWORK, PUPPY_ARTWORK_LAYOUTS, PUPPY_ARTWORK_VARIANTS, puppyArtworkUrl, puppyPoseArtworkUrl } from '../src/runner/puppy-artwork.js';
 
 test('every collection puppy points at a shipped raster illustration', () => {
   assert.deepEqual(Object.keys(PUPPY_ARTWORK).sort(), ['biscuit', 'luna', 'mochi', 'pepper']);
@@ -12,6 +12,21 @@ test('every collection puppy points at a shipped raster illustration', () => {
 test('unknown puppy ids use the dependable starter artwork', () => {
   assert.equal(puppyArtworkUrl('missing'), PUPPY_ARTWORK.biscuit);
   assert.equal(puppyArtworkUrl(undefined), PUPPY_ARTWORK.biscuit);
+});
+
+test('each puppy has a complete raster stride and turn pose', () => {
+  for (const id of Object.keys(PUPPY_ARTWORK)) {
+    const variants = PUPPY_ARTWORK_VARIANTS[id];
+    assert.equal(variants.idle, PUPPY_ARTWORK[id]);
+    assert.match(variants.stride, /^\.\/puppies\/[a-z-]+\.webp$/);
+    assert.match(variants.turn, /^\.\/puppies\/[a-z-]+\.webp$/);
+    assert.notEqual(variants.stride, variants.idle);
+    assert.notEqual(variants.turn, variants.idle);
+    assert.notEqual(variants.stride, variants.turn);
+    assert.equal(puppyPoseArtworkUrl(id, 'stride'), variants.stride);
+    assert.equal(puppyPoseArtworkUrl(id, 'turn'), variants.turn);
+  }
+  assert.equal(puppyPoseArtworkUrl('missing', 'turn'), PUPPY_ARTWORK_VARIANTS.biscuit.turn);
 });
 
 test('every illustrated puppy exposes four animated raster legs and a tail crop', () => {
@@ -43,11 +58,20 @@ test('every illustrated puppy exposes four animated raster legs and a tail crop'
   }
 });
 
-test('the raster puppet exposes dedicated accessory layers for wardrobe art', () => {
+test('the raster artwork exposes dedicated accessory layers for wardrobe art', () => {
   const artwork = createPuppyArtwork();
   assert.deepEqual(
     ['puppy-painted-accessories-back', 'puppy-painted-accessories-mid', 'puppy-painted-accessories-top'],
     artwork.group.children.filter(part => part.name.includes('accessories')).map(part => part.name),
   );
   assert.equal(typeof artwork.setCostume, 'function');
+});
+
+test('the visible runner stack uses complete idle, stride and turn paintings', () => {
+  const artwork = createPuppyArtwork();
+  assert.deepEqual(
+    ['puppy-painted-body', 'puppy-painted-stride-pose', 'puppy-painted-turn-pose'],
+    artwork.group.children.slice(0, 3).map(part => part.name),
+  );
+  assert.equal(typeof artwork.setPose, 'function');
 });
