@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {objectVisible,ziplineSignVisible} from '../src/runner/visibility.js';
+import {objectVisible,ziplineSignVisible,OBJECT_HORIZON} from '../src/runner/visibility.js';
 
 test('overhead structures leave the chase-camera corridor only after their collision plane', () => {
   for (const type of ['arch','branch','gate','choice-left','choice-right','zipline-start','zipline-end']) {
@@ -19,6 +19,14 @@ test('visibility does not interrupt attracted bones or mutate gameplay objects',
   assert.deepEqual(bone,before);
   assert.equal(objectVisible({...bone,used:true},100), false);
   assert.equal(objectVisible({type:'gap',at:99},100), true);
+});
+
+test('horizon culling keeps the fog margin visible without changing collision objects',()=>{
+  const bone={type:'bone',at:240,used:false};
+  assert.equal(objectVisible(bone,100),true,'objects at the fog edge remain readable');
+  assert.equal(objectVisible(bone,100-OBJECT_HORIZON-.01),false,'hazy objects are not allocated');
+  assert.equal(objectVisible({...bone,at:241},100),false);
+  assert.equal(objectVisible({...bone,used:true},100),false);
 });
 
 test('zipline instructions clear the rising dog while the actual station stays visible',()=>{

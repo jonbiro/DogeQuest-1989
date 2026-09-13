@@ -37,16 +37,27 @@ different maxima are not evidence that the shadow change fixed these stalls.
 
 ## Implemented optimization and remaining findings
 
+The renderer now stops allocating ordinary trail objects beyond 140 m ahead of
+the puppy. This sits just inside the 145 m fog edge, leaves an approach silhouette
+visible, and removes objects hidden in haze from both the active pool and shadow
+work. The simulation objects remain untouched, so collision and reward timing do
+not change. Visibility tests cover the exact boundary and pulled-bone behavior.
+
+After this cull, the five-run accelerated renderer matrix measured 256 peak draw
+calls, 35 geometries, 9 textures and 91 active/pooled objects, with stable repeat
+laps and all 130 turns accepted. It still covers 90 km, 65 ziplines and 30 rafts.
+The cull is a visibility optimization, not a substitute for native frame pacing.
+
 Logs retain all seven visible mesh parts. Their solid body now supplies the
 shadow rather than also shadowing six surface-detail meshes. The two ends share
 one geometry and the two rings share another, eliminating two duplicate geometry
 allocations. Model tests preserve the visible envelope and pooled clone behavior.
 
 Continuous sampling caught peaks missed by the previous 250 m checkpoint test:
-272 draw calls at 6,015 m before optimization, and 271 at 5,506 m after it. The
-peak moved to a different scene. The existing 260-draw-call budget is still
-exceeded and is deliberately not raised to hide the finding. Further crowded-
-scene optimization and finer-grained resource regression coverage are needed.
+272 draw calls at 6,015 m before optimization, and 271 at 5,506 m after the log
+shadow change. The 250 m matrix does not sample the exact same frames. The
+post-cull matrix is below the 260-draw-call budget, but denser continuous native
+sampling is still warranted.
 
 A native left swipe reached the real gesture handler and the dog moved left
 when the isolated lesson clock advanced. The preview tab closed during the
