@@ -1,5 +1,11 @@
 # Daily trail personal records
 
+Today's UTC daily seed is retained ahead of ordinary recent trails when banking,
+so repeated random adventures cannot evict the current daily target. The history
+still holds at most 32 records. After the UTC day changes, the old day's entry
+returns to normal recent-history eviction. A regression banks 100 random runs
+without losing today's best, then verifies bounded eviction on the next day.
+
 Reopening or reloading today's exact trail now restores the personal score target
 after loading the saved profile. Explicit targets in shared links take precedence;
 other dates/layouts do not inherit today's record. Tests cover those branches.

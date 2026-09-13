@@ -1,4 +1,5 @@
 import {supportsTrailVersion} from './trail-version.js';
+import {dailySeed} from './daily-seed.js';
 
 // Most recently played trails first. Local records are not ranked results.
 export function trailRecordsFrom(value){
@@ -16,10 +17,15 @@ export function trailRecordsFrom(value){
 export function trailBest(records,seed,version){
   return trailRecordsFrom(records).find(r=>r.seed===seed&&r.version===version)?.best||0;
 }
-export function bankTrailRecord(profile,run){
+export function bankTrailRecord(profile,run,timestamp=Date.now()){
   if(!run.ended||run.practice)return;
   const records=trailRecordsFrom(profile.trailRecords);
   const best=Math.max(trailBest(records,run.seed,run.generatorVersion),Math.floor(run.score));
-  profile.trailRecords=trailRecordsFrom([{seed:run.seed,version:run.generatorVersion,best},
-    ...records.filter(r=>r.seed!==run.seed||r.version!==run.generatorVersion)]);
+  const next=[{seed:run.seed,version:run.generatorVersion,best},
+    ...records.filter(r=>r.seed!==run.seed||r.version!==run.generatorVersion)];
+  // Keep today's challenge available even after many random adventures.
+  // Older days rejoin the ordinary bounded recent-history policy.
+  const today=dailySeed(timestamp);
+  profile.trailRecords=trailRecordsFrom([
+    ...next.filter(r=>r.seed===today),...next.filter(r=>r.seed!==today)]);
 }
