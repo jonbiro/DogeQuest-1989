@@ -2,6 +2,14 @@
 
 ## Mobile default
 
+`test/tilt-permission-frame.test.js` executes the actual frame simulation block
+with the real tilt controller and a deferred permission response. Across normal
+and practice runs, ten seconds of frames leave the complete run state unchanged
+while waiting. Granted, denied and rejected requests all resume on the next
+frame with less than one metre of movement, no accumulated catch-up and intact
+hearts. This is automated frame/controller evidence, not a fresh native dialog
+test or physical sensor validation.
+
 Native Safari follow-up after `75dd225`: the dedicated iOS 27 Biscuit Dash
 simulator loaded the localhost runner and entered Three basic moves practice
 without using Enable tilt. Pause showed “Motion sensors are unavailable. Use
