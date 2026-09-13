@@ -7,6 +7,25 @@ import {
   missionTip,
 } from "../src/runner/missions.js";
 import { createRun, act, step } from "../src/runner/world.js";
+test('later traversal challenges accept either ride without stranding old shared trails',()=>{
+  const mission=missionFor(30);
+  assert.equal(mission.metric,'rides');assert.equal(mission.target,2);
+  for(const run of [{rafts:1,ziplines:1},{rafts:2},{ziplines:2}]){
+    const profile={challenges:30,credits:0};
+    assert.equal(missionProgress(run,mission),2);
+    assert.equal(claimMission(profile,{...run,ended:true},mission),700);
+    assert.equal(claimMission(profile,{...run,ended:true},mission),0);
+  }
+  assert.equal(missionProgress({raft:{},zipline:{}},mission),0);
+  const practiceProfile={challenges:30,credits:20};
+  assert.equal(claimMission(practiceProfile,{ended:true,practice:{kind:'raft'},rafts:2},mission),0);
+  assert.deepEqual(practiceProfile,{challenges:30,credits:20});
+  assert.equal(missionFor(39).target,3);
+  assert.equal(missionFor(48).target,3);
+  assert.match(missionTip(mission),/Older shared trails.*cables/);
+  assert.equal(missionFor(29).metric,'clears');
+  assert.equal(missionFor(31).metric,'fetchUses');
+});
 test('every mission has actionable instructions for its actual scoring rule',()=>{
   for(let i=0;i<14;i++) assert.ok(missionTip(missionFor(i)).length>60);
   assert.match(missionTip(missionFor(7)),/Picked-up magnets do not count/);

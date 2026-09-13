@@ -1,5 +1,16 @@
 # River raft implementation status
 
+## Mixed traversal challenge
+
+After the first 30 challenges, every ninth index offers River & sky: finish two
+rides in one run, increasing to a cap of three on later appearances. Rivers and
+cables both count, so versions 1–3 remain eligible through cable completions.
+Rewards start at 700 points and cap at 1,300. Other challenge indices retain their
+existing mappings; practice is rejected by the claim helper as well as banking.
+Full checks passed 452 tests, including mixed/single-type completion, one-shot
+payment, unfinished rides and practice exclusion. Rendered HUD coverage for this
+new challenge remains to be checked.
+
 ## Distinct traversal audio
 
 River boarding now uses a short descending two-tone cue instead of the Zoomies

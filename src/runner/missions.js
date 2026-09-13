@@ -43,6 +43,7 @@ const TIPS = {
   ziplines:'The first zipline starts at 650 m. Jump as the turquoise handle reaches your puppy, then ride to the end. High bones belong to the zipline, not a normal jump.',
   regionalCourses:'Complete all three beats of a named course: jump and duck in the jungle, cross gaps in the canyon, or follow the open lanes in the glade. A missed beat means that course does not count.',
   bestCombo:'Collect consecutive bones without letting one pass. Missing a bone resets the streak; your best streak during this run counts toward the goal.',
+  rides:'Finish river crossings or cable rides in one run; either type counts. Rivers board automatically at 1,150 m on new trails. Catch the first cable at 650 m with a jump. Reach each landing; unfinished rides and practice do not count. Older shared trails can complete this goal using cables.',
 };
 export function missionTip(mission) {
   return TIPS[mission.metric] || 'Complete the target in one run, then finish the run to bank the reward.';
@@ -50,6 +51,13 @@ export function missionTip(mission) {
 export function missionFor(completed = 0) {
   const value = Number(completed);
   const index = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+  // Add a traversal goal after the established introductory/adventure cycles.
+  // Other indices keep their existing goals; historical trails can use cables.
+  if(index>=30&&(index-30)%9===0){
+    const round=Math.floor((index-30)/9);
+    return {metric:'rides',target:Math.min(3,2+round),step:1,cap:3,
+      title:'River & sky',unit:'completed rides',reward:700+Math.min(round,6)*100,id:index};
+  }
   // Keep the first six familiar goals intact for existing and new players.
   const goals = index < 6 ? GOALS : ADVENTURE_GOALS;
   const offset = index < 6 ? index : index - 6;
@@ -63,7 +71,8 @@ export function missionFor(completed = 0) {
   };
 }
 export function missionProgress(run, mission) {
-  const value = mission.metric === 'regionalCourses'
+  const value = mission.metric === 'rides' ? (run.rafts||0)+(run.ziplines||0)
+    : mission.metric === 'regionalCourses'
     ? (run.regionalCourses || []).reduce((sum, count) => sum + count, 0)
     : run[mission.metric];
   return Math.min(
@@ -76,7 +85,7 @@ export function missionPackFor(completed = 0) {
   return [first, missionFor(first.id + 1), missionFor(first.id + 2)];
 }
 export function claimMission(profile, run, mission) {
-  if (!run.ended) return 0;
+  if (!run.ended || run.practice) return 0;
   if (
     profile.challenges !== mission.id ||
     missionProgress(run, mission) < mission.target
