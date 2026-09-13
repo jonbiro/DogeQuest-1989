@@ -13,27 +13,36 @@ export const PUPPY_ARTWORK = Object.freeze({
 // Full-body pose paintings are deliberately separate from the source portraits.
 // They are complete silhouettes, not limb cut-outs: swapping between them keeps
 // the coat, ears and paws connected while the puppy turns or hits a stride.
-// Every dog gets a forward stride and a three-quarter turn so lane changes and
-// the running cadence can show a new angle without mirroring a side-on sprite.
+// Every dog gets authored forward, airborne, crouched, and three-quarter turn
+// paintings so the action silhouette changes with the physics rather than
+// asking one portrait to pretend it is jumping or sliding.
 export const PUPPY_ARTWORK_VARIANTS = Object.freeze({
   biscuit: Object.freeze({
     idle: PUPPY_ARTWORK.biscuit,
     stride: './puppies/biscuit-run-front.webp',
+    jump: './puppies/biscuit-jump.webp',
+    slide: './puppies/biscuit-slide.webp',
     turn: './puppies/biscuit-turn.webp',
   }),
   mochi: Object.freeze({
     idle: PUPPY_ARTWORK.mochi,
     stride: './puppies/mochi-run-front.webp',
+    jump: './puppies/mochi-jump.webp',
+    slide: './puppies/mochi-slide.webp',
     turn: './puppies/mochi-turn.webp',
   }),
   pepper: Object.freeze({
     idle: PUPPY_ARTWORK.pepper,
     stride: './puppies/pepper-run-front.webp',
+    jump: './puppies/pepper-jump.webp',
+    slide: './puppies/pepper-slide.webp',
     turn: './puppies/pepper-turn.webp',
   }),
   luna: Object.freeze({
     idle: PUPPY_ARTWORK.luna,
     stride: './puppies/luna-run-front.webp',
+    jump: './puppies/luna-jump.webp',
+    slide: './puppies/luna-slide.webp',
     turn: './puppies/luna-turn.webp',
   }),
 });
@@ -48,21 +57,29 @@ export const PUPPY_ARTWORK_BOUNDS = Object.freeze({
   biscuit: Object.freeze({
     idle: Object.freeze({width: 1254, height: 1254, x: 104, y: 42, boxWidth: 1078, boxHeight: 1181}),
     stride: Object.freeze({width: 1254, height: 1254, x: 24, y: 15, boxWidth: 1227, boxHeight: 1192}),
+    jump: Object.freeze({width: 1254, height: 1254, x: 65, y: 41, boxWidth: 1140, boxHeight: 1040}),
+    slide: Object.freeze({width: 1254, height: 1254, x: 20, y: 147, boxWidth: 1214, boxHeight: 974}),
     turn: Object.freeze({width: 1254, height: 1254, x: 21, y: 18, boxWidth: 1228, boxHeight: 1211}),
   }),
   mochi: Object.freeze({
     idle: Object.freeze({width: 1230, height: 1278, x: 117, y: 39, boxWidth: 1037, boxHeight: 1210}),
     stride: Object.freeze({width: 1129, height: 1393, x: 20, y: 45, boxWidth: 1095, boxHeight: 1319}),
+    jump: Object.freeze({width: 1230, height: 1278, x: 63, y: 72, boxWidth: 1111, boxHeight: 1097}),
+    slide: Object.freeze({width: 1536, height: 1024, x: 47, y: 71, boxWidth: 1450, boxHeight: 893}),
     turn: Object.freeze({width: 1254, height: 1254, x: 110, y: 79, boxWidth: 1065, boxHeight: 1123}),
   }),
   pepper: Object.freeze({
     idle: Object.freeze({width: 1254, height: 1254, x: 158, y: 24, boxWidth: 1000, boxHeight: 1200}),
     stride: Object.freeze({width: 1254, height: 1254, x: 34, y: 66, boxWidth: 1184, boxHeight: 1150}),
+    jump: Object.freeze({width: 1254, height: 1254, x: 58, y: 52, boxWidth: 1145, boxHeight: 1039}),
+    slide: Object.freeze({width: 1254, height: 1254, x: 71, y: 142, boxWidth: 1127, boxHeight: 956}),
     turn: Object.freeze({width: 1254, height: 1254, x: 30, y: 78, boxWidth: 1201, boxHeight: 1115}),
   }),
   luna: Object.freeze({
     idle: Object.freeze({width: 1254, height: 1254, x: 94, y: 8, boxWidth: 1084, boxHeight: 1232}),
     stride: Object.freeze({width: 1254, height: 1254, x: 217, y: 16, boxWidth: 929, boxHeight: 1218}),
+    jump: Object.freeze({width: 1254, height: 1254, x: 86, y: 20, boxWidth: 1098, boxHeight: 1132}),
+    slide: Object.freeze({width: 1254, height: 1254, x: 20, y: 166, boxWidth: 1218, boxHeight: 944}),
     turn: Object.freeze({width: 1254, height: 1254, x: 60, y: 8, boxWidth: 1150, boxHeight: 1219}),
   }),
 });
@@ -485,13 +502,25 @@ export function createPuppyArtwork() {
   strideSprite.visible = false;
   strideSprite.renderOrder = 2.02;
   group.add(strideSprite);
+  const jumpSprite = new THREE.Sprite(makeMaterial());
+  jumpSprite.name = 'puppy-painted-jump-pose';
+  jumpSprite.frustumCulled = false;
+  jumpSprite.visible = false;
+  jumpSprite.renderOrder = 2.03;
+  group.add(jumpSprite);
+  const slideSprite = new THREE.Sprite(makeMaterial());
+  slideSprite.name = 'puppy-painted-slide-pose';
+  slideSprite.frustumCulled = false;
+  slideSprite.visible = false;
+  slideSprite.renderOrder = 2.035;
+  group.add(slideSprite);
   const turnSprite = new THREE.Sprite(makeMaterial());
   turnSprite.name = 'puppy-painted-turn-pose';
   turnSprite.frustumCulled = false;
   turnSprite.visible = false;
-  turnSprite.renderOrder = 2.04;
+  turnSprite.renderOrder = 2.05;
   group.add(turnSprite);
-  const poseSprites = {idle: bodySprite, stride: strideSprite, turn: turnSprite};
+  const poseSprites = {idle: bodySprite, stride: strideSprite, jump: jumpSprite, slide: slideSprite, turn: turnSprite};
 
   const headGroup = new THREE.Group();
   headGroup.name = 'puppy-painted-head-joint';
@@ -564,11 +593,15 @@ export function createPuppyArtwork() {
   const poseBaseScales = {
     idle: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
     stride: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
+    jump: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
+    slide: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
     turn: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
   };
   const poseBasePositions = {
     idle: new THREE.Vector3(),
     stride: new THREE.Vector3(),
+    jump: new THREE.Vector3(),
+    slide: new THREE.Vector3(),
     turn: new THREE.Vector3(),
   };
   let bodyBaseScale = new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1);
@@ -632,7 +665,7 @@ export function createPuppyArtwork() {
     basePosition.set(
       targetX - (frameCenterX - .5) * scale.x,
       targetBottom - (.5 - frameBottom) * scale.y,
-      pose === 'idle' ? 0 : pose === 'stride' ? .018 : .036,
+      pose === 'idle' ? 0 : pose === 'stride' ? .018 : pose === 'jump' ? .03 : pose === 'slide' ? .024 : .036,
     );
     sprite.scale.copy(scale);
     sprite.position.copy(basePosition);
@@ -676,6 +709,8 @@ export function createPuppyArtwork() {
     }
     poseSprites.idle.material.opacity = 1;
     poseSprites.stride.material.opacity = 0;
+    poseSprites.jump.material.opacity = 0;
+    poseSprites.slide.material.opacity = 0;
     poseSprites.turn.material.opacity = 0;
   }
 
@@ -818,7 +853,7 @@ export function createPuppyArtwork() {
   } = {}) {
     const motion = reducedMotion ? 0 : 1;
     const look = THREE.MathUtils.clamp(turn, -1, 1);
-    const gaitRate = menu ? 2.8 : sliding ? 5.2 : airborne ? 6.6 : 8.4;
+    const gaitRate = menu ? 2.8 : sliding ? 8.8 : airborne ? 7.2 : 8.4;
     const gait = motion ? (Math.sin(time * gaitRate - Math.PI / 2) + 1) / 2 : 0;
     const turnAmount = motion ? THREE.MathUtils.clamp((Math.abs(look) - .16) / .64, 0, 1) : 0;
     const poseReady = pose => {
@@ -830,21 +865,32 @@ export function createPuppyArtwork() {
     // implementation blended paintings with different transparent margins,
     // which created a double-head ghost. A crisp frame change reads like a
     // hand-animated 2D character and keeps every paw attached to its body.
-    const strideRequested = airborne || sliding || gait > .46;
+    const strideRequested = gait > .46;
     const turnRequested = turnAmount > .58;
-    let activePose = turnRequested && poseReady('turn') ? 'turn' : null;
+    // Action silhouettes always win over the running cadence. This keeps a
+    // jump readable even when the dog is changing lanes and makes a slide a
+    // deliberate low profile instead of a scaled portrait.
+    let activePose = airborne && poseReady('jump') ? 'jump' : null;
+    if (!activePose && sliding && poseReady('slide')) activePose = 'slide';
+    if (!activePose && turnRequested && poseReady('turn')) activePose = 'turn';
     if (!activePose && strideRequested && poseReady('stride')) activePose = 'stride';
     if (!activePose && poseReady('idle')) activePose = 'idle';
     if (!activePose && poseReady('stride')) activePose = 'stride';
+    if (!activePose && poseReady('jump')) activePose = 'jump';
+    if (!activePose && poseReady('slide')) activePose = 'slide';
     if (!activePose && poseReady('turn')) activePose = 'turn';
+    group.userData.activePose = activePose || 'idle';
+    group.userData.poseState = {airborne: Boolean(airborne), sliding: Boolean(sliding), look};
 
     const cadence = Math.sin(time * gaitRate);
-    const bounce = motion ? Math.abs(cadence) * (menu ? .008 : airborne ? .022 : sliding ? .014 : .018) : 0;
+    const bounce = motion ? Math.abs(cadence) * (menu ? .008 : airborne ? .018 : sliding ? .010 : .018) : 0;
     const sway = motion ? Math.sin(time * 3.9) * (menu ? .010 : .018) : 0;
-    const lean = motion ? look * (activePose === 'turn' ? .055 : .028) : 0;
+    const lean = motion ? look * (activePose === 'turn' ? .075 : activePose === 'slide' ? .04 : .028) : 0;
     const stretch = motion
-      ? cadence * (activePose === 'stride' ? (sliding ? .018 : .028) : .012)
+      ? cadence * (activePose === 'stride' ? .028 : activePose === 'jump' ? .016 : activePose === 'slide' ? .012 : .012)
       : 0;
+    const jumpMotion = motion && activePose === 'jump' ? Math.sin(time * 5.6) : 0;
+    const slideMotion = motion && activePose === 'slide' ? Math.sin(time * 6.2) : 0;
     for (const [pose, sprite] of Object.entries(poseSprites)) {
       const active = pose === activePose && poseReady(pose);
       const scale = poseBaseScales[pose];
@@ -853,11 +899,19 @@ export function createPuppyArtwork() {
       if (!scale || !active) continue;
       const basePosition = poseBasePositions[pose] || bodyBasePosition;
       const flip = pose === 'turn' && look < 0 ? -1 : 1;
-      sprite.material.rotation = lean * (pose === 'turn' ? .45 : .2);
-      sprite.scale.set(scale.x * flip * (1 - stretch), scale.y * (1 + stretch), 1);
+      const actionRotation = pose === 'jump'
+        ? jumpMotion * .045
+        : pose === 'slide'
+          ? -look * .035 + slideMotion * .018
+          : 0;
+      const actionScaleX = pose === 'jump' ? .985 : pose === 'slide' ? 1.055 : 1;
+      const actionScaleY = pose === 'jump' ? 1.018 : pose === 'slide' ? .91 : 1;
+      const actionDrop = pose === 'jump' ? .058 + jumpMotion * .012 : pose === 'slide' ? -.078 + slideMotion * .008 : 0;
+      sprite.material.rotation = lean * (pose === 'turn' ? .45 : .2) + actionRotation;
+      sprite.scale.set(scale.x * flip * actionScaleX * (1 - stretch), scale.y * actionScaleY * (1 + stretch), 1);
       sprite.position.set(
         basePosition.x + sway + (pose === 'turn' ? look * .032 : 0),
-        basePosition.y + bounce + (airborne ? .045 : sliding ? -.04 : 0),
+        basePosition.y + bounce + actionDrop,
         basePosition.z,
       );
     }
@@ -866,12 +920,15 @@ export function createPuppyArtwork() {
     // fade back slightly during a turn so a hat/pack never looks stapled to a
     // different silhouette, while the dog's own painted collar stays sharp.
     const activeScale = poseBaseScales[activePose] || bodyBaseScale;
-    const accessoryAlpha = activePose === 'idle' ? 1 : .24;
-    accessorySprites.back.position.set(bodyBasePosition.x + sway, bodyBasePosition.y + bounce, -.018);
-    accessorySprites.mid.position.set(bodyBasePosition.x + sway, bodyBasePosition.y + bounce, .022);
-    accessorySprites.top.position.set(bodyBasePosition.x + sway + look * .02, bodyBasePosition.y + bounce, .055);
+    const accessoryAlpha = activePose === 'idle' ? 1 : activePose === 'turn' ? .18 : .12;
+    const accessoryDrop = activePose === 'jump' ? .058 : activePose === 'slide' ? -.078 : 0;
+    const accessoryScaleX = activePose === 'slide' ? 1.055 : activePose === 'jump' ? .985 : 1;
+    const accessoryScaleY = activePose === 'slide' ? .91 : activePose === 'jump' ? 1.018 : 1;
+    accessorySprites.back.position.set(bodyBasePosition.x + sway, bodyBasePosition.y + bounce + accessoryDrop, -.018);
+    accessorySprites.mid.position.set(bodyBasePosition.x + sway, bodyBasePosition.y + bounce + accessoryDrop, .022);
+    accessorySprites.top.position.set(bodyBasePosition.x + sway + look * .02, bodyBasePosition.y + bounce + accessoryDrop, .055);
     for (const sprite of Object.values(accessorySprites)) {
-      sprite.scale.set(activeScale.x * (1 - stretch), activeScale.y, 1);
+      sprite.scale.set(activeScale.x * accessoryScaleX * (1 - stretch), activeScale.y * accessoryScaleY, 1);
       sprite.material.opacity = accessoryAlpha;
     }
   }

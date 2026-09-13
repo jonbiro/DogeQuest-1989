@@ -1169,14 +1169,25 @@ export function createView(canvas) {
         rasterAngles=smoothLegAngles(rasterAngles,personality.legs,dt);
         for (let i = 0; i < activeRig.legs.length; i++) activeRig.legs[i].rotation.x = rasterAngles[i];
       }
-      // The painted puppy is a layered puppet now: feed the same eased gait
-      // angles into its raster leg joints so the visible paws actually stride
-      // instead of behaving like one frozen billboard.
+      // The painted puppy is an authored full-body pose stack. Keep the
+      // eased route lean for turns, but let jump/slide silhouettes follow the
+      // same collision state as the physics rather than faking the action by
+      // scaling a portrait. Zipline and raft poses stay upright and readable.
       rasterArtwork.setPose({
         time,
         legs:rasterAngles,
-        turn:THREE.MathUtils.clamp(lean * 2 + groundFrame.yaw * .45 + run.vx * .035,-1,1),
-        airborne:y>.1,
+        // `bodyMotion.lean` is already eased from the lane velocity, so use
+        // the opposite signed velocity as a decisive turn impulse. The two
+        // terms reinforce instead of cancelling during the first half of a
+        // lane change, which guarantees the authored three-quarter frame is
+        // visible for the actual steering gesture.
+        turn:THREE.MathUtils.clamp(
+          lean * 2 + groundFrame.yaw * .45 - run.vx * .055
+            + (!run.zipline && !run.raft ? -x * .32 : 0),
+          -1,
+          1,
+        ),
+        airborne:y>.1 && !run.zipline && !run.raft,
         sliding:run.slide>0,
         menu,
         reducedMotion,

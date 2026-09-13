@@ -14,16 +14,25 @@ test('unknown puppy ids use the dependable starter artwork', () => {
   assert.equal(puppyArtworkUrl(undefined), PUPPY_ARTWORK.biscuit);
 });
 
-test('each puppy has a complete raster stride and turn pose', () => {
+test('each puppy has complete raster stride, jump, slide, and turn poses', () => {
   for (const id of Object.keys(PUPPY_ARTWORK)) {
     const variants = PUPPY_ARTWORK_VARIANTS[id];
     assert.equal(variants.idle, PUPPY_ARTWORK[id]);
     assert.match(variants.stride, /^\.\/puppies\/[a-z-]+\.webp$/);
+    assert.match(variants.jump, /^\.\/puppies\/[a-z-]+\.webp$/);
+    assert.match(variants.slide, /^\.\/puppies\/[a-z-]+\.webp$/);
     assert.match(variants.turn, /^\.\/puppies\/[a-z-]+\.webp$/);
     assert.notEqual(variants.stride, variants.idle);
+    assert.notEqual(variants.jump, variants.idle);
+    assert.notEqual(variants.slide, variants.idle);
     assert.notEqual(variants.turn, variants.idle);
     assert.notEqual(variants.stride, variants.turn);
+    assert.notEqual(variants.jump, variants.stride);
+    assert.notEqual(variants.slide, variants.stride);
+    assert.notEqual(variants.jump, variants.slide);
     assert.equal(puppyPoseArtworkUrl(id, 'stride'), variants.stride);
+    assert.equal(puppyPoseArtworkUrl(id, 'jump'), variants.jump);
+    assert.equal(puppyPoseArtworkUrl(id, 'slide'), variants.slide);
     assert.equal(puppyPoseArtworkUrl(id, 'turn'), variants.turn);
   }
   assert.equal(puppyPoseArtworkUrl('missing', 'turn'), PUPPY_ARTWORK_VARIANTS.biscuit.turn);
@@ -32,7 +41,7 @@ test('each puppy has a complete raster stride and turn pose', () => {
 test('pose paintings expose measured alpha bounds for stable frame swaps', () => {
   for (const id of Object.keys(PUPPY_ARTWORK)) {
     const frames = PUPPY_ARTWORK_BOUNDS[id];
-    assert.deepEqual(Object.keys(frames).sort(), ['idle', 'stride', 'turn']);
+    assert.deepEqual(Object.keys(frames).sort(), ['idle', 'jump', 'slide', 'stride', 'turn']);
     for (const [pose, frame] of Object.entries(frames)) {
       assert.ok(frame.width > 0 && frame.height > 0, `${id} ${pose} has canvas dimensions`);
       assert.ok(frame.x >= 0 && frame.y >= 0, `${id} ${pose} bounds start inside canvas`);
@@ -81,11 +90,11 @@ test('the raster artwork exposes dedicated accessory layers for wardrobe art', (
   assert.equal(typeof artwork.setCostume, 'function');
 });
 
-test('the visible runner stack uses complete idle, stride and turn paintings', () => {
+test('the visible runner stack uses complete idle, stride, jump, slide and turn paintings', () => {
   const artwork = createPuppyArtwork();
   assert.deepEqual(
-    ['puppy-painted-body', 'puppy-painted-stride-pose', 'puppy-painted-turn-pose'],
-    artwork.group.children.slice(0, 3).map(part => part.name),
+    ['puppy-painted-body', 'puppy-painted-stride-pose', 'puppy-painted-jump-pose', 'puppy-painted-slide-pose', 'puppy-painted-turn-pose'],
+    artwork.group.children.slice(0, 5).map(part => part.name),
   );
   assert.equal(typeof artwork.setPose, 'function');
 });
