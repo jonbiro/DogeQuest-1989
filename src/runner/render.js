@@ -17,6 +17,8 @@ import {createSky} from './sky.js';
 import {createMountainGeometry,blendMountainArea} from './mountain.js';
 import { puppyPose, smoothLegAngles, bodyMotion, mochiCrouch } from "./puppy-pose.js";
 import { createMochiModel } from "./mochi-model.js";
+import { createClassicEarGeometries } from "./ear-model.js";
+import { createClassicFur } from "./classic-fur.js";
 import { isBridge } from "./bridges.js";
 import { ziplineAt, ZIPLINE_HEIGHT, cableSegment, CABLE_SEGMENT_LENGTH } from "./ziplines.js";
 import {createPuppyFramer,gameplayFov} from './framing.js';
@@ -105,6 +107,7 @@ export function createView(canvas) {
   }
   canopyGeometry.computeVertexNormals();
   const coneGeometry = new THREE.ConeGeometry(1, 1, 5);
+  const classicEarGeometries = createClassicEarGeometries();
   function mesh(parent, geometry, color, x, y, z, sx, sy, sz) {
     const item = new THREE.Mesh(geometry, mat(color));
     item.position.set(x, y, z);
@@ -403,22 +406,36 @@ export function createView(canvas) {
   head.castShadow = true;
   const muzzle = ball(dog, "#ffe0a1", 0, 1.06, -1.13, .33, .23, .33);
   const noseBridge = ball(dog, "#243b33", 0, 1.22, -1.36, .16, .12, .09);
-  const tongue = ball(dog, "#f5919d", 0, .88, -1.32, .1, .12, .045);
+  // The mouth and tongue sit on the muzzle's front surface so the happy
+  // expression survives the small collection cards and the moving chase
+  // camera. The old tongue was buried inside the muzzle at gameplay scale.
+  const mouth = ball(dog, "#4a292b", 0, .92, -1.47, .14, .065, .035);
+  const tongue = ball(dog, "#f5919d", 0, .87, -1.51, .095, .105, .045);
   // A small chest bib gives every classic face a readable light break against
   // the torso, especially on the narrow mobile viewport.
   const chestPatch = ball(dog, "#ffe0a1", 0, 1.01, -.72, .23, .28, .12);
-  const ears = [], eyes = [], eyeDetails = [];
+  const ears = [], eyes = [], eyeDetails = [], eyePatches = [], brows = [];
   for (const side of [-1, 1]) {
-    const ear = box(dog, "#e9ac59", side * 0.35, 1.85, -0.55, 0.26, 0.62, 0.32);
-    ear.rotation.z = -side * 0.15;
-    const inner = box(dog, "#b97847", side * 0.35, 1.87, -0.73, 0.13, 0.36, 0.04);
-    inner.geometry = coneGeometry;
-    ears.push({ear, inner, side});
+    // Ears pivot from a skull anchor, so scaling or lifting a head cannot
+    // leave a visible gap. The outer and inner layers share smooth profiles
+    // instead of the old five-sided cone and detached box.
+    const ear = new THREE.Group();
+    ear.name = side < 0 ? "left-ear-anchor" : "right-ear-anchor";
+    const outer = mesh(ear, classicEarGeometries.floppy, "#e9ac59", 0, 0, 0, 1, 1, 1);
+    outer.castShadow = true;
+    const inner = mesh(ear, classicEarGeometries.floppy, "#b97847", 0, 0, .16, 1, 1, 1);
+    dog.add(ear);
+    ears.push({ear, outer, inner, side});
     const eye = new THREE.Group(); eye.position.set(side*.25,1.39,-1.082);dog.add(eye);eyes.push(eye);
     const iris = ball(eye,"#20352d",0,0,0,.067,.09,.05);
     const pupil = ball(eye,"#111713",0,0,-.052,.035,.052,.012);
     const catchlight = ball(eye,"#fff7db",-.025,.04,-.066,.025,.033,.018);
     eyeDetails.push({eye, iris, pupil, catchlight});
+    const patch = ball(dog, "#76503b", side * .25, 1.39, -1.11, .11, .12, .025);
+    const brow = ball(dog, "#dcae70", side * .25, 1.56, -1.10, .15, .038, .035);
+    brow.rotation.z = side * .10;
+    eyePatches.push({patch, side});
+    brows.push({brow, side});
   }
   const collar = ball(dog, "#ed734b", 0, 0.95, -0.26, 0.49, 0.13, 0.24);
   const scarf = ball(dog, "#d85235", 0.45, 0.82, 0.15, 0.09, 0.20, 0.48);
@@ -440,6 +457,8 @@ export function createView(canvas) {
   const tailBase = ball(tail, "#db994e", 0, 0.24, 0.16, 0.18, 0.35, 0.2);
   const tailTip = ball(tail, "#ffe3b1", 0, 0.57, 0.16, 0.17, 0.18, 0.19);
   dog.add(tail);
+  const classicFur = createClassicFur(mat);
+  dog.add(classicFur.group);
   const originalParts = dog.children.filter(part => part !== collar && part !== scarf);
   const furMeshes = [];
   dog.traverse(item => {
@@ -488,6 +507,7 @@ export function createView(canvas) {
     const visual = puppyVisual(appearance.puppy);
     mochi.group.visible = isMochi;
     for (const part of originalParts) part.visible = !isMochi;
+    classicFur.group.visible = !isMochi;
     activeRig = isMochi ? mochi : classicRig;
     const palette = {"#d89043":puppy.fur,"#e9ac59":puppy.fur,"#c7823d":puppy.fur,"#db994e":puppy.fur,"#f2c67b":puppy.head,"#ffe0a1":puppy.muzzle,"#ffe3b1":puppy.paws};
     for (const {item,color} of furMeshes) if (palette[color]) item.material = mat(palette[color]);
@@ -507,18 +527,41 @@ export function createView(canvas) {
     noseBridge.position.set(0, visual.muzzlePosition[1] + .16, visual.muzzlePosition[2] - .23);
     noseBridge.scale.set(.16 * visual.muzzleScale[0], .12 * visual.muzzleScale[1], .09 * visual.muzzleScale[2]);
     noseBridge.material = mat(visual.noseColor);
-    tongue.position.set(0, visual.muzzlePosition[1] - .18, visual.muzzlePosition[2] - .19);
+    mouth.position.set(0, visual.muzzlePosition[1] - .14, visual.muzzlePosition[2] - .34);
+    mouth.scale.set(.14 * visual.muzzleScale[0], .065 * visual.muzzleScale[1], .035 * visual.muzzleScale[2]);
+    tongue.position.set(0, visual.muzzlePosition[1] - .19, visual.muzzlePosition[2] - .39);
     tongue.scale.set(.10 * visual.muzzleScale[0], .12 * visual.muzzleScale[1], .045 * visual.muzzleScale[2]);
+    classicFur.apply({visual, puppy});
 
-    for (const {ear,inner,side} of ears) {
+    const headRadius = {
+      x: .49 * visual.headScale[0],
+      y: .46 * visual.headScale[1],
+      z: .54 * visual.headScale[2],
+    };
+    for (const {ear,outer,inner,side} of ears) {
       const floppy = puppy.ears === "floppy";
-      ear.geometry = floppy ? sphereGeometry : coneGeometry;
-      ear.scale.set(...visual.earScale);
-      ear.position.set(side * visual.earSpread, visual.earY, visual.earZ);
-      ear.rotation.z = side * (floppy ? .15 : -.15);
-      inner.visible = !floppy;
-      inner.position.set(side * visual.earSpread, visual.earY + .02, visual.earZ - .18);
-      inner.scale.set(visual.earScale[0] * .50, visual.earScale[1] * .58, visual.earScale[2] * .13);
+      outer.geometry = floppy ? classicEarGeometries.floppy : classicEarGeometries.upright;
+      inner.geometry = outer.geometry;
+      outer.material = mat(puppy.fur);
+      inner.material = mat(visual.earInnerColor || puppy.muzzle);
+      // Root the group on the upper cheek. The small overlap is intentional:
+      // it reads as fur growing out of the skull from every camera angle.
+      const rootY = visual.headPosition[1] + headRadius.y * (floppy ? .38 : .53);
+      const rootX = visual.headPosition[0] + side * Math.max(
+        visual.earSpread,
+        headRadius.x * (floppy ? .72 : .77),
+      );
+      // Keep the ear root just ahead of the skull. This small forward bias
+      // makes the cheek-to-ear join read from the chase camera as well as the
+      // front-facing clubhouse cards, instead of disappearing inside the head.
+      const rootZ = (visual.earZ ?? visual.headPosition[2]) - headRadius.z * .16;
+      ear.position.set(rootX, rootY, rootZ);
+      ear.rotation.z = side * (floppy ? .10 : -.06);
+      outer.position.set(0, 0, 0);
+      outer.scale.set(...visual.earScale);
+      inner.visible = true;
+      inner.position.set(0, 0, .09);
+      inner.scale.set(visual.earScale[0] * .62, visual.earScale[1] * .68, visual.earScale[2] * .16);
     }
     for (const {eye,iris,pupil,catchlight} of eyeDetails) {
       const side = eye.position.x < 0 ? -1 : 1;
@@ -529,6 +572,16 @@ export function createView(canvas) {
       pupil.material = mat(visual.pupilColor);
       catchlight.position.set(-.025, .04, -.066);
       catchlight.scale.set(.025, .033, .018);
+    }
+    for (const {patch,side} of eyePatches) {
+      patch.position.set(side * visual.eyeSpread, visual.eyeY, visual.eyeZ + .04);
+      patch.scale.set(.11 * visual.eyeScale[0], .12 * visual.eyeScale[1], .025);
+      patch.material = mat(visual.eyePatchColor || '#76503b');
+    }
+    for (const {brow,side} of brows) {
+      brow.position.set(side * visual.eyeSpread, visual.eyeY + .15, visual.eyeZ - .025);
+      brow.scale.set(.15 * visual.eyeScale[0], .038 * visual.eyeScale[1], .035);
+      brow.material = mat(visual.browColor || puppy.head);
     }
     for (const {leg,upper,paw} of legParts) {
       leg.position.y = visual.legY;
