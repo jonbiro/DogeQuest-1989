@@ -29,6 +29,7 @@ import {actionCue,eventNotice,dockMode,runLesson,routeChoiceCue} from "./guidanc
 import {turnPrompt} from "./turns.js";
 import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,isJumpTap} from "./gestures.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
+import { puppyArtworkUrl } from "./puppy-artwork.js";
 const $ = (id) => document.getElementById(id);
 const updatePowerHud = createPowerHud($('power'));
 const soundscape=createAreaSoundscape();
@@ -107,7 +108,6 @@ function updateRecords() {
 }
 let clubhouseCategory = 'puppy';
 let previewRear = false;
-const portraitCache = new Map();
 function kennel() {
   showOverlay("kennel");
   $("overlay-label").textContent = "YOUR VERY GOOD CREW";
@@ -181,9 +181,11 @@ function kennel() {
       const owned = saved.collection[kind === "puppy" ? "puppies" : "costumes"].includes(id);
       row.className='collection-card';
       const appearance={puppy:kind==='puppy'?id:saved.collection.puppy,costume:kind==='costume'?id:saved.collection.costume};
-      const cacheKey=`${appearance.puppy}:${appearance.costume}:${previewRear}`;
-      if(!portraitCache.has(cacheKey))portraitCache.set(cacheKey,view.portrait(run,appearance,previewRear));
-      const image=document.createElement('img');image.src=portraitCache.get(cacheKey);
+      const image=document.createElement('img');
+      image.src=puppyArtworkUrl(appearance.puppy);
+      image.className='puppy-artwork-preview';
+      image.decoding='async';
+      image.loading='lazy';
       image.alt=`${item.name}, ${previewRear?'running view':'front view'}`;image.width=image.height=96;
       copy.textContent = `${item.name}${item.breed ? ` · ${item.breed}` : ""} — ${item.description}`;
       button.dataset[kind] = id;

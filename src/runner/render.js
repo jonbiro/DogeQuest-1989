@@ -44,6 +44,7 @@ import {createTerrainMaterial,terrainStation} from './terrain-material.js';
 import {raftAt,raftIntersecting} from './rafts.js';
 import {createRaftModel} from './raft-model.js';
 import {createRiverBanks} from './river-banks.js';
+import {createPuppyArtwork} from './puppy-artwork.js';
 
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -494,6 +495,13 @@ export function createView(canvas) {
   ball(outfits.party, "#fff0a0", 0, 2.34, -.55, .12, .12, .12);
   const outfitPositions = Object.fromEntries(Object.entries(outfits).map(([id, group]) => [id, group.children.map(part => part.position.clone())]));
   const mochi = createMochiModel(); dog.add(mochi.group); mochi.group.visible = false;
+  // The shipped puppy look is hand-painted raster artwork. Keep the old rig
+  // alive for compatibility with the pose/diagnostic helpers, but take every
+  // procedural dog part out of the render path so no low-poly pieces can peek
+  // through the illustrated sprite during a swap or a costume preview.
+  const rasterArtwork = createPuppyArtwork();
+  dog.add(rasterArtwork.group);
+  const legacyDogParts = dog.children.filter(part => part !== rasterArtwork.group);
   const classicRig = {legs, eyes, ears, tail};
   const markingBase = markingParts.map(part => ({position:part.position.clone(),scale:part.scale.clone()}));
   let activeRig = classicRig;
@@ -626,6 +634,12 @@ export function createView(canvas) {
       if (isMochi && id === "raincoat") group.scale.set(1.05, 1.14, 1.08);
       if (isMochi && id === "hero") group.position.y = .12;
     }
+    // Costumes are still available as progression items, but the dog itself
+    // is now one cohesive illustrated asset. Hiding the legacy geometry keeps
+    // ears, legs and accessories from becoming detached vector fragments.
+    rasterArtwork.apply(appearance.puppy);
+    for (const part of legacyDogParts) part.visible = false;
+    rasterArtwork.group.visible = true;
   }
   const shadowCanvas = document.createElement("canvas");
   shadowCanvas.width = shadowCanvas.height = 64;

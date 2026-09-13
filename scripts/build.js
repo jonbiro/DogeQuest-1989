@@ -87,7 +87,18 @@ export async function build() {
   }
   await writeFile(htmlPath,html);
   const assets=[];
-  for(const file of ['index.html','game.js','style.css','../favicon.svg']) {
+  // Cache the illustrated puppies with the shell so a first offline run does
+  // not fall back to a missing texture after the game has been installed.
+  for(const file of [
+    'index.html',
+    'game.js',
+    'style.css',
+    '../favicon.svg',
+    'puppies/biscuit.webp',
+    'puppies/mochi.webp',
+    'puppies/pepper.webp',
+    'puppies/luna.webp',
+  ]) {
     const sha256=createHash('sha256').update(await readFile(path.join(distDirectory,'runner',file))).digest('hex');
     const url=['game.js','style.css'].includes(file)?`${file}?v=${sha256.slice(0,16)}`:file;
     assets.push({url,sha256});
