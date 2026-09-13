@@ -44,6 +44,7 @@ test('each puppy has complete raster stride, jump, slide, turn, and hang poses',
   }
   assert.match(PUPPY_ARTWORK_VARIANTS.mochi.away, /^\.\/puppies\/mochi-away\.webp$/);
   assert.notEqual(PUPPY_ARTWORK_VARIANTS.mochi.away, PUPPY_ARTWORK_VARIANTS.mochi.idle);
+  assert.equal(PUPPY_ARTWORK_VARIANTS.mochi.stride, './puppies/mochi-run-side.webp');
   assert.equal(puppyPoseArtworkUrl('mochi', 'away'), PUPPY_ARTWORK_VARIANTS.mochi.away);
   assert.equal(puppyPoseArtworkUrl('missing', 'turn'), PUPPY_ARTWORK_VARIANTS.biscuit.turn);
 });

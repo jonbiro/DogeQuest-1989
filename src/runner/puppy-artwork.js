@@ -30,7 +30,9 @@ export const PUPPY_ARTWORK_VARIANTS = Object.freeze({
   }),
   mochi: Object.freeze({
     idle: PUPPY_ARTWORK.mochi,
-    stride: './puppies/mochi-run-front.webp',
+    // Supplied Mochi side-gallop painting: the stretched paws and swept tail
+    // make steering feel physical without adding a second stride texture.
+    stride: './puppies/mochi-run-side.webp',
     jump: './puppies/mochi-jump.webp',
     slide: './puppies/mochi-slide.webp',
     turn: './puppies/mochi-turn.webp',
@@ -58,9 +60,9 @@ export const PUPPY_ARTWORK_VARIANTS = Object.freeze({
 // Transparent canvases are intentionally kept as authored paintings, but the
 // paintings do not all use the same amount of breathing room.  These measured
 // alpha bounds let the renderer normalize the *visible* puppy (not the empty
-// canvas) before swapping poses.  Without this, a wide front stride can pop
-// larger or smaller than the idle frame even when both are 2.48 world units
-// tall.  Bounds use the same top-left pixel coordinates as the source images.
+// canvas) before swapping poses. Without this, a wide stride can pop larger or
+// smaller than the idle frame even when both are 2.48 world units tall. Bounds
+// use the same top-left pixel coordinates as the source images.
 export const PUPPY_ARTWORK_BOUNDS = Object.freeze({
   biscuit: Object.freeze({
     idle: Object.freeze({width: 1254, height: 1254, x: 104, y: 42, boxWidth: 1078, boxHeight: 1181}),
@@ -72,7 +74,9 @@ export const PUPPY_ARTWORK_BOUNDS = Object.freeze({
   }),
   mochi: Object.freeze({
     idle: Object.freeze({width: 1230, height: 1278, x: 117, y: 39, boxWidth: 1037, boxHeight: 1210}),
-    stride: Object.freeze({width: 1129, height: 1393, x: 20, y: 45, boxWidth: 1095, boxHeight: 1319}),
+    // The supplied side-gallop painting is intentionally wide: its stretched
+    // paws and swept tail need room to read while Mochi banks around a bend.
+    stride: Object.freeze({width: 1536, height: 1024, x: 19, y: 18, boxWidth: 1505, boxHeight: 976}),
     jump: Object.freeze({width: 1230, height: 1278, x: 63, y: 72, boxWidth: 1111, boxHeight: 1097}),
     slide: Object.freeze({width: 1536, height: 1024, x: 47, y: 71, boxWidth: 1450, boxHeight: 893}),
     turn: Object.freeze({width: 1254, height: 1254, x: 110, y: 79, boxWidth: 1065, boxHeight: 1123}),
@@ -924,6 +928,7 @@ export function createPuppyArtwork() {
     sliding = false,
     hanging = false,
     away = false,
+    side = false,
     menu = false,
     reducedMotion = false,
   } = {}) {
@@ -953,6 +958,10 @@ export function createPuppyArtwork() {
     // silhouettes always win, even if the renderer keeps `away` true while a
     // jump or slide is being eased out.
     const awayRequested = away && !airborne && !sliding && !hanging && !menu;
+    // On a bend, use Mochi's supplied side-gallop silhouette. It shares the
+    // existing stride slot and GPU texture, so the richer animation does not
+    // add another mobile texture allocation.
+    const sideRequested = side && !airborne && !sliding && !hanging && !menu && poseReady('stride');
     // Action silhouettes always win over the running cadence. This keeps a
     // jump readable even when the dog is changing lanes and makes a slide a
     // deliberate low profile instead of a scaled portrait.
@@ -964,6 +973,7 @@ export function createPuppyArtwork() {
     if (!activePose && airborne && poseReady('jump')) activePose = 'jump';
     if (!activePose && sliding && poseReady('slide')) activePose = 'slide';
     if (!activePose && turnRequested && poseReady('turn')) activePose = 'turn';
+    if (!activePose && sideRequested) activePose = 'stride';
     if (!activePose && awayRequested && poseReady('away')) activePose = 'away';
     if (!activePose && strideRequested && poseReady('stride')) activePose = 'stride';
     if (!activePose && poseReady('idle')) activePose = 'idle';
@@ -977,6 +987,7 @@ export function createPuppyArtwork() {
       sliding: Boolean(sliding),
       hanging: Boolean(hanging),
       away: Boolean(activePose === 'away'),
+      side: Boolean(sideRequested && activePose === 'stride'),
       look,
       verticalVelocity: vertical,
       landingPulse,

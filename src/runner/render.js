@@ -1198,6 +1198,10 @@ export function createView(canvas) {
         // Mochi, while jumps, slides, turns, ziplines, and raft travel keep
         // their more legible authored action silhouettes.
         away:!menu && activeRig===mochi && !run.zipline && !run.raft,
+        // The wide supplied gallop frame is reserved for a real bend or lane
+        // bank, where its side profile reinforces the direction of travel.
+        side:!menu && activeRig===mochi && !run.zipline && !run.raft &&
+          (Math.abs(lean)>.045 || Math.abs(groundFrame.yaw)>.055),
         menu,
         reducedMotion,
       });

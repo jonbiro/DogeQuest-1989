@@ -9,6 +9,10 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
   collar, and lifted paws moving away from the player, with a subtle whole-body
   bounce, tail-side mirror, and lane lean; jump, slide, turn, raft, and zipline
   actions keep their dedicated silhouettes.
+- Refined Mochi's stride painting from the additional supplied frames. His
+  stretched side-gallop silhouette now appears during real route bends and lane
+  banks, while straightaways stay on the rear chase view and reuse the same
+  mobile texture budget.
 - Added authored zipline hanging paintings for all four puppies. The new
   transparent frames keep paws connected to each body, align them to the cable
   handle, hide mismatched costume plates while suspended, and add a restrained
