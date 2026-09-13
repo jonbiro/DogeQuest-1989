@@ -16,6 +16,7 @@ import {fetchReady} from './ability.js';
 import {createPowerHud} from './power-hud.js';
 import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLink} from './trail-link.js';
 import {dailyTrail,selectedTrailDescription} from './daily-trail.js';
+import {trailRecordsFrom,trailBest} from './trail-records.js';
 import {updateTraversalControls,traversalDescription} from './traversal-controls.js';
 import {installTiltControls} from './tilt-controls.js';
 import {scoreBreakdown} from './score-breakdown.js';
@@ -61,6 +62,7 @@ let saved = {
   upgrades: levels(),
   collection: collectionFrom(),
   mastery: masteryFrom(),
+  trailRecords: [],
   preferences: preferencesFrom(null,reducedMotion),
 };
 try {
@@ -73,6 +75,7 @@ try {
   saved.upgrades = levels(value?.upgrades);
   saved.collection = collectionFrom(value?.collection);
   saved.mastery = masteryFrom(value?.mastery);
+  saved.trailRecords = trailRecordsFrom(value?.trailRecords);
   saved.preferences = preferencesFrom(value?.preferences,reducedMotion);
   saved.challenges = Math.floor(saved.challenges);
 } catch {
@@ -507,9 +510,10 @@ $("play").onclick = start;
 function chooseDailyTrail() {
   const daily=dailyTrail(window.location.href);
   if (!daily) return;
-  sharedSeed=daily.seed;sharedVersion=daily.version;sharedTarget=0;
+  sharedSeed=daily.seed;sharedVersion=daily.version;
+  sharedTarget=trailBest(saved.trailRecords,daily.seed,daily.version);
   window.history.replaceState(null,'',daily.url);
-  $('shared-description').textContent=`Daily trail · ${daily.day} UTC · your upgrades apply.`;
+  $('shared-description').textContent=`Daily trail · ${daily.day} UTC${sharedTarget?` · Your best: ${sharedTarget.toLocaleString()} pts`:''} · your upgrades apply.`;
   $('shared-trail').hidden=false;
   setState('menu');updateRecords();$('play').focus({preventScroll:true});
 }

@@ -1,0 +1,32 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {trailRecordsFrom,trailBest} from '../src/runner/trail-records.js';
+import {bankRun} from '../src/runner/rewards.js';
+import {createRun} from '../src/runner/world.js';
+import {collectionFrom} from '../src/runner/collection.js';
+
+test('trail records sanitize input, merge duplicates and remain bounded',()=>{
+  const input=[{seed:0,version:4,best:120},{seed:0,version:4,best:240},
+    {seed:-1,version:4,best:900},{seed:1,version:5,best:900},{seed:2,version:4,best:NaN},
+    ...Array.from({length:60},(_,i)=>({seed:i+10,version:4,best:i}))];
+  const records=trailRecordsFrom(input);
+  assert.equal(records.length,32);assert.equal(trailBest(records,0,4),240);
+  assert.equal(trailBest(records,0,3),0);assert.equal(trailBest(records,1,5),0);
+  assert.equal(input[0].best,120);assert.deepEqual(trailRecordsFrom({}),[]);
+});
+
+test('completed adventures bank their own best once, never practice or another layout version',()=>{
+  const profile={best:0,distance:0,bones:0,credits:0,challenges:0,collection:collectionFrom()};
+  const run=createRun(1989,{},4);run.score=2400;
+  assert.equal(bankRun(profile,run,[]),null);assert.equal(profile.trailRecords,undefined);
+  run.ended=true;run.practice={};
+  assert.equal(bankRun(profile,run,[]),null);assert.equal(profile.trailRecords,undefined);
+  delete run.practice;bankRun(profile,run,[]);
+  assert.equal(trailBest(profile.trailRecords,1989,4),2400);
+  const before=JSON.stringify(profile);bankRun(profile,run,[]);assert.equal(JSON.stringify(profile),before);
+  const worse=createRun(1989,{},4);worse.ended=true;worse.score=100;bankRun(profile,worse,[]);
+  assert.equal(trailBest(profile.trailRecords,1989,4),2400);
+  const legacy=createRun(1989,{},3);legacy.ended=true;legacy.score=3000;bankRun(profile,legacy,[]);
+  assert.equal(trailBest(profile.trailRecords,1989,3),3000);
+  assert.equal(trailBest(profile.trailRecords,1989,4),2400);
+});

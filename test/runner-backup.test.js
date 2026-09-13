@@ -5,7 +5,7 @@ import {levels} from '../src/runner/progression.js';
 import {collectionFrom} from '../src/runner/collection.js';
 import {masteryFrom} from '../src/runner/mastery.js';
 import {preferencesFrom} from '../src/runner/preferences.js';
-const profile=()=>({best:2400,bones:120,bestRunBones:55,distance:1100.5,credits:1800,challenges:7,
+const profile=()=>({trailRecords:[{seed:1989,version:4,best:2400}],best:2400,bones:120,bestRunBones:55,distance:1100.5,credits:1800,challenges:7,
   upgrades:levels({leap:2}),collection:collectionFrom({puppy:'mochi',costumes:['hero'],costume:'hero',gifts:2}),
   mastery:masteryFrom({dogs:{mochi:24},regions:[2,1,0],rides:{rafts:12,ziplines:31}}),preferences:preferencesFrom({sound:true,reducedMotion:true,swipeOnly:true,tiltSensitivity:'steady'})});
 test('portable backups round-trip progress, equipment, mastery and preferences without mutation',()=>{
@@ -27,6 +27,11 @@ test('foreign, oversized, future and malformed backups are rejected',()=>{
   }
   const data=JSON.parse(JSON.stringify(valid));data.profile.collection=[];
   assert.throws(()=>decodeBackup(JSON.stringify(data)));
+});
+test('older backups without trail records remain importable',()=>{
+  const data=JSON.parse(encodeBackup(profile()));delete data.profile.trailRecords;
+  const restored=decodeBackup(JSON.stringify(data));
+  assert.deepEqual(restored.trailRecords,[]);assert.equal(restored.best,2400);
 });
 test('restore retains the exact previous save, including damaged bytes',()=>{
   const data=new Map([['biscuit-dash-v1','{damaged original']]);

@@ -1,6 +1,7 @@
 import { claimMission } from './missions.js';
 import { awardPrizes } from './collection.js';
 import {bankMastery} from './mastery.js';
+import {bankTrailRecord} from './trail-records.js';
 
 // One completion transaction owns all record updates and earned currency.
 // Returning the original receipt also keeps repeated results renders stable.
@@ -8,6 +9,7 @@ export function bankRun(profile, run, mission) {
   if (!run.ended || run.practice) return null;
   if (run.receipt) return run.receipt;
   const creditsBefore=profile.credits;
+  bankTrailRecord(profile,run);
   const personalBest = run.score > profile.best;
   const distanceBest = Math.floor(run.distance)>Math.floor(profile.distance);
   const bonesBest = run.bones>(profile.bestRunBones||0);

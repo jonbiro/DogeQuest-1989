@@ -2,6 +2,7 @@ import {levels} from './progression.js';
 import {collectionFrom} from './collection.js';
 import {masteryFrom} from './mastery.js';
 import {preferencesFrom} from './preferences.js';
+import {trailRecordsFrom} from './trail-records.js';
 
 export const MAX_BACKUP_BYTES = 64000;
 const record = value => value && typeof value === 'object' && !Array.isArray(value);
@@ -20,6 +21,7 @@ function cleanProfile(profile) {
   clean.collection=collectionFrom(profile.collection);
   clean.mastery=masteryFrom(profile.mastery);
   clean.preferences=preferencesFrom(profile.preferences);
+  clean.trailRecords=trailRecordsFrom(profile.trailRecords);
   return clean;
 }
 export function encodeBackup(profile) {

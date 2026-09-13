@@ -37,7 +37,7 @@ test('the actual daily selector chooses a replayable trail without starting or b
   const elements=new Map(),calls=[];
   const $=id=>{if(!elements.has(id))elements.set(id,{focus:()=>calls.push('focus')});return elements.get(id);};
   const daily=dailyTrail(href,Date.parse('2026-09-12T23:59:00Z'));
-  const context={$,sharedSeed:1,sharedVersion:1,sharedTarget:1000,dailyTrail:()=>daily,
+  const context={$,saved:{trailRecords:[]},trailBest:()=>0,sharedSeed:1,sharedVersion:1,sharedTarget:1000,dailyTrail:()=>daily,
     window:{location:{href},history:{replaceState:(_a,_b,url)=>calls.push(url)}},
     setState:value=>calls.push(value),updateRecords:()=>calls.push('records')};
   const start=source.indexOf('function chooseDailyTrail()'),end=source.indexOf("$('shared-random').onclick =",start);
@@ -47,6 +47,8 @@ test('the actual daily selector chooses a replayable trail without starting or b
   assert.match($('shared-description').textContent,/2026-09-12 UTC/);assert.equal($('shared-trail').hidden,false);
   assert.deepEqual(calls,[daily.url,'menu','records','focus']);
   assert.equal($('daily-camp').onclick,$('daily-trail').onclick);
+  context.trailBest=()=>2400;
   calls.length=0;$('daily-camp').onclick();
+  assert.equal(context.sharedTarget,2400);assert.match($('shared-description').textContent,/Your best: 2,400 pts/);
   assert.deepEqual(calls,[daily.url,'menu','records','focus']);
 });
