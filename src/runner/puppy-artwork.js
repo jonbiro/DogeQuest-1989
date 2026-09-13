@@ -158,8 +158,6 @@ function drawBodyMask(context, width, height, layout) {
   context.bezierCurveTo(.59 * width, .86 * height, .34 * width, .84 * height, .23 * width, .73 * height);
   context.bezierCurveTo(.16 * width, .65 * height, .14 * width, .55 * height, .18 * width, .48 * height);
   context.closePath();
-  context.fillStyle = '#fff';
-  context.fill();
 }
 
 function drawHeadMask(context, width, height, layout, cropRect = {x:0,y:0}) {
@@ -174,8 +172,6 @@ function drawHeadMask(context, width, height, layout, cropRect = {x:0,y:0}) {
     0,
     Math.PI * 2,
   );
-  context.fillStyle = '#fff';
-  context.fill();
 }
 
 function headRectFor(layout, width, height) {
@@ -238,6 +234,143 @@ function makeMaterial() {
     depthWrite: false,
     sizeAttenuation: true,
   });
+}
+
+// Costumes are intentionally painted as small, transparent accessory plates
+// instead of being assembled from the old low-poly rig.  The puppy remains
+// the supplied illustration; these plates only add a scarf, hat, cape, coat
+// or pack and leave enough of the fur texture visible that the outfit feels
+// worn, not pasted over the face.
+function accessoryTexture(key, costume, layer) {
+  if (typeof document === 'undefined' || !costume) return null;
+  const activeLayers = {
+    scarf: ['mid'],
+    explorer: ['back', 'top'],
+    hero: ['back', 'top'],
+    raincoat: ['mid'],
+    royal: ['top'],
+    party: ['top'],
+  }[costume];
+  if (!activeLayers?.includes(layer)) return null;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 384;
+  const context = canvas.getContext('2d');
+  if (!context) return null;
+  const s = canvas.width;
+  const px = value => value * s;
+  const roundRect = (x, y, width, height, radius) => {
+    const r = Math.min(radius, width / 2, height / 2);
+    context.beginPath();
+    context.moveTo(px(x + r), px(y));
+    context.arcTo(px(x + width), px(y), px(x + width), px(y + height), px(r));
+    context.arcTo(px(x + width), px(y + height), px(x), px(y + height), px(r));
+    context.arcTo(px(x), px(y + height), px(x), px(y), px(r));
+    context.arcTo(px(x), px(y), px(x + width), px(y), px(r));
+    context.closePath();
+  };
+  const fillStroke = (fill, stroke = '#3b2b28', line = .012) => {
+    context.fillStyle = fill;
+    context.fill();
+    context.strokeStyle = stroke;
+    context.lineWidth = px(line);
+    context.lineJoin = 'round';
+    context.stroke();
+  };
+  const path = commands => {
+    context.beginPath();
+    for (const command of commands) {
+      if (command[0] === 'M') context.moveTo(px(command[1]), px(command[2]));
+      else if (command[0] === 'L') context.lineTo(px(command[1]), px(command[2]));
+      else if (command[0] === 'C') context.bezierCurveTo(...command.slice(1).map(px));
+      else if (command[0] === 'Q') context.quadraticCurveTo(...command.slice(1).map(px));
+      else if (command[0] === 'Z') context.closePath();
+    }
+  };
+  const gradient = (from, to, y = .4) => {
+    const result = context.createLinearGradient(0, px(y - .2), 0, px(y + .35));
+    result.addColorStop(0, from); result.addColorStop(1, to); return result;
+  };
+  // The slight key-specific hue shifts keep each puppy's wardrobe from
+  // feeling cloned while the silhouettes stay consistent across the roster.
+  const ink = key === 'luna' ? '#24303d' : '#3b2b28';
+  if (costume === 'scarf' && layer === 'mid') {
+    // The supplied art already has a blue collar. This transparent plate
+    // keeps the reward legible as the promised red adventure scarf while
+    // preserving the painted fur and the little blue tag underneath.
+    path([
+      ['M', .25, .40], ['C', .36, .36, .56, .37, .70, .43],
+      ['L', .68, .50], ['C', .54, .55, .36, .54, .25, .48], ['Z'],
+    ]);
+    fillStroke(gradient('#f06a5f', '#b83b43', .38), ink, .012);
+    context.strokeStyle = '#ffb080'; context.lineWidth = px(.010);
+    context.beginPath(); context.moveTo(px(.28), px(.42));
+    context.quadraticCurveTo(px(.48), px(.47), px(.67), px(.44)); context.stroke();
+    path([
+      ['M', .57, .47], ['C', .62, .50, .66, .56, .63, .65],
+      ['L', .55, .57], ['L', .50, .64], ['L', .51, .51], ['Z'],
+    ]);
+    fillStroke(gradient('#eb6358', '#ad3340', .49), ink, .010);
+  } else if (costume === 'explorer') {
+    if (layer === 'back') {
+      // Rounded pack tucked behind the shoulder, with visible straps and a
+      // small buckle instead of the old floating rectangular block.
+      context.strokeStyle = '#526239'; context.lineWidth = px(.022);
+      context.beginPath(); context.arc(px(.57), px(.49), px(.14), 0, Math.PI * 2); context.stroke();
+      roundRect(.54, .41, .25, .27, .055);
+      fillStroke(gradient('#829b5d', '#405334', .42), ink, .012);
+      roundRect(.58, .46, .17, .12, .025);
+      fillStroke('#d8bc79', '#526239', .008);
+      context.fillStyle = '#f3dc9d'; context.fillRect(px(.645), px(.49), px(.04), px(.045));
+    } else if (layer === 'top') {
+      // A soft brim and crown sit above the forehead, never across the eyes.
+      context.beginPath(); context.ellipse(px(.32), px(.18), px(.19), px(.035), 0, 0, Math.PI * 2);
+      fillStroke('#a77b43', ink, .012);
+      roundRect(.22, .105, .20, .08, .035);
+      fillStroke(gradient('#d3aa68', '#876039', .12), ink, .012);
+      context.fillStyle = '#6e4d32'; context.fillRect(px(.23), px(.145), px(.18), px(.018));
+    }
+  } else if (costume === 'hero') {
+    if (layer === 'back') {
+      path([
+        ['M', .40, .41], ['C', .55, .43, .72, .48, .86, .53],
+        ['C', .82, .64, .78, .73, .69, .82], ['C', .61, .75, .53, .67, .48, .58], ['Z'],
+      ]);
+      fillStroke(gradient('#5cb1f5', '#2166bd', .43), ink, .012);
+      context.strokeStyle = '#a8dcff'; context.lineWidth = px(.012);
+      context.beginPath(); context.moveTo(px(.54), px(.50)); context.quadraticCurveTo(px(.68), px(.57), px(.73), px(.70)); context.stroke();
+    } else if (layer === 'top') {
+      context.beginPath(); context.arc(px(.40), px(.41), px(.035), 0, Math.PI * 2); fillStroke('#ffe47f', ink, .01);
+      context.beginPath(); context.arc(px(.40), px(.41), px(.014), 0, Math.PI * 2); context.fillStyle = '#ef9f41'; context.fill();
+    }
+  } else if (costume === 'raincoat' && layer === 'mid') {
+    // The coat is a translucent bib following the chest; fur texture remains
+    // visible through the lower edge so it reads as fabric, not a yellow orb.
+    path([
+      ['M', .27, .43], ['C', .38, .39, .56, .40, .69, .46],
+      ['L', .72, .66], ['C', .59, .73, .39, .72, .25, .64], ['Z'],
+    ]);
+    fillStroke(gradient('rgba(255,225,108,.90)', 'rgba(226,164,39,.72)', .42), ink, .012);
+    context.strokeStyle = '#fff0a7'; context.lineWidth = px(.012);
+    context.beginPath(); context.moveTo(px(.29), px(.50)); context.quadraticCurveTo(px(.48), px(.55), px(.69), px(.50)); context.stroke();
+    context.fillStyle = '#3e91a0'; context.fillRect(px(.455), px(.43), px(.09), px(.025));
+  } else if (costume === 'royal' && layer === 'top') {
+    path([
+      ['M', .20, .18], ['L', .22, .055], ['L', .30, .13], ['L', .38, .035],
+      ['L', .46, .13], ['L', .54, .07], ['L', .55, .18], ['Z'],
+    ]);
+    fillStroke(gradient('#ffe98f', '#d69a2d', .06), ink, .012);
+    context.fillStyle = '#e65752'; context.beginPath(); context.arc(px(.38), px(.12), px(.018), 0, Math.PI * 2); context.fill();
+    context.fillStyle = '#fff5b8'; context.fillRect(px(.24), px(.17), px(.28), px(.025));
+  } else if (costume === 'party' && layer === 'top') {
+    path([
+      ['M', .29, .23], ['L', .40, .035], ['L', .52, .23], ['Z'],
+    ]);
+    fillStroke(gradient('#e89af7', '#9f4ecb', .04), ink, .012);
+    context.strokeStyle = '#ffd7ff'; context.lineWidth = px(.012);
+    context.beginPath(); context.moveTo(px(.34), px(.19)); context.lineTo(px(.47), px(.19)); context.stroke();
+    context.fillStyle = '#fff1a8'; context.beginPath(); context.arc(px(.40), px(.027), px(.03), 0, Math.PI * 2); context.fill();
+  }
+  return prepareTexture(new THREE.CanvasTexture(canvas));
 }
 
 function setSpriteMap(sprite, texture) {
@@ -309,6 +442,21 @@ export function createPuppyArtwork() {
   tailGroup.add(tailSprite);
   group.add(tailGroup);
 
+  const accessorySprites = {
+    back: new THREE.Sprite(makeMaterial()),
+    mid: new THREE.Sprite(makeMaterial()),
+    top: new THREE.Sprite(makeMaterial()),
+  };
+  accessorySprites.back.name = 'puppy-painted-accessories-back';
+  accessorySprites.mid.name = 'puppy-painted-accessories-mid';
+  accessorySprites.top.name = 'puppy-painted-accessories-top';
+  accessorySprites.back.frustumCulled = accessorySprites.mid.frustumCulled = accessorySprites.top.frustumCulled = false;
+  accessorySprites.back.renderOrder = 1.5;
+  accessorySprites.mid.renderOrder = 2.5;
+  accessorySprites.top.renderOrder = 5;
+  accessorySprites.back.position.y = accessorySprites.mid.position.y = accessorySprites.top.position.y = WORLD_HEIGHT / 2;
+  group.add(accessorySprites.back, accessorySprites.mid, accessorySprites.top);
+
   const legGroups = [0, 1, 2, 3].map(index => {
     const legGroup = new THREE.Group();
     legGroup.name = `puppy-painted-leg-${index}`;
@@ -324,10 +472,28 @@ export function createPuppyArtwork() {
   });
 
   let currentKey = 'biscuit';
+  let currentCostume = 'scarf';
+  const accessoryTextures = new Map();
   let bodyBaseScale = new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1);
   let headBaseScale = new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1);
   const bodyBasePosition = new THREE.Vector3(0, WORLD_HEIGHT / 2, 0);
   const headBasePosition = new THREE.Vector3();
+
+  function accessoryFor(key, costume, layer) {
+    const cacheKey = `${key}:${costume}:${layer}`;
+    if (!accessoryTextures.has(cacheKey)) accessoryTextures.set(cacheKey, accessoryTexture(key, costume, layer));
+    return accessoryTextures.get(cacheKey);
+  }
+
+  function configureAccessories(key, costume = currentCostume) {
+    currentCostume = costume || 'scarf';
+    for (const [layer, sprite] of Object.entries(accessorySprites)) {
+      const texture = accessoryFor(key, currentCostume, layer);
+      setSpriteMap(sprite, texture);
+      sprite.position.set(bodyBasePosition.x, bodyBasePosition.y, layer === 'back' ? -.018 : layer === 'mid' ? .022 : .055);
+      sprite.scale.copy(bodyBaseScale);
+    }
+  }
 
   function configureParts(key, texture) {
     const layout = PUPPY_ARTWORK_LAYOUTS[key];
@@ -412,7 +578,10 @@ export function createPuppyArtwork() {
       const rect = pixelRect(leg.crop, width, height);
       partTextures.set(`${key}:leg:${index}`, cropTexture(texture, rect, width, height));
     });
-    if (currentKey === key) configureParts(key, texture);
+    if (currentKey === key) {
+      configureParts(key, texture);
+      configureAccessories(key, currentCostume);
+    }
   }
 
   function textureFor(id) {
@@ -430,6 +599,11 @@ export function createPuppyArtwork() {
     currentKey = key;
     configureParts(key, texture);
     return key;
+  }
+
+  function setCostume(costume = 'scarf') {
+    currentCostume = costume || 'scarf';
+    configureAccessories(currentKey, currentCostume);
   }
 
   function setPose({
@@ -501,6 +675,24 @@ export function createPuppyArtwork() {
     );
     const breath = reducedMotion ? 1 : 1 + Math.sin(time * 4.2) * (menu ? .010 : .006);
     bodySprite.scale.set(bodyBaseScale.x * breath, bodyBaseScale.y * (2 - breath), 1);
+    accessorySprites.back.position.set(
+      bodyBasePosition.x + bodySway,
+      bodyBasePosition.y + bodyBounce,
+      -.018,
+    );
+    accessorySprites.mid.position.set(
+      bodyBasePosition.x + bodySway,
+      bodyBasePosition.y + bodyBounce,
+      .022,
+    );
+    accessorySprites.top.position.set(
+      bodyBasePosition.x + bodySway + look * .02,
+      bodyBasePosition.y + bodyBounce + headBob,
+      .055,
+    );
+    for (const sprite of Object.values(accessorySprites)) {
+      sprite.scale.set(bodyBaseScale.x * breath, bodyBaseScale.y * (2 - breath), 1);
+    }
   }
 
   return {
@@ -511,6 +703,7 @@ export function createPuppyArtwork() {
     legs: legGroups.map(item => item.group),
     tail: tailGroup,
     apply,
+    setCostume,
     setPose,
   };
 }

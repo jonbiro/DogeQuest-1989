@@ -501,7 +501,16 @@ export function createView(canvas) {
   // through the illustrated sprite during a swap or a costume preview.
   const rasterArtwork = createPuppyArtwork();
   dog.add(rasterArtwork.group);
-  const legacyDogParts = dog.children.filter(part => part !== rasterArtwork.group);
+  // Keep the painted dog as the only anatomy source, but let the progression
+  // costumes sit on top of it.  Previously this list swallowed the outfit
+  // groups along with the old rig, so every non-scarf wardrobe preview looked
+  // identical to the bare dog (and the equipped reward silently disappeared
+  // in a run).  Accessories are deliberately kept as their own shallow layer;
+  // the low-poly anatomy remains hidden.
+  const outfitGroups = new Set(Object.values(outfits));
+  const legacyDogParts = dog.children.filter(
+    part => part !== rasterArtwork.group && !outfitGroups.has(part),
+  );
   const classicRig = {legs, eyes, ears, tail};
   const markingBase = markingParts.map(part => ({position:part.position.clone(),scale:part.scale.clone()}));
   let activeRig = classicRig;
@@ -626,19 +635,17 @@ export function createView(canvas) {
     collar.material = mat(visual.collarColor || '#ed734b');
     collar.visible = scarf.visible = !appearance.costume || appearance.costume === "scarf";
     for (const [id, group] of Object.entries(outfits)) {
-      group.visible = appearance.costume === id;
-      group.scale.set(1, 1, 1); group.position.set(0, isMochi ? 0 : visual.outfitLift, 0);
-      group.children.forEach((part, index) => {
-        part.position.copy(outfitPositions[id][index]);
-        if (isMochi && (id === "royal" || id === "party" || (id === "explorer" && index < 2))) part.position.y += id==='explorer'?.16:.24;
-      });
-      if (isMochi && id === "raincoat") group.scale.set(1.05, 1.14, 1.08);
-      if (isMochi && id === "hero") group.position.y = .12;
+      // The illustrated puppet owns its costume plates now. Keep the legacy
+      // mesh groups allocated for compatibility with older diagnostics, but
+      // never let their coarse primitives cover the painted fur.
+      group.visible = false;
+      group.scale.set(1, 1, 1); group.position.set(0, 0, 0);
+      group.children.forEach((part, index) => part.position.copy(outfitPositions[id][index]));
     }
-    // Costumes are still available as progression items, but the dog itself
-    // is now one cohesive illustrated asset. Hiding the legacy geometry keeps
-    // ears, legs and accessories from becoming detached vector fragments.
+    // Costumes are rendered as transparent raster accessory plates that share
+    // the same source illustration and stay aligned through pose changes.
     rasterArtwork.apply(puppyId);
+    rasterArtwork.setCostume(appearance.costume);
     for (const part of legacyDogParts) part.visible = false;
     rasterArtwork.group.visible = true;
   }
@@ -990,7 +997,10 @@ export function createView(canvas) {
       try {
         for (const item of scene.children) item.visible = item === dog || item.isLight === true;
         scene.background = new THREE.Color('#24483f'); scene.fog = null;
-        dog.position.set(0,0,0); dog.rotation.set(0,rear ? .45 : -2.7,0);
+        // The painted illustrations already carry a friendly three-quarter
+        // view. Avoid the old procedural rig's near-sideways turn here: a
+        // large Y rotation makes billboarded raster layers drift apart.
+        dog.position.set(0,0,0); dog.rotation.set(0,rear ? .35 : 0,0);
         camera.fov=52;camera.aspect = 1; camera.position.set(0,2.0,3.4); camera.lookAt(0,1.1,0);
         camera.updateProjectionMatrix(); renderer.setSize(192,192,false);
         renderer.render(scene,camera);
@@ -1123,7 +1133,11 @@ export function createView(canvas) {
             (reducedMotion || (!menu && (state !== "playing" || y>.05 || run.slide>0 || run.zipline || run.raft)) ? 0 : 0.045),
         0,
       );
-      dog.rotation.y = menu ? -2.35 : lean;
+      // Keep the illustrated artwork front-facing in camp. The source pose
+      // already has a natural three-quarter angle; a 135° procedural turn
+      // would mirror the tail and make the articulated raster layers read as
+      // detached pieces. Gameplay still banks with the route via `lean`.
+      dog.rotation.y = menu ? 0 : lean;
       dog.rotation.z = menu || reducedMotion ? 0 : lean * 0.3;
       dog.rotation.x = menu ? 0 : groundFrame.pitch + (reducedMotion ? 0 : pitch);
       dog.scale.setScalar(1);

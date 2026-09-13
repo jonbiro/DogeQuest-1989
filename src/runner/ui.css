@@ -280,17 +280,51 @@ h1 em {
 #collection .clubhouse-categories { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; }
 #collection .clubhouse-categories button { min-width: 0; background: #102a28; color: #f4f5e8; }
 #collection .clubhouse-categories button[aria-pressed="true"] { background: var(--lime); color: #173c32; }
-#collection .collection-card { display: grid; grid-template-columns: 88px 1fr; gap: 10px; padding: 16px 0; }
-#collection .collection-card img { width: 88px; height: 88px; border-radius: 14px; object-fit: contain; background: radial-gradient(circle at 50% 35%, #f6efd8 0 45%, #d8be8d 100%); box-shadow: inset 0 0 0 1px rgba(38,56,45,.18), 0 5px 12px rgba(15,44,37,.18); }
+#collection .collection-card { display: grid; grid-template-columns: 76px 1fr; gap: 10px; padding: 12px 0; }
+#collection .collection-card img { width: 76px; height: 76px; border-radius: 14px; object-fit: contain; background: radial-gradient(circle at 50% 35%, #f6efd8 0 45%, #d8be8d 100%); box-shadow: inset 0 0 0 1px rgba(38,56,45,.18), 0 5px 12px rgba(15,44,37,.18); }
 #collection .collection-card p { margin: 0; font-size: 13px; }
 #collection .collection-card > button { grid-column: 2; justify-self: stretch; }
 #collection .preview-angle { background: #102a28; color: #e8f5dc; width: 100%; }
+#overlay[data-kind="kennel"] .modal-content #collection { padding-bottom: 18px; }
 #overlay[data-kind="kennel"] .eyebrow { display: none; }
 #overlay[data-kind="kennel"] h2 { font-size: 26px; margin: 4px 0 10px; }
 #overlay[data-kind="kennel"] #overlay-copy { margin: 6px 0 16px; }
 @media (min-width: 360px) {
   #collection .clubhouse-categories { grid-template-columns: repeat(4,1fr); gap: 5px; }
   #collection .clubhouse-categories button { padding: 6px 3px; font-size: 11px; }
+}
+@media (min-width: 700px) {
+  /* The clubhouse is a two-column catalogue on roomy screens. It keeps the
+     action bar from covering the next puppy while retaining a single-column,
+     thumb-friendly list on portrait phones. */
+  #overlay[data-kind="kennel"] .modal-content #collection {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 16px;
+    align-items: start;
+  }
+  #overlay[data-kind="kennel"] .modal-content #collection > .clubhouse-categories,
+  #overlay[data-kind="kennel"] .modal-content #collection > h3,
+  #overlay[data-kind="kennel"] .modal-content #collection > .preview-angle {
+    grid-column: 1 / -1;
+  }
+  #overlay[data-kind="kennel"] .modal-content #collection .collection-card {
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 8px;
+    padding: 12px 0;
+  }
+  #overlay[data-kind="kennel"] .modal-content #collection .collection-card img {
+    width: 64px;
+    height: 64px;
+  }
+  #overlay[data-kind="kennel"] .modal-content #collection .collection-card p {
+    font-size: 11px;
+    line-height: 1.45;
+  }
+  #overlay[data-kind="kennel"] .modal-content #collection .collection-card > button {
+    min-height: 40px;
+    font-size: 11px;
+  }
 }
 .upgrade-copy strong, .upgrade-copy span, .upgrade-copy small { display: block; }
 .upgrade-copy strong { font-size: 15px; color: #f4f5e8; margin-bottom: 6px; }

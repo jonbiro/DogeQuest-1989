@@ -182,7 +182,12 @@ function kennel() {
       row.className='collection-card';
       const appearance={puppy:kind==='puppy'?id:saved.collection.puppy,costume:kind==='costume'?id:saved.collection.costume};
       const image=document.createElement('img');
-      image.src=puppyArtworkUrl(appearance.puppy);
+      // Puppy cards use the lightweight source illustration; outfit cards use
+      // the same isolated portrait renderer as the camp preview so the hat,
+      // cape, coat and crown are actually visible before the player equips
+      // them. Fall back to the source art during the first async texture tick.
+      const portrait = kind === 'costume' ? view.portrait(run, appearance, previewRear) : null;
+      image.src=portrait?.startsWith('data:image/') ? portrait : puppyArtworkUrl(appearance.puppy);
       image.className='puppy-artwork-preview';
       image.decoding='async';
       image.loading='lazy';

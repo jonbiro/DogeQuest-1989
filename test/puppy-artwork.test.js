@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PUPPY_ARTWORK, PUPPY_ARTWORK_LAYOUTS, puppyArtworkUrl } from '../src/runner/puppy-artwork.js';
+import { createPuppyArtwork, PUPPY_ARTWORK, PUPPY_ARTWORK_LAYOUTS, puppyArtworkUrl } from '../src/runner/puppy-artwork.js';
 
 test('every collection puppy points at a shipped raster illustration', () => {
   assert.deepEqual(Object.keys(PUPPY_ARTWORK).sort(), ['biscuit', 'luna', 'mochi', 'pepper']);
@@ -41,4 +41,13 @@ test('every illustrated puppy exposes four animated raster legs and a tail crop'
       assert.ok(leg.root.every(value => value >= 0 && value <= 1));
     }
   }
+});
+
+test('the raster puppet exposes dedicated accessory layers for wardrobe art', () => {
+  const artwork = createPuppyArtwork();
+  assert.deepEqual(
+    ['puppy-painted-accessories-back', 'puppy-painted-accessories-mid', 'puppy-painted-accessories-top'],
+    artwork.group.children.filter(part => part.name.includes('accessories')).map(part => part.name),
+  );
+  assert.equal(typeof artwork.setCostume, 'function');
 });
