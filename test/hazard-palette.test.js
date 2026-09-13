@@ -25,8 +25,8 @@ test('six local stone families preserve shared materials and universal clearance
   assert.equal(original.color.getHexString(),'175c70');
 });
 
-test('special crystals, pickups and natural timber retain their materials',()=>{
-  for(const type of ['crystal-rock','bone','log','branch']){
+test('special crystals and pickups retain their materials',()=>{
+  for(const type of ['crystal-rock','bone']){
     const item=new THREE.Group();
     item.traverse=()=>assert.fail('unrelated models must not be traversed');
     themeHazard(item,type,500,()=>assert.fail());

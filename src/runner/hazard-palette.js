@@ -1,4 +1,5 @@
 import {areaAt} from './areas.js';
+import {themeOrganicHazard} from './organic-hazards.js';
 
 // Architectural stone follows its world location, never the moving camera.
 // Clearance marks and shadow bands deliberately retain their universal colors.
@@ -13,6 +14,7 @@ export const HAZARD_PALETTES=[
 ];
 
 export function themeHazard(item,type,distance,materialFor){
+  if(type==='log'||type==='branch')return themeOrganicHazard(item,type,distance,materialFor);
   if(!['rock','arch','gate'].includes(type))return;
   const area=areaAt(distance);
   if(item.userData.hazardArea===area)return;
