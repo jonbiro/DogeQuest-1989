@@ -102,6 +102,7 @@ export async function build() {
     'puppies/biscuit-hang.webp',
     'puppies/mochi.webp',
     'puppies/mochi-run-side.webp',
+    'puppies/mochi-run-side-alt.webp',
     'puppies/mochi-jump.webp',
     'puppies/mochi-slide.webp',
     'puppies/mochi-turn.webp',

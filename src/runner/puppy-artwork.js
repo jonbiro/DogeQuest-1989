@@ -30,9 +30,10 @@ export const PUPPY_ARTWORK_VARIANTS = Object.freeze({
   }),
   mochi: Object.freeze({
     idle: PUPPY_ARTWORK.mochi,
-    // Supplied Mochi side-gallop painting: the stretched paws and swept tail
-    // make steering feel physical without adding a second stride texture.
+    // Supplied Mochi side-gallop paintings: alternating phases make steering
+    // feel physical without falling back to a stiff portrait.
     stride: './puppies/mochi-run-side.webp',
+    strideAlt: './puppies/mochi-run-side-alt.webp',
     jump: './puppies/mochi-jump.webp',
     slide: './puppies/mochi-slide.webp',
     turn: './puppies/mochi-turn.webp',
@@ -77,6 +78,10 @@ export const PUPPY_ARTWORK_BOUNDS = Object.freeze({
     // The supplied side-gallop painting is intentionally wide: its stretched
     // paws and swept tail need room to read while Mochi banks around a bend.
     stride: Object.freeze({width: 1536, height: 1024, x: 19, y: 18, boxWidth: 1505, boxHeight: 976}),
+    // The alternate supplied phase has a slightly tighter crop. Normalizing
+    // its measured alpha bounds keeps the visible puppy and paw line stable
+    // when the cadence changes frames.
+    strideAlt: Object.freeze({width: 1536, height: 1024, x: 78, y: 63, boxWidth: 1405, boxHeight: 898}),
     jump: Object.freeze({width: 1230, height: 1278, x: 63, y: 72, boxWidth: 1111, boxHeight: 1097}),
     slide: Object.freeze({width: 1536, height: 1024, x: 47, y: 71, boxWidth: 1450, boxHeight: 893}),
     turn: Object.freeze({width: 1254, height: 1254, x: 110, y: 79, boxWidth: 1065, boxHeight: 1123}),
@@ -557,6 +562,12 @@ export function createPuppyArtwork() {
   awaySprite.visible = false;
   awaySprite.renderOrder = 2.06;
   group.add(awaySprite);
+  const strideAltSprite = new THREE.Sprite(makeMaterial());
+  strideAltSprite.name = 'puppy-painted-stride-alt-pose';
+  strideAltSprite.frustumCulled = false;
+  strideAltSprite.visible = false;
+  strideAltSprite.renderOrder = 2.021;
+  group.add(strideAltSprite);
   const poseSprites = {
     idle: bodySprite,
     stride: strideSprite,
@@ -565,6 +576,7 @@ export function createPuppyArtwork() {
     turn: turnSprite,
     hang: hangSprite,
     away: awaySprite,
+    strideAlt: strideAltSprite,
   };
 
   const headGroup = new THREE.Group();
@@ -643,6 +655,7 @@ export function createPuppyArtwork() {
     turn: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
     hang: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
     away: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
+    strideAlt: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
   };
   const poseBasePositions = {
     idle: new THREE.Vector3(),
@@ -652,6 +665,7 @@ export function createPuppyArtwork() {
     turn: new THREE.Vector3(),
     hang: new THREE.Vector3(),
     away: new THREE.Vector3(),
+    strideAlt: new THREE.Vector3(),
   };
   const poseHandleDrops = {hang: 0};
   let bodyBaseScale = new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1);
@@ -714,7 +728,7 @@ export function createPuppyArtwork() {
     const basePosition = poseBasePositions[pose] || new THREE.Vector3();
     const depth = pose === 'idle'
       ? 0
-      : pose === 'stride'
+      : pose === 'stride' || pose === 'strideAlt'
         ? .018
         : pose === 'jump'
           ? .03
@@ -788,6 +802,7 @@ export function createPuppyArtwork() {
     poseSprites.turn.material.opacity = 0;
     poseSprites.hang.material.opacity = 0;
     poseSprites.away.material.opacity = 0;
+    poseSprites.strideAlt.material.opacity = 0;
   }
 
   function configureAccessories(key, costume = currentCostume) {
@@ -958,10 +973,15 @@ export function createPuppyArtwork() {
     // silhouettes always win, even if the renderer keeps `away` true while a
     // jump or slide is being eased out.
     const awayRequested = away && !airborne && !sliding && !hanging && !menu;
-    // On a bend, use Mochi's supplied side-gallop silhouette. It shares the
-    // existing stride slot and GPU texture, so the richer animation does not
-    // add another mobile texture allocation.
+    // On a bend, use Mochi's supplied side-gallop silhouettes. They share the
+    // stride geometry and only consume the final mobile texture-budget slot.
     const sideRequested = side && !airborne && !sliding && !hanging && !menu && poseReady('stride');
+    // The two side paintings are authored from opposite image directions, so
+    // the alternate phase is mirrored below to preserve one consistent travel
+    // direction while its front and rear paws trade places.
+    const sideStridePose = sideRequested && poseReady('strideAlt') && Math.sin(time * gaitRate) >= 0
+      ? 'strideAlt'
+      : 'stride';
     // Action silhouettes always win over the running cadence. This keeps a
     // jump readable even when the dog is changing lanes and makes a slide a
     // deliberate low profile instead of a scaled portrait.
@@ -973,7 +993,7 @@ export function createPuppyArtwork() {
     if (!activePose && airborne && poseReady('jump')) activePose = 'jump';
     if (!activePose && sliding && poseReady('slide')) activePose = 'slide';
     if (!activePose && turnRequested && poseReady('turn')) activePose = 'turn';
-    if (!activePose && sideRequested) activePose = 'stride';
+    if (!activePose && sideRequested) activePose = sideStridePose;
     if (!activePose && awayRequested && poseReady('away')) activePose = 'away';
     if (!activePose && strideRequested && poseReady('stride')) activePose = 'stride';
     if (!activePose && poseReady('idle')) activePose = 'idle';
@@ -987,7 +1007,7 @@ export function createPuppyArtwork() {
       sliding: Boolean(sliding),
       hanging: Boolean(hanging),
       away: Boolean(activePose === 'away'),
-      side: Boolean(sideRequested && activePose === 'stride'),
+      side: Boolean(sideRequested && (activePose === 'stride' || activePose === 'strideAlt')),
       look,
       verticalVelocity: vertical,
       landingPulse,
@@ -1001,7 +1021,7 @@ export function createPuppyArtwork() {
     const awayMotion = motion && activePose === 'away' ? Math.sin(time * 8.4) : 0;
     const lean = motion ? look * (activePose === 'turn' ? .075 : activePose === 'slide' ? .04 : activePose === 'hang' ? .018 : .028) : 0;
     const stretch = motion
-      ? activePose === 'hang' ? 0 : cadence * (activePose === 'stride' ? .028 : activePose === 'jump' ? .016 : activePose === 'slide' ? .012 : .012)
+      ? activePose === 'hang' ? 0 : cadence * ((activePose === 'stride' || activePose === 'strideAlt') ? .028 : activePose === 'jump' ? .016 : activePose === 'slide' ? .012 : .012)
       : 0;
     const jumpMotion = motion && activePose === 'jump' ? Math.sin(time * 5.6) : 0;
     const slideMotion = motion && activePose === 'slide' ? Math.sin(time * 6.2) : 0;
@@ -1015,9 +1035,10 @@ export function createPuppyArtwork() {
       // Mirroring the rear painting on alternating footfalls gives Mochi a
       // readable side-to-side tail sweep without adding a second GPU texture.
       // Turns still use their deliberate directional flip first.
-      const flip = pose === 'turn' && look < 0
+      const authoredFlip = pose === 'strideAlt' ? -1 : 1;
+      const flip = authoredFlip * (pose === 'turn' && look < 0
         ? -1
-        : pose === 'away' && Math.sin(time * gaitRate) < 0 ? -1 : 1;
+        : pose === 'away' && Math.sin(time * gaitRate) < 0 ? -1 : 1);
       const actionRotation = pose === 'jump'
         ? jumpMotion * .045 - vertical * .055
         : pose === 'slide'
