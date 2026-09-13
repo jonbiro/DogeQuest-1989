@@ -1157,6 +1157,7 @@ export function createView(canvas) {
       rasterArtwork.setPose({
         time,
         legs:rasterAngles,
+        turn:THREE.MathUtils.clamp(lean * 2 + groundFrame.yaw * .45 + run.vx * .035,-1,1),
         airborne:y>.1,
         sliding:run.slide>0,
         menu,

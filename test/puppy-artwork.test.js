@@ -18,6 +18,17 @@ test('every illustrated puppy exposes four animated raster legs and a tail crop'
   for (const id of Object.keys(PUPPY_ARTWORK)) {
     const layout = PUPPY_ARTWORK_LAYOUTS[id];
     assert.ok(layout, `${id} has an artwork layout`);
+    assert.equal(layout.body.face.length, 4);
+    assert.equal(layout.body.root.length, 2);
+    assert.equal(layout.body.ears.length, 2);
+    assert.ok(layout.body.face.every(value => value >= 0 && value <= 1));
+    assert.ok(layout.body.root.every(value => value >= 0 && value <= 1));
+    for (const ear of layout.body.ears) {
+      assert.equal(ear.crop.length, 4);
+      assert.equal(ear.root.length, 2);
+      assert.ok(ear.crop.every(value => value >= 0 && value <= 1));
+      assert.ok(ear.root.every(value => value >= 0 && value <= 1));
+    }
     assert.equal(layout.legs.length, 4);
     assert.equal(layout.tail.crop.length, 4);
     for (const leg of layout.legs) {
