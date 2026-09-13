@@ -44,7 +44,7 @@ import {createTerrainMaterial,terrainStation} from './terrain-material.js';
 import {raftAt,raftIntersecting} from './rafts.js';
 import {createRaftModel} from './raft-model.js';
 import {createRiverBanks} from './river-banks.js';
-import {createPuppyArtwork} from './puppy-artwork.js';
+import {createPuppyArtwork,PUPPY_HANG_HANDLE_HEIGHT} from './puppy-artwork.js';
 
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
@@ -1170,9 +1170,10 @@ export function createView(canvas) {
         for (let i = 0; i < activeRig.legs.length; i++) activeRig.legs[i].rotation.x = rasterAngles[i];
       }
       // The painted puppy is an authored full-body pose stack. Keep the
-      // eased route lean for turns, but let jump/slide silhouettes follow the
-      // same collision state as the physics rather than faking the action by
-      // scaling a portrait. Zipline and raft poses stay upright and readable.
+      // eased route lean for turns, but let jump/slide/hang silhouettes follow
+      // the same collision state as the physics rather than faking the action
+      // by scaling a portrait. A caught cable selects the dedicated hanging
+      // painting so the paws meet the handle and the body trails below it.
       rasterArtwork.setPose({
         time,
         legs:rasterAngles,
@@ -1191,6 +1192,7 @@ export function createView(canvas) {
         ),
         airborne:y>.1 && !run.zipline && !run.raft,
         sliding:run.slide>0,
+        hanging:!menu && Boolean(run.zipline),
         menu,
         reducedMotion,
       });
@@ -1199,9 +1201,9 @@ export function createView(canvas) {
       cape.rotation.x = -.14 + personality.cape;
       activeRig.tail.rotation.z = personality.tail;
       zipHandle.visible = zipTether.visible = !menu && Boolean(run.zipline);
-      zipHandle.position.set(x, y + 1.15, -.15);
-      const tetherHeight = 6.5 - (y + 1.15);
-      zipTether.position.set(x / 2, (6.5 + y + 1.15) / 2, -.15);
+      zipHandle.position.set(x, y + PUPPY_HANG_HANDLE_HEIGHT, -.15);
+      const tetherHeight = 6.5 - (y + PUPPY_HANG_HANDLE_HEIGHT);
+      zipTether.position.set(x / 2, (6.5 + y + PUPPY_HANG_HANDLE_HEIGHT) / 2, -.15);
       zipTether.scale.y = Math.hypot(x, tetherHeight);
       zipTether.rotation.z = Math.atan2(x, tetherHeight);
       scarf.rotation.x = reducedMotion ? 0 : Math.sin(time * 12) * 0.15;

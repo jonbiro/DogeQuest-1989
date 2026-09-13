@@ -4,6 +4,10 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Added authored zipline hanging paintings for all four puppies. The new
+  transparent frames keep paws connected to each body, align them to the cable
+  handle, hide mismatched costume plates while suspended, and add a restrained
+  swing/kick so every ride feels animated rather than like a frozen jump.
 - Added physics-timed puppy takeoff and touchdown feedback: authored jump poses now
   react to ascent/descent velocity, landings get a restrained squash-and-roll, and
   small local paw particles make both contacts readable without screen shake or
