@@ -775,6 +775,12 @@ export function createView(canvas) {
     pools = Object.fromEntries(
       Object.keys(templates).map((type) => [type, []]),
     );
+  // Reuse the small per-frame lookup collections. The trail already recycles
+  // meshes; keeping these caches recycled too avoids periodic Safari GC while
+  // a portrait run is rendering thousands of frames.
+  const frameCache = new Map();
+  const visibleIds = new Set();
+  const gapObjects = [];
   function resize() {
     const w = canvas.clientWidth,
       h = canvas.clientHeight;
@@ -877,11 +883,11 @@ export function createView(canvas) {
         ? time * (reducedMotion ? 0 : 2)
         : THREE.MathUtils.lerp(run.previous.distance, run.distance, blend);
       // Several hundred instanced pieces share fewer than 200 route frames.
-      const frames = new Map();
+      frameCache.clear();
       const sampleRoute=createRouteSampler(distance,{route:menu?null:run.route});
       const frameAt = z => {
-        if (!frames.has(z)) frames.set(z, sampleRoute(z));
-        return frames.get(z);
+        if (!frameCache.has(z)) frameCache.set(z, sampleRoute(z));
+        return frameCache.get(z);
       };
       const groundFrame = frameAt(0);
       // The valley floor stays below the elevated trail instead of cutting it off.
@@ -901,7 +907,11 @@ export function createView(canvas) {
         const base=mountain.userData.baseScale;
         mountain.scale.set(base.x*horizon.width,base.y*horizon.height,base.z);
       }
-      const gaps = menu ? [] : run.objects.filter(object => object.type === "gap" && object.lane === 1);
+      gapObjects.length = 0;
+      if (!menu)
+        for (const object of run.objects)
+          if (object.type === "gap" && object.lane === 1) gapObjects.push(object);
+      const gaps = gapObjects;
       if (state === "playing" || menu) {
         pose += ((menu || run.slide === 0 ? 1 : 0.46) - pose) * smooth;
         lean += (weight.lean - lean) * smooth;
@@ -1053,7 +1063,7 @@ export function createView(canvas) {
       flashes.count = sparkCount;
       flashes.instanceMatrix.needsUpdate = true;
       if(flashes.instanceColor)flashes.instanceColor.needsUpdate = true;
-      const visibleIds = new Set();
+      visibleIds.clear();
       boneBatch.begin();
       if (!menu)
         for (const object of run.objects) {

@@ -32,7 +32,7 @@ progress with exceptions for currency and challenge streaks.
 | Character progression | `progression.js`, clubhouse: four shared upgrades; dogs/outfits cosmetic | Deliberate fair-design distinction, not character-ability parity |
 | Audio atmosphere | `sound.js`, `soundscape.js`, app event wiring: short synthesized cues plus sparse area motifs | Lightweight area accents are present; this is intentionally not a full soundtrack or recorded ambience system |
 | Social continuity | Shared seed/target URLs and local backup | Friendly challenges, not ranked competition or automatic cloud sync |
-| Mobile quality | Current browser checks and documented limited Safari simulator spot check | Sustained current-build native Safari frame pacing remains unproven |
+| Mobile quality | Current browser checks plus a current-build portrait Safari simulator benchmark | Simulator evidence is now strong; physical-phone frame pacing remains unproven |
 
 Not every competitor feature should be copied. Accounts, global rankings, paid
 revives, extra currencies and attendance penalties are not prerequisites for a
@@ -41,11 +41,12 @@ by this review. Iteration volume is not acceptance evidence.
 
 ## Next implementation slice: sustained mobile feel
 
-The next priority is validating the richer loop under real mobile conditions:
-long portrait sessions, swipe and default tilt together, changing area horizons,
-and the denser version-4 rhythms at the highest speed. Keep the existing
-left/right fallback when sensors are unavailable, and preserve generous warning
-distance around turns, rafts, ziplines and full-width action beats.
+The latest implementation slice now validates the richer loop through a full
+portrait simulator session: changing area horizons, denser version-4 rhythms,
+turns, ziplines, rafts and sustained rendering. The remaining mobile-quality
+work is a real touch-and-sensor pass on hardware when available. Keep the
+existing left/right fallback when sensors are unavailable, and preserve generous
+warning distance around turns, rafts, ziplines and full-width action beats.
 
 Acceptance gates before shipping:
 

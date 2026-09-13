@@ -22,11 +22,29 @@ the detailed stall log also retains warmup events.
 | Initial baseline | 6,162 m | 10,637 | 17 / 17 / 19 ms | 5 | 400 ms |
 | Instrumented baseline | 6,073 m | 10,456 | 17 / 17 / 18 ms | 3 | 3,512 ms |
 | Log shadow optimization | 6,188 m | 10,641 | 17 / 17 / 18 ms | 5 | 248 ms |
+| Clean rerun (tools panel closed) | 5,737 m | 8,831 | 17 / 39 / 87 ms | 263 | 464 ms |
+| Recycled frame caches (latest source) | 6,121 m | 10,582 | 17 / 18 / 27 ms | 11 | 282 ms |
 
-Each run lasted 180 seconds and visited all six areas, with nine accepted turns,
-no missed turns, four ziplines, two rafts and no hits. Sound was enabled.
+Each run lasted 180 seconds and visited all six areas. The per-run turn totals
+are recorded below; every run had no missed turns, four ziplines, two rafts and
+no hits. Sound was enabled.
 The optimized run collected 341 bones. It was observed without running builds
 or the test suite concurrently; the host was not otherwise isolated.
+
+The clean rerun used the same dedicated portrait simulator after closing the
+serve-sim tools panel. It still visited all six areas, accepted eight turns with
+no misses, completed four ziplines and two rafts, collected 329 bones, recorded
+no hits, and kept audio enabled. The higher tail (263 frames over 50 ms) shows
+that simulator/host scheduling remains variable even when the panel is closed;
+it is not treated as a product regression without a matching game-CPU signal.
+
+The latest-source run includes the recycled frame caches. It visited all six
+areas, accepted nine turns with no misses, completed four ziplines and two
+rafts, collected 352 bones, recorded no hits, and kept audio enabled. Its
+10,582-frame sample held the median at 17 ms while reducing p95/p99 to 18/27 ms,
+with 11 frames over 50 ms and a 282 ms maximum. This is simulator evidence, not
+a physical-device guarantee, but it is a materially cleaner tail than the
+uncached rerun above.
 
 The instrumented baseline's 3,512 ms interval had measured current update/draw
 CPU times of 5/3 ms and preceding update/draw times of 0/1 ms. The optimized
@@ -42,6 +60,11 @@ the puppy. This sits just inside the 145 m fog edge, leaves an approach silhouet
 visible, and removes objects hidden in haze from both the active pool and shadow
 work. The simulation objects remain untouched, so collision and reward timing do
 not change. Visibility tests cover the exact boundary and pulled-bone behavior.
+
+Per-frame route-frame, visible-object and gap lookups are now recycled alongside
+the mesh pools. This keeps the long-run draw path from allocating a fresh Map,
+Set and gap array on every portrait frame; the simulation and visual output are
+unchanged.
 
 After this cull, the five-run accelerated renderer matrix measured 256 peak draw
 calls, 35 geometries, 9 textures and 91 active/pooled objects, with stable repeat

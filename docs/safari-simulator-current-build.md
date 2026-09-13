@@ -1,4 +1,7 @@
-# Current-build portrait Safari spot check
+# Current-build portrait Safari spot check (historical)
+
+This file records the earlier short spot check. The sustained current-source
+benchmark and its latest results now live in [`sustained-mobile-qa.md`](sustained-mobile-qa.md).
 
 Baseline: 77e5939. Dedicated iOS 27 simulator:
 `A684C311-2581-42FF-8F83-9E38506B11B5` (Biscuit Dash QA — Sep 10).
