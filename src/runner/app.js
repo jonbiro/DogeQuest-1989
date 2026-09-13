@@ -24,12 +24,14 @@ import {rematchFor} from './rematch.js';
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound,resumeSound,traversalCue,feedbackPriority} from "./sound.js";
+import {createAreaSoundscape} from './soundscape.js';
 import {actionCue,eventNotice,dockMode,runLesson,routeChoiceCue} from "./guidance.js";
 import {turnPrompt} from "./turns.js";
 import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,isJumpTap} from "./gestures.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
 const $ = (id) => document.getElementById(id);
 const updatePowerHud = createPowerHud($('power'));
+const soundscape=createAreaSoundscape();
 const traversalButtons=document.querySelectorAll('#controls [data-action="jump"], #controls [data-action="slide"]');
 let sharedSeed = readTrailSeed(window.location.search);
 let sharedVersion = readTrailVersion(window.location.search);
@@ -628,6 +630,12 @@ $("audio").setAttribute("aria-pressed", String(sound));
 $("audio").setAttribute("aria-label", sound ? "Mute sound" : "Enable sound");
 $("motion").setAttribute("aria-pressed", String(reducedMotion));
 $("swipe-only").checked = saved.preferences.swipeOnly;
+$('ambience').checked=saved.preferences.ambience;
+$('ambience').onchange=()=>{
+  saved.preferences.ambience=$('ambience').checked;
+  if(!saved.preferences.ambience)soundscape.stop();
+  persist();updateSaveNotice();
+};
 $("controls").classList.toggle("swipe-only", saved.preferences.swipeOnly);
 $("swipe-only").onchange = () => {
   saved.preferences.swipeOnly = $("swipe-only").checked;
@@ -946,6 +954,10 @@ function frame(now) {
     if (run.ended) finish();
   }
   if (time > toastUntil) setText('toast', '');
+  try{
+    soundscape.update(audio,{enabled:sound&&saved.preferences.ambience&&state==='playing'&&!run.ended&&!document.hidden&&!tilt.isRequesting(),
+      time:run.time,distance:run.distance,quiet:!$('cue').textContent&&!routeChoiceCue(run)&&!run.practice});
+  }catch{soundscape.stop();} // Optional audio must never interrupt animation.
   syncDock();
   if (view && graphicsReady)
     view.draw(run, time, state, reducedMotion, dt, accumulator / (1 / 120), saved.collection, frameDt);

@@ -31,6 +31,7 @@ export function resumeSound(context) {
   try { context.resume().catch(()=>{}); } catch { /* Audio remains optional. */ }
 }
 export function playNotes(context,notes,priority=0) {
+  const scheduled=[];
   const now=context.currentTime;
   if(!voices.has(context))voices.set(context,new Set());
   const active=voices.get(context);
@@ -49,6 +50,7 @@ export function playNotes(context,notes,priority=0) {
     gain.gain.exponentialRampToValueAtTime(.0001,end);
     osc.connect(gain);gain.connect(context.destination);
     active.add(osc);
+    scheduled.push(osc);
     let cleaned=false;
     osc.cleanup=()=>{
       if(cleaned)return;
@@ -58,6 +60,12 @@ export function playNotes(context,notes,priority=0) {
     osc.onended=osc.cleanup;
     osc.start(start);osc.stop(end);
   }
+  return ()=>{
+    for(const osc of scheduled){
+      try{osc.stop();}catch{/* A completed voice needs only idempotent cleanup. */}
+      osc.cleanup();
+    }
+  };
 }
 export function stopSound(context) {
   const active=voices.get(context);

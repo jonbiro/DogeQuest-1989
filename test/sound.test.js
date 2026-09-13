@@ -96,3 +96,16 @@ test("sound bursts are voice-limited, muted voices stop and finished nodes disco
   assert.ok(nodes.every(n=>n.disconnects===1));assert.ok(gains.every(g=>g.disconnects===1));
   playNotes(context,CUES.yip);assert.equal(nodes.length,14);
 });
+
+test('cancelling a musical phrase leaves independent action voices connected',()=>{
+  const nodes=[],parameter={setValueAtTime(){},exponentialRampToValueAtTime(){},linearRampToValueAtTime(){}};
+  const context={currentTime:0,destination:{},createGain:()=>({gain:parameter,connect(){},disconnect(){}}),
+    createOscillator(){const node={frequency:parameter,connect(){},start(){},stop(){},
+      disconnect(){this.disconnected=true;}};nodes.push(node);return node;}};
+  const cancel=playNotes(context,CUES.reward);
+  playNotes(context,CUES.jump,feedbackPriority('jump'));
+  cancel();cancel();
+  assert.ok(nodes.slice(0,3).every(node=>node.disconnected));
+  assert.equal(nodes[3].disconnected,undefined);
+  stopSound(context);assert.equal(nodes[3].disconnected,true);
+});

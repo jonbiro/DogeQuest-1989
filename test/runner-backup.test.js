@@ -7,7 +7,7 @@ import {masteryFrom} from '../src/runner/mastery.js';
 import {preferencesFrom} from '../src/runner/preferences.js';
 const profile=()=>({trailRecords:[{seed:1989,version:4,best:2400}],best:2400,bones:120,bestRunBones:55,distance:1100.5,credits:1800,challenges:7,
   upgrades:levels({leap:2}),collection:collectionFrom({puppy:'mochi',costumes:['hero'],costume:'hero',gifts:2}),
-  mastery:masteryFrom({dogs:{mochi:24},regions:[2,1,0],rides:{rafts:12,ziplines:31}}),preferences:preferencesFrom({sound:true,reducedMotion:true,swipeOnly:true,tiltSensitivity:'steady'})});
+  mastery:masteryFrom({dogs:{mochi:24},regions:[2,1,0],rides:{rafts:12,ziplines:31}}),preferences:preferencesFrom({sound:true,ambience:false,reducedMotion:true,swipeOnly:true,tiltSensitivity:'steady'})});
 test('portable backups round-trip progress, equipment, mastery and preferences without mutation',()=>{
   const before=profile(),json=encodeBackup(before);
   assert.deepEqual(decodeBackup(json),before);
