@@ -23,6 +23,7 @@ import {createQualityController} from './quality.js';
 import {contactShadow} from './contact-shadow.js';
 import {effectColor} from './impact-color.js';
 import {createBranchModel} from './branch-model.js';
+import {createLogModel} from './log-model.js';
 import {detourCameraWeight} from './route-detour.js';
 import {createSurfaceTexture} from './surface.js';
 import {createWaterSurface} from './water.js';
@@ -566,17 +567,7 @@ export function createView(canvas) {
   boulder.rotation.y = .35;
   ball(templates.rock, "#77996b", -.12, 1.98, 0, .78, .2, .65);
   box(templates.rock, "#e9dca6", 0, 1.08, 0.72, 0.35, 0.7, 0.06);
-  templates.log = new THREE.Group();
-  const timber = mesh(templates.log,new THREE.CylinderGeometry(.46,.48,1.95,18),"#683a20",0,.48,0,1,1,1);
-  timber.rotation.z = Math.PI / 2;
-  for (const x of [-.98,.98]) {
-    const end = mesh(templates.log,new THREE.CylinderGeometry(.4,.4,.015,18),"#e4ba7a",x,.48,0,1,1,1);
-    end.rotation.z = Math.PI / 2;
-    const ring = mesh(templates.log,new THREE.TorusGeometry(.25,.018,4,18),"#9b6636",x*1.01,.48,0,1,1,1);
-    ring.rotation.y = Math.PI / 2;
-  }
-  box(templates.log,"#ad7b43",0,.82,.3,1.8,.08,.07);
-  box(templates.log,"#3f291b",0,.4,.47,1.7,.045,.025);
+  templates.log = createLogModel(mesh,box);
   templates.arch = new THREE.Group();
   for (const x of [-1, 1])
     box(templates.arch, "#154052", x, 1.45, 0, 0.3, 2.9, 0.6);
@@ -796,7 +787,7 @@ export function createView(canvas) {
   const templateScene=new THREE.Group();
   for (const [type, template] of Object.entries(templates)) {
     if (!PICKUPS.includes(type)) template.traverse(part => {
-      if (part.isMesh) { part.castShadow = true; part.receiveShadow = true; }
+      if (part.isMesh) { part.castShadow = part.userData.shadowDetail!==true; part.receiveShadow = true; }
     });
   }
   templateScene.add(...Object.values(templates));

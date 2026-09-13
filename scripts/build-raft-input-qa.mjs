@@ -88,6 +88,12 @@ clockButton.textContent='QA advance 3 seconds';
 clockButton.style.cssText='position:fixed;top:45%;left:0;z-index:100;font-size:10px;padding:4px';
 clockButton.onclick=()=>window.raftInputQA.advance(3);
 document.body.append(clockButton);
+const inputReport=document.createElement('output');
+inputReport.style.cssText='position:fixed;top:22%;left:0;z-index:100;background:#102b36;color:white;padding:4px;font-size:12px';
+document.body.append(inputReport);
+window.setInterval(()=>{
+  inputReport.textContent='QA lane '+(run.lane+1)+' · x '+run.x.toFixed(1)+' · '+(run.raft?'raft':'ground')+' · '+Math.floor(run.distance)+'m';
+},100);
 `;
 await build({stdin:{contents:source,resolveDir:new URL('src/runner/',root).pathname,sourcefile:'raft-input-qa.js'},
   bundle:true,format:'esm',outfile:new URL('dist/runner/raft-input-qa.js',root).pathname});
