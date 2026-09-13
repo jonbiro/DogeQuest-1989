@@ -26,11 +26,11 @@ progress with exceptions for currency and challenge streaks.
 | Dimension | Inspected current source | Assessment |
 | --- | --- | --- |
 | Core decisions | `world.js`, `courses.js`: three lanes, jump/slide, route choice, authored sequences | Established foundation; automated success is not human enjoyment evidence |
-| Traversal variety | `ziplines.js`, generator: one aerial ride every 1,400 m; bridges retain running | Largest concrete gameplay gap: only one additional traversal mode |
-| Area identity | `areas.js`, `mountain.js`, `render.js`: six palettes/silhouettes, scenery, terrain | Improved visuals; most areas still use the same movement loop |
+| Traversal variety | `ziplines.js`, `rafts.js`, generator: aerial rides and river sections reserve their own entry/exit windows | Two distinct traversal modes now break up the running loop; more should be judged by sustained play, not feature count |
+| Area identity | `areas.js`, `mountain.js`, `render.js`, `world.js`: six palettes/silhouettes, scenery, terrain and version-4 encounter rhythms | Each destination now has its own hazard cadence, safe-lane sequence and pickup emphasis while preserving the shared move vocabulary |
 | Replay motivation | `missions.js`, `daily-trail.js`, `rewards.js`: sequential challenge packs, daily seeds, mastery and same-trail retries | Useful local loop; no curated event itinerary or independent daily records |
 | Character progression | `progression.js`, clubhouse: four shared upgrades; dogs/outfits cosmetic | Deliberate fair-design distinction, not character-ability parity |
-| Audio atmosphere | `sound.js`, app event wiring: short synthesized cues | No continuous area soundscape/music system in these sources |
+| Audio atmosphere | `sound.js`, `soundscape.js`, app event wiring: short synthesized cues plus sparse area motifs | Lightweight area accents are present; this is intentionally not a full soundtrack or recorded ambience system |
 | Social continuity | Shared seed/target URLs and local backup | Friendly challenges, not ranked competition or automatic cloud sync |
 | Mobile quality | Current browser checks and documented limited Safari simulator spot check | Sustained current-build native Safari frame pacing remains unproven |
 
@@ -39,32 +39,35 @@ revives, extra currencies and attendance penalties are not prerequisites for a
 better puppy game. No new external service, paid asset or tracking is authorized
 by this review. Iteration volume is not acceptance evidence.
 
-## Next implementation slice: river raft
+## Next implementation slice: sustained mobile feel
 
-Build a second, visibly and mechanically distinct traversal encounter: the dog
-rides a small raft through a readable river section. Use the existing mobile
-left/right controls and swipes; do not introduce tilt-only input. Steering should
-have controlled lateral drift and a clear settling response, rather than merely
-renaming a zipline. Preserve generous reaction distance and a safe exit.
+The next priority is validating the richer loop under real mobile conditions:
+long portrait sessions, swipe and default tilt together, changing area horizons,
+and the denser version-4 rhythms at the highest speed. Keep the existing
+left/right fallback when sensors are unavailable, and preserve generous warning
+distance around turns, rafts, ziplines and full-width action beats.
 
 Acceptance gates before shipping:
 
-1. Explicit entry, ride and exit states; no overlapping corner, gate, course or
-   zipline reservation. Old replay versions retain their layouts.
-2. A visible raft and seated/braced dog pose; distinct water route and obstacle
-   silhouettes, with bones reachable at the rendered height.
-3. Deterministic drift/steering and damage at 24/60/120 Hz, base/max upgrades and
-   boosted conditions. Input buffering cannot leak into the exit.
+1. A current-build portrait run reaches every destination, including a marked
+   turn, river section, zipline and an area relic, without an overlap or lost
+   reward.
+2. Version-4 area rhythms remain deterministic and clearable at 24/60/120 Hz,
+   base/max upgrades and boosted conditions. Legacy replay versions retain their
+   frozen layouts and rewards.
+3. Swipe and tilt inputs share one lane intent without duplicate moves, stale
+   sensor actions or tilt-only dead ends. Permission denial remains quiet.
 4. Existing pause/resume, retirement, practice isolation, shields, magnets,
    scoring and save banking retain their contracts.
 5. Portrait 320 × 568 and 390 × 844 checks prove entry anticipation, obstacle
-   clearance, collection and safe dismount. No extra center-screen banners.
-6. Repeated long-run rendering stays bounded; any budget increase is quantified,
-   not silently hidden by weaker tests. Current Safari validation follows once
-   the interaction works; desktop emulation is not called physical-device QA.
-7. Full checks, deployment and published-file verification before release.
+   clearance, collection, HUD readability and safe traversal exits. No extra
+   center-screen banners.
+6. Repeated long-run rendering stays bounded; any budget change is quantified.
+   Safari simulator results remain separate from physical-phone claims.
+7. Full checks, deployment and published-file verification happen before the
+   next release claim.
 
-This slice addresses a documented gap without redefining the overall goal.
-Afterward, revisit area-specific gameplay, sound atmosphere and sustained native
-frame pacing. Comparative superiority still needs stronger direct experience
-evidence; neither this matrix nor a green test count establishes it.
+This slice turns the newly added encounters and motifs into a measurable mobile
+experience without redefining the overall goal. Comparative superiority still
+needs stronger direct experience evidence; neither this matrix nor a green test
+count establishes it.

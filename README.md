@@ -10,7 +10,10 @@ The runner now explores six visual destinations within its three mastery regions
 Sunleaf Woods, Bamboo Sanctuary, Redrock Pass, Palm Oasis, Crystal Reach, and
 Mooncap Grove. Rounded 3D bones, articulated dogs, sculpted ridgelines, flowing
 river highlights, and a portrait-first expedition interface keep the trail
-readable. Area changes preserve existing seeds, upgrades, and passport progress.
+readable. Each destination also has a distinct rhythm—roots and canopy, bamboo
+zigzags, broken ridges, oasis stepping stones, crystal slaloms, or low moonlit
+canopy—with its own safe-lane cadence and pickup emphasis. Area changes preserve
+existing seeds, upgrades, and passport progress.
 
 **Run challenges:** Complete a distance, bone-collection, or clean-clear goal in one run to earn additional upgrade points. Goals rotate and grow after each completion. Rewards are credited once when the run ends. A compact strip above the controls shows one useful item at a time: an action cue, route choice, important notice or unfinished goal. No center-screen banners or repeated run tutorials. Every ten consecutive bones grants +100 points; each successful jump/slide over an obstacle grants +20 points.
 
@@ -27,6 +30,7 @@ A separate mobile-first endless runner through jungle ruins, a sunlit canyon and
 - Earn four permanent prizes by reaching distance and bone goals or banking presents. The prize cabinet shows exact progress. The crown unlocks at 1,000 meters in one run; three banked gifts unlock the party hat. No reward is granted twice.
 - Cross wooden bridges, jump broken trail sections, and choose gentler **Scenic** or tougher **Challenge** sections. Challenge clears pay 60 points. Jump into a turquoise **Sky Paws** handle to ride a 140-meter zipline, steer for airborne bones and land for a 250-point bonus.
 - Regional courses now play differently: **Root scramble** alternates jumps and ducks, **Canyon crossings** links two gap jumps with a log, and **Crystal slalom** rewards left/right/center lane changes around crystal clusters. Follow all three beats for +180 points, then collect the gift in a clear recovery stretch. At most one course appears per region visit, away from marked corners, route decisions and ziplines; Scenic excludes them. Ordinary jump/slide timing is unchanged.
+- Destination rhythms add a lighter layer between courses: Sunleaf favors roots and canopy, Bamboo shifts safe lanes in a zigzag, Redrock and Oasis mix stone-and-log beats, Crystal leans into slalom spacing, and Mooncap alternates low canopy cues. Full-width action beats keep one familiar jump/slide language so delayed mobile inputs remain fair.
 
 - Swipe left/right to switch among three lanes; swipe up to jump logs and down to slide under arches. A tap on the trail also jumps.
 - Arrow keys or WASD do the same on desktop; Space jumps and Escape pauses. On-screen buttons support touch and keyboard activation.

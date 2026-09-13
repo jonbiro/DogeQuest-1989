@@ -18,7 +18,7 @@ import { jump, steer, moveVertical, JUMP_BUFFER, SLIDE_BUFFER } from "./motion.j
 import { ZIPLINE_FIRST, ZIPLINE_PERIOD, ZIPLINE_LENGTH, ZIPLINE_HEIGHT } from "./ziplines.js";
 import {courseAt, COURSE_LENGTH, COURSE_RECOVERY, advanceCourse} from './courses.js';
 import {REGION_LENGTH,regionAt} from './regions.js';
-import {areaAt} from './areas.js';
+import {AREA_LENGTH,areaAt,areaGameplayAt} from './areas.js';
 import {raftIntersecting,raftEncounter,advanceRaft,moveRaft} from './rafts.js';
 import {
   TURN_SKILL_REWARD,
@@ -118,6 +118,18 @@ function add(run, type, lane, at) {
   run.objects.push(object);
   return object;
 }
+function areaHazard(run, at, row) {
+  const profile=areaGameplayAt(at);
+  return profile.hazards[(row+Math.floor(at/AREA_LENGTH))%profile.hazards.length];
+}
+function areaActionHazard(run, at, row) {
+  const type=areaHazard(run,at,row);
+  // Full-width beats are a single, unmistakable input. Rocks need the
+  // runner's higher jump clearance and become too tight after a delayed
+  // takeoff, so keep that destination flavor in lane beats and use the
+  // proven low-clearance jump for the shared action beat.
+  return type==='rock'?'log':type;
+}
 export function fillTrack(run) {
   if (run.practice) return;
   if(run.choicePending!==null)return;
@@ -210,35 +222,46 @@ export function fillTrack(run) {
     const gapRow = run.row > 5 && run.row % 12 === 10;
     const at = gapRow ? Math.round(run.nextRow/5)*5 : run.nextRow;
     // Later rows force a lane decision instead of rewarding camping in one lane.
-    const safe = run.row > 5 && route !== "scenic"
+    let safe;
+    if(run.generatorVersion>=4) {
+      if(run.row>5&&route!=="scenic") {
+        const profile=areaGameplayAt(at);
+        const preferred=profile.safeLanes[(run.row+Math.floor(at/AREA_LENGTH))%profile.safeLanes.length];
+        const fallback=(run.lastSafeLane+1+Math.floor(run.random()*2))%3;
+        safe=preferred!==run.lastSafeLane&&run.random()<.68?preferred:fallback;
+      } else safe=Math.floor(run.random()*3);
+    } else safe = run.row > 5 && route !== "scenic"
       ? (run.lastSafeLane + 1 + Math.floor(run.random() * 2)) % 3
       : Math.floor(run.random() * 3);
     run.lastSafeLane = safe;
     const blocked = (safe + 1 + Math.floor(run.random() * 2)) % 3;
     const actionRow = route!=="scenic" && run.row > 5 && (route==="challenge" ? run.row%2===0 : run.row % 4 === 2);
     if (actionRow) {
-      const type = gapRow ? "gap" : (route==="challenge" ? Math.floor(run.row/2)%2===0 : run.row % 8 === 2) ? "log" : "gate";
+      const type = gapRow ? "gap" : run.generatorVersion>=4
+        ? areaActionHazard(run,at,run.row)
+        : (route==="challenge" ? Math.floor(run.row/2)%2===0 : run.row % 8 === 2) ? "log" : "gate";
       const split = at > 800 && !gapRow && run.row % 8 === 6;
       for (let lane = 0; lane < 3; lane++) {
         const obstacle=add(run, split ? lane === safe ? 'gate' : 'log' : type, lane, at);
         if(split) obstacle.splitChoice=true;
       }
     } else if (run.row > 0) {
-      add(run, SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)], blocked, at);
+      const primary=run.generatorVersion>=4
+        ? areaHazard(run,at,run.row)
+        : SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)];
+      add(run, primary, blocked, at);
       if (route!=="scenic" && run.row > 2 && (run.random() > 0.15 || at > 600))
-        add(
-          run,
-          SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)],
-          3 - safe - blocked,
-          at,
-        );
+        add(run,
+          run.generatorVersion>=4 ? areaHazard(run,at,run.row+1)
+            : SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)],
+          3-safe-blocked,at);
     }
     const boneLane = run.row < 3 || run.random() < 0.4 ? safe : blocked;
     for (let i = 0; i < 4; i++) add(run, "bone", boneLane, at + i * 3);
     if (run.row > 0 && run.row % 3 === 0)
       add(
         run,
-        ["gem", "magnet", "double", "zoomies", "shield", "heart"][(run.row / 3 - 1) % 6],
+        ["gem", "magnet", "double", "zoomies", "shield", "heart"][(run.row / 3 - 1 + (run.generatorVersion>=4?areaGameplayAt(at).pickupOffset:0)) % 6],
         safe,
         at + 15,
       );

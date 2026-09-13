@@ -92,7 +92,7 @@ test("runner seeds reproduce solvable open-lane, uniform or split-choice action 
             assert.equal(obstacles.filter(o=>o.type==='gate').length,1);
             assert.equal(obstacles.filter(o=>o.type==='log').length,2);
           } else assert.equal(new Set(obstacles.map((o) => o.type)).size, 1);
-          assert.ok(["log", "gate", "branch", "gap"].includes(obstacles[0].type));
+          assert.ok(HAZARDS.includes(obstacles[0].type));
         }
       assert.ok(a.objects.length < 80, "The active track stays bounded");
     }

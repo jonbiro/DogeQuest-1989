@@ -15,6 +15,13 @@ invite steering but never require it. No full-width gaps, course bonuses or
 regional mastery are attached to these optional sequences. Ordinary successful
 clears and pickups remain useful. Version-one/two generation remains available.
 
+The current version-four prototype adds a small destination rhythm on top of
+that shared vocabulary. Sunleaf, Bamboo, Redrock, Oasis, Crystal and Mooncap
+now rotate different ordinary hazard patterns, safe-lane cadences and pickup
+offsets. Full-width action beats deliberately stay in the proven jump/slide
+family; higher-clearance rocks remain lane decisions so delayed mobile inputs
+do not become reaction traps. Legacy replay versions do not consult these rules.
+
 Verification: 363 tests pass, including nine 6 km cue-driven runs across three
 seeds and three replay versions. New default-center Scenic routes encounter all
 three regional families; old versions retain the original jungle-only authored
@@ -35,6 +42,8 @@ This audit examines what a player actually encounters, not just what exists.
 
 ## Evidence
 
+### Baseline route coverage (pre-version 4)
+
 An actual-world, cue-driven simulation of seed 1989 ran to 6,000 m with base
 upgrades, once choosing Scenic and once choosing Challenge at every gate.
 Both retained three hearts. Inputs used the existing action cues and steering;
@@ -45,9 +54,10 @@ this was simulation evidence, not a human difficulty or device performance test.
 | Scenic | Five starts: 200, 1355, 2720, 4095, 5490 m | Jungle only; four distinct patterns |
 | Challenge | Fourteen starts from 200 to 5990 m | All three regions; all twelve patterns |
 
-`world.js` explicitly suppresses authored courses inside Scenic sections.
-Its gate resolution treats the middle lane as Scenic. Therefore passive gate
-selection can hide the richer canyon and glade sequences for an entire long run.
+`world.js` explicitly suppresses authored mastery courses inside Scenic sections.
+Its gate resolution treats the middle lane as Scenic. Passive gate selection can
+still skip the larger Challenge set, but the version-four destination rhythms
+remain visible in ordinary Scenic play.
 `test/runner-course-route-coverage.test.js` correctly proves Challenge reaches
 all twelve courses, but does not prove a varied experience for default routing.
 The existing four-run renderer aggregate also mixes three Scenic attempts with
@@ -55,22 +65,18 @@ one Challenge attempt; regional totals are not a balanced-experience metric.
 
 ## Next design priority
 
-Make regional identity available at the gentle difficulty too. Design gentler
-canyon and glade sequences with wider timing margins or optional escape lanes,
-without silently replacing Scenic with the harder all-lane courses. Preserve
-the quiet recovery stretches and the meaningful distinction between the routes.
-Any generator change needs a new replay version so old shared trails remain
-stable. Verify both route policies independently over several seeds and laps,
-including cue timing, bonuses, practice advice and the 320px portrait HUD.
+Validate the current version-four loop in sustained portrait sessions. Exercise
+all six destinations with both route policies, the river and zipline exits,
+area relics, swipe fallback and default tilt where available. Check cue timing,
+HUD readability, bonuses, practice advice and the 320px portrait layout at
+24/60/120 Hz. Any generator change still needs a new replay version so old
+shared trails remain stable.
 
-Before implementing, inspect the existing replay-version dispatch and regional
-reward rules: a gentle sequence must not accidentally grant hard-course mastery
-for bypassing every obstacle. Explicit route discovery in Help may complement
-this work, but wording alone will not close the variety gap.
 
 ## Scope limits
 
-Six visual destinations currently share three gameplay-region families. Existing
-green tests, published graphics upgrades and old completion tables do not prove
+Six visual destinations still share three mastery-region families, but version
+four now gives each destination a distinct encounter accent. Existing green
+tests, published graphics upgrades and old completion tables do not prove
 comparative superiority. Continue judging art in motion and progression through
 the default route, not only through curated previews or expert autopilots.
