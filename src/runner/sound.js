@@ -7,7 +7,7 @@ export const CUES = {
   jump:[{from:300,to:700,at:0,duration:.12,type:"sine"}],
   land:[{from:180,to:100,at:0,duration:.065,type:"sine",volume:.016}],
   slide:[{from:420,to:140,at:0,duration:.10,type:"sine"}],
-  hit:[{from:120,to:100,at:0,duration:.2,type:"sine"}],
+  hit:[{from:120,to:120,at:0,duration:.2,type:"sine"}],
   ready:[{from:660,to:660,at:0,duration:.09,type:"sine"},{from:880,to:880,at:.09,duration:.12,type:"sine"}],
   finish:[{from:523,to:440,at:0,duration:.15,type:"triangle"},{from:392,to:330,at:.17,duration:.2,type:"triangle"}],
 };
