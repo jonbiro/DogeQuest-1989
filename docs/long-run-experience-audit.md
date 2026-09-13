@@ -66,13 +66,14 @@ one Challenge attempt; regional totals are not a balanced-experience metric.
 ## Latest portrait validation
 
 The current source completed a three-minute portrait simulator benchmark using
-the production renderer, HUD, soundscape and Mochi model. It covered all six
-destinations, nine marked turns, four ziplines and two rafts with no missed
-turns, hits or interruption. The 10,582-frame sample measured 17 ms median,
-18 ms p95, 27 ms p99, 11 frames over 50 ms and a 282 ms maximum at 6,121 m.
-The run collected 352 bones and kept the area-specific scenery readable through
-the speed ramp. A clean rerun after closing simulator tools was retained too;
-its noisier tail is recorded in `sustained-mobile-qa.md` rather than hidden.
+the production renderer, HUD, layered area soundscape and Mochi model. It covered
+all six destinations, nine marked turns, four ziplines and two rafts with no
+missed turns, hits or interruption. The 10,653-frame sample measured 17 ms
+median, 17 ms p95, 19 ms p99, one frame over 50 ms and an 87 ms maximum at
+6,135 m. The run collected 355 bones and kept the area-specific scenery readable
+through the speed ramp. The retained report is
+`test-results/sustained-native-audio-latest.png`; earlier uncached and clean-panel
+runs remain recorded in `sustained-mobile-qa.md` rather than hidden.
 
 ## Next design priority
 

@@ -24,6 +24,7 @@ the detailed stall log also retains warmup events.
 | Log shadow optimization | 6,188 m | 10,641 | 17 / 17 / 18 ms | 5 | 248 ms |
 | Clean rerun (tools panel closed) | 5,737 m | 8,831 | 17 / 39 / 87 ms | 263 | 464 ms |
 | Recycled frame caches (latest source) | 6,121 m | 10,582 | 17 / 18 / 27 ms | 11 | 282 ms |
+| Layered area soundscape (latest source) | 6,135 m | 10,653 | 17 / 17 / 19 ms | 1 | 87 ms |
 
 Each run lasted 180 seconds and visited all six areas. The per-run turn totals
 are recorded below; every run had no missed turns, four ziplines, two rafts and
@@ -45,6 +46,16 @@ rafts, collected 352 bones, recorded no hits, and kept audio enabled. Its
 with 11 frames over 50 ms and a 282 ms maximum. This is simulator evidence, not
 a physical-device guarantee, but it is a materially cleaner tail than the
 uncached rerun above.
+
+The latest-source audio run includes the layered five-note area call-and-response
+motifs. It visited all six areas, accepted nine turns with no misses, completed
+four ziplines and two rafts, collected 355 bones, recorded no hits, and kept
+audio enabled. Its 10,653-frame sample held the median and p95 at 17 ms and p99
+at 19 ms, with one frame over 50 ms and an 87 ms maximum. Peak renderer pressure
+was 250 draw calls, 32 active objects and 37 pooled objects. This is the cleanest
+portrait tail recorded so far, but remains simulator evidence rather than a
+physical-device guarantee. The report is retained as
+`test-results/sustained-native-audio-latest.png`.
 
 The instrumented baseline's 3,512 ms interval had measured current update/draw
 CPU times of 5/3 ms and preceding update/draw times of 0/1 ms. The optimized
