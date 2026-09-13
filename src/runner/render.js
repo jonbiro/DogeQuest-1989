@@ -632,8 +632,11 @@ export function createView(canvas) {
       part.visible = !isMochi && visual.marking !== 'none' && Boolean(layout);
     }
     spots.visible = !isMochi && visual.marking !== 'none';
+    // The supplied raster illustrations already include their own collars and
+    // tags. Never re-enable the old procedural collar/scarf meshes: at the
+    // chase-camera scale they read as floating red orbs beside the torso.
     collar.material = mat(visual.collarColor || '#ed734b');
-    collar.visible = scarf.visible = !appearance.costume || appearance.costume === "scarf";
+    collar.visible = scarf.visible = false;
     for (const [id, group] of Object.entries(outfits)) {
       // The illustrated puppet owns its costume plates now. Keep the legacy
       // mesh groups allocated for compatibility with older diagnostics, but

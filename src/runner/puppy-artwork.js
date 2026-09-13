@@ -146,20 +146,6 @@ function cropTexture(texture, rect, width, height) {
   return crop;
 }
 
-function drawBodyMask(context, width, height, layout) {
-  // A curved torso mask keeps the illustrated chest and back together while
-  // leaving the original head, ears and lower-leg pixels out of the body
-  // layer. The generous overlap at the shoulders gives the animated cutouts a
-  // natural furred join, even during a long stride or slide.
-  context.beginPath();
-  context.moveTo(.18 * width, .48 * height);
-  context.bezierCurveTo(.26 * width, .39 * height, .67 * width, .38 * height, .86 * width, .48 * height);
-  context.bezierCurveTo(.94 * width, .56 * height, .91 * width, .71 * height, .77 * width, .79 * height);
-  context.bezierCurveTo(.59 * width, .86 * height, .34 * width, .84 * height, .23 * width, .73 * height);
-  context.bezierCurveTo(.16 * width, .65 * height, .14 * width, .55 * height, .18 * width, .48 * height);
-  context.closePath();
-}
-
 function drawHeadMask(context, width, height, layout, cropRect = {x:0,y:0}) {
   const [faceX, faceY, faceWidth, faceHeight] = layout.body.face;
   context.beginPath();
@@ -172,6 +158,20 @@ function drawHeadMask(context, width, height, layout, cropRect = {x:0,y:0}) {
     0,
     Math.PI * 2,
   );
+}
+
+function drawCropMask(context, rect, inset = 0) {
+  const x = rect.x + rect.width * inset;
+  const y = rect.y + rect.height * inset;
+  const right = rect.x + rect.width * (1 - inset);
+  const bottom = rect.y + rect.height * (1 - inset);
+  context.beginPath();
+  context.moveTo(x, y);
+  context.lineTo(right, y);
+  context.lineTo(right, bottom);
+  context.lineTo(x, bottom);
+  context.closePath();
+  context.fill();
 }
 
 function headRectFor(layout, width, height) {
@@ -194,10 +194,27 @@ function maskedBodyTexture(texture, key) {
   canvas.height = height;
   const context = canvas.getContext('2d');
   if (!context) return texture;
-  context.save();
-  drawBodyMask(context, width, height, PUPPY_ARTWORK_LAYOUTS[key]);
-  context.clip();
+  const layout = PUPPY_ARTWORK_LAYOUTS[key];
+  // Start with the actual illustration instead of repainting a generic oval.
+  // We then punch out only the articulated pieces. This preserves every
+  // painted fur edge in the torso and prevents the old mask from leaving a
+  // second set of paws underneath the moving crops.
   context.drawImage(texture.image, 0, 0, width, height);
+  context.save();
+  context.globalCompositeOperation = 'destination-out';
+  drawHeadMask(context, width, height, layout);
+  context.fill();
+  for (const ear of layout.body.ears) {
+    drawCropMask(context, pixelRect(ear.crop, width, height), .02);
+  }
+  for (const leg of layout.legs) {
+    const rect = pixelRect(leg.crop, width, height);
+    // Leave a soft shoulder overlap for the reinserted crop. Erasing only the
+    // lower 88% keeps the torso fur continuous at the joint.
+    const start = rect.y + rect.height * .12;
+    drawCropMask(context, {x:rect.x, y:start, width:rect.width, height:rect.y + rect.height - start}, .025);
+  }
+  drawCropMask(context, pixelRect(layout.tail.crop, width, height), .025);
   context.restore();
   const body = new THREE.CanvasTexture(canvas);
   return prepareTexture(body);
@@ -293,23 +310,11 @@ function accessoryTexture(key, costume, layer) {
   // The slight key-specific hue shifts keep each puppy's wardrobe from
   // feeling cloned while the silhouettes stay consistent across the roster.
   const ink = key === 'luna' ? '#24303d' : '#3b2b28';
-  if (costume === 'scarf' && layer === 'mid') {
-    // The supplied art already has a blue collar. This transparent plate
-    // keeps the reward legible as the promised red adventure scarf while
-    // preserving the painted fur and the little blue tag underneath.
-    path([
-      ['M', .25, .40], ['C', .36, .36, .56, .37, .70, .43],
-      ['L', .68, .50], ['C', .54, .55, .36, .54, .25, .48], ['Z'],
-    ]);
-    fillStroke(gradient('#f06a5f', '#b83b43', .38), ink, .012);
-    context.strokeStyle = '#ffb080'; context.lineWidth = px(.010);
-    context.beginPath(); context.moveTo(px(.28), px(.42));
-    context.quadraticCurveTo(px(.48), px(.47), px(.67), px(.44)); context.stroke();
-    path([
-      ['M', .57, .47], ['C', .62, .50, .66, .56, .63, .65],
-      ['L', .55, .57], ['L', .50, .64], ['L', .51, .51], ['Z'],
-    ]);
-    fillStroke(gradient('#eb6358', '#ad3340', .49), ink, .010);
+  if (costume === 'scarf') {
+    // Mochi's supplied painting already has a beautifully rendered blue
+    // collar and tag. Leave that artwork untouched; a procedural red overlay
+    // looked like a sticker on the flank at gameplay scale.
+    return null;
   } else if (costume === 'explorer') {
     if (layer === 'back') {
       // Rounded pack tucked behind the shoulder, with visible straps and a
@@ -346,13 +351,13 @@ function accessoryTexture(key, costume, layer) {
     // The coat is a translucent bib following the chest; fur texture remains
     // visible through the lower edge so it reads as fabric, not a yellow orb.
     path([
-      ['M', .27, .43], ['C', .38, .39, .56, .40, .69, .46],
-      ['L', .72, .66], ['C', .59, .73, .39, .72, .25, .64], ['Z'],
+      ['M', .36, .64], ['C', .47, .60, .65, .61, .77, .66],
+      ['L', .78, .82], ['C', .64, .88, .45, .86, .34, .77], ['Z'],
     ]);
-    fillStroke(gradient('rgba(255,225,108,.90)', 'rgba(226,164,39,.72)', .42), ink, .012);
+    fillStroke(gradient('rgba(255,225,108,.90)', 'rgba(226,164,39,.72)', .62), ink, .012);
     context.strokeStyle = '#fff0a7'; context.lineWidth = px(.012);
-    context.beginPath(); context.moveTo(px(.29), px(.50)); context.quadraticCurveTo(px(.48), px(.55), px(.69), px(.50)); context.stroke();
-    context.fillStyle = '#3e91a0'; context.fillRect(px(.455), px(.43), px(.09), px(.025));
+    context.beginPath(); context.moveTo(px(.38), px(.68)); context.quadraticCurveTo(px(.57), px(.73), px(.76), px(.69)); context.stroke();
+    context.fillStyle = '#3e91a0'; context.fillRect(px(.50), px(.63), px(.09), px(.025));
   } else if (costume === 'royal' && layer === 'top') {
     path([
       ['M', .20, .18], ['L', .22, .055], ['L', .30, .13], ['L', .38, .035],
@@ -616,13 +621,16 @@ export function createPuppyArtwork() {
     reducedMotion = false,
   } = {}) {
     const motion = reducedMotion ? 0 : 1;
-    const stride = menu ? .02 : sliding ? .10 : airborne ? .16 : .24;
+    // Keep the painted paw motion expressive but restrained. Large rotations
+    // expose the rectangular crop edges and make a lovely illustrated pose
+    // look like disconnected stickers at the bottom of the run.
+    const stride = menu ? .012 : sliding ? .045 : airborne ? .075 : .12;
     legGroups.forEach((item, index) => {
       const target = Number.isFinite(legs[index]) ? legs[index] : 0;
       const side = index % 2 === 0 ? 1 : -1;
       const phase = index === 0 || index === 3 ? 0 : Math.PI;
       const swing = THREE.MathUtils.clamp(target, -1.2, 1.2);
-      const legAngle = -swing * .44 + Math.sin(time * 10 + phase) * stride * motion;
+      const legAngle = -swing * .30 + Math.sin(time * 10 + phase) * stride * motion;
       // Sprite geometry billboards to the camera, so its own material rotation
       // is the reliable joint angle. Rotating only the parent group would move
       // the crop but leave the painted paw facing stiffly forward.
