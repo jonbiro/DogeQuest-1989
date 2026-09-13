@@ -325,6 +325,7 @@ function syncDock() {
   const mode = dockMode({cue:$("cue").textContent,route:$("route-choice").textContent,
     notice:$("toast").textContent,missionComplete:missionAnnounced && !activeCourse(run)});
   for (const id of ['cue','route-choice','toast','mission-summary']) $(id).hidden = mode !== id;
+  $("mission-hud").dataset.dock = mode || 'none';
   $("mission-hud").hidden = state !== 'playing' || !mode;
 }
 const tilt=installTiltControls(window,{toggle:$('tilt-toggle'),recenter:$('tilt-recenter'),message:$('tilt-status'),

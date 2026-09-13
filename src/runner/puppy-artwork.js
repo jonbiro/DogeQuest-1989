@@ -38,6 +38,35 @@ export const PUPPY_ARTWORK_VARIANTS = Object.freeze({
   }),
 });
 
+// Transparent canvases are intentionally kept as authored paintings, but the
+// paintings do not all use the same amount of breathing room.  These measured
+// alpha bounds let the renderer normalize the *visible* puppy (not the empty
+// canvas) before swapping poses.  Without this, a wide front stride can pop
+// larger or smaller than the idle frame even when both are 2.48 world units
+// tall.  Bounds use the same top-left pixel coordinates as the source images.
+export const PUPPY_ARTWORK_BOUNDS = Object.freeze({
+  biscuit: Object.freeze({
+    idle: Object.freeze({width: 1254, height: 1254, x: 104, y: 42, boxWidth: 1078, boxHeight: 1181}),
+    stride: Object.freeze({width: 1254, height: 1254, x: 24, y: 15, boxWidth: 1227, boxHeight: 1192}),
+    turn: Object.freeze({width: 1254, height: 1254, x: 21, y: 18, boxWidth: 1228, boxHeight: 1211}),
+  }),
+  mochi: Object.freeze({
+    idle: Object.freeze({width: 1230, height: 1278, x: 117, y: 39, boxWidth: 1037, boxHeight: 1210}),
+    stride: Object.freeze({width: 1129, height: 1393, x: 20, y: 45, boxWidth: 1095, boxHeight: 1319}),
+    turn: Object.freeze({width: 1254, height: 1254, x: 110, y: 79, boxWidth: 1065, boxHeight: 1123}),
+  }),
+  pepper: Object.freeze({
+    idle: Object.freeze({width: 1254, height: 1254, x: 158, y: 24, boxWidth: 1000, boxHeight: 1200}),
+    stride: Object.freeze({width: 1254, height: 1254, x: 34, y: 66, boxWidth: 1184, boxHeight: 1150}),
+    turn: Object.freeze({width: 1254, height: 1254, x: 30, y: 78, boxWidth: 1201, boxHeight: 1115}),
+  }),
+  luna: Object.freeze({
+    idle: Object.freeze({width: 1254, height: 1254, x: 94, y: 8, boxWidth: 1084, boxHeight: 1232}),
+    stride: Object.freeze({width: 1254, height: 1254, x: 217, y: 16, boxWidth: 929, boxHeight: 1218}),
+    turn: Object.freeze({width: 1254, height: 1254, x: 60, y: 8, boxWidth: 1150, boxHeight: 1219}),
+  }),
+});
+
 // The normalized crop windows remain part of the data contract for older
 // diagnostics and the clubhouse preview. Gameplay uses the complete painted
 // pose stack below instead of assembling those crops into a puppet. Keeping
@@ -537,6 +566,11 @@ export function createPuppyArtwork() {
     stride: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
     turn: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
   };
+  const poseBasePositions = {
+    idle: new THREE.Vector3(),
+    stride: new THREE.Vector3(),
+    turn: new THREE.Vector3(),
+  };
   let bodyBaseScale = new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1);
   let headBaseScale = new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1);
   const bodyBasePosition = new THREE.Vector3(0, WORLD_HEIGHT / 2, 0);
@@ -553,7 +587,13 @@ export function createPuppyArtwork() {
     return poseTextures.get(key);
   }
 
-  function configurePoseSprite(sprite, pose, texture) {
+  function frameBoundsFor(key, pose, width, height) {
+    const frame = PUPPY_ARTWORK_BOUNDS[key]?.[pose];
+    if (frame && frame.width === width && frame.height === height) return frame;
+    return {width, height, x: 0, y: 0, boxWidth: width, boxHeight: height};
+  }
+
+  function configurePoseSprite(sprite, pose, texture, key = currentKey) {
     if (!texture) {
       sprite.visible = false;
       return;
@@ -563,11 +603,39 @@ export function createPuppyArtwork() {
       sprite.visible = false;
       return;
     }
-    const unit = WORLD_HEIGHT / height;
     const scale = poseBaseScales[pose] || new THREE.Vector3();
-    scale.set(width * unit, WORLD_HEIGHT, 1);
+    const idleSize = sourceSize(sourceTextures.get(key));
+    const idle = frameBoundsFor(key, 'idle', idleSize.width || width, idleSize.height || height);
+    const frame = frameBoundsFor(key, pose, width, height);
+    // Normalize the opaque bounds instead of the transparent canvas. The
+    // authored pose can still change silhouette, but swapping frames no
+    // longer makes the puppy pop larger, smaller, or off the ground.
+    const idleWidth = idle.boxWidth / idle.width;
+    const idleHeight = idle.boxHeight / idle.height;
+    const frameWidth = frame.boxWidth / frame.width;
+    const frameHeight = frame.boxHeight / frame.height;
+    scale.set(
+      bodyBaseScale.x * idleWidth / frameWidth,
+      bodyBaseScale.y * idleHeight / frameHeight,
+      1,
+    );
+
+    const idleCenterX = (idle.x + idle.boxWidth / 2) / idle.width;
+    const idleBottom = (idle.y + idle.boxHeight) / idle.height;
+    const frameCenterX = (frame.x + frame.boxWidth / 2) / frame.width;
+    const frameBottom = (frame.y + frame.boxHeight) / frame.height;
+    // Keep the visible center and paw baseline stable while retaining each
+    // painting's original transparent margin.
+    const targetX = bodyBasePosition.x + (idleCenterX - .5) * bodyBaseScale.x;
+    const targetBottom = bodyBasePosition.y + (.5 - idleBottom) * bodyBaseScale.y;
+    const basePosition = poseBasePositions[pose] || new THREE.Vector3();
+    basePosition.set(
+      targetX - (frameCenterX - .5) * scale.x,
+      targetBottom - (.5 - frameBottom) * scale.y,
+      pose === 'idle' ? 0 : pose === 'stride' ? .018 : .036,
+    );
     sprite.scale.copy(scale);
-    sprite.position.set(bodyBasePosition.x, bodyBasePosition.y, pose === 'idle' ? 0 : pose === 'stride' ? .018 : .036);
+    sprite.position.copy(basePosition);
     sprite.center.set(.5, .5);
     setSpriteMap(sprite, texture);
     sprite.material.opacity = pose === 'idle' ? 1 : 0;
@@ -591,7 +659,7 @@ export function createPuppyArtwork() {
         prepareTexture(loaded);
         map.set(pose, loaded);
         if (currentKey === key) {
-          configurePoseSprite(poseSprites[pose], pose, loaded);
+          configurePoseSprite(poseSprites[pose], pose, loaded, key);
         }
       });
       map.set(pose, prepareTexture(texture));
@@ -604,7 +672,7 @@ export function createPuppyArtwork() {
     map.set('idle', texture);
     for (const pose of Object.keys(poseSprites)) {
       const poseTexture = requestPose(key, pose);
-      configurePoseSprite(poseSprites[pose], pose, poseTexture);
+      configurePoseSprite(poseSprites[pose], pose, poseTexture, key);
     }
     poseSprites.idle.material.opacity = 1;
     poseSprites.stride.material.opacity = 0;
@@ -783,13 +851,14 @@ export function createPuppyArtwork() {
       sprite.visible = active;
       sprite.material.opacity = active ? 1 : 0;
       if (!scale || !active) continue;
+      const basePosition = poseBasePositions[pose] || bodyBasePosition;
       const flip = pose === 'turn' && look < 0 ? -1 : 1;
       sprite.material.rotation = lean * (pose === 'turn' ? .45 : .2);
       sprite.scale.set(scale.x * flip * (1 - stretch), scale.y * (1 + stretch), 1);
       sprite.position.set(
-        bodyBasePosition.x + sway + (pose === 'turn' ? look * .032 : 0),
-        bodyBasePosition.y + bounce + (airborne ? .045 : sliding ? -.04 : 0),
-        pose === 'idle' ? 0 : pose === 'stride' ? .018 : .036,
+        basePosition.x + sway + (pose === 'turn' ? look * .032 : 0),
+        basePosition.y + bounce + (airborne ? .045 : sliding ? -.04 : 0),
+        basePosition.z,
       );
     }
 

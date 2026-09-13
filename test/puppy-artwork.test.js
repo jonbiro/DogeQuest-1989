@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPuppyArtwork, PUPPY_ARTWORK, PUPPY_ARTWORK_LAYOUTS, PUPPY_ARTWORK_VARIANTS, puppyArtworkUrl, puppyPoseArtworkUrl } from '../src/runner/puppy-artwork.js';
+import { createPuppyArtwork, PUPPY_ARTWORK, PUPPY_ARTWORK_BOUNDS, PUPPY_ARTWORK_LAYOUTS, PUPPY_ARTWORK_VARIANTS, puppyArtworkUrl, puppyPoseArtworkUrl } from '../src/runner/puppy-artwork.js';
 
 test('every collection puppy points at a shipped raster illustration', () => {
   assert.deepEqual(Object.keys(PUPPY_ARTWORK).sort(), ['biscuit', 'luna', 'mochi', 'pepper']);
@@ -27,6 +27,20 @@ test('each puppy has a complete raster stride and turn pose', () => {
     assert.equal(puppyPoseArtworkUrl(id, 'turn'), variants.turn);
   }
   assert.equal(puppyPoseArtworkUrl('missing', 'turn'), PUPPY_ARTWORK_VARIANTS.biscuit.turn);
+});
+
+test('pose paintings expose measured alpha bounds for stable frame swaps', () => {
+  for (const id of Object.keys(PUPPY_ARTWORK)) {
+    const frames = PUPPY_ARTWORK_BOUNDS[id];
+    assert.deepEqual(Object.keys(frames).sort(), ['idle', 'stride', 'turn']);
+    for (const [pose, frame] of Object.entries(frames)) {
+      assert.ok(frame.width > 0 && frame.height > 0, `${id} ${pose} has canvas dimensions`);
+      assert.ok(frame.x >= 0 && frame.y >= 0, `${id} ${pose} bounds start inside canvas`);
+      assert.ok(frame.boxWidth > 0 && frame.boxHeight > 0, `${id} ${pose} has opaque area`);
+      assert.ok(frame.x + frame.boxWidth <= frame.width, `${id} ${pose} width fits canvas`);
+      assert.ok(frame.y + frame.boxHeight <= frame.height, `${id} ${pose} height fits canvas`);
+    }
+  }
 });
 
 test('every illustrated puppy exposes four animated raster legs and a tail crop', () => {
