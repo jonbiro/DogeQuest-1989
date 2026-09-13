@@ -15,7 +15,7 @@ import {masteryFrom,masteryCards,orderedMasteryCards,nextMasteryHint} from './ma
 import {fetchReady} from './ability.js';
 import {createPowerHud} from './power-hud.js';
 import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLink} from './trail-link.js';
-import {dailyTrail,selectedTrailDescription} from './daily-trail.js';
+import {dailyTrail,restoredTrailSelection} from './daily-trail.js';
 import {trailRecordsFrom,trailBest} from './trail-records.js';
 import {updateTraversalControls,traversalDescription} from './traversal-controls.js';
 import {installTiltControls} from './tilt-controls.js';
@@ -35,7 +35,6 @@ let sharedSeed = readTrailSeed(window.location.search);
 let sharedVersion = readTrailVersion(window.location.search);
 let sharedTarget = readTrailTarget(window.location.search);
 $('shared-trail').hidden = sharedSeed === null;
-$('shared-description').textContent = selectedTrailDescription(sharedSeed,sharedVersion,sharedTarget,dailyTrail(window.location.href));
 const playLabel = () => sharedSeed === null ? `Run with ${PUPPIES[saved.collection.puppy].name} ↗︎` : 'Run shared trail ↗︎';
 let run = createRun(),
   state = "menu",
@@ -83,6 +82,9 @@ try {
   profileReadable=false;
 }
 sound=saved.preferences.sound;
+const restoredTrail=restoredTrailSelection(sharedSeed,sharedVersion,sharedTarget,dailyTrail(window.location.href),saved.trailRecords);
+sharedTarget=restoredTrail.target;
+$('shared-description').textContent=restoredTrail.description;
 reducedMotion=saved.preferences.reducedMotion;
 function updateRecords() {
   updateSaveNotice();

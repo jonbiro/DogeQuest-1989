@@ -1,5 +1,11 @@
 # Daily trail personal records
 
+Reopening or reloading today's exact trail now restores the personal score target
+after loading the saved profile. Explicit targets in shared links take precedence;
+other dates/layouts do not inherit today's record. Tests cover those branches.
+An isolated browser reload retained “Your best: 2,400 pts”; adding an explicit
+500-point target instead displayed “Beat 500 pts”. No actual profile was changed.
+
 Completed adventures retain a best score for their exact seed and generator
 version, with a bounded history of the 32 most recently played distinct trails.
 Selecting Daily trail looks up that layout's record, displays “Your best”, and

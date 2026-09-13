@@ -3,11 +3,23 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {URL} from 'node:url';
 import {runInNewContext} from 'node:vm';
-import {dailyTrail,selectedTrailDescription} from '../src/runner/daily-trail.js';
+import {dailyTrail,selectedTrailDescription,restoredTrailSelection} from '../src/runner/daily-trail.js';
 import {readTrailSeed,readTrailVersion} from '../src/runner/trail-link.js';
 import {createRun} from '../src/runner/world.js';
 
 const href='https://example.com/runner/?trail=1-abc&target=1000#old';
+
+test('reopening today restores a personal target without overriding a friend or another layout',()=>{
+  const daily=dailyTrail(href,Date.parse('2026-09-12T12:00:00Z'));
+  const records=[{seed:daily.seed,version:daily.version,best:2400}];
+  const restored=restoredTrailSelection(daily.seed,daily.version,0,daily,records);
+  assert.equal(restored.target,2400);assert.match(restored.description,/Your best: 2,400/);
+  const friend=restoredTrailSelection(daily.seed,daily.version,500,daily,records);
+  assert.equal(friend.target,500);assert.match(friend.description,/friendly/);
+  for(const [seed,version,date] of [[daily.seed+1,daily.version,daily],[daily.seed,1,daily],[daily.seed,daily.version,null]]){
+    assert.equal(restoredTrailSelection(seed,version,0,date,records).target,0);
+  }
+});
 test('reopened daily trails retain their identity without replacing score targets or old layouts',()=>{
   const today=dailyTrail(href,Date.parse('2026-09-12T00:00:00Z'));
   assert.match(selectedTrailDescription(today.seed,today.version,0,today),/Daily trail · 2026-09-12 UTC/);
