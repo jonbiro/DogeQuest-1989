@@ -6,6 +6,7 @@ export function scoreBreakdown(run) {
   if(run.ziplines>0)included.push(`${format(run.ziplines*250)} from zipline rides`);
   if(run.streakPoints>0)included.push(`${format(run.streakPoints)} from bone streaks`);
   if(run.flowPoints>0)included.push(`${format(run.flowPoints)} from clean-move streaks`);
+  if(run.relicPoints>0)included.push(`${format(run.relicPoints)} from area relics`);
   if(run.pickupBonusPoints>0)included.push(`${format(run.pickupBonusPoints)} from gems, gifts and spare pickups`);
   return `Score sources: ${format(run.distance)} distance + ${format(run.bonePoints)} bones + ${format(run.bonusPoints)} trail bonuses = ${format(run.score)} points.`
     +(included.length?` Trail bonuses include ${included.join(' and ')}; these are already in your score.`:'');

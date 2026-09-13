@@ -42,6 +42,13 @@ export function actionCue(run) {
   const warningLead=object=>['log','rock','gap'].includes(object.type)&&run.objects.some(next=>
     ['log','rock','gap'].includes(next.type)&&!next.used&&!next.passed&&next.at>object.at&&
     next.at-object.at<run.speed*.75&&onApproach(run,next)) ? .58 : .5;
+  const relic=run.objects.find(object=>object.type==='relic'&&!object.used&&
+    object.at>run.distance&&object.at-run.distance<run.speed*1.1);
+  // A lane change takes time to settle. Do not steer toward a collectible if
+  // that lane is about to become the occupied path for another hazard.
+  const relicLaneBlocked=relic&&run.objects.some(object=>
+    ['rock','log','arch','branch','gate','gap'].includes(object.type)&&!object.used&&
+    object.at>run.distance&&object.at-run.distance<run.speed*1.25&&object.lane===relic.lane);
   const danger = run.objects.find(object => !object.used && !object.passed &&
     ['rock', 'log', 'arch', 'branch', 'gate', 'gap'].includes(object.type) &&
     object.at > run.distance && object.at - run.distance < run.speed*.58 &&
@@ -65,6 +72,7 @@ export function actionCue(run) {
     return 'OVERHEAD NEXT';
   const intro = run.course && run.course.start-run.distance < 40 &&
     run.course.start-run.distance > run.speed*.5 ? `${run.course.name} · ${run.course.scenic?'open lanes':'+180 clean'}` : '';
+  if (!danger && relic && !relicLaneBlocked) return laneCue(run.lane,relic.lane,'RELIC') || '✦ RELIC AHEAD';
   return !danger ? intro : ['arch', 'branch', 'gate'].includes(danger.type)
     ? '↓ SLIDE' : danger.type === 'gap' ? '↑ JUMP GAP' : '↑ JUMP';
 }
@@ -93,6 +101,7 @@ export function eventNotice(event, run) {
     'raft-end': {text: 'Shore reached · +250', priority: 1},
     'course-complete': {text: 'Clean regional course · +180', priority: 1},
     'course-recovery': {text: 'Strong finish · 2/3 clean · +60', priority: 1},
+    relic: {text: 'Area relic · +160 points', priority: 0},
   };
   return notices[event] || null;
 }

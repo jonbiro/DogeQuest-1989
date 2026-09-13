@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import {HAZARD_PALETTES,themeHazard} from '../src/runner/hazard-palette.js';
+import {HAZARD_PALETTES,RELIC_PALETTES,themeHazard} from '../src/runner/hazard-palette.js';
 
 test('six local stone families preserve shared materials and universal clearance marks',()=>{
   const original=new THREE.MeshStandardMaterial({color:'#175c70'});
@@ -31,4 +31,22 @@ test('special crystals and pickups retain their materials',()=>{
     item.traverse=()=>assert.fail('unrelated models must not be traversed');
     themeHazard(item,type,500,()=>assert.fail());
   }
+});
+
+test('area relics keep a bright three-color signature while following each destination',()=>{
+  const item=new THREE.Group();
+  for(const color of ['#efbf67','#fff0b7','#173b3e'])
+    item.add(new THREE.Mesh(new THREE.BoxGeometry(),new THREE.MeshStandardMaterial({color})));
+  const cache=new Map();
+  let allocations=0;
+  const mat=color=>{
+    if(!cache.has(color)){cache.set(color,new THREE.MeshStandardMaterial({color}));allocations++;}
+    return cache.get(color);
+  };
+  for(let area=0;area<RELIC_PALETTES.length;area++){
+    themeHazard(item,'relic',area*225+80,mat);
+    assert.deepEqual(item.children.map(part=>`#${part.material.color.getHexString()}`),RELIC_PALETTES[area]);
+    themeHazard(item,'relic',area*225+81,()=>assert.fail('same area must be cached'));
+  }
+  assert.equal(allocations,RELIC_PALETTES.length*3);
 });

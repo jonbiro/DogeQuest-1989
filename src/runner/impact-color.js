@@ -5,5 +5,6 @@ export function effectColor(type) {
   if(type==='magnet'||type==='fetch')return '#71ead4';
   if(type==='heart')return '#ffa6b4';
   if(type==='zoomies')return '#ceef86';
+  if(type==='relic')return '#d9b4ff';
   return '#fff0a6';
 }

@@ -55,6 +55,12 @@ the five/five shadow split. Re-running the same matrix reduced the peak to 241
 draw calls (35 geometries, 9 textures, 91 objects) with all traversal outcomes
 unchanged.
 
+Version 4 authored courses now finish with one optional area relic. Its ground-
+level placement follows the course's final safe lane, the faceted marker is
+tinted to the current landscape, and collecting it awards 160 points without
+adding another action or HUD panel. Results and score details name the relics
+separately, while legacy trail versions remain unchanged.
+
 Logs retain all seven visible mesh parts. Their solid body now supplies the
 shadow rather than also shadowing six surface-detail meshes. The two ends share
 one geometry and the two rings share another, eliminating two duplicate geometry

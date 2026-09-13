@@ -18,6 +18,7 @@ import { jump, steer, moveVertical, JUMP_BUFFER, SLIDE_BUFFER } from "./motion.j
 import { ZIPLINE_FIRST, ZIPLINE_PERIOD, ZIPLINE_LENGTH, ZIPLINE_HEIGHT } from "./ziplines.js";
 import {courseAt, COURSE_LENGTH, COURSE_RECOVERY, advanceCourse} from './courses.js';
 import {REGION_LENGTH,regionAt} from './regions.js';
+import {areaAt} from './areas.js';
 import {raftIntersecting,raftEncounter,advanceRaft,moveRaft} from './rafts.js';
 import {
   TURN_SKILL_REWARD,
@@ -30,7 +31,8 @@ const SOLID_HAZARDS = ["rock", "log", "arch", "branch", "gate"];
 export const BASE_SLIDE_DURATION = .58;
 export const SLIDE_UPGRADE_DURATION = .07;
 export const HAZARDS = [...SOLID_HAZARDS,"gap"];
-export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart", 'gift', 'zoomies'];
+export const AREA_RELIC_REWARD = 160;
+export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart", 'gift', 'zoomies', 'relic'];
 export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = CURRENT_TRAIL_VERSION) {
   generatorVersion=supportsTrailVersion(generatorVersion)?generatorVersion:CURRENT_TRAIL_VERSION;
   const run = {
@@ -77,6 +79,9 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     clears: 0,
     weaves: 0,
     gifts: 0,
+    relics: 0,
+    relicPoints: 0,
+    relicsByArea: Array(6).fill(0),
     score: 0,
     ended: false,
     objects: [],
@@ -193,6 +198,11 @@ export function fillTrack(run) {
         for (let i = 1; i <= 3; i++) add(run, "bone", beat.safeLane ?? 1, beat.at + i * 4);
       }
       add(run, "gift", 1, start + 88);
+      if(run.generatorVersion>=4){
+        const finalBeat=run.course.beats.at(-1);
+        const relic=add(run,'relic',finalBeat?.safeLane??1,start+COURSE_LENGTH-8);
+        relic.relicArea=areaAt(relic.at);
+      }
       run.nextRow = sequenceEnd;
       run.row++;
       continue;
@@ -459,6 +469,14 @@ export function step(run, dt) {
         else { run.bonusPoints += 100; run.events.push('full-heart'); }
       }
       if (object.type === 'gift') { run.gifts++;run.bonusPoints+=100; }
+      if (object.type === 'relic') {
+        const area=Number.isInteger(object.relicArea)?object.relicArea:areaAt(object.at);
+        run.relics++;
+        run.relicPoints+=AREA_RELIC_REWARD;
+        run.bonusPoints+=AREA_RELIC_REWARD;
+        run.relicsByArea??=Array(6).fill(0);
+        run.relicsByArea[area]=(run.relicsByArea[area]||0)+1;
+      }
       run.pickupBonusPoints+=run.bonusPoints-bonusesBeforePickup;
       run.events.push(object.type);
       run.effects.push({

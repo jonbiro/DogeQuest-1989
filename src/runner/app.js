@@ -477,6 +477,7 @@ function finish() {
   $("run-highlights").textContent = `${run.turns} clean ${run.turns === 1 ? 'turn' : 'turns'} · ${run.clears} obstacles cleared${run.weaves?` · ${run.weaves} course ${run.weaves===1?'weave':'weaves'}`:''} · Best bone streak: ${run.bestCombo}`;
   const courses = run.regionalCourses.reduce((sum,count)=>sum+count,0);
   if (courses) $("run-highlights").textContent += ` · ${courses} clean regional ${courses === 1 ? 'course' : 'courses'}`;
+  if (run.relics) $("run-highlights").textContent += ` · ${run.relics} area ${run.relics === 1 ? 'relic' : 'relics'} found`;
   const {missionPoints: reward, prizes} = receipt;
   $("overlay-copy").textContent +=
     ` +${run.score.toLocaleString()} upgrade points earned. Spend them at camp.`;
@@ -506,6 +507,7 @@ function finish() {
     $("run-breakdown-copy").textContent += ` Shared target: ${run.challengeTarget.toLocaleString()} points. ${difference>0?`${difference.toLocaleString()} ahead`:difference===0?'Target tied — one more point to beat it':`${(-difference).toLocaleString()} short`}. This is a friendly, unverified score, not a ranked result.`;
   }
   $("overlay-copy").textContent = `${resultChallenge(run)}${resultRecord(receipt,run)}${receipt.totalPoints.toLocaleString()} upgrade ${receipt.totalPoints===1?'point':'points'} banked. Retry the same trail, or head to camp ${sharedSeed === null ? 'for a fresh one' : 'to switch to random trails'}.`;
+  if (run.relics) $("overlay-copy").textContent += ` ${run.relics} area ${run.relics === 1 ? 'relic' : 'relics'} found (+${run.relicPoints} points included).`;
   $("run-highlights").textContent = nextMasteryHint(saved.mastery,run.puppy);
   persist();
   if (!storageAvailable) $("overlay-copy").textContent = 'Run complete. These rewards are available for this visit only; saving is unavailable.';
@@ -881,6 +883,7 @@ function frame(now) {
       if (event === "heart") {
         tone(660, 0.2);
       }
+      if (event === "relic") tone("reward");
       if (event === "hit") {
         tone('hit');
       }

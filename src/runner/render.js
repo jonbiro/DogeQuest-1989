@@ -667,6 +667,21 @@ export function createView(canvas) {
     const seam = new THREE.Mesh(tennisSeam,mat("#244c2b"));
     seam.rotation.y = tilt; templates.zoomies.add(seam);
   }
+  // Course relics are compact, area-tinted keepsakes: a faceted core and a
+  // vertical ring make the optional end-of-course reward legible at speed.
+  templates.relic = new THREE.Group();
+  // Reuse the gem's octahedron and the magnet-field torus so this reward adds
+  // no new GPU geometry to the mobile renderer's fixed resource budget.
+  const relicCore = new THREE.Mesh(gem.geometry, mat("#efbf67"));
+  relicCore.name = "relic-core";
+  relicCore.scale.set(.25, .41, .25);
+  templates.relic.add(relicCore);
+  const relicRing = new THREE.Mesh(ringGeometry, mat("#fff0b7"));
+  relicRing.name = "relic-ring";
+  relicRing.scale.setScalar(.48);
+  relicRing.rotation.x = Math.PI / 2;
+  templates.relic.add(relicRing);
+  box(templates.relic, "#173b3e", 0, 0, .08, .08, .5, .08).name = "relic-mark";
   const speedTrail = new THREE.Group(); scene.add(speedTrail);
   for (let i=0;i<8;i++) {
     const streak = box(speedTrail,"#386326",(i%2 ? 1 : -1)*(.65+(i%3)*.2),.3+(i%3)*.3,.6+i*.4,.055,.055,.8);

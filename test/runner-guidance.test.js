@@ -130,6 +130,16 @@ test("action guidance stays quiet without an immediate on-path hazard", () => {
   }
 });
 
+test('area relic guidance is brief, lane-aware and never masks an immediate hazard',()=>{
+  const run=emptyRun();
+  run.objects=[{type:'relic',lane:2,at:run.distance+run.speed*.8,used:false}];
+  assert.equal(actionCue(run),'→ RELIC RIGHT');
+  run.lane=2;run.x=LANES[2];
+  assert.equal(actionCue(run),'✦ RELIC AHEAD');
+  run.objects.push(hazard(run,'rock',.2,{lane:2}));
+  assert.equal(actionCue(run),'↑ JUMP');
+});
+
 test('aerial bone guidance follows the nearest reward and stops after steering or activating a magnet', () => {
   const run=emptyRun();
   run.zipline={start:0,end:140};
