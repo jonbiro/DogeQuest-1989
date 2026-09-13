@@ -15,7 +15,10 @@ export const PUPPY_ARTWORK = Object.freeze({
 // the coat, ears and paws connected while the puppy turns or hits a stride.
 // Every dog gets authored forward, airborne, crouched, three-quarter turn, and
 // zipline-hanging paintings so the action silhouette changes with the physics
-// rather than asking one portrait to pretend it is jumping or sliding.
+// rather than asking one portrait to pretend it is jumping or sliding. Mochi
+// also has a rear chase-camera painting: his default run can finally show the
+// dog moving away from the owner instead of making a front portrait face the
+// wrong way down the trail.
 export const PUPPY_ARTWORK_VARIANTS = Object.freeze({
   biscuit: Object.freeze({
     idle: PUPPY_ARTWORK.biscuit,
@@ -32,6 +35,7 @@ export const PUPPY_ARTWORK_VARIANTS = Object.freeze({
     slide: './puppies/mochi-slide.webp',
     turn: './puppies/mochi-turn.webp',
     hang: './puppies/mochi-hang.webp',
+    away: './puppies/mochi-away.webp',
   }),
   pepper: Object.freeze({
     idle: PUPPY_ARTWORK.pepper,
@@ -73,6 +77,10 @@ export const PUPPY_ARTWORK_BOUNDS = Object.freeze({
     slide: Object.freeze({width: 1536, height: 1024, x: 47, y: 71, boxWidth: 1450, boxHeight: 893}),
     turn: Object.freeze({width: 1254, height: 1254, x: 110, y: 79, boxWidth: 1065, boxHeight: 1123}),
     hang: Object.freeze({width: 1024, height: 1536, x: 122, y: 8, boxWidth: 835, boxHeight: 1409}),
+    // Measured from the generated rear chase-camera painting. The high tail
+    // and lifted paw are intentionally included in the visible bounds so the
+    // frame stays centered when it swaps with the forward stride painting.
+    away: Object.freeze({width: 1254, height: 1254, x: 236, y: 30, boxWidth: 822, boxHeight: 1190}),
   }),
   pepper: Object.freeze({
     idle: Object.freeze({width: 1254, height: 1254, x: 158, y: 24, boxWidth: 1000, boxHeight: 1200}),
@@ -539,6 +547,12 @@ export function createPuppyArtwork() {
   hangSprite.visible = false;
   hangSprite.renderOrder = 2.055;
   group.add(hangSprite);
+  const awaySprite = new THREE.Sprite(makeMaterial());
+  awaySprite.name = 'puppy-painted-away-pose';
+  awaySprite.frustumCulled = false;
+  awaySprite.visible = false;
+  awaySprite.renderOrder = 2.06;
+  group.add(awaySprite);
   const poseSprites = {
     idle: bodySprite,
     stride: strideSprite,
@@ -546,6 +560,7 @@ export function createPuppyArtwork() {
     slide: slideSprite,
     turn: turnSprite,
     hang: hangSprite,
+    away: awaySprite,
   };
 
   const headGroup = new THREE.Group();
@@ -623,6 +638,7 @@ export function createPuppyArtwork() {
     slide: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
     turn: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
     hang: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
+    away: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
   };
   const poseBasePositions = {
     idle: new THREE.Vector3(),
@@ -631,6 +647,7 @@ export function createPuppyArtwork() {
     slide: new THREE.Vector3(),
     turn: new THREE.Vector3(),
     hang: new THREE.Vector3(),
+    away: new THREE.Vector3(),
   };
   const poseHandleDrops = {hang: 0};
   let bodyBaseScale = new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1);
@@ -724,7 +741,12 @@ export function createPuppyArtwork() {
 
   function requestPose(key, pose) {
     const variants = PUPPY_ARTWORK_VARIANTS[key] || PUPPY_ARTWORK_VARIANTS.biscuit;
-    const url = variants[pose] || variants.idle;
+    // Optional poses are real variants only for the puppy that owns them.
+    // Falling back to idle here would silently allocate another idle texture
+    // for every other puppy and make a missing rear frame look like a broken
+    // direction change.
+    const url = variants[pose];
+    if (!url) return null;
     const map = poseMapFor(key);
     if (map.has(pose)) return map.get(pose);
     // Idle shares the already-loaded source texture. Other poses are loaded
@@ -761,6 +783,7 @@ export function createPuppyArtwork() {
     poseSprites.slide.material.opacity = 0;
     poseSprites.turn.material.opacity = 0;
     poseSprites.hang.material.opacity = 0;
+    poseSprites.away.material.opacity = 0;
   }
 
   function configureAccessories(key, costume = currentCostume) {
@@ -900,6 +923,7 @@ export function createPuppyArtwork() {
     airborne = false,
     sliding = false,
     hanging = false,
+    away = false,
     menu = false,
     reducedMotion = false,
   } = {}) {
@@ -925,6 +949,10 @@ export function createPuppyArtwork() {
     // hand-animated 2D character and keeps every paw attached to its body.
     const strideRequested = gait > .46;
     const turnRequested = turnAmount > .58;
+    // The rear painting is reserved for Mochi's ordinary ground run. Action
+    // silhouettes always win, even if the renderer keeps `away` true while a
+    // jump or slide is being eased out.
+    const awayRequested = away && !airborne && !sliding && !hanging && !menu;
     // Action silhouettes always win over the running cadence. This keeps a
     // jump readable even when the dog is changing lanes and makes a slide a
     // deliberate low profile instead of a scaled portrait.
@@ -936,6 +964,7 @@ export function createPuppyArtwork() {
     if (!activePose && airborne && poseReady('jump')) activePose = 'jump';
     if (!activePose && sliding && poseReady('slide')) activePose = 'slide';
     if (!activePose && turnRequested && poseReady('turn')) activePose = 'turn';
+    if (!activePose && awayRequested && poseReady('away')) activePose = 'away';
     if (!activePose && strideRequested && poseReady('stride')) activePose = 'stride';
     if (!activePose && poseReady('idle')) activePose = 'idle';
     if (!activePose && poseReady('stride')) activePose = 'stride';
@@ -947,6 +976,7 @@ export function createPuppyArtwork() {
       airborne: Boolean(airborne),
       sliding: Boolean(sliding),
       hanging: Boolean(hanging),
+      away: Boolean(activePose === 'away'),
       look,
       verticalVelocity: vertical,
       landingPulse,
@@ -957,6 +987,7 @@ export function createPuppyArtwork() {
     const sway = motion ? Math.sin(time * 3.9) * (menu ? .010 : hanging ? .008 : .018) : 0;
     const hangSwing = motion && activePose === 'hang' ? Math.sin(time * 2.8 + look * .65) : 0;
     const hangKick = motion && activePose === 'hang' ? Math.sin(time * 5.6 + .8) * .5 : 0;
+    const awayMotion = motion && activePose === 'away' ? Math.sin(time * 8.4) : 0;
     const lean = motion ? look * (activePose === 'turn' ? .075 : activePose === 'slide' ? .04 : activePose === 'hang' ? .018 : .028) : 0;
     const stretch = motion
       ? activePose === 'hang' ? 0 : cadence * (activePose === 'stride' ? .028 : activePose === 'jump' ? .016 : activePose === 'slide' ? .012 : .012)
@@ -970,22 +1001,31 @@ export function createPuppyArtwork() {
       sprite.material.opacity = active ? 1 : 0;
       if (!scale || !active) continue;
       const basePosition = poseBasePositions[pose] || bodyBasePosition;
-      const flip = pose === 'turn' && look < 0 ? -1 : 1;
+      // Mirroring the rear painting on alternating footfalls gives Mochi a
+      // readable side-to-side tail sweep without adding a second GPU texture.
+      // Turns still use their deliberate directional flip first.
+      const flip = pose === 'turn' && look < 0
+        ? -1
+        : pose === 'away' && Math.sin(time * gaitRate) < 0 ? -1 : 1;
       const actionRotation = pose === 'jump'
         ? jumpMotion * .045 - vertical * .055
         : pose === 'slide'
           ? -look * .035 + slideMotion * .018
           : pose === 'hang'
             ? hangSwing * .07 + look * .022
+          : pose === 'away'
+            ? awayMotion * .024 + look * .014
           : 0;
       const actionScaleX = pose === 'jump'
         ? .985 - vertical * .012
         : pose === 'slide' ? 1.055
-          : pose === 'hang' ? 1 + Math.abs(hangSwing) * .014 : 1;
+          : pose === 'hang' ? 1 + Math.abs(hangSwing) * .014
+            : pose === 'away' ? 1 + Math.abs(awayMotion) * .012 : 1;
       const actionScaleY = pose === 'jump'
         ? 1.018 + vertical * .025
         : pose === 'slide' ? .91
-          : pose === 'hang' ? 1.012 - Math.abs(hangSwing) * .008 : 1;
+          : pose === 'hang' ? 1.012 - Math.abs(hangSwing) * .008
+            : pose === 'away' ? 1 - Math.abs(awayMotion) * .012 : 1;
       const actionDrop = pose === 'jump'
         ? .058 + jumpMotion * .012 + vertical * .018
         : pose === 'slide' ? -.078 + slideMotion * .008
@@ -993,7 +1033,8 @@ export function createPuppyArtwork() {
           // painting's paws are at its top, so this measured drop seats them
           // beneath the separately rendered zipline handle instead of at the
           // road.
-          : pose === 'hang' ? poseHandleDrops.hang + hangKick * .018 : 0;
+          : pose === 'hang' ? poseHandleDrops.hang + hangKick * .018
+            : pose === 'away' ? awayMotion * .012 : 0;
       const impactRoll = pose === 'hang' ? 0 : landingPulse ? Math.sin(time * 28) * landingPulse * .12 : 0;
       sprite.material.rotation = lean * (pose === 'turn' ? .45 : .2) + actionRotation;
       sprite.material.rotation += impactRoll;
@@ -1003,7 +1044,7 @@ export function createPuppyArtwork() {
         1,
       );
       sprite.position.set(
-        basePosition.x + sway + (pose === 'turn' ? look * .032 : 0) + (pose === 'hang' ? hangSwing * .018 : 0),
+        basePosition.x + sway + (pose === 'turn' ? look * .032 : 0) + (pose === 'hang' ? hangSwing * .018 : 0) + (pose === 'away' ? awayMotion * .012 : 0),
         basePosition.y + bounce + actionDrop - landingPulse * .04,
         basePosition.z,
       );
@@ -1013,7 +1054,7 @@ export function createPuppyArtwork() {
     // fade back slightly during a turn so a hat/pack never looks stapled to a
     // different silhouette, while the dog's own painted collar stays sharp.
     const activeScale = poseBaseScales[activePose] || bodyBaseScale;
-    const accessoryAlpha = activePose === 'hang' ? 0 : activePose === 'idle' ? 1 : activePose === 'turn' ? .18 : .12;
+    const accessoryAlpha = activePose === 'hang' ? 0 : activePose === 'idle' ? 1 : activePose === 'turn' ? .18 : activePose === 'away' ? .08 : .12;
     const accessoryDrop = activePose === 'jump'
       ? .058 + vertical * .018
       : activePose === 'slide' ? -.078

@@ -106,6 +106,7 @@ export async function build() {
     'puppies/mochi-slide.webp',
     'puppies/mochi-turn.webp',
     'puppies/mochi-hang.webp',
+    'puppies/mochi-away.webp',
     'puppies/pepper.webp',
     'puppies/pepper-run-front.webp',
     'puppies/pepper-jump.webp',

@@ -42,13 +42,18 @@ test('each puppy has complete raster stride, jump, slide, turn, and hang poses',
     assert.equal(puppyPoseArtworkUrl(id, 'turn'), variants.turn);
     assert.equal(puppyPoseArtworkUrl(id, 'hang'), variants.hang);
   }
+  assert.match(PUPPY_ARTWORK_VARIANTS.mochi.away, /^\.\/puppies\/mochi-away\.webp$/);
+  assert.notEqual(PUPPY_ARTWORK_VARIANTS.mochi.away, PUPPY_ARTWORK_VARIANTS.mochi.idle);
+  assert.equal(puppyPoseArtworkUrl('mochi', 'away'), PUPPY_ARTWORK_VARIANTS.mochi.away);
   assert.equal(puppyPoseArtworkUrl('missing', 'turn'), PUPPY_ARTWORK_VARIANTS.biscuit.turn);
 });
 
 test('pose paintings expose measured alpha bounds for stable frame swaps', () => {
   for (const id of Object.keys(PUPPY_ARTWORK)) {
     const frames = PUPPY_ARTWORK_BOUNDS[id];
-    assert.deepEqual(Object.keys(frames).sort(), ['hang', 'idle', 'jump', 'slide', 'stride', 'turn']);
+    const expectedFrames = ['hang', 'idle', 'jump', 'slide', 'stride', 'turn'];
+    if (id === 'mochi') expectedFrames.push('away');
+    assert.deepEqual(Object.keys(frames).sort(), expectedFrames.sort());
     for (const [pose, frame] of Object.entries(frames)) {
       assert.ok(frame.width > 0 && frame.height > 0, `${id} ${pose} has canvas dimensions`);
       assert.ok(frame.x >= 0 && frame.y >= 0, `${id} ${pose} bounds start inside canvas`);
@@ -100,8 +105,8 @@ test('the raster artwork exposes dedicated accessory layers for wardrobe art', (
 test('the visible runner stack uses complete idle, stride, jump, slide, turn and hang paintings', () => {
   const artwork = createPuppyArtwork();
   assert.deepEqual(
-    ['puppy-painted-body', 'puppy-painted-stride-pose', 'puppy-painted-jump-pose', 'puppy-painted-slide-pose', 'puppy-painted-turn-pose', 'puppy-painted-hang-pose'],
-    artwork.group.children.slice(0, 6).map(part => part.name),
+    ['puppy-painted-body', 'puppy-painted-stride-pose', 'puppy-painted-jump-pose', 'puppy-painted-slide-pose', 'puppy-painted-turn-pose', 'puppy-painted-hang-pose', 'puppy-painted-away-pose'],
+    artwork.group.children.slice(0, 7).map(part => part.name),
   );
   assert.equal(typeof artwork.setPose, 'function');
 });

@@ -4,6 +4,11 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Added a Mochi-specific rear chase-camera painting based on the supplied
+  running-away references. Normal ground runs now show his curled tail, back,
+  collar, and lifted paws moving away from the player, with a subtle whole-body
+  bounce, tail-side mirror, and lane lean; jump, slide, turn, raft, and zipline
+  actions keep their dedicated silhouettes.
 - Added authored zipline hanging paintings for all four puppies. The new
   transparent frames keep paws connected to each body, align them to the cable
   handle, hide mismatched costume plates while suspended, and add a restrained
