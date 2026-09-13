@@ -8,6 +8,7 @@ import { upcomingCorner } from "./turns.js";
 import { objectVisible, ziplineSignVisible } from "./visibility.js";
 import { createCornerRoad } from "./corner-road.js";
 import { PUPPIES } from "./collection.js";
+import { puppyVisual } from "./puppy-visuals.js";
 import { REGIONS, regionAt, horizonProfile } from "./regions.js";
 import {AREAS,areaAt,areaBlend} from './areas.js';
 import {createBoneGeometry} from './bone-model.js';
@@ -389,18 +390,24 @@ export function createView(canvas) {
   const water = createWaterSurface(scene);
   const raftWater=createWaterSurface(scene);
   const raftModel=createRaftModel(mesh,boxGeometry,trunkGeometry);scene.add(raftModel);
-  // Biscuit is an original articulated model, not a billboard.
+  // The classic dogs share mobile-friendly geometry, but each has a distinct
+  // silhouette. Proportions and face details are applied by puppyVisual().
   const dog = new THREE.Group();
   scene.add(dog);
   // The two main volumes cast the moving silhouette without sending every
-  // eye, curl and accessory through a second mobile rendering pass.
-  ball(dog, "#d89043", 0, 0.88, 0.12, 0.47, 0.40, .88).castShadow = true;
-  ball(dog, "#d89043", 0, 1.0, -.38, .37, .40, .35);
-  ball(dog, "#f2c67b", 0, 1.2, -0.62, 0.49, 0.46, 0.54).castShadow = true;
-  ball(dog, "#ffe0a1", 0, 1.06, -1.13, 0.33, 0.23, 0.33);
-  ball(dog, "#243b33", 0, 1.22, -1.36, 0.16, 0.12, 0.09);
-  ball(dog,"#f5919d",0,.88,-1.32,.1,.12,.045);
-  const ears = [], eyes = [];
+  // eye, marking and accessory through a second mobile rendering pass.
+  const body = ball(dog, "#d89043", 0, 0.88, 0.12, 0.47, 0.40, .88);
+  body.castShadow = true;
+  const shoulder = ball(dog, "#d89043", 0, 1.0, -.38, .37, .40, .35);
+  const head = ball(dog, "#f2c67b", 0, 1.2, -.62, .49, .46, .54);
+  head.castShadow = true;
+  const muzzle = ball(dog, "#ffe0a1", 0, 1.06, -1.13, .33, .23, .33);
+  const noseBridge = ball(dog, "#243b33", 0, 1.22, -1.36, .16, .12, .09);
+  const tongue = ball(dog, "#f5919d", 0, .88, -1.32, .1, .12, .045);
+  // A small chest bib gives every classic face a readable light break against
+  // the torso, especially on the narrow mobile viewport.
+  const chestPatch = ball(dog, "#ffe0a1", 0, 1.01, -.72, .23, .28, .12);
+  const ears = [], eyes = [], eyeDetails = [];
   for (const side of [-1, 1]) {
     const ear = box(dog, "#e9ac59", side * 0.35, 1.85, -0.55, 0.26, 0.62, 0.32);
     ear.rotation.z = -side * 0.15;
@@ -408,27 +415,30 @@ export function createView(canvas) {
     inner.geometry = coneGeometry;
     ears.push({ear, inner, side});
     const eye = new THREE.Group(); eye.position.set(side*.25,1.39,-1.082);dog.add(eye);eyes.push(eye);
-    ball(eye,"#20352d",0,0,0,.067,.09,.05);
-    ball(eye,"#fff7db",-.025,.04,-.044,.025,.033,.018);
+    const iris = ball(eye,"#20352d",0,0,0,.067,.09,.05);
+    const pupil = ball(eye,"#111713",0,0,-.052,.035,.052,.012);
+    const catchlight = ball(eye,"#fff7db",-.025,.04,-.066,.025,.033,.018);
+    eyeDetails.push({eye, iris, pupil, catchlight});
   }
   const collar = ball(dog, "#ed734b", 0, 0.95, -0.26, 0.49, 0.13, 0.24);
   const scarf = ball(dog, "#d85235", 0.45, 0.82, 0.15, 0.09, 0.20, 0.48);
   scarf.rotation.z = -0.2;
-  const legs = [];
+  const legs = [], legParts = [];
   for (const x of [-0.29, 0.29])
     for (const z of [-0.34, 0.64]) {
       const leg = new THREE.Group();
       leg.position.set(x, 0.68, z);
-      ball(leg, "#c7823d", 0, -0.22, 0, 0.14, 0.29, 0.16);
-      ball(leg, "#ffe3b1", 0, -0.46, -0.07, 0.16, 0.13, 0.22);
+      const upper = ball(leg, "#c7823d", 0, -0.22, 0, 0.14, 0.29, 0.16);
+      const paw = ball(leg, "#ffe3b1", 0, -0.46, -0.07, 0.16, 0.13, 0.22);
       dog.add(leg);
       legs.push(leg);
+      legParts.push({leg, upper, paw});
     }
   const tail = new THREE.Group();
   tail.position.set(0, 1.05, 0.85);
   tail.rotation.x = 0.5;
-  ball(tail, "#db994e", 0, 0.24, 0.16, 0.18, 0.35, 0.2);
-  ball(tail, "#ffe3b1", 0, 0.57, 0.16, 0.17, 0.18, 0.19);
+  const tailBase = ball(tail, "#db994e", 0, 0.24, 0.16, 0.18, 0.35, 0.2);
+  const tailTip = ball(tail, "#ffe3b1", 0, 0.57, 0.16, 0.17, 0.18, 0.19);
   dog.add(tail);
   const originalParts = dog.children.filter(part => part !== collar && part !== scarf);
   const furMeshes = [];
@@ -436,11 +446,16 @@ export function createView(canvas) {
     if (item.isMesh) furMeshes.push({item, color: `#${item.material.color.getHexString()}`});
   });
   const spots = new THREE.Group(); dog.add(spots);
+  const markingParts = [];
   for (const side of [-1, 1]) {
-    ball(spots, "#293a43", side * .47, .95, .3, .055, .17, .24);
-    ball(spots, "#293a43", side * .48, .75, -.1, .04, .12, .16);
+    markingParts.push(ball(spots, "#293a43", side * .47, .95, .3, .055, .17, .24));
+    markingParts.push(ball(spots, "#293a43", side * .48, .75, -.1, .04, .12, .16));
   }
-  ball(spots, "#293a43", -.22, 1.34, -1.079, .18, .22, .035);
+  markingParts.push(ball(spots, "#293a43", -.22, 1.34, -1.079, .18, .22, .035));
+  // The extra face pieces are still shared sphere geometry. They become a
+  // pale husky mask for Luna while Pepper keeps the original spot pattern.
+  markingParts.push(ball(spots, "#293a43", .22, 1.34, -1.079, .18, .22, .035));
+  markingParts.push(ball(spots, "#293a43", 0, 1.57, -1.055, .13, .17, .03));
   const outfits = Object.fromEntries(["explorer", "hero", "raincoat", "royal", "party"].map(id => {
     const group = new THREE.Group(); dog.add(group); return [id, group];
   }));
@@ -461,6 +476,7 @@ export function createView(canvas) {
   const outfitPositions = Object.fromEntries(Object.entries(outfits).map(([id, group]) => [id, group.children.map(part => part.position.clone())]));
   const mochi = createMochiModel(); dog.add(mochi.group); mochi.group.visible = false;
   const classicRig = {legs, eyes, ears, tail};
+  const markingBase = markingParts.map(part => ({position:part.position.clone(),scale:part.scale.clone()}));
   let activeRig = classicRig;
   let appearanceKey = "";
   function dress(appearance = {}) {
@@ -469,24 +485,87 @@ export function createView(canvas) {
     appearanceKey = key;
     const puppy = PUPPIES[appearance.puppy] || PUPPIES.biscuit;
     const isMochi = appearance.puppy === "mochi";
+    const visual = puppyVisual(appearance.puppy);
     mochi.group.visible = isMochi;
     for (const part of originalParts) part.visible = !isMochi;
     activeRig = isMochi ? mochi : classicRig;
     const palette = {"#d89043":puppy.fur,"#e9ac59":puppy.fur,"#c7823d":puppy.fur,"#db994e":puppy.fur,"#f2c67b":puppy.head,"#ffe0a1":puppy.muzzle,"#ffe3b1":puppy.paws};
     for (const {item,color} of furMeshes) if (palette[color]) item.material = mat(palette[color]);
+
+    // Sculpt each classic dog from the same shared geometry set. Keeping
+    // these absolute resets makes rapid collection preview swaps stable.
+    body.position.set(...visual.bodyPosition);
+    body.scale.set(.47 * visual.bodyScale[0], .40 * visual.bodyScale[1], .88 * visual.bodyScale[2]);
+    shoulder.position.set(...visual.shoulderPosition);
+    shoulder.scale.set(.37 * visual.shoulderScale[0], .40 * visual.shoulderScale[1], .35 * visual.shoulderScale[2]);
+    head.position.set(...visual.headPosition);
+    head.scale.set(.49 * visual.headScale[0], .46 * visual.headScale[1], .54 * visual.headScale[2]);
+    muzzle.position.set(...visual.muzzlePosition);
+    muzzle.scale.set(.33 * visual.muzzleScale[0], .23 * visual.muzzleScale[1], .33 * visual.muzzleScale[2]);
+    chestPatch.position.set(0, visual.muzzlePosition[1] - .05, visual.muzzlePosition[2] + .41);
+    chestPatch.scale.set(.23 * visual.chestScale[0], .28 * visual.chestScale[1], .12 * visual.chestScale[2]);
+    noseBridge.position.set(0, visual.muzzlePosition[1] + .16, visual.muzzlePosition[2] - .23);
+    noseBridge.scale.set(.16 * visual.muzzleScale[0], .12 * visual.muzzleScale[1], .09 * visual.muzzleScale[2]);
+    noseBridge.material = mat(visual.noseColor);
+    tongue.position.set(0, visual.muzzlePosition[1] - .18, visual.muzzlePosition[2] - .19);
+    tongue.scale.set(.10 * visual.muzzleScale[0], .12 * visual.muzzleScale[1], .045 * visual.muzzleScale[2]);
+
     for (const {ear,inner,side} of ears) {
       const floppy = puppy.ears === "floppy";
       ear.geometry = floppy ? sphereGeometry : coneGeometry;
-      ear.scale.set(floppy ? .20 : .26, floppy ? .40 : .62, floppy ? .18 : .32);
-      ear.position.set(side * (floppy ? .53 : .35), floppy ? 1.38 : 1.85, -.55);
+      ear.scale.set(...visual.earScale);
+      ear.position.set(side * visual.earSpread, visual.earY, visual.earZ);
       ear.rotation.z = side * (floppy ? .15 : -.15);
       inner.visible = !floppy;
+      inner.position.set(side * visual.earSpread, visual.earY + .02, visual.earZ - .18);
+      inner.scale.set(visual.earScale[0] * .50, visual.earScale[1] * .58, visual.earScale[2] * .13);
     }
-    spots.visible = !isMochi && !!puppy.spots;
+    for (const {eye,iris,pupil,catchlight} of eyeDetails) {
+      const side = eye.position.x < 0 ? -1 : 1;
+      eye.position.set(side * visual.eyeSpread, visual.eyeY, visual.eyeZ);
+      eye.scale.set(...visual.eyeScale);
+      eye.userData.restScaleY = visual.eyeScale[1];
+      iris.material = mat(visual.eyeColor);
+      pupil.material = mat(visual.pupilColor);
+      catchlight.position.set(-.025, .04, -.066);
+      catchlight.scale.set(.025, .033, .018);
+    }
+    for (const {leg,upper,paw} of legParts) {
+      leg.position.y = visual.legY;
+      upper.scale.set(.14 * visual.legScale[0], .29 * visual.legScale[1], .16 * visual.legScale[2]);
+      paw.scale.set(.16 * visual.legScale[0], .13 * visual.legScale[1], .22 * visual.legScale[2]);
+    }
+    tail.position.set(...visual.tailPosition);
+    tail.rotation.x = visual.tailTilt;
+    tailBase.scale.set(.18 * visual.tailScale[0], .35 * visual.tailScale[1], .20 * visual.tailScale[2]);
+    tailTip.scale.set(.17 * visual.tailScale[0], .18 * visual.tailScale[1], .19 * visual.tailScale[2]);
+
+    const layouts = visual.marking === 'mask'
+      ? [
+        {position:[-.17, 1.42, -1.095], scale:[.14, .19, .035]},
+        {position:[.17, 1.42, -1.095], scale:[.14, .19, .035]},
+        {position:[0, 1.66, -1.065], scale:[.14, .22, .035]},
+      ]
+      : markingBase.map(({position,scale}) => ({position:position.toArray(),scale:scale.toArray()}));
+    for (let index = 0; index < markingParts.length; index++) {
+      const part = markingParts[index];
+      const layout = layouts[index];
+      if (layout) {
+        part.position.set(...layout.position);
+        part.scale.set(...layout.scale);
+      } else {
+        part.position.copy(markingBase[index].position);
+        part.scale.copy(markingBase[index].scale);
+      }
+      part.material = mat(visual.marking === 'mask' ? '#edf1f1' : '#343e45');
+      part.visible = !isMochi && visual.marking !== 'none' && Boolean(layout);
+    }
+    spots.visible = !isMochi && visual.marking !== 'none';
+    collar.material = mat(visual.collarColor || '#ed734b');
     collar.visible = scarf.visible = !appearance.costume || appearance.costume === "scarf";
     for (const [id, group] of Object.entries(outfits)) {
       group.visible = appearance.costume === id;
-      group.scale.set(1, 1, 1); group.position.set(0, 0, 0);
+      group.scale.set(1, 1, 1); group.position.set(0, isMochi ? 0 : visual.outfitLift, 0);
       group.children.forEach((part, index) => {
         part.position.copy(outfitPositions[id][index]);
         if (isMochi && (id === "royal" || id === "party" || (id === "explorer" && index < 2))) part.position.y += id==='explorer'?.16:.24;
@@ -1004,7 +1083,7 @@ export function createView(canvas) {
         const angles=smoothLegAngles(activeRig.legs.map(leg=>leg.rotation.x),personality.legs,dt);
         for (let i = 0; i < activeRig.legs.length; i++) activeRig.legs[i].rotation.x = angles[i];
       }
-      for (const eye of activeRig.eyes) eye.scale.y = personality.blink;
+      for (const eye of activeRig.eyes) eye.scale.y = (eye.userData.restScaleY ?? 1) * personality.blink;
       for (const {ear,side} of activeRig.ears) ear.rotation.x = personality.ears*side;
       cape.rotation.x = -.14 + personality.cape;
       activeRig.tail.rotation.z = personality.tail;
