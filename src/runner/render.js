@@ -1146,10 +1146,22 @@ export function createView(canvas) {
         raftModel.position.set(boarding.x+x*Math.cos(boarding.yaw),boarding.y,boarding.z-x*Math.sin(boarding.yaw));
         raftModel.rotation.set(boarding.pitch,boarding.yaw,0,'YXZ');
       }
+      let rasterAngles = activeRig.legs.map(leg => leg.rotation.x);
       if (state === "playing" || menu) {
-        const angles=smoothLegAngles(activeRig.legs.map(leg=>leg.rotation.x),personality.legs,dt);
-        for (let i = 0; i < activeRig.legs.length; i++) activeRig.legs[i].rotation.x = angles[i];
+        rasterAngles=smoothLegAngles(rasterAngles,personality.legs,dt);
+        for (let i = 0; i < activeRig.legs.length; i++) activeRig.legs[i].rotation.x = rasterAngles[i];
       }
+      // The painted puppy is a layered puppet now: feed the same eased gait
+      // angles into its raster leg joints so the visible paws actually stride
+      // instead of behaving like one frozen billboard.
+      rasterArtwork.setPose({
+        time,
+        legs:rasterAngles,
+        airborne:y>.1,
+        sliding:run.slide>0,
+        menu,
+        reducedMotion,
+      });
       for (const eye of activeRig.eyes) eye.scale.y = (eye.userData.restScaleY ?? 1) * personality.blink;
       for (const {ear,side} of activeRig.ears) ear.rotation.x = personality.ears*side;
       cape.rotation.x = -.14 + personality.cape;
