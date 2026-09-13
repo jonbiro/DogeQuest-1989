@@ -14,8 +14,15 @@ export function createBranchModel(box,ball) {
     const limb=ball(branch,'#6c4b2e',x,y,0,.61,.4,.4);
     limb.rotation.z=angle;limb.name='branch-limb';
   }
-  for(const x of [-.9,.6])ball(branch,'#4e744f',x,2.13,0,.35,.22,.32);
-  box(branch,'#102b36',0,1.28,.43,1.8,.2,.08);
-  for(const x of [-.72,.72])box(branch,'#b3ffe7',x,1.3,.48,.2,.15,.04);
+  for(const x of [-.9,.6]){
+    const foliage=ball(branch,'#4e744f',x,2.13,0,.35,.22,.32);
+    foliage.userData.shadowDetail=true;
+  }
+  const band=box(branch,'#102b36',0,1.28,.43,1.8,.2,.08);
+  band.userData.shadowDetail=true;
+  for(const x of [-.72,.72]){
+    const cue=box(branch,'#b3ffe7',x,1.3,.48,.2,.15,.04);
+    cue.userData.shadowDetail=true;
+  }
   return branch;
 }

@@ -22,5 +22,7 @@ test('overhead branch has grounded supports outside the playable clearance',()=>
   assert.equal(limbs.length,3);
   for(const limb of limbs)assert.ok(new THREE.Box3().setFromObject(limb).min.y>1.25,'duck-under opening remains clear');
   assert.equal(branch.children.length,10,'bounded model complexity');
+  assert.equal(branch.children.filter(part=>part.userData.shadowDetail===true).length,5,'foliage and cues do not duplicate branch shadows');
+  assert.equal(branch.children.filter(part=>part.userData.shadowDetail!==true).length,5,'supports and limbs keep their readable shadows');
   geometry.dispose();boxGeometry.dispose();material.dispose();
 });

@@ -48,6 +48,13 @@ calls, 35 geometries, 9 textures and 91 active/pooled objects, with stable repea
 laps and all 130 turns accepted. It still covers 90 km, 65 ziplines and 30 rafts.
 The cull is a visibility optimization, not a substitute for native frame pacing.
 
+Branch hazards now keep shadows on their two grounded supports and three raised
+limbs only. Foliage, the dark clearance band and the two bright action cues stay
+visible but no longer cast duplicate detail shadows. A focused model test checks
+the five/five shadow split. Re-running the same matrix reduced the peak to 241
+draw calls (35 geometries, 9 textures, 91 objects) with all traversal outcomes
+unchanged.
+
 Logs retain all seven visible mesh parts. Their solid body now supplies the
 shadow rather than also shadowing six surface-detail meshes. The two ends share
 one geometry and the two rings share another, eliminating two duplicate geometry
