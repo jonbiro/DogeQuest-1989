@@ -17,7 +17,11 @@ hold. Direct pointer/keyboard input instead suppresses tilt for 350 ms and requi
 returning to the original neutral hold before rearming. This avoids shifting the
 center when a player taps Jump while leaning. Steering is suppressed outside active play,
 in hidden documents and during corner prompts; corners still require a swipe or
-button. Settings are session-only, with no automatic permission requests on load.
+button. Tilt enablement remains session-only, with no automatic permission
+requests on load. Sensitivity now persists in local preferences and portable
+backups; restoring it configures the adapter without enabling sensors. Invalid
+or older preferences default to Balanced. Full checks passed 453 tests, followed
+by focused backup tests with a non-default Steady preference.
 Portrait 390 × 844 browser inspection confirmed the controls and denied-access
 fallback, without interrupting ordinary touch controls. Two UI-controller tests
 cover toggling, recalibration, suppressed input and denial retry.

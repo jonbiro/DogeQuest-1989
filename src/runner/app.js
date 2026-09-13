@@ -314,6 +314,8 @@ function syncDock() {
 }
 const tilt=installTiltControls(window,{toggle:$('tilt-toggle'),recenter:$('tilt-recenter'),message:$('tilt-status'),
   sensitivity:$('tilt-sensitivity'),
+  initialSensitivity:saved.preferences.tiltSensitivity,
+  onSensitivity:value=>{saved.preferences.tiltSensitivity=value;persist();updateSaveNotice();},
   canSteer:()=>state==='playing'&&!document.hidden&&!run.ended&&!turnPrompt(run),onAction:action=>act(run,action)});
 // Touch/keyboard wins without moving the player's calibrated neutral position.
 window.addEventListener('pointerdown',()=>tilt.yieldToTouch(),{capture:true,passive:true});

@@ -1,5 +1,5 @@
 import {createTiltSteering} from './tilt.js';
-export function installTiltControls(host,{toggle,recenter,message,sensitivity,onAction,canSteer}){
+export function installTiltControls(host,{toggle,recenter,message,sensitivity,initialSensitivity='balanced',onSensitivity=()=>{},onAction,canSteer}){
   let active=false;
   const labels={off:'Tilt is off. Swipes and buttons always work.',
     'hold-steady':'Hold your phone comfortably upright to calibrate.',
@@ -19,7 +19,12 @@ export function installTiltControls(host,{toggle,recenter,message,sensitivity,on
     try{await sensor.enable();}finally{toggle.disabled=false;}
   };
   recenter.onclick=()=>sensor.recalibrate();
-  if(sensitivity)sensitivity.onchange=()=>sensor.setSensitivity(sensitivity.value);
+  if(sensitivity){
+    sensitivity.value=sensor.setSensitivity(initialSensitivity)?initialSensitivity:'balanced';
+    sensitivity.onchange=()=>{
+      if(sensor.setSensitivity(sensitivity.value))onSensitivity(sensitivity.value);
+    };
+  }
   sensor.stop();
   return sensor;
 }

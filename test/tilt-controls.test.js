@@ -26,3 +26,17 @@ test('denied permission keeps fallback instructions and permits retry',async()=>
   assert.equal(f.toggle.disabled,false);assert.equal(f.toggle['aria-pressed'],'false');
   assert.match(f.message.textContent,/not granted/);assert.equal(f.listeners.size,0);
 });
+test('restored sensitivity configures the sensor without requesting motion access',async()=>{
+  let requests=0;const changes=[],listeners=new Map();
+  const host={isSecureContext:true,DeviceOrientationEvent:{requestPermission:async()=>{requests++;return 'granted';}},
+    performance:{now:()=>0},setTimeout:()=>1,clearTimeout(){},
+    addEventListener:(k,v)=>listeners.set(k,v),removeEventListener:k=>listeners.delete(k)};
+  const sensitivity={},toggle={setAttribute(){}},recenter={},message={};
+  installTiltControls(host,{toggle,recenter,message,sensitivity,initialSensitivity:'steady',
+    onSensitivity:value=>changes.push(value),onAction(){},canSteer:()=>true});
+  assert.equal(sensitivity.value,'steady');assert.equal(requests,0);assert.equal(listeners.size,0);
+  sensitivity.value='gentle';sensitivity.onchange();
+  assert.deepEqual(changes,['gentle']);assert.equal(requests,0);
+  sensitivity.value='invalid';sensitivity.onchange();assert.deepEqual(changes,['gentle']);
+  await toggle.onclick();assert.equal(requests,1);
+});
