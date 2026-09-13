@@ -22,7 +22,7 @@ import {scoreBreakdown} from './score-breakdown.js';
 import {rematchFor} from './rematch.js';
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
-import {CUES,playNotes,stopSound,resumeSound,traversalCue} from "./sound.js";
+import {CUES,playNotes,stopSound,resumeSound,traversalCue,feedbackPriority} from "./sound.js";
 import {actionCue,eventNotice,dockMode,runLesson,routeChoiceCue} from "./guidance.js";
 import {turnPrompt} from "./turns.js";
 import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,isJumpTap} from "./gestures.js";
@@ -292,7 +292,7 @@ function tone(frequency, duration = 0.08) {
   try {
     audio ??= new (window.AudioContext || window.webkitAudioContext)();
     resumeSound(audio);
-    playNotes(audio,typeof frequency==="string"?CUES[frequency]:[{from:frequency,duration}]);
+    playNotes(audio,typeof frequency==="string"?CUES[frequency]:[{from:frequency,duration}],feedbackPriority(frequency));
   } catch {
     /* Sound is optional. */
   }
@@ -864,7 +864,7 @@ function frame(now) {
         tone(660, 0.2);
       }
       if (event === "hit") {
-        tone(120, 0.2);
+        tone('hit');
       }
     }
     run.events = [];

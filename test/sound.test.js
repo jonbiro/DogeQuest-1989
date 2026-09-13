@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {CUES,playNotes,stopSound} from "../src/runner/sound.js";
+import {CUES,playNotes,stopSound,feedbackPriority} from "../src/runner/sound.js";
 import {createRun,act,step} from "../src/runner/world.js";
 import {readFileSync} from 'node:fs';
 import {URL} from 'node:url';
@@ -80,6 +80,13 @@ test("sound bursts are voice-limited, muted voices stop and finished nodes disco
   const param={setValueAtTime(){},exponentialRampToValueAtTime(){},linearRampToValueAtTime(){}};
   const context={currentTime:0,state:"running",suspends:0,destination:{},suspend(){this.state="suspended";this.suspends++;return Promise.resolve();},createOscillator(){const node={frequency:param,stops:[],connect(){},start(){},stop(time){this.stops.push(time);},disconnect(){this.disconnects=(this.disconnects||0)+1;}};nodes.push(node);return node;},createGain(){const gain={gain:param,connect(){},disconnect(){this.disconnects=(this.disconnects||0)+1;}};gains.push(gain);return gain;}};
   for(let i=0;i<20;i++)playNotes(context,CUES.reward);
+  assert.equal(nodes.length,8,'reward bursts leave four voices for urgent feedback');
+  for(const cue of ['jump','slide','hit'])playNotes(context,CUES[cue],feedbackPriority(cue));
+  assert.equal(nodes.length,11,'movement and damage remain audible after reward saturation');
+  playNotes(context,CUES.ready,feedbackPriority('ready'));
+  assert.equal(nodes.length,12,'urgent sounds still respect the original hard ceiling');
+  playNotes(context,CUES.hit,feedbackPriority('hit'));
+  playNotes(context,CUES.reward,feedbackPriority('reward'));
   assert.equal(nodes.length,12);
   assert.ok(nodes.every(n=>n.stops.length===1&&n.stops[0]>0));
   stopSound(context);assert.ok(nodes.every(n=>n.stops.length===2&&n.stops[1]===undefined));

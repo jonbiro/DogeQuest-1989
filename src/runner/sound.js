@@ -7,6 +7,7 @@ export const CUES = {
   jump:[{from:300,to:700,at:0,duration:.12,type:"sine"}],
   land:[{from:180,to:100,at:0,duration:.065,type:"sine",volume:.016}],
   slide:[{from:420,to:140,at:0,duration:.10,type:"sine"}],
+  hit:[{from:120,to:100,at:0,duration:.2,type:"sine"}],
   ready:[{from:660,to:660,at:0,duration:.09,type:"sine"},{from:880,to:880,at:.09,duration:.12,type:"sine"}],
   finish:[{from:523,to:440,at:0,duration:.15,type:"triangle"},{from:392,to:330,at:.17,duration:.2,type:"triangle"}],
 };
@@ -20,18 +21,23 @@ export function traversalCue(event) {
   }
 }
 const voices=new WeakMap();
+export function feedbackPriority(cue){
+  return ['jump','slide','hit','ready'].includes(cue)?1:0;
+}
 export function resumeSound(context) {
   if (!context || context.state==='closed' || typeof context.resume!=='function') return;
   // Also queue resume while a prior suspend is still pending. Checking only
   // for 'suspended' can miss a rapid pause/resume pair.
   try { context.resume().catch(()=>{}); } catch { /* Audio remains optional. */ }
 }
-export function playNotes(context,notes) {
+export function playNotes(context,notes,priority=0) {
   const now=context.currentTime;
   if(!voices.has(context))voices.set(context,new Set());
   const active=voices.get(context);
   for(const note of notes) {
-    if(active.size>=12)break;
+    // Leave four voices free for moves and damage when pickups/rewards burst.
+    // All voices still share the existing twelve-node hard ceiling.
+    if(active.size>=(priority===1?12:8))break;
     const osc=context.createOscillator(),gain=context.createGain();
     const start=now+(note.at||0),end=start+note.duration;
     osc.type=note.type||"sine";
