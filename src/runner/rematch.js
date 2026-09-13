@@ -4,5 +4,6 @@ export function rematchFor(run,ended){
   if(run.practice)return run.practice.returnTrail||null;
   return {seed:run.seed,generatorVersion:run.generatorVersion,
     rematchBest:Math.max(run.rematchBest||0,run.score||0),
-    challengeTarget:run.challengeTarget||0};
+    challengeTarget:run.localDailyTarget?Math.max(run.challengeTarget||0,run.score||0,run.rematchBest||0):run.challengeTarget||0,
+    ...(run.localDailyTarget?{localDailyTarget:true}:{})};
 }

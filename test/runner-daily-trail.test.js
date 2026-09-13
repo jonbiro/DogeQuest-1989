@@ -14,8 +14,10 @@ test('reopening today restores a personal target without overriding a friend or 
   const records=[{seed:daily.seed,version:daily.version,best:2400}];
   const restored=restoredTrailSelection(daily.seed,daily.version,0,daily,records);
   assert.equal(restored.target,2400);assert.match(restored.description,/Your best: 2,400/);
+  assert.equal(restored.localDaily,true);
   const friend=restoredTrailSelection(daily.seed,daily.version,500,daily,records);
   assert.equal(friend.target,500);assert.match(friend.description,/friendly/);
+  assert.equal(friend.localDaily,false);
   for(const [seed,version,date] of [[daily.seed+1,daily.version,daily],[daily.seed,1,daily],[daily.seed,daily.version,null]]){
     assert.equal(restoredTrailSelection(seed,version,0,date,records).target,0);
   }
@@ -49,7 +51,7 @@ test('the actual daily selector chooses a replayable trail without starting or b
   const elements=new Map(),calls=[];
   const $=id=>{if(!elements.has(id))elements.set(id,{focus:()=>calls.push('focus')});return elements.get(id);};
   const daily=dailyTrail(href,Date.parse('2026-09-12T23:59:00Z'));
-  const context={$,saved:{trailRecords:[]},trailBest:()=>0,sharedSeed:1,sharedVersion:1,sharedTarget:1000,dailyTrail:()=>daily,
+  const context={$,localDailyTarget:false,saved:{trailRecords:[]},trailBest:()=>0,sharedSeed:1,sharedVersion:1,sharedTarget:1000,dailyTrail:()=>daily,
     window:{location:{href},history:{replaceState:(_a,_b,url)=>calls.push(url)}},
     setState:value=>calls.push(value),updateRecords:()=>calls.push('records')};
   const start=source.indexOf('function chooseDailyTrail()'),end=source.indexOf("$('shared-random').onclick =",start);

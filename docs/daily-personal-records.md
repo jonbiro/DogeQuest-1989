@@ -1,5 +1,12 @@
 # Daily trail personal records
 
+Daily selection now carries local-target provenance into the run and its rematch.
+Retry raises a personal daily target to the best score achieved on that rematch,
+including establishing a target after the first run. It never lowers the target;
+explicit friend targets remain fixed. Practice return data preserves the original
+target rather than adopting practice scores. This does not change seed, layout
+version, reward banking or URL challenge semantics.
+
 Completed-run receipts now retain the previous and updated trail best. The
 existing result sentence recognizes “New best on this trail!” when improving an
 established record below the overall personal best. A tie or lower score does

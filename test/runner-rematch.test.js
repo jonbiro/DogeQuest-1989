@@ -5,6 +5,20 @@ import {createPracticeRun,createGapPracticeRun,createWeavePracticeRun,createTurn
 import {rematchFor} from '../src/runner/rematch.js';
 import {bankRun} from '../src/runner/rewards.js';
 
+test('daily rematches raise the personal target, but friends and practice cannot change it',()=>{
+  const run=createRun(1989,{},4);
+  Object.assign(run,{ended:true,localDailyTarget:true,score:3000,challengeTarget:2400,rematchBest:2800});
+  const next=rematchFor(run,true);
+  assert.equal(next.challengeTarget,3000);assert.equal(next.localDailyTarget,true);
+  const practice=createRaftPracticeRun();practice.practice.returnTrail=next;practice.score=99999;
+  assert.deepEqual(rematchFor(practice,true),next);
+  run.score=100;assert.equal(rematchFor(run,true).challengeTarget,2800,'a worse retry never lowers the best');
+  run.localDailyTarget=false;run.score=3000;
+  assert.equal(rematchFor(run,true).challengeTarget,2400,'a friend target remains fixed');
+  run.localDailyTarget=true;run.challengeTarget=0;run.rematchBest=0;
+  assert.equal(rematchFor(run,true).challengeTarget,3000,'the first daily result establishes a target');
+});
+
 test('focused practice and repeated drills retain the original rematch, not practice scores',()=>{
   const original=createRun(1989,{},1);
   Object.assign(original,{score:4200,rematchBest:5000,challengeTarget:6000,ended:true});

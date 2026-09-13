@@ -84,6 +84,7 @@ try {
 sound=saved.preferences.sound;
 const restoredTrail=restoredTrailSelection(sharedSeed,sharedVersion,sharedTarget,dailyTrail(window.location.href),saved.trailRecords);
 sharedTarget=restoredTrail.target;
+let localDailyTarget=restoredTrail.localDaily;
 $('shared-description').textContent=restoredTrail.description;
 reducedMotion=saved.preferences.reducedMotion;
 function updateRecords() {
@@ -366,6 +367,7 @@ function start() {
     retry ? retry.generatorVersion : sharedSeed === null ? undefined : sharedVersion);
   run.rematchBest=rematchBest;
   run.challengeTarget=challengeTarget;
+  run.localDailyTarget=retry?Boolean(retry.localDailyTarget):localDailyTarget;
   run.puppy = saved.collection.puppy;
   run.appearance = { ...saved.collection };
   run.missions = missionPackFor(saved.challenges);
@@ -514,6 +516,7 @@ function chooseDailyTrail() {
   if (!daily) return;
   sharedSeed=daily.seed;sharedVersion=daily.version;
   sharedTarget=trailBest(saved.trailRecords,daily.seed,daily.version);
+  localDailyTarget=true;
   window.history.replaceState(null,'',daily.url);
   $('shared-description').textContent=`Daily trail · ${daily.day} UTC${sharedTarget?` · Your best: ${sharedTarget.toLocaleString()} pts`:''} · your upgrades apply.`;
   $('shared-trail').hidden=false;
@@ -522,6 +525,7 @@ function chooseDailyTrail() {
 $('daily-trail').onclick = chooseDailyTrail;
 $('daily-camp').onclick = chooseDailyTrail;
 $('shared-random').onclick = () => {
+  localDailyTarget=false;
   sharedSeed=null;
   sharedVersion=null;
   sharedTarget=0;

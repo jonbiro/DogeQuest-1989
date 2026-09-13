@@ -22,10 +22,10 @@ export function selectedTrailDescription(seed,version,target,daily){
 
 export function restoredTrailSelection(seed,version,target,daily,records){
   // An explicit friend's target always takes precedence over a local record.
-  const best=!validTrailTarget(target)&&daily&&seed===daily.seed&&version===daily.version
-    ? trailBest(records,seed,version):0;
-  if(validTrailTarget(best))return {target:best,
+  const localDaily=Boolean(!validTrailTarget(target)&&daily&&seed===daily.seed&&version===daily.version);
+  const best=localDaily?trailBest(records,seed,version):0;
+  if(validTrailTarget(best))return {target:best,localDaily,
     description:`Daily trail · ${daily.day} UTC · Your best: ${best.toLocaleString()} pts · your upgrades apply.`};
-  return {target:validTrailTarget(target)?target:0,
+  return {target:validTrailTarget(target)?target:0,localDaily,
     description:selectedTrailDescription(seed,version,target,daily)};
 }
