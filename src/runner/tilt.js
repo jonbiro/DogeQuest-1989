@@ -4,22 +4,33 @@ export function createTiltSteering(host,{onAction,onStatus=()=>{}}){
   const thresholds={gentle:9,balanced:14,steady:20};
   let threshold=thresholds.balanced;
   let blockedUntil=0;
+  let landscape=false;
   let enabled=false,pending=false,origin=null,filtered=0,armed=true,last=null,timer=null,generation=0,lastAngle=null;
   const status=value=>onStatus(value);
   const clearTimer=()=>{if(timer!==null)host.clearTimeout(timer);timer=null;};
   function calibrate(){origin=null;filtered=0;armed=true;last=null;lastAngle=null;}
   function expectReading(){clearTimer();timer=host.setTimeout(()=>{stop();status('unavailable');},4000);}
   function stop(){
-    generation++;enabled=false;pending=false;clearTimer();calibrate();
+    generation++;enabled=false;pending=false;landscape=false;clearTimer();calibrate();
     host.removeEventListener('deviceorientation',sample);
     host.removeEventListener('orientationchange',reorient);
     status('off');
   }
-  function reorient(){calibrate();if(enabled){status('hold-steady');expectReading();}}
+  function checkPortrait(){
+    const angle=host.screen?.orientation?.angle??host.orientation??0;
+    if(angle%180!==0){
+      clearTimer();calibrate();
+      if(!landscape)status('portrait-required');
+      landscape=true;return false;
+    }
+    if(landscape){landscape=false;calibrate();status('hold-steady');expectReading();}
+    return true;
+  }
+  function reorient(){calibrate();if(enabled&&checkPortrait()){status('hold-steady');expectReading();}}
   function sample(event){
     if(!enabled)return;
+    if(!checkPortrait())return;
     const angle=host.screen?.orientation?.angle??host.orientation??0;
-    if(angle%180!==0){calibrate();status('portrait-required');return;}
     if(!Number.isFinite(event.gamma)||Math.abs(event.gamma)>75)return;
     const value=event.gamma*(Math.abs(angle)%360===180?-1:1);
     const now=host.performance.now();
@@ -44,10 +55,10 @@ export function createTiltSteering(host,{onAction,onStatus=()=>{}}){
       if(request!==generation)return false;
       pending=false;
       if(result!=='granted'){status('denied');return false;}
-      enabled=true;calibrate();status('hold-steady');
+      enabled=true;calibrate();
       host.addEventListener('deviceorientation',sample);
       host.addEventListener('orientationchange',reorient);
-      expectReading();
+      reorient();
       return true;
     }catch{
       if(request===generation){pending=false;status('denied');}

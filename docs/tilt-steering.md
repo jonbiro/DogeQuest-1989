@@ -1,5 +1,15 @@
 # Optional tilt steering
 
+## Rotation recovery
+
+Landscape now suspends the sensor-availability timeout instead of treating an
+intentional sideways hold as sensor failure. Returning to portrait restarts the
+availability check and establishes a fresh neutral hold before steering. This
+also works when enabling tilt while sideways, and without a rotation event if
+the next sensor reading reports the new screen angle. Repeated landscape samples
+do not repeatedly update the status text. Synthetic regressions cover both paths;
+physical-device rotation feel remains unverified.
+
 The sensor adapter in `src/runner/tilt.js` is now connected to optional controls
 in Help and Pause. It requests orientation permission only when its
 enable method is called, calibrates relative to the first valid held angle,

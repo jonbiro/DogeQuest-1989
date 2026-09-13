@@ -80,3 +80,27 @@ test('touch suppresses immediate sensor motion for 350ms',async()=>{
   f.sample(30,20);assert.deepEqual(f.actions,[],'neutral is required after cooldown');
   f.sample(0,30);f.sample(30,30);assert.deepEqual(f.actions,['right']);
 });
+
+test('landscape suspends availability timeout and resumes with a fresh neutral hold',async()=>{
+  const f=fixture();await f.tilt.enable();f.sample(0);
+  f.host.screen.orientation.angle=90;f.listeners.get('orientationchange')();
+  assert.equal(f.statuses.at(-1),'portrait-required');
+  assert.equal(f.timers.size,0,'rotation is not a missing sensor failure');
+  const count=f.statuses.length;f.elapse(6000);f.sample(35,30);
+  assert.equal(f.statuses.length,count,'landscape readings do not flood the UI');
+  assert.deepEqual(f.actions,[]);
+  f.host.screen.orientation.angle=0;f.sample(null);
+  assert.equal(f.statuses.at(-1),'hold-steady');assert.equal(f.timers.size,1);
+  f.sample(35,30);assert.equal(f.statuses.at(-1),'ready');
+  assert.equal(f.timers.size,0);assert.deepEqual(f.actions,[]);
+  f.sample(10,30);assert.deepEqual(f.actions,['left']);
+});
+
+test('enabling sideways waits for portrait instead of disabling motion access',async()=>{
+  const f=fixture();f.host.screen.orientation.angle=270;await f.tilt.enable();
+  assert.equal(f.statuses.at(-1),'portrait-required');assert.equal(f.timers.size,0);
+  f.tilt.recalibrate();assert.equal(f.timers.size,0);
+  f.host.screen.orientation.angle=0;f.listeners.get('orientationchange')();
+  assert.equal(f.timers.size,1);[...f.timers.values()][0]();
+  assert.equal(f.statuses.at(-1),'unavailable');assert.equal(f.listeners.size,0);
+});
