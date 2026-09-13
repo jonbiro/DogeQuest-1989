@@ -15,7 +15,10 @@ export function installTiltControls(host,{toggle,recenter,message,sensitivity,in
     active=['ready','hold-steady','portrait-required'].includes(status);
     toggle.textContent=active?'Turn tilt off':'Enable tilt';
     toggle.setAttribute('aria-pressed',String(active));
-    recenter.disabled=!active;message.textContent=labels[status];
+    recenter.disabled=!active;
+    message.textContent=status==='off'&&!attempted&&host.matchMedia?.('(pointer: coarse)').matches
+      ? 'Tilt starts when you play. Allow motion access if asked, or keep using swipes and buttons.'
+      : labels[status];
   }});
   toggle.onclick=async()=>{
     attempted=true;

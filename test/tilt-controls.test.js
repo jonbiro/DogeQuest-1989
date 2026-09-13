@@ -58,6 +58,7 @@ test('mobile Play requests tilt once; pending permission is observable and denia
     performance:{now:()=>0},setTimeout:()=>1,clearTimeout(){},addEventListener(){},removeEventListener(){}};
   const toggle={setAttribute(){}},message={};
   const controls=installTiltControls(host,{toggle,recenter:{},message,onAction(){},canSteer:()=>true});
+  assert.match(message.textContent,/Tilt starts when you play/);
   assert.equal(requests,0,'loading the page never opens a permission prompt');
   controls.enableDefault();assert.equal(requests,1);assert.equal(controls.isRequesting(),true);
   controls.enableDefault();assert.equal(requests,1);
@@ -67,6 +68,7 @@ test('mobile Play requests tilt once; pending permission is observable and denia
   const manual=toggle.onclick();assert.equal(requests,2,'explicit Enable remains available');
   resolve('granted');await manual;
   await toggle.onclick();controls.enableDefault();assert.equal(requests,2,'manual Off lasts for the visit');
+  assert.match(message.textContent,/Tilt is off/,'manual off is not advertised as pending automatic activation');
 });
 
 test('desktop Play does not request tilt by default',()=>{
