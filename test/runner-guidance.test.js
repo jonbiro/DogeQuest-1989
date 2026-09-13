@@ -99,7 +99,7 @@ test('recovery collisions do not replace the last meaningful mistake',()=>{
 test('zipline approach explains aerial bones before the jump deadline and keeps airborne guidance', () => {
   const run = emptyRun();
   run.objects = [hazard(run, 'zipline-start', 1.5)];
-  assert.equal(actionCue(run), 'ZIPLINE AHEAD · high bones');
+  assert.equal(actionCue(run), 'ZIPLINE AHEAD · zipline bones');
   run.objects[0].at = run.distance + run.speed * .44;
   assert.equal(actionCue(run), '↑ JUMP · ZIPLINE');
   act(run, 'jump');

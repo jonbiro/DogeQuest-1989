@@ -31,3 +31,11 @@ test('only the exact entry script is permitted by CSP and it precedes relative a
   assert.ok(!html.includes("'unsafe-inline'"));
   assert.ok(html.indexOf('id="runner-entry"')<html.indexOf('rel="stylesheet"'));
 });
+
+test('runner headline and onboarding name bones as the core collectible',()=>{
+  assert.match(html,/<title>Biscuit Dash — Run wild\. Fetch bones\.<\/title>/);
+  assert.match(html,/<h1 id="title">Run wild\.<br \/>Fetch <em>bones\.<\/em><\/h1>/);
+  assert.match(html,/chase glowing bones/);
+  assert.match(html,/Zipline bones ↗︎/);
+  assert.doesNotMatch(html,/Fetch gold/);
+});

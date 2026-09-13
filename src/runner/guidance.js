@@ -33,7 +33,7 @@ export function actionCue(run) {
   const cable = run.objects.find(object => object.type === 'zipline-start' && !object.caught &&
     object.at > run.distance && object.at - run.distance < run.speed * 1.6);
   if (cable) {
-    if (cable.at - run.distance >= run.speed * .45) return 'ZIPLINE AHEAD · high bones';
+    if (cable.at - run.distance >= run.speed * .45) return 'ZIPLINE AHEAD · zipline bones';
     return run.y > .05 || run.vy > 0 ? 'CATCH THE TURQUOISE HANDLE' : '↑ JUMP · ZIPLINE';
   }
   if (run.zoomies > 0) return '';

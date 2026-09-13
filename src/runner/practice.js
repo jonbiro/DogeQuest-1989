@@ -212,8 +212,8 @@ export function practiceCue(run) {
     return `${run.practice.direction === 'left' ? '←' : '→'} Corner ahead · wait for the turn cue`;
   }
   if (run.practice.kind === 'zipline') {
-    if (run.ziplines) return '✓ LANDED · high bones belong to the cable';
-    return actionCue(run) || (run.zipline ? 'Steer toward the high bones' : 'ZIPLINE AHEAD · wait for jump cue');
+    if (run.ziplines) return '✓ LANDED · zipline bones belong to the cable';
+    return actionCue(run) || (run.zipline ? 'Steer toward the zipline bones' : 'ZIPLINE AHEAD · wait for jump cue');
   }
   if (run.practice.feedback?.until>run.time) return run.practice.feedback.text;
   const lesson = moveLessons(run.practice.kind)[run.practice.index];
@@ -229,7 +229,7 @@ export function practiceProgress(run) {
   if(run.practice.kind==='weave')return `${run.practice.correct}/3 weaves cleared`;
   if (run.practice.kind==='gap') return `${run.practice.correct}/1 gap cleared`;
   if (run.practice.kind==='turn') return `${run.practice.direction} corner · ${run.practice.correct}/1 cleared`;
-  return run.practice.kind==='zipline' ? `${run.bones}/18 high bones · ${run.ziplines ? 'landed' : run.practice.caught ? 'cable caught' : 'catch the cable'}` : `${run.practice.correct}/3 ${moveName(run)} cleared`;
+  return run.practice.kind==='zipline' ? `${run.bones}/18 zipline bones · ${run.ziplines ? 'landed' : run.practice.caught ? 'cable caught' : 'catch the cable'}` : `${run.practice.correct}/3 ${moveName(run)} cleared`;
 }
 export function practiceResult(run) {
   if(run.practice.kind==='raft')return {
@@ -257,9 +257,9 @@ export function practiceResult(run) {
       : `Wait for the ${run.practice.direction} turn arrow, then swipe ${run.practice.direction} once. An early swipe only changes lanes. A wrong direction can be corrected before the corner.`,
   };
   if (run.practice.kind==='zipline') return {
-    title:run.practice.caught ? `${run.bones} of 18 high bones` : 'Try catching the handle',
-    lesson:!run.practice.caught ? 'Wait for the jump prompt, then jump to grab the turquoise handle. High bones can only be collected while riding the cable.'
-      : run.bones===18 ? 'Every high bone collected! Steer on the cable; landing happens automatically. The adventure uses these same moves.'
+    title:run.practice.caught ? `${run.bones} of 18 zipline bones` : 'Try catching the handle',
+    lesson:!run.practice.caught ? 'Wait for the jump prompt, then jump to grab the turquoise handle. Zipline bones can only be collected while riding the cable.'
+      : run.bones===18 ? 'Every zipline bone collected! Steer on the cable; landing happens automatically. The adventure uses these same moves.'
       : 'Handle caught! Follow the left and right bone prompts while riding. Landing is automatic; jumping from the ground cannot reach these bones.',
   };
   return {title:`${run.practice.correct} of 3 ${moveName(run)} cleared`,lesson:run.practice.correct===3

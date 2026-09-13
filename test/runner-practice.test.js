@@ -155,7 +155,7 @@ test('zipline practice uses real catch, steering, collection and automatic landi
     assert.equal(run.hearts,3);assert.equal(run.y,0);assert.equal(run.fetchCharge,0);
     assert.deepEqual(run.practice.outcomes,[true,true,true]);
     assert.match(practiceProgress(run),/18\/18.*landed/);
-    assert.match(practiceResult(run).lesson,/Every high bone collected/);
+  assert.match(practiceResult(run).lesson,/Every zipline bone collected/);
     assert.equal(bankRun({},run,[]),null);
   }
 });
