@@ -451,7 +451,7 @@ function finish() {
     $('overlay-primary').textContent = run.practice.returnTrail ? 'Retry your trail ↗︎' : 'Run the adventure ↗︎';
     $('practice-again').hidden = false;
     $('practice-again').textContent = run.practice.kind==='turn' && run.practice.correct
-      ? `Practise the ${run.practice.direction==='left' ? 'right' : 'left'} turn` : 'Practise again';
+      ? `Practice the ${run.practice.direction==='left' ? 'right' : 'left'} turn` : 'Practice again';
     return;
   }
   const receipt = bankRun(saved, run, run.missions);

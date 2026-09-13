@@ -20,16 +20,16 @@ function moveName(run){return run.practice.kind==='jump'?'jumps':run.practice.ki
 export function practiceOffer(run) {
   if (!run.ended || run.practice || run.retired) return null;
   const mistake=run.lastMistake;
-  if(mistake?.raftHazard)return {kind:'raft',cornerIndex:0,label:'Practise river steering'};
+  if(mistake?.raftHazard)return {kind:'raft',cornerIndex:0,label:'Practice river steering'};
   if (mistake?.type==='rock' && mistake.courseWeave)
-    return {kind:'weave',cornerIndex:0,label:'Practise lane weaves'};
-  if (mistake?.type==='gap') return {kind:'gap',cornerIndex:0,label:'Practise gap jumps'};
+    return {kind:'weave',cornerIndex:0,label:'Practice lane weaves'};
+  if (mistake?.type==='gap') return {kind:'gap',cornerIndex:0,label:'Practice gap jumps'};
   if (mistake?.type==='corner' && ['left','right'].includes(mistake.direction))
-    return {kind:'turn',cornerIndex:mistake.direction==='right'?1:0,label:'Practise this turn'};
-  if(mistake?.type==='log')return {kind:'jump',cornerIndex:0,label:'Practise jump timing'};
-  if(['arch','branch','gate'].includes(mistake?.type))return {kind:'slide',cornerIndex:0,label:'Practise slide timing'};
+    return {kind:'turn',cornerIndex:mistake.direction==='right'?1:0,label:'Practice this turn'};
+  if(mistake?.type==='log')return {kind:'jump',cornerIndex:0,label:'Practice jump timing'};
+  if(['arch','branch','gate'].includes(mistake?.type))return {kind:'slide',cornerIndex:0,label:'Practice slide timing'};
   if (mistake?.type==='rock')
-    return {kind:'moves',cornerIndex:0,label:'Practise the basics'};
+    return {kind:'moves',cornerIndex:0,label:'Practice the basics'};
   return null;
 }
 function lessonFeedback(lesson,correct,detail) {
@@ -217,7 +217,7 @@ export function practiceCue(run) {
   }
   if (run.practice.feedback?.until>run.time) return run.practice.feedback.text;
   const lesson = moveLessons(run.practice.kind)[run.practice.index];
-  if (!lesson) return `${run.practice.correct}/3 moves practised · trail complete`;
+  if (!lesson) return `${run.practice.correct}/3 moves practiced · trail complete`;
   if (lesson.type==='log' && (run.y>0 || run.vy>0)) return 'Jumping · wait for landing';
   if (lesson.type==='gate' && run.slide>0) return 'Sliding · stay low';
   const near = lesson.at-run.distance < run.speed*.45;

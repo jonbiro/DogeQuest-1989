@@ -1089,7 +1089,7 @@
 ## Contextual lane-weave rehearsal (2026-09-12)
 
 - Course-rock collisions now preserve a run-local weave marker. Results explain
-  open-lane movement and ×2, and offer Practise lane weaves rather than generic
+  open-lane movement and ×2, and offer Practice lane weaves rather than generic
   jump/slide basics. Ordinary rocks and other collision shortcuts retain their
   existing coaching. Retired runs still do not receive unsolicited rehearsal.
 - The roughly ten-second unscored lesson uses actual crystal course geometry,
@@ -1241,7 +1241,7 @@
   and after the rehearsal. Other projects' simulators were left untouched.
 - Native touch dragging scrolled Help. Expanding the practice disclosure brought
   all three lesson buttons into view without covering the fixed start/camp actions.
-  Tapping Practise turns started the real rendered unscored left-turn lesson.
+  Tapping Practice turns started the real rendered unscored left-turn lesson.
 - An intentionally unanswered turn showed a compact edge coaching hint and then
   Try the turn again, with timing instructions and reachable rehearsal/camp actions.
   Returning to camp preserved the displayed balance. No scored run was started.
@@ -1357,7 +1357,7 @@
   camp button. Base/max leap clear the jump, including a 100ms response delay;
   sliding, steering and no input fail the lesson without persistent penalties.
 - At 320x568, rendered-cue-driven browser inputs reached a natural gap death at
-  1885m on shared trail `2-1j9`. The results offered Practise gap jumps. A visible
+  1885m on shared trail `2-1j9`. The results offered Practice gap jumps. A visible
   click entered the lesson; the actual renderer showed the striped road break,
   the cue-driven jump cleared it, and Gap cleared results fit on screen.
 - The profile banked by the scored run remained byte-for-byte unchanged through
@@ -1373,7 +1373,7 @@
   basic trail) do not fabricate a practice recommendation. Tests exercise the
   actual results-button handler, direction selection and rehearsal retry routing.
 - At 320x568, a natural 270m collision result banked 420 points and showed
-  Practise the basics beside Back to camp, with the primary retry still visible.
+  Practice the basics beside Back to camp, with the primary retry still visible.
   Clicking it started unscored practice; after its natural 0/3 completion, the
   saved profile was byte-for-byte unchanged. Run the adventure started a normal
   run near zero distance with three hearts, zero Fetch uses, and challenge HUD.
@@ -2326,7 +2326,7 @@ by the new contextual mission help, three-goal HUD and clean-move results text.
   A real-time keyboard run driven only by visible Jump now, Slide now and Steer
   left prompts completed 3/3 moves. An unassisted run completed 0/3 without
   ending early. The local save remained null after practice completion.
-- At 320 × 568, the success screen, Run the adventure, Practise again and camp
+- At 320 × 568, the success screen, Run the adventure, Practice again and camp
   actions were readable and reachable. Rehearsal restarted at zero progress;
   pause used unscored copy. Run the adventure restored normal points, three
   hearts, region name and the first challenge, then paused normally.

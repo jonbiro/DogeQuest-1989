@@ -138,7 +138,7 @@ Subsequent full-app browser verification used the isolated fixture with the actu
 practice clock and on-screen controls. At 320 × 568, a complete button-steered
 crossing collected nine bones; the three-second manual increments intentionally
 missed lead-in pickups. Boarding disabled ground controls, shore restored them,
-the result showed 9/12, and Practise again reset to zero distance/bones. At
+the result showed 9/12, and Practice again reset to zero distance/bones. At
 390 × 844, Pause explained unscored play and Leave practice returned to camp with
 zero points. A no-steering completion showed 4/12 and the early-steering advice;
 Run the adventure then restored ordinary zero-distance, three-heart gameplay.

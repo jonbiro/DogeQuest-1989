@@ -7,7 +7,12 @@ import {URL} from 'node:url';
 
 test('help exposes and routes every practice skill without requiring a failed run',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const practiceSource=readFileSync(new URL('../src/runner/practice.js',import.meta.url),'utf8');
   const html=readFileSync(new URL('../runner/index.html',import.meta.url),'utf8');
+  const britishVerb=/Prac(?:tise|tised)/;
+  assert.doesNotMatch(source,britishVerb);
+  assert.doesNotMatch(practiceSource,britishVerb);
+  assert.doesNotMatch(html,britishVerb);
   const from=source.indexOf("$('practice-start').onclick"),to=source.indexOf("$('practice-again').onclick",from);
   const buttons=new Map();let selected;
   runInNewContext(source.slice(from,to),{$:id=>{const node={};buttons.set(id,node);return node;},startPractice:kind=>selected=kind});
@@ -20,7 +25,7 @@ test('help exposes and routes every practice skill without requiring a failed ru
 test('collision results offer relevant practice without guessing an unsupported lesson', () => {
   for (const [direction,cornerIndex] of [['left',0],['right',1]])
     assert.deepEqual(practiceOffer({ended:true,lastMistake:{type:'corner',direction}}),
-      {kind:'turn',cornerIndex,label:'Practise this turn'});
+      {kind:'turn',cornerIndex,label:'Practice this turn'});
   for (const [type,kind] of [['log','jump'],['rock','moves'],['arch','slide'],['branch','slide'],['gate','slide']])
     assert.equal(practiceOffer({ended:true,lastMistake:{type}}).kind,kind);
   for (const run of [{}, {ended:true}, {ended:true,lastMistake:{type:'corner'}},

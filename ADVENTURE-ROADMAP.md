@@ -27,7 +27,7 @@ Old links remain ordinary replayable trails; midnight never changes a selected
 run. There are no ranked claims, attendance streaks, extra currencies, accounts
 or new in-run panels, and no extra main-menu button.
 
-## Practise the specific missed skill
+## Practice the specific missed skill
 
 Missing a course rock now offers a ten-second lane-weave rehearsal with two
 outside-to-outside moves and one adjacent-lane move. It teaches the ×2 hint using
