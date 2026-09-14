@@ -6,7 +6,6 @@ import {RESUME_DURATION,resumeStep} from './resume.js';
 import {installBackupControls} from './backup-ui.js';
 import {installOfflineSupport} from './offline.js';
 import { createView } from "./render.js";
-import { createFallbackView } from "./fallback-render.js";
 import {prepareFirstFrame} from './shader-preparation.js';
 import { UPGRADES, levels, price, purchase, refundUpgrade } from "./progression.js";
 import { missionFor, missionProgress, missionTip, missionPackFor } from "./missions.js";
@@ -19,7 +18,7 @@ import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLin
 import {dailyTrail,restoredTrailSelection} from './daily-trail.js';
 import {trailRecordsFrom,trailBest} from './trail-records.js';
 import {updateTraversalControls,traversalDescription} from './traversal-controls.js';
-import {installTiltControls} from './tilt-controls.js';
+import {supportsMobileTilt,noTiltController} from './tilt-platform.js';
 import {scoreBreakdown} from './score-breakdown.js';
 import {rematchFor} from './rematch.js';
 import {preferencesFrom} from "./preferences.js";
@@ -329,14 +328,37 @@ function syncDock() {
   $("mission-hud").dataset.dock = mode || 'none';
   $("mission-hud").hidden = state !== 'playing' || !mode;
 }
-const tilt=installTiltControls(window,{toggle:$('tilt-toggle'),recenter:$('tilt-recenter'),message:$('tilt-status'),
-  sensitivity:$('tilt-sensitivity'),
-  initialSensitivity:saved.preferences.tiltSensitivity,
-  onSensitivity:value=>{saved.preferences.tiltSensitivity=value;persist();updateSaveNotice();},
-  canSteer:()=>state==='playing'&&!document.hidden&&!run.ended&&!turnPrompt(run),onAction:action=>act(run,action)});
-// Touch/keyboard wins without moving the player's calibrated neutral position.
-window.addEventListener('pointerdown',()=>tilt.yieldToTouch(),{capture:true,passive:true});
-window.addEventListener('keydown',()=>tilt.yieldToTouch(),{capture:true});
+const tiltSettings = $('tilt-settings');
+const mobileTilt = supportsMobileTilt(window);
+let tilt = noTiltController();
+if (!mobileTilt) {
+  // Do not expose a sensor permission flow on desktop. Removing the control
+  // entirely also keeps it out of the help dialog's keyboard order and copy.
+  tiltSettings?.remove();
+  $('game').dataset.tilt = 'disabled';
+} else {
+  $('game').dataset.tilt = 'available';
+  // Keep tilt out of the desktop bundle's startup path. On phones this small
+  // module is loaded only after the coarse-pointer/mobile check succeeds.
+  void import('./tilt-controls.js').then(({installTiltControls}) => {
+    if (!tiltSettings?.isConnected) return;
+    tilt = installTiltControls(window,{toggle:$('tilt-toggle'),recenter:$('tilt-recenter'),message:$('tilt-status'),
+      sensitivity:$('tilt-sensitivity'),
+      initialSensitivity:saved.preferences.tiltSensitivity,
+      onSensitivity:value=>{saved.preferences.tiltSensitivity=value;persist();updateSaveNotice();},
+      canSteer:()=>state==='playing'&&!document.hidden&&!run.ended&&!turnPrompt(run),onAction:action=>act(run,action)});
+    tiltSettings.hidden = !['help','paused'].includes(state);
+  }).catch(() => {
+    // A missing sensor module must never block touch or keyboard play.
+    tilt = noTiltController();
+    tiltSettings?.remove();
+    $('game').dataset.tilt = 'disabled';
+  });
+  // Touch/keyboard wins without moving the player's calibrated neutral
+  // position. These listeners are never installed on desktop.
+  window.addEventListener('pointerdown',()=>tilt.yieldToTouch(),{capture:true,passive:true});
+  window.addEventListener('keydown',()=>tilt.yieldToTouch(),{capture:true});
+}
 function focusOverlay() {
   const primary = $("overlay-primary"), home = $("home");
   const target = !primary.disabled ? primary : !home.hidden && !home.disabled ? home : $("overlay-title");
@@ -346,7 +368,8 @@ function setState(next) {
   const previous = state;
   state = next;
   tilt.recalibrate();
-  $('tilt-settings').hidden=!['help','paused'].includes(state);
+  const tiltPanel = $('tilt-settings');
+  if (tiltPanel) tiltPanel.hidden=!['help','paused'].includes(state);
   $("game").dataset.state = state;
   $("menu").hidden = state !== "menu";
   $("buddy").hidden = state !== "menu";
@@ -815,14 +838,14 @@ function graphicsError() {
   $("overlay-primary").disabled = false;
   showOverlay("graphics-error");
   $("overlay-label").textContent="LET’S GET YOUR PAWS BACK ON THE TRAIL";
-  $("overlay-title").textContent="The 3D trail needs a restart.";
+  $("overlay-title").textContent="Chrome needs hardware acceleration.";
   $("overlay-copy").textContent =
     run.graphicsRescued
       ? storageAvailable
-        ? 'The trail was interrupted, but your earned points, bones and completed challenges were saved. Reload to start a fresh adventure.'
-        : 'The trail was interrupted. Earned rewards were counted for this visit, but saving is unavailable. Reloading may lose this progress.'
-      : 'Graphics are unavailable or were interrupted. Reload to try again. Previously saved puppies, outfits and points stay in this browser; practice never changes your progress.';
-  $("overlay-primary").textContent = "Reload trail";
+        ? 'The trail was interrupted, but your earned points, bones and completed challenges were saved. Turn on Chrome hardware acceleration, then try the 3D trail again.'
+        : 'The trail was interrupted. Earned rewards were counted for this visit, but saving is unavailable. Turn on Chrome hardware acceleration, then try the 3D trail again.'
+      : 'Chrome is not exposing the WebGL2 graphics context the full 3D trail needs. Turn on hardware acceleration using the steps below, relaunch Chrome, then try again. Your saved puppies, outfits and points stay in this browser; practice never changes your progress.';
+  $("overlay-primary").textContent = "Try 3D again";
   $("overlay-primary").onclick = () => {
     // A normal reload can keep an interrupted module graph in a service
     // worker cache. Change only a disposable retry parameter so the browser
@@ -848,29 +871,14 @@ try {
       $("play").focus({preventScroll:true});
   });
 } catch {
-  // WebGL is optional presentation, not a requirement for the runner. Chrome
-  // can disable GPU contexts at the profile or sandbox level while still
-  // supporting a fast, crisp 2D canvas and the same authored puppy paintings.
-  // Keep the player on this URL with the real simulation instead of showing a
-  // reload button that can only fail again in the same browser session.
-  try {
-    view = createFallbackView($("scene"));
-    $("game").dataset.renderer = 'canvas-2d-fallback';
-    $("scene").setAttribute('aria-label', 'Lightweight running trail. Left and right arrows change lanes. Up or Space jumps. Down slides. Escape pauses.');
-    $("play").textContent = 'Preparing the lightweight trail…';
-    $("overlay-primary").disabled = true;
-    void prepareFirstFrame(() => view.prepareShaders()).then(() => {
-      if (state === 'graphics-error') return;
-      graphicsReady = true;
-      $("play").disabled = false;
-      $("overlay-primary").disabled = false;
-      $("play").textContent = playLabel();
-      if (state === 'menu' && (!document.activeElement || document.activeElement === document.body))
-        $("play").focus({preventScroll:true});
-    });
-  } catch {
-    graphicsError();
-  }
+  // Full 3D is intentional: never silently downgrade the runner to a
+  // different presentation. The recovery overlay explains the one browser
+  // setting that can restore the authored trail and offers a cache-busted
+  // re-probe after Chrome has been relaunched.
+  view = null;
+  $("game").dataset.renderer = 'webgl-required';
+  $("scene").setAttribute('aria-label', 'Full 3D running trail unavailable. Turn on Chrome hardware acceleration and choose Try 3D again.');
+  graphicsError();
 }
 let currentMission = missionFor(saved.challenges),
   missionAnnounced = false;

@@ -235,7 +235,7 @@ export function practiceResult(run) {
   if(run.practice.kind==='raft')return {
     title:`${run.bones} of 12 river bones`,
     lesson:run.practice.hits ? 'Steer earlier toward the open lane. The raft carries momentum; jumping and sliding cannot clear river rocks. Try again without spending hearts.'
-      : 'Follow the bone lanes with swipes, buttons or enabled tilt. Boarding and landing are automatic; jump and slide return at shore. Practice does not award points.',
+      : 'Follow the bone lanes with swipes or buttons. Boarding and landing are automatic; jump and slide return at shore. Practice does not award points.',
   };
   if(run.practice.kind==='weave')return {
     title:`${run.practice.correct} of 3 weaves cleared`,

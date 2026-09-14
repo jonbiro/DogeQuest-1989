@@ -59,3 +59,13 @@ test('dialogs focus a usable target while their Run button is preparing',()=>{
     assert.equal(focused,expected);
   }
 });
+
+test('WebGL startup failure stays 3D-first and exposes Chrome setup steps',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const html=readFileSync(new URL('../runner/index.html',import.meta.url),'utf8');
+  assert.doesNotMatch(source,/createFallbackView|canvas-2d-fallback/);
+  assert.match(source,/dataset\.renderer = ['"]webgl-required['"]/);
+  assert.match(source,/Try 3D again/);
+  for(const phrase of ['Use graphics acceleration when available','Relaunch Chrome','Chrome Settings → System'])
+    assert.match(html,new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+});

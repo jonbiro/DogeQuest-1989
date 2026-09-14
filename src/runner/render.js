@@ -51,9 +51,9 @@ export function createView(canvas) {
   // Probe the exact context that Three will use before constructing the full
   // scene. Some Chrome profiles report a WebGL creation failure only after
   // allocating a renderer, which used to leave the player in a reload loop.
-  // A quiet probe lets app.js switch to its canvas fallback without logging a
-  // second renderer error or claiming the canvas for a context that does not
-  // exist.
+  // A quiet probe lets app.js show an actionable 3D setup screen without
+  // logging a second renderer error or claiming the canvas for a context that
+  // does not exist.
   let context = null;
   try {
     context = canvas.getContext('webgl2', {
@@ -67,9 +67,9 @@ export function createView(canvas) {
       failIfMajorPerformanceCaveat: false,
     });
   } catch {
-    // Keep the null probe result and let the caller choose its fallback.
+    // Keep the null probe result and let the caller show its setup state.
   }
-  if (!context) throw new Error('WebGL2 is unavailable; using canvas fallback');
+  if (!context) throw new Error('WebGL2 is unavailable; full 3D setup required');
   const renderer = new THREE.WebGLRenderer({
     canvas,
     context,

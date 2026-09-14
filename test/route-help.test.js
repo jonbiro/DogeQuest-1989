@@ -8,7 +8,7 @@ test('river help explains automatic boarding, steering-only hazards and banked r
   const html=readFileSync(new URL('../runner/index.html',import.meta.url),'utf8');
   const guide=html.match(/<details id="river-help">([\s\S]*?)<\/details>/)?.[1];
   assert.ok(guide);
-  for(const phrase of ['1,150 meters','boards the raft automatically','enabled tilt',
+  for(const phrase of ['1,150 meters','boards the raft automatically','swipes or buttons',
     'carries momentum','cannot be jumped or slid under','+250 score points',
     'Practice is unscored','Older shared trails'])assert.ok(guide.includes(phrase),phrase);
 });
