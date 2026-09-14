@@ -346,6 +346,7 @@ function syncDock() {
 }
 const mobileTilt = supportsMobileTilt(window);
 const touchControls = supportsTouchControls(window);
+$('game').dataset.touch = touchControls ? 'true' : 'false';
 let tiltSettings = $('tilt-settings');
 let tilt = noTiltController();
 if (!mobileTilt) {

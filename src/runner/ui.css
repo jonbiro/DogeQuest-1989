@@ -1463,6 +1463,10 @@ h1 { letter-spacing: -.055em; word-spacing: .07em; }
   }
   #controls button[data-action] small { white-space: nowrap; }
 }
+/* Capability detection also covers iPadOS desktop-UA mode and touch laptops,
+   where the pointer media query can remain fine despite touch controls being
+   active. Keep the launch lesson in sync with the runtime affordance. */
+#game[data-touch="true"] .touch-launch-hint { display: flex; }
 @media(max-width:380px) { #cue:not(:empty) { font-size:12px; } #controls small { font-size:8px; } }
 /* Touch tablets can be wider than a phone, but they still need the same
    thumb-level lesson. Only hide this dock when a fine pointer identifies a
