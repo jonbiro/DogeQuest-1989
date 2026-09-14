@@ -226,6 +226,21 @@ test('the live pointer listener maps a touch edge tap without changing desktop t
   assert.deepEqual(actions,['left','jump']);
 });
 
+test('the touch coach learns swipe vocabulary only after a touch swipe',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
+  const handlers={},actions=[],run={};
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run,
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:84,timeStamp:140});
+  assert.equal(run.touchSwipeSeen,true);
+  assert.deepEqual(actions,['right']);
+});
+
 test('only a primary contact or left mouse button may begin a free swipe',()=>{
   assert.equal(canStartSwipe({button:0,isPrimary:true},null),true);
   assert.equal(canStartSwipe({button:2,isPrimary:true},null),false);

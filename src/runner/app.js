@@ -795,7 +795,11 @@ function confirmTouchAction(action) {
   if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function')
     navigator.vibrate(8);
 }
+const markTouchSwipe = event => {
+  if (event?.pointerType === 'touch') run.touchSwipeSeen = true;
+};
 const commitPointerAction = (action, event) => {
+  markTouchSwipe(event);
   act(run, action);
   if (event?.pointerType === 'touch') confirmTouchAction(action);
 };
@@ -983,8 +987,7 @@ $("scene").addEventListener("pointerup", (event) => {
   else {
     const action = swipeAction(dx, dy, true);
     if (action) {
-      act(run, action);
-      if (event.pointerType === 'touch') confirmTouchAction(action);
+      commitPointerAction(action, event);
     }
   }
 });

@@ -82,9 +82,14 @@ export function actionCue(run) {
 // made two deliberate actions, then the trail returns to quiet guidance.
 export function touchCoach(run) {
   if (!run?.touchHint || (run.inputCount || 0) >= 2) return '';
-  return (run.inputCount || 0) === 0
-    ? 'EASIEST: TAP LEFT / RIGHT · TAP JUMP OR SLIDE'
-    : 'SWIPES OPTIONAL: SHORT DRAG = ONE MOVE · REVERSE WITHOUT LIFTING';
+  if ((run.inputCount || 0) === 0)
+    return 'EASIEST: TAP LEFT / RIGHT · TAP JUMP OR SLIDE';
+  // Keep the first lesson aligned with the visible buttons. Only introduce
+  // the no-lift gesture vocabulary after the player has actually tried one;
+  // a first-time player should never feel that a missed swipe is required.
+  return run.touchSwipeSeen
+    ? 'SWIPES OPTIONAL: SHORT DRAG = ONE MOVE · REVERSE WITHOUT LIFTING'
+    : 'KEEP TAPPING THE BUTTONS · ONE TAP = ONE MOVE';
 }
 
 // Keep the coach visible beside a quiet opening/course cue, but yield the

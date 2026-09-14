@@ -115,6 +115,8 @@ test("touch onboarding teaches the safe opening without changing desktop guidanc
   assert.equal(actionCue(touchRun), "", "the opening coach stays with the thumb controls");
   assert.equal(touchCoach(touchRun), "EASIEST: TAP LEFT / RIGHT · TAP JUMP OR SLIDE");
   touchRun.inputCount=1;
+  assert.equal(touchCoach(touchRun), "KEEP TAPPING THE BUTTONS · ONE TAP = ONE MOVE");
+  touchRun.touchSwipeSeen=true;
   assert.equal(touchCoach(touchRun), "SWIPES OPTIONAL: SHORT DRAG = ONE MOVE · REVERSE WITHOUT LIFTING");
   touchRun.inputCount=2;
   assert.equal(touchCoach(touchRun), "", "the coach disappears after the second action");

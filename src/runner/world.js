@@ -111,6 +111,9 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     // The first-run touch cue is opt-in from the UI layer. Count accepted
     // action attempts so it can disappear as soon as the player finds a move.
     inputCount: 0,
+    // The UI only teaches no-lift swipes after a real swipe has been
+    // recognized; button-first players keep a simpler lesson.
+    touchSwipeSeen: false,
     previous: { x: 0, y: 0, distance: 0 },
   };
   fillTrack(run);
