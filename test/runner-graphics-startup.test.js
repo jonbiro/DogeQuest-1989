@@ -66,6 +66,8 @@ test('WebGL startup failure stays 3D-first and exposes Chrome setup steps',()=>{
   assert.doesNotMatch(source,/createFallbackView|canvas-2d-fallback/);
   assert.match(source,/dataset\.renderer = ['"]webgl-required['"]/);
   assert.match(source,/Try 3D again/);
+  assert.match(html,/id="graphics-mobile-help"/);
+  assert.match(html,/Close other games or 3D-heavy tabs/);
   for(const phrase of ['Use graphics acceleration when available','Relaunch Chrome','Chrome Settings → System'])
     assert.match(html,new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
 });

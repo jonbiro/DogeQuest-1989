@@ -306,14 +306,25 @@
             aria-label="Adjustable upgrades with full refunds"
           ></section>
           <section id="collection" hidden aria-label="Puppies, outfits and prizes"></section>
-          <section id="graphics-recovery" hidden aria-label="Turn on full 3D graphics">
-            <p class="graphics-recovery-title">Turn on Chrome’s full 3D graphics</p>
-            <ol>
-              <li>Open <strong>Chrome Settings → System</strong>.</li>
-              <li>Enable <strong>Use graphics acceleration when available</strong>.</li>
-              <li>Relaunch Chrome, return here, then choose <strong>Try 3D again</strong>.</li>
-            </ol>
-            <p class="graphics-recovery-note">This page cannot change Chrome’s browser setting itself. Managed or remote profiles may block WebGL; use a normal hardware-accelerated window or device.</p>
+          <section id="graphics-recovery" hidden aria-label="Restore full 3D graphics">
+            <div id="graphics-desktop-help">
+              <p class="graphics-recovery-title">Turn on Chrome’s full 3D graphics</p>
+              <ol>
+                <li>Open <strong>Chrome Settings → System</strong>.</li>
+                <li>Enable <strong>Use graphics acceleration when available</strong>.</li>
+                <li>Relaunch Chrome, return here, then choose <strong>Try 3D again</strong>.</li>
+              </ol>
+              <p class="graphics-recovery-note">This page cannot change Chrome’s browser setting itself. Managed or remote profiles may block WebGL; use a normal hardware-accelerated window or device.</p>
+            </div>
+            <div id="graphics-mobile-help" hidden>
+              <p class="graphics-recovery-title">Give the 3D trail a clean start</p>
+              <ol>
+                <li>Close other games or 3D-heavy tabs to free the phone’s graphics memory.</li>
+                <li>Return to this tab, or fully relaunch your browser if it has been open for a while.</li>
+                <li>Choose <strong>Try 3D again</strong> to re-probe the trail.</li>
+              </ol>
+              <p class="graphics-recovery-note">Some managed browsers and older devices do not expose WebGL2. Your saved puppies, points and bones stay in this browser.</p>
+            </div>
           </section>
           </div>
           <div class="modal-actions">

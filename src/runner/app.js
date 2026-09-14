@@ -1264,9 +1264,23 @@ function graphicsError() {
   $("overlay-primary").disabled = false;
   showOverlay("graphics-error");
   $("overlay-label").textContent="LET’S GET YOUR PAWS BACK ON THE TRAIL";
-  $("overlay-title").textContent="Chrome needs hardware acceleration.";
-  $("overlay-copy").textContent =
-    run.graphicsRescued
+  const mobileGraphics = window.matchMedia?.('(pointer: coarse)')?.matches === true;
+  const desktopHelp = $('graphics-desktop-help');
+  const mobileHelp = $('graphics-mobile-help');
+  if (desktopHelp) desktopHelp.hidden = mobileGraphics;
+  if (mobileHelp) mobileHelp.hidden = !mobileGraphics;
+  $('graphics-recovery')?.setAttribute?.('aria-label',
+    mobileGraphics ? 'Restore full 3D graphics on this device' : 'Turn on full 3D graphics');
+  $("overlay-title").textContent = mobileGraphics
+    ? "This device needs a clean 3D start."
+    : "Chrome needs hardware acceleration.";
+  $("overlay-copy").textContent = mobileGraphics
+    ? run.graphicsRescued
+      ? storageAvailable
+        ? 'The trail was interrupted on this device, but your earned points, bones and completed challenges were saved. Close other games or 3D-heavy tabs, relaunch your browser if needed, then try the 3D trail again.'
+        : 'The trail was interrupted on this device. Earned rewards were counted for this visit, but saving is unavailable. Close other games or 3D-heavy tabs, relaunch your browser if needed, then try the 3D trail again.'
+      : 'This device or browser did not expose the WebGL2 graphics context the full 3D trail needs. Close other games or 3D-heavy tabs, relaunch your browser, then choose Try 3D again. Older or managed browsers may not support the full 3D trail. Your saved puppies, outfits and points stay in this browser; practice never changes your progress.'
+    : run.graphicsRescued
       ? storageAvailable
         ? 'The trail was interrupted, but your earned points, bones and completed challenges were saved. Turn on Chrome hardware acceleration, then try the 3D trail again.'
         : 'The trail was interrupted. Earned rewards were counted for this visit, but saving is unavailable. Turn on Chrome hardware acceleration, then try the 3D trail again.'
@@ -1303,7 +1317,10 @@ try {
   // re-probe after Chrome has been relaunched.
   view = null;
   $("game").dataset.renderer = 'webgl-required';
-  $("scene").setAttribute('aria-label', 'Full 3D running trail unavailable. Turn on Chrome hardware acceleration and choose Try 3D again.');
+  const mobileGraphics = window.matchMedia?.('(pointer: coarse)')?.matches === true;
+  $("scene").setAttribute('aria-label', mobileGraphics
+    ? 'Full 3D running trail unavailable on this device. Close other games or 3D-heavy tabs and choose Try 3D again.'
+    : 'Full 3D running trail unavailable. Turn on Chrome hardware acceleration and choose Try 3D again.');
   graphicsError();
 }
 // A mobile GPU can lose a texture or reject a draw without delivering the

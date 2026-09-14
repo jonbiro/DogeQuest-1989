@@ -8,7 +8,7 @@ import {bankRun} from '../src/runner/rewards.js';
 import {collectionFrom} from '../src/runner/collection.js';
 import {missionPackFor} from '../src/runner/missions.js';
 
-function fixture(state,practice=false,storageAvailable=true) {
+function fixture(state,practice=false,storageAvailable=true,mobile=false) {
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('function graphicsError()'),end=source.indexOf('let view;',start);
   const nodes={};
@@ -18,7 +18,7 @@ function fixture(state,practice=false,storageAvailable=true) {
   const profile={best:0,distance:0,bones:0,credits:0,challenges:0,collection:collectionFrom()};
   let finishes=0;
   const context={run,state,storageAvailable,audio:null,graphicsReady:true,
-    $:id=>nodes[id]??(nodes[id]={}),window:{location:{reload:()=>{}}},
+    $:id=>nodes[id]??(nodes[id]={}),window:{location:{reload:()=>{}},matchMedia:()=>({matches:mobile})},
     showOverlay:value=>{context.state=value;},
     finish:()=>{finishes++;bankRun(profile,run,run.missions);context.state='ended';}};
   runInNewContext(source.slice(start,end),context);
@@ -45,4 +45,12 @@ test('graphics failures do not bank practice or inactive runs and never promise 
   const f=fixture('playing',false,false);f.context.graphicsError();
   assert.match(f.nodes['overlay-copy'].textContent,/saving is unavailable/);
   assert.doesNotMatch(f.nodes['overlay-copy'].textContent,/were saved/);
+});
+test('mobile graphics recovery gives device-safe restart guidance',()=>{
+  const f=fixture('menu',false,true,true);
+  f.context.graphicsError();
+  assert.equal(f.nodes['graphics-desktop-help'].hidden,true);
+  assert.equal(f.nodes['graphics-mobile-help'].hidden,false);
+  assert.match(f.nodes['overlay-title'].textContent,/clean 3D start/);
+  assert.match(f.nodes['overlay-copy'].textContent,/Close other games or 3D-heavy tabs/);
 });
