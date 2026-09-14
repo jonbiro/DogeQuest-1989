@@ -38,6 +38,28 @@ test('track listeners ignore holds but keep taps and deliberate swipes responsiv
   assert.equal(actions.length,3);
 });
 
+test('ambiguous touch releases leave a dock recovery cue and clear on retry',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
+  const handlers={},actions=[],run={};
+  const scene={clientWidth:390,addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run,
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:80,clientY:80,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:112,clientY:112,timeStamp:140});
+  handlers.pointerup({...touch,clientX:112,clientY:112,timeStamp:200});
+  assert.deepEqual(actions,[],'a near-equal diagonal remains intentionally uncommitted');
+  assert.equal(run.touchFeedback,'ONE DIRECTION AT A TIME · TRY AGAIN',
+    'an ambiguous release explains the next move beside the controls');
+  handlers.pointerdown({...touch,pointerId:2,timeStamp:300});
+  assert.equal(run.touchFeedback,'','a fresh touch clears stale recovery copy');
+  handlers.pointerup({...touch,pointerId:2,timeStamp:700});
+  assert.equal(run.touchFeedback,'TAP QUICKLY · OR USE THE BIG BUTTONS',
+    'a held tap explains the faster tap or button fallback');
+});
+
 test('a held horizontal drag can cross lanes one segment at a time without overshooting',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');

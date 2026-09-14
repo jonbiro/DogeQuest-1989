@@ -333,9 +333,10 @@ function syncDock() {
     // An overdrag explanation is more useful than the transient live label;
     // otherwise keep the label attached to the controls while the finger is
     // down, then fall back to the first-run lesson once it is released.
-    const copy = run.touchOverdrag ? touchCoach(run) : liveCopy || touchCoach(run);
+    const feedback = run.touchFeedback || '';
+    const copy = run.touchOverdrag ? touchCoach(run) : liveCopy || feedback || touchCoach(run);
     setText('gesture-coach', copy);
-    coach.classList.toggle('gesture-live', Boolean(liveCopy && !run.touchOverdrag));
+    coach.classList.toggle('gesture-live', Boolean(liveCopy && !run.touchOverdrag && !feedback));
     coach.hidden = !touchCoachVisible(run, mode, state, $('cue').textContent, copy);
   }
   $('controls').classList.toggle('touch-overdrag', Boolean(run.touchOverdrag));
@@ -791,6 +792,8 @@ const LANE_DRAG_REVERSE_DELAY = 90;
 const CROSS_AXIS_DISTANCE = 32;
 function confirmTouchAction(action) {
   if (run && typeof run === 'object' && !run.ended)
+    run.touchFeedback = '';
+  if (run && typeof run === 'object' && !run.ended)
     run.touchActionCount = (run.touchActionCount || 0) + 1;
   if (typeof document === 'undefined' || typeof document.querySelector !== 'function') return;
   const button = document.querySelector(`#controls [data-action="${action}"]`);
@@ -811,7 +814,10 @@ const commitPointerAction = (action, event) => {
   // An overlong touch is deliberately capped at one lane. Once the player
   // makes the next move, the adaptive hint has done its job and can return to
   // the normal first-run lesson.
-  if (event?.pointerType === 'touch') run.touchOverdrag = false;
+  if (event?.pointerType === 'touch') {
+    run.touchOverdrag = false;
+    run.touchFeedback = '';
+  }
   markTouchSwipe(event);
   act(run, action);
   if (event?.pointerType === 'touch') confirmTouchAction(action);
@@ -819,6 +825,7 @@ const commitPointerAction = (action, event) => {
 $("scene").addEventListener("pointerdown", (event) => {
   if (state !== "playing" || !canStartSwipe(event,pointer)) return;
   event.preventDefault?.();
+  if (event.pointerType === 'touch') run.touchFeedback = '';
   pointer = {
     pointerType: event.pointerType,
     x: event.clientX,
@@ -1002,6 +1009,7 @@ $("scene").addEventListener("pointerup", (event) => {
     (typeof window !== 'undefined' ? window.innerWidth : 0);
   const action = tapAction(pointer, event, screenWidth,
     event.pointerType === 'touch');
+  const touchPointer = pointer;
   pointer = null;
   if (state !== "playing") return;
   if (action) {
@@ -1012,6 +1020,11 @@ $("scene").addEventListener("pointerup", (event) => {
     const action = swipeAction(dx, dy, true);
     if (action) {
       commitPointerAction(action, event);
+    } else if (event.pointerType === 'touch') {
+      const heldTooLong = event.timeStamp - touchPointer.started > 350;
+      run.touchFeedback = heldTooLong && touchPointer.travel < 24
+        ? 'TAP QUICKLY · OR USE THE BIG BUTTONS'
+        : 'ONE DIRECTION AT A TIME · TRY AGAIN';
     }
   }
 });
@@ -1028,6 +1041,7 @@ for (const button of document.querySelectorAll("[data-action]")) {
     if (state === "playing" && canPressAction(event)) {
       event.preventDefault();
       pointer = null; // A button supersedes an unfinished trail tap, not a second move on release.
+      if (event.pointerType === 'touch') run.touchFeedback = '';
       act(run, button.dataset.action);
       if (event.pointerType === 'touch' && typeof confirmTouchAction === 'function')
         confirmTouchAction(button.dataset.action);

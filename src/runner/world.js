@@ -123,6 +123,9 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     // snap. The gesture intentionally stops at one lane; the dock can explain
     // how to continue without turning that safety guard into a mystery.
     touchOverdrag: false,
+    // A short or ambiguous touch should never fail silently. The UI renders
+    // this beside the controls until the next touch attempt/action clears it.
+    touchFeedback: '',
     previous: { x: 0, y: 0, distance: 0 },
   };
   fillTrack(run);
