@@ -696,8 +696,34 @@ test('browser cancellation pauses only the owned gesture and cannot replay it af
   assert.deepEqual(actions,['jump','right'],'lost capture cannot create a delayed tap');
   scene.setPointerCapture=()=>{throw Error('pointer no longer active');};
   handlers.pointerdown(touch);
-  assert.equal(pauses,4,'capture failure pauses without throwing or retaining a finger');
+  assert.equal(pauses,3,'capture failure falls back without pausing or throwing');
   context.state='playing';scene.setPointerCapture=()=>{};
   handlers.pointerdown(touch);handlers.pointerup({...touch,timeStamp:200});
   assert.deepEqual(actions,['jump','right','jump'],'a fresh gesture still works after capture failure');
+});
+
+test('a touch capture fallback keeps a drag alive after it leaves the canvas',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
+  const sceneHandlers={},windowHandlers={},actions=[];
+  const scene={clientWidth:390,addEventListener:(name,fn)=>{sceneHandlers[name]=fn;},
+    setPointerCapture(){throw Error('capture unavailable');}};
+  const context={window:{addEventListener:(name,fn)=>{windowHandlers[name]=fn;}},
+    $:()=>scene,state:'playing',run:{},act:(_,action)=>actions.push(action),
+    canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction};
+  runInNewContext(source.slice(start,end),context);
+  const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:120,timeStamp:100};
+  sceneHandlers.pointerdown(touch);
+  const outside={...touch,target:{}};
+  windowHandlers.pointermove({...outside,clientX:100,timeStamp:150});
+  windowHandlers.pointerup({...outside,clientX:100,timeStamp:220});
+  assert.deepEqual(actions,['right'],'window fallback preserves a swipe after canvas exit');
+
+  const next={...touch,pointerId:2,timeStamp:400};
+  sceneHandlers.pointerdown(next);
+  sceneHandlers.lostpointercapture({...next,type:'lostpointercapture'});
+  windowHandlers.pointermove({...next,target:{},clientX:100,timeStamp:450});
+  windowHandlers.pointerup({...next,target:{},clientX:100,timeStamp:520});
+  assert.deepEqual(actions,['right','right'],'a lost capture can continue through the same fallback');
 });

@@ -953,11 +953,17 @@ $("scene").addEventListener("pointerdown", (event) => {
     lastY: event.clientY,
   };
   showTouchGhost(event);
-  try { $("scene").setPointerCapture(event.pointerId); }
-  catch {
-    hideTouchGhost();
-    pointer=null;
-    pause('touch'); // A vanished touch must not leave the trail running without input.
+  // Pointer capture is the smoothest path, but a few mobile engines either do
+  // not expose it or reject the call while the browser is handing off a touch.
+  // Keep the gesture alive in that case; a guarded window listener below will
+  // receive the remaining samples even after the thumb leaves the canvas.
+  pointer.captureFallback = false;
+  try {
+    const capture = $("scene").setPointerCapture;
+    if (typeof capture !== 'function') pointer.captureFallback = true;
+    else capture.call($("scene"), event.pointerId);
+  } catch {
+    pointer.captureFallback = true;
   }
 });
 function processPointerMove(event) {
@@ -1162,7 +1168,7 @@ $("scene").addEventListener("pointermove", (event) => {
     if (!pointer || state !== "playing") break;
   }
 });
-$("scene").addEventListener("pointerup", (event) => {
+function finishPointer(event) {
   if (!pointer || pointer.id !== event.pointerId) return;
   event.preventDefault?.();
   if (pointer.axis) {
@@ -1243,9 +1249,18 @@ $("scene").addEventListener("pointerup", (event) => {
         : 'ONE DIRECTION AT A TIME · TRY AGAIN';
     }
   }
-});
+}
+$("scene").addEventListener("pointerup", finishPointer);
 const cancelOwnedPointer = event => {
   if(!ownsSwipe(event,pointer))return;
+  // Losing capture is recoverable: continue from the window-level fallback so
+  // a mobile browser that briefly retargets the finger does not strand the
+  // run. A true pointer cancellation still means the browser took ownership
+  // of the gesture (and remains a deliberate pause for safety).
+  if (event.type === 'lostpointercapture' && pointer.pointerType === 'touch') {
+    pointer.captureFallback = true;
+    return;
+  }
   hideTouchGhost();
   pointer=null;
   // The browser took over this gesture. Do not keep running under a system UI.
@@ -1253,6 +1268,22 @@ const cancelOwnedPointer = event => {
 };
 $("scene").addEventListener("pointercancel", cancelOwnedPointer);
 $("scene").addEventListener("lostpointercapture", cancelOwnedPointer);
+// When capture is unavailable or is lost, only process events whose target is
+// no longer the scene. Events still landing on the canvas already pass through
+// its listeners; this target guard prevents double actions while preserving
+// drags that leave the canvas or end on browser chrome-adjacent surfaces.
+if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+  const fallbackEvent = (event, handler) => {
+    if (!pointer?.captureFallback || event.target === $("scene")) return;
+    handler(event);
+  };
+  window.addEventListener('pointermove', event => fallbackEvent(event, processPointerMove), {passive:false});
+  window.addEventListener('pointerup', event => fallbackEvent(event, finishPointer), {passive:false});
+  window.addEventListener('pointercancel', event => {
+    if (!pointer?.captureFallback || event.target === $("scene")) return;
+    cancelOwnedPointer(event);
+  }, {passive:false});
+}
 for (const button of document.querySelectorAll("[data-action]")) {
   button.onpointerdown = (event) => {
     if (state === "playing" && canPressAction(event)) {
