@@ -138,7 +138,7 @@ export function stepPractice(run, dt) {
       if(late)run.practice.lateWeaves=(run.practice.lateWeaves||0)+1;
       const feedback=correct?'✓ Open lane found':late
         ? 'Correct lane · steer earlier next time'
-        : 'Aim for the open lane · ×2 means two swipes';
+        : 'Aim for the open lane · ×2 means two drag segments';
       run.practice.feedback={text:feedback,until:run.time+1};
     }
     run.practice.index=course.checked;run.practice.correct=course.clean;
@@ -196,7 +196,7 @@ export function practiceCue(run) {
     : actionCue(run) || 'Follow the bone lanes · boarding is automatic';
   if(run.practice.kind==='weave') {
     if(run.practice.feedback?.until>run.time)return run.practice.feedback.text;
-    return courseCue(run) || (run.practice.index===3?'Weave practice complete':'Open lane ahead · ×2 means two swipes');
+    return courseCue(run) || (run.practice.index===3?'Weave practice complete':'Open lane ahead · ×2 means two drag segments');
   }
   if (run.practice.kind==='gap') {
     if (run.practice.feedback?.until>run.time) return run.practice.feedback.text;
@@ -235,15 +235,15 @@ export function practiceResult(run) {
   if(run.practice.kind==='raft')return {
     title:`${run.bones} of 12 river bones`,
     lesson:run.practice.hits ? 'Steer earlier toward the open lane. The raft carries momentum; jumping and sliding cannot clear river rocks. Try again without spending hearts.'
-      : 'Follow the bone lanes with swipes or buttons. Boarding and landing are automatic; jump and slide return at shore. Practice does not award points.',
+      : 'Follow the bone lanes with drag or buttons. Boarding and landing are automatic; jump and slide return at shore. Practice does not award points.',
   };
   if(run.practice.kind==='weave')return {
     title:`${run.practice.correct} of 3 weaves cleared`,
     lesson:run.practice.correct===3
-      ? 'Nice footwork! Two quick swipes cross from one outside lane to the other. The hint shortens after the first move; one swipe is enough for an adjacent lane.'
+      ? 'Nice footwork! Two drag segments cross from one outside lane to the other. The hint shortens after the first move; one segment is enough for an adjacent lane.'
       : run.practice.lateWeaves>0
         ? 'You found an open lane but arrived too late. Start steering earlier; for ×2, make both swipes before the rocks reach your puppy. Try the same moves again.'
-        : 'Aim for the open lane, not the crystals. ×2 means two separate swipes in the same direction. After the first swipe, follow the remaining single-move hint.',
+        : 'Aim for the open lane, not the crystals. ×2 means two separate drag segments in the same direction. After the first segment, follow the remaining single-move hint.',
   };
   if (run.practice.kind==='gap') return {
     title:run.practice.correct ? 'Gap cleared!' : 'Try the gap again',

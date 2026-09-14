@@ -347,9 +347,10 @@ test("event notices reserve the dock for relevant feedback", () => {
   assert.deepEqual(eventNotice("shield-break", run), { text: "Shield used", priority: 2 });
 });
 
-test("swipes require a clear, deliberate direction", () => {
-  for (const [dx, dy] of [[0, 0], [23, 0], [0, -23], [30, 30], [30, 25], [-25, 30]])
+test("swipes accept natural thumb diagonals without guessing equal diagonals", () => {
+  for (const [dx, dy] of [[0, 0], [23, 0], [0, -23], [30, 30], [30, 28], [-28, 30]])
     assert.equal(swipeAction(dx, dy), null, `${dx},${dy} is not decisive`);
+  assert.equal(swipeAction(30, 25), "right", "a modestly diagonal lane swipe stays easy to trigger");
 
   assert.equal(swipeAction(-40, 5), "left");
   assert.equal(swipeAction(40, -5), "right");

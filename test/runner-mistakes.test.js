@@ -75,9 +75,9 @@ test('course collisions distinguish a late correct lane from a missed lane choic
     });
     assert.equal(run.lastMistake.safeLane,safeLane);
     assert.equal(run.lastMistakeDetail.reason,choseCorrectly?'late-weave':'missed');
-    assert.match(runLesson(run),choseCorrectly?/chose the open lane.*too late/:/Each swipe moves one lane/);
+    assert.match(runLesson(run),choseCorrectly?/chose the open lane.*too late/:/Each drag segment moves one lane/);
     run.lane=1;run.distance+=100;
-    assert.match(runLesson(run),choseCorrectly?/too late/:/Each swipe/,'coaching uses captured collision evidence');
+    assert.match(runLesson(run),choseCorrectly?/too late/:/Each drag segment/,'coaching uses captured collision evidence');
   }
   const run=createRun(1);run.lane=0;
   assert.equal(mistakeDetail(run,{type:'rock',courseWeave:true}).reason,'missed','unknown safe lane must not imply late steering');

@@ -30,17 +30,50 @@ test('track listeners ignore holds but keep taps and deliberate swipes responsiv
   handlers.pointerup({...contact,timeStamp:200});
   assert.equal(actions.length,2,'ambiguous out-and-back motion does not become a tap');
   handlers.pointerdown(contact);
-  handlers.pointermove({...contact,clientX:90,clientY:84,timeStamp:150});
+  handlers.pointermove({...contact,clientX:88,clientY:84,timeStamp:150});
   assert.equal(actions.length,2,'a thumb arc waits for more direction while moving');
-  handlers.pointerup({...contact,clientX:90,clientY:84,timeStamp:180});
+  handlers.pointerup({...contact,clientX:88,clientY:84,timeStamp:180});
   assert.deepEqual(actions,['jump','right','right'],'release resolves the dominant axis exactly once');
-  handlers.pointerup({...contact,clientX:90,clientY:84,timeStamp:190});
+  handlers.pointerup({...contact,clientX:88,clientY:84,timeStamp:190});
   assert.equal(actions.length,3);
+});
+
+test('a held horizontal drag can cross lanes one segment at a time without overshooting',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]"))',start);
+  const handlers={},actions=[];
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction});
+  const touch={pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:82,timeStamp:120});
+  handlers.pointermove({...touch,clientX:126,timeStamp:140});
+  handlers.pointermove({...touch,clientX:70,timeStamp:160});
+  handlers.pointerup({...touch,clientX:70,timeStamp:180});
+  assert.deepEqual(actions,['right','right','left'],'continued drag changes one lane per thumb segment and can reverse');
+});
+
+test('a held vertical drag remains a single jump or slide action',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]"))',start);
+  const handlers={},actions=[];
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction});
+  const touch={pointerId:1,button:0,isPrimary:true,clientX:80,clientY:120,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientY:82,timeStamp:120});
+  handlers.pointermove({...touch,clientY:20,timeStamp:140});
+  handlers.pointerup({...touch,clientY:20,timeStamp:160});
+  assert.deepEqual(actions,['jump'],'a long held vertical gesture cannot repeat jump');
 });
 
 test('released thumb arcs resolve all four directions but not near-equal diagonals or tiny gestures',()=>{
   for (const [dx,dy,action] of [[40,34,'right'],[-40,34,'left'],[34,40,'slide'],[34,-40,'jump']]) {
-    assert.equal(swipeAction(dx,dy),null);
+    assert.equal(swipeAction(dx,dy),action);
     assert.equal(swipeAction(dx,dy,true),action);
   }
   for (const [dx,dy] of [[40,40],[40,38],[-40,38],[38,-40],[23,0],[0,-23]])

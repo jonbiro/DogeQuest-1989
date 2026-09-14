@@ -5,11 +5,11 @@ export function installTiltControls(host,{toggle,recenter,message,sensitivity,in
     requesting=true;toggle.disabled=true;
     try{return await sensor.enable();}finally{requesting=false;toggle.disabled=false;}
   }
-  const labels={off:'Tilt is off. Swipes and buttons always work.',
+  const labels={off:'Tilt is off. Drag and buttons always work.',
     'hold-steady':'Hold your phone comfortably upright to calibrate.',
     ready:'Tilt ready. Lean to change one lane; return upright before leaning again. Swipe for corners, jumps and slides.',
-    denied:'Motion access was not granted. Use swipes or buttons.',
-    unavailable:'Motion sensors are unavailable. Use swipes or buttons.',
+    denied:'Motion access was not granted. Use drag or buttons.',
+    unavailable:'Motion sensors are unavailable. Use drag or buttons.',
     'portrait-required':'Hold the phone vertically for tilt steering.'};
   const sensor=createTiltSteering(host,{canSteer,onAction:action=>{if(canSteer())onAction(action);},onStatus:status=>{
     active=['ready','hold-steady','portrait-required'].includes(status);
@@ -17,7 +17,7 @@ export function installTiltControls(host,{toggle,recenter,message,sensitivity,in
     toggle.setAttribute('aria-pressed',String(active));
     recenter.disabled=!active;
     message.textContent=status==='off'&&!attempted&&host.matchMedia?.('(pointer: coarse)').matches
-      ? 'Swipes and buttons are ready by default. Enable tilt here any time for optional motion steering.'
+      ? 'Drag and buttons are ready by default. Enable tilt here any time for optional motion steering.'
       : labels[status];
   }});
   toggle.onclick=async()=>{

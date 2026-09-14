@@ -16,7 +16,7 @@ test('weave rehearsal teaches two two-swipe moves and one adjacent move without 
     }
     assert.equal(inputs,5);assert.deepEqual(run.practice.outcomes,[true,true,true]);
     assert.equal(practiceProgress(run),'3/3 weaves cleared');
-    assert.match(practiceResult(run).lesson,/Two quick swipes/);
+    assert.match(practiceResult(run).lesson,/Two drag segments/);
     assert.equal(bankRun({},run,[]),null);
     assert.ok(run.time<10);
   }
@@ -25,7 +25,7 @@ test('unanswered weaves finish safely and explain two swipes',()=>{
   const run=createWeavePracticeRun();
   while(!run.ended)stepPractice(run,1/30);
   assert.equal(run.hearts,3);assert.equal(run.practice.correct,1);
-  assert.match(practiceResult(run).lesson,/two separate swipes/);
+  assert.match(practiceResult(run).lesson,/two separate drag segments/);
   assert.equal(bankRun({},run,[]),null);
 });
 test('actual course-rock collisions preserve evidence for contextual practice and coaching',()=>{
@@ -34,7 +34,7 @@ test('actual course-rock collisions preserve evidence for contextual practice an
     while(!run.ended)step(run,1/120);
     const course=courseRegion!==undefined;
     assert.equal(practiceOffer(run).kind,course?'weave':'moves');
-    if(course)assert.match(runLesson(run),/Each swipe moves one lane/);
+    if(course)assert.match(runLesson(run),/Each drag segment moves one lane/);
     else assert.deepEqual(run.lastMistake,{type:'rock'});
   }
 });
@@ -54,7 +54,7 @@ test('weave practice acknowledges correct late steering without awarding a clean
     assert.equal(run.hearts,3);
     assert.equal(run.fetchCharge,0);
     while(!run.ended)stepPractice(run,1/fps);
-    assert.match(practiceResult(run).lesson,timing==='late'?/arrived too late.*earlier/:/two separate swipes/);
+  assert.match(practiceResult(run).lesson,timing==='late'?/arrived too late.*earlier/:/two separate drag segments/);
     assert.equal(bankRun({},run,[]),null);
   }
   assert.equal(createWeavePracticeRun().practice.lateWeaves,undefined,'a fresh rehearsal does not inherit timing mistakes');

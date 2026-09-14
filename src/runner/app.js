@@ -455,7 +455,7 @@ function showOverlay(kind) {
         ? "New personal best. Very good dog!"
         : "The next great run is one tap away."
       : kind === "help"
-        ? "Swipe anywhere on the trail, or use the buttons."
+        ? "Drag left or right to change lanes; swipe up to jump or down to slide. A short tap jumps, and the buttons always work."
         : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
   if(kind==='paused'&&!run.practice&&(run.raft||run.zipline))
     $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
@@ -756,9 +756,24 @@ window.addEventListener("keydown", (event) => {
     start();
 });
 let pointer = null;
+// A horizontal gesture can stay active across lane changes. The first move
+// commits at the normal swipe threshold; each additional thumb-length segment
+// commits one more lane, so players do not need to lift between swipes. A
+// single very long sample still commits only one lane, preventing an accidental
+// overshoot when the browser coalesces pointer events.
+const LANE_DRAG_REPEAT_DISTANCE = 44;
 $("scene").addEventListener("pointerdown", (event) => {
   if (state !== "playing" || !canStartSwipe(event,pointer)) return;
-  pointer = { x: event.clientX, y: event.clientY, id: event.pointerId, started: event.timeStamp, travel: 0 };
+  event.preventDefault?.();
+  pointer = {
+    x: event.clientX,
+    y: event.clientY,
+    id: event.pointerId,
+    started: event.timeStamp,
+    travel: 0,
+    axis: null,
+    anchorX: event.clientX,
+  };
   try { $("scene").setPointerCapture(event.pointerId); }
   catch {
     pointer=null;
@@ -767,23 +782,34 @@ $("scene").addEventListener("pointerdown", (event) => {
 });
 $("scene").addEventListener("pointermove", (event) => {
   if (
-    !pointer ||
-    pointer.id !== event.pointerId ||
-    pointer.consumed ||
-    state !== "playing"
+    !pointer || pointer.id !== event.pointerId || state !== "playing"
   )
     return;
+  event.preventDefault?.();
   const dx = event.clientX - pointer.x,
     dy = event.clientY - pointer.y;
   pointer.travel = Math.max(pointer.travel, Math.abs(dx), Math.abs(dy));
-  const action = swipeAction(dx, dy);
-  if (!action) return;
-  pointer.consumed = true;
-  act(run, action);
+  if (!pointer.axis) {
+    const action = swipeAction(dx, dy);
+    if (!action) return;
+    pointer.axis = action === 'left' || action === 'right' ? 'horizontal' : 'vertical';
+    pointer.consumed = true;
+    pointer.anchorX = event.clientX;
+    act(run, action);
+    return;
+  }
+  // Vertical actions are single-shot. Horizontal drags remain armed so a
+  // second lane change can be made naturally while the finger stays down.
+  if (pointer.axis !== 'horizontal') return;
+  const deltaX = event.clientX - pointer.anchorX;
+  if (Math.abs(deltaX) < LANE_DRAG_REPEAT_DISTANCE) return;
+  pointer.anchorX = event.clientX;
+  act(run, deltaX > 0 ? 'right' : 'left');
 });
 $("scene").addEventListener("pointerup", (event) => {
   if (!pointer || pointer.id !== event.pointerId) return;
-  if (pointer.consumed) {
+  event.preventDefault?.();
+  if (pointer.axis) {
     pointer = null;
     return;
   }

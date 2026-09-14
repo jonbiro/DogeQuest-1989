@@ -1,4 +1,6 @@
-// Wait for a clear axis before committing a diagonal swipe to an action.
+// Keep gesture recognition forgiving enough for real thumbs. A player can
+// start a swipe on a slightly diagonal path, but equal diagonals still wait
+// for a clearer direction instead of guessing.
 export function canStartSwipe(event, activePointer) {
   return !activePointer && event.isPrimary !== false && event.button === 0;
 }
@@ -22,10 +24,10 @@ export function isJumpTap(pointer, event) {
 export function swipeAction(dx, dy, released = false) {
   const x = Math.abs(dx), y = Math.abs(dy);
   if (Math.max(x, y) < 24) return null;
-  // While moving, wait for a clear direction. On release there are no more
-  // samples to clarify a natural thumb arc, so accept a modestly dominant axis.
-  // Near-perfect diagonals still do nothing rather than guessing an action.
-  const bias = released ? 1.1 : 1.25;
+  // Touch paths are rarely perfectly straight. Accept a modestly dominant
+  // axis while moving, and be a touch more conservative on release when the
+  // browser may have delivered only the first and last samples.
+  const bias = released ? 1.08 : 1.12;
   if (x > y * bias) return dx > 0 ? 'right' : 'left';
   if (y > x * bias) return dy > 0 ? 'slide' : 'jump';
   return null;

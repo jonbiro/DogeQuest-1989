@@ -109,12 +109,12 @@ export function eventNotice(event, run) {
 export function runLesson(run) {
   if (run.retired) return 'Good dogs deserve a break. Only completed challenges and traversal rewards count; your next adventure is ready whenever you are.';
   if(run.lastMistake?.raftHazard)return run.lastMistakeDetail?.reason==='late-raft-steer'
-    ? 'The raft was still drifting toward the open lane. Follow the arrow earlier; ×2 means two swipes. Jump and slide return at the shore.'
-    : 'Steer the raft into the open lane between the river rocks. Each swipe moves one lane; ×2 means swipe twice. Jump and slide return at the shore.';
+    ? 'The raft was still drifting toward the open lane. Follow the arrow earlier; ×2 means two drag segments. Jump and slide return at the shore.'
+    : 'Steer the raft into the open lane between the river rocks. Each drag segment moves one lane; ×2 means drag twice. Jump and slide return at the shore.';
   if (run.lastMistake?.type==='rock' && run.lastMistake.courseWeave)
     return run.lastMistakeDetail?.reason==='late-weave'
-      ? 'You chose the open lane, but reached it too late. Start steering a little earlier; for a ×2 hint, make both swipes before the rocks reach your puppy.'
-      : 'This course rewards finding the open lane. Each swipe moves one lane; ×2 means swipe twice. The hint updates after your first move.';
+      ? 'You chose the open lane, but reached it too late. Start steering a little earlier; for a ×2 hint, make both drag segments before the rocks reach your puppy.'
+      : 'This course rewards finding the open lane. Each drag segment moves one lane; ×2 means drag twice. The hint updates after your first move.';
   const timing = timingLesson(run.lastMistakeDetail,run.lastMistake?.type);
   if (timing) return timing;
   const mistake = run.lastMistake;

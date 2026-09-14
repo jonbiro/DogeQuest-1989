@@ -58,7 +58,7 @@ test('mobile Play keeps touch controls default; explicit tilt opt-in requests pe
     performance:{now:()=>0},setTimeout:()=>1,clearTimeout(){},addEventListener(){},removeEventListener(){}};
   const toggle={setAttribute(){}},message={};
   const controls=installTiltControls(host,{toggle,recenter:{},message,onAction(){},canSteer:()=>true});
-  assert.match(message.textContent,/Swipes and buttons are ready by default/);
+  assert.match(message.textContent,/Drag and buttons are ready by default/);
   assert.equal(requests,0,'loading the page never opens a permission prompt');
   const initialOptIn=toggle.onclick();assert.equal(requests,1);assert.equal(controls.isRequesting(),true);
   resolve('denied');await initialOptIn;await new Promise(r=>setImmediate(r));
