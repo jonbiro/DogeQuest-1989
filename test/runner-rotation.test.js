@@ -55,8 +55,15 @@ test('mobile page freeze pauses safely and refocuses the recovery action on retu
   f.context.document.hidden=false;
   f.listeners.get('document:visibilitychange')();
   assert.equal(f.state.focuses,1,'returning to a paused run restores the action target');
-  f.listeners.get('pageshow')();
+  f.listeners.get('pageshow')({persisted:false});
   assert.equal(f.state.focuses,2,'bfcache restore also restores the action target');
+});
+test('a persisted page restore cannot resume an unpaused run behind the browser chrome',()=>{
+  const f=fixture(true);
+  f.listeners.get('pageshow')({persisted:true});
+  assert.equal(f.state.value,'paused');
+  assert.equal(f.context.pauseReason,'background');
+  assert.equal(f.state.focuses,1);
 });
 test('rotating in camp, results, or another panel does not replace that screen',()=>{
   for(const value of ['menu','ended','help','shop','kennel','paused']) {

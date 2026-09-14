@@ -1316,7 +1316,14 @@ function refocusLifecyclePause() {
   if (!document.hidden && state === 'paused' && pauseReason === 'background')
     focusOverlay();
 }
-window.addEventListener("pageshow", refocusLifecyclePause);
+function handlePageShow(event) {
+  // A persisted bfcache restore can arrive without the earlier pagehide on a
+  // few mobile engines. Treat it as an interruption if the run is still live,
+  // then put focus back on the explicit recovery action.
+  if (event?.persisted && state === 'playing') pause('background');
+  refocusLifecyclePause();
+}
+window.addEventListener("pageshow", handlePageShow);
 window.addEventListener("resume", refocusLifecyclePause);
 // Rotation can move hazards and touch targets beneath a player's thumb.
 // Listen to device orientation, not resize: mobile browser chrome resizes often.
