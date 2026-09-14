@@ -13,6 +13,10 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
   stretched side-gallop silhouette now alternates two authored phases during
   real route bends and lane banks, while straightaways stay on the rear chase
   view and the extra phase uses the final mobile texture-budget slot.
+- Added a second authored beat for every runner move across the dog roster.
+  Biscuit, Pepper, Luna, and Mochi now stream alternate run, jump, slide, turn,
+  and zipline-hang paintings through one bounded action slot; Mochi keeps his
+  supplied side-gallop as the bend-specific phase.
 - Added authored zipline hanging paintings for all four puppies. The new
   transparent frames keep paws connected to each body, align them to the cable
   handle, hide mismatched costume plates while suspended, and add a restrained

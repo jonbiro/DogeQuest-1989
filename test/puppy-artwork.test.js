@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createPuppyArtwork, PUPPY_ARTWORK, PUPPY_ARTWORK_BOUNDS, PUPPY_ARTWORK_LAYOUTS, PUPPY_ARTWORK_VARIANTS, puppyArtworkUrl, puppyPoseArtworkUrl } from '../src/runner/puppy-artwork.js';
+import { createPuppyArtwork, PUPPY_ARTWORK, PUPPY_ARTWORK_ALTERNATES, PUPPY_ARTWORK_BOUNDS, PUPPY_ARTWORK_LAYOUTS, PUPPY_ARTWORK_VARIANTS, puppyArtworkUrl, puppyPoseArtworkUrl } from '../src/runner/puppy-artwork.js';
 
 test('every collection puppy points at a shipped raster illustration', () => {
   assert.deepEqual(Object.keys(PUPPY_ARTWORK).sort(), ['biscuit', 'luna', 'mochi', 'pepper']);
@@ -50,10 +50,29 @@ test('each puppy has complete raster stride, jump, slide, turn, and hang poses',
   assert.equal(puppyPoseArtworkUrl('missing', 'turn'), PUPPY_ARTWORK_VARIANTS.biscuit.turn);
 });
 
+test('each action has a second authored beat with a stable URL resolver', () => {
+  for (const id of Object.keys(PUPPY_ARTWORK)) {
+    const alternates = PUPPY_ARTWORK_ALTERNATES[id];
+    for (const pose of ['stride', 'jump', 'slide', 'turn', 'hang']) {
+      // Mochi's supplied side-gallop is already a dedicated two-frame pair;
+      // his generated alternates cover the action poses instead.
+      if (id === 'mochi' && pose === 'stride') continue;
+      assert.match(alternates[pose], new RegExp(`^\\.\\/puppies/${id}-.+-alt\\.webp$`));
+      assert.equal(puppyPoseArtworkUrl(id, `${pose}Alt`), alternates[pose]);
+      assert.notEqual(alternates[pose], PUPPY_ARTWORK_VARIANTS[id][pose]);
+    }
+  }
+  assert.equal(puppyPoseArtworkUrl('missing', 'jumpAlt'), PUPPY_ARTWORK_ALTERNATES.biscuit.jump);
+});
+
 test('pose paintings expose measured alpha bounds for stable frame swaps', () => {
   for (const id of Object.keys(PUPPY_ARTWORK)) {
     const frames = PUPPY_ARTWORK_BOUNDS[id];
     const expectedFrames = ['hang', 'idle', 'jump', 'slide', 'stride', 'turn'];
+    for (const pose of ['strideAlt', 'jumpAlt', 'slideAlt', 'turnAlt', 'hangAlt']) {
+      const basePose = pose.endsWith('Alt') ? pose.slice(0, -3) : pose;
+      if (PUPPY_ARTWORK_ALTERNATES[id]?.[basePose]) expectedFrames.push(pose);
+    }
     if (id === 'mochi') expectedFrames.push('away', 'strideAlt');
     assert.deepEqual(Object.keys(frames).sort(), expectedFrames.sort());
     for (const [pose, frame] of Object.entries(frames)) {
@@ -112,4 +131,5 @@ test('the visible runner stack uses complete idle, stride, jump, slide, turn and
   );
   assert.equal(typeof artwork.setPose, 'function');
   assert.ok(artwork.group.children.some(part => part.name === 'puppy-painted-stride-alt-pose'));
+  assert.ok(artwork.group.children.some(part => part.name === 'puppy-painted-action-alt-pose'));
 });
