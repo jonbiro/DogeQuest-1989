@@ -331,7 +331,7 @@ function syncDock() {
   if (coach) {
     const copy = touchCoach(run);
     setText('gesture-coach', copy);
-    coach.hidden = !touchCoachVisible(run, mode, state);
+    coach.hidden = !touchCoachVisible(run, mode, state, $('cue').textContent);
   }
 }
 const mobileTilt = supportsMobileTilt(window);

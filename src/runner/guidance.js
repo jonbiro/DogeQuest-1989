@@ -93,10 +93,14 @@ export function touchCoach(run) {
 }
 
 // Keep the coach visible beside a quiet opening/course cue, but yield the
-// limited lower screen to route decisions and timed result toasts.
-export function touchCoachVisible(run, mode, state = 'playing') {
+// limited lower screen to route decisions, timed result toasts and urgent
+// movement instructions. A player should never have to choose between two
+// different messages while an obstacle is inside its reaction window.
+export function touchCoachVisible(run, mode, state = 'playing', cue = '') {
+  const quietCourseCue = !cue || / · (?:open lanes|\+\d+ clean)$/.test(cue);
   return state === 'playing' && Boolean(touchCoach(run)) &&
-    !['route-choice', 'toast'].includes(mode);
+    !['route-choice', 'toast'].includes(mode) &&
+    !(mode === 'cue' && !quietCourseCue);
 }
 
 // Gates reserve the final 45m from obstacle rows. Keep the actionable choice

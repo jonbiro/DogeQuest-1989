@@ -123,6 +123,10 @@ test("touch onboarding teaches the safe opening without changing desktop guidanc
   touchRun.inputCount=0;
   assert.equal(touchCoachVisible(touchRun, "mission-summary"), true);
   assert.equal(touchCoachVisible(touchRun, "cue"), true, "a quiet opening cue does not hide the coach");
+  assert.equal(touchCoachVisible(touchRun, "cue", "playing", "Root scramble · +180 clean"), true);
+  assert.equal(touchCoachVisible(touchRun, "cue", "playing", "↑ JUMP"), false, "an urgent action cue owns the message slot");
+  assert.equal(touchCoachVisible(touchRun, "cue", "playing", "↓ SLIDE"), false);
+  assert.equal(touchCoachVisible(touchRun, "cue", "playing", "← TURN LEFT"), false);
   assert.equal(touchCoachVisible(touchRun, "route-choice"), false);
   assert.equal(touchCoachVisible(touchRun, "toast"), false);
   assert.equal(touchCoachVisible(touchRun, "cue", "paused"), false);
