@@ -42,11 +42,11 @@ test('a held horizontal drag can cross lanes one segment at a time without overs
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');
   const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]"))',start);
-  const handlers={},actions=[];
+  const handlers={},actions=[],run={};
   const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
-  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run,
     act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
-  const touch={pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
+  const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
   handlers.pointerdown(touch);
   handlers.pointermove({...touch,clientX:82,timeStamp:120});
   // A long, continuous drag stays on the first snap. Pausing near the snap
@@ -55,9 +55,11 @@ test('a held horizontal drag can cross lanes one segment at a time without overs
   handlers.pointermove({...touch,clientX:120,timeStamp:180});
   handlers.pointermove({...touch,clientX:150,timeStamp:260});
   assert.deepEqual(actions,['right'],'continuous overlong drag remains one lane');
+  assert.equal(run.touchOverdrag,true,'the dock can explain why a continuous overdrag stopped');
   handlers.pointermove({...touch,clientX:150,timeStamp:400});
   handlers.pointermove({...touch,clientX:210,timeStamp:460});
   assert.deepEqual(actions,['right','right'],'a pause anywhere re-arms the next lane');
+  assert.equal(run.touchOverdrag,false,'the hint clears after the next accepted move');
   handlers.pointermove({...touch,clientX:150,timeStamp:520});
   handlers.pointermove({...touch,clientX:150,timeStamp:680});
   handlers.pointermove({...touch,clientX:90,timeStamp:740});

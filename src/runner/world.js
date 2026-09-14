@@ -114,6 +114,10 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     // The UI only teaches no-lift swipes after a real swipe has been
     // recognized; button-first players keep a simpler lesson.
     touchSwipeSeen: false,
+    // Set when a touch keeps travelling in the same direction after a lane
+    // snap. The gesture intentionally stops at one lane; the dock can explain
+    // how to continue without turning that safety guard into a mystery.
+    touchOverdrag: false,
     previous: { x: 0, y: 0, distance: 0 },
   };
   fillTrack(run);

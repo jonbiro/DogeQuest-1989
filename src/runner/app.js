@@ -800,6 +800,10 @@ const markTouchSwipe = event => {
   if (event?.pointerType === 'touch') run.touchSwipeSeen = true;
 };
 const commitPointerAction = (action, event) => {
+  // An overlong touch is deliberately capped at one lane. Once the player
+  // makes the next move, the adaptive hint has done its job and can return to
+  // the normal first-run lesson.
+  if (event?.pointerType === 'touch') run.touchOverdrag = false;
   markTouchSwipe(event);
   act(run, action);
   if (event?.pointerType === 'touch') confirmTouchAction(action);
@@ -939,7 +943,10 @@ $("scene").addEventListener("pointermove", (event) => {
       return;
     }
     if (Math.abs(deltaX) >= LANE_DRAG_REPEAT_DISTANCE) {
-      if (!pointer.laneRearmed) return;
+      if (!pointer.laneRearmed) {
+        if (event.pointerType === 'touch') run.touchOverdrag = true;
+        return;
+      }
       if (Number.isFinite(elapsed) && elapsed < LANE_DRAG_REPEAT_DELAY) return;
       pointer.anchorX = event.clientX;
       pointer.anchorY = event.clientY;

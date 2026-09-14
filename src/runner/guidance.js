@@ -79,9 +79,12 @@ export function actionCue(run) {
 
 // Keep the first touch lesson attached to the thumb controls instead of
 // placing another banner in the play corridor. It stays until the player has
-// made two deliberate actions, then the trail returns to quiet guidance.
+// made two deliberate actions, with one extra explanation when a long drag
+// hits the intentional one-lane safety cap.
 export function touchCoach(run) {
-  if (!run?.touchHint || (run.inputCount || 0) >= 2) return '';
+  if (!run?.touchHint || ((run.inputCount || 0) >= 2 && !run.touchOverdrag)) return '';
+  if (run.touchOverdrag)
+    return 'ONE DRAG = ONE LANE · PAUSE OR REVERSE TO MOVE AGAIN';
   if ((run.inputCount || 0) === 0)
     return 'EASIEST: TAP LEFT / RIGHT · TAP JUMP OR SLIDE';
   // Keep the first lesson aligned with the visible buttons. Only introduce
