@@ -29,7 +29,7 @@ export function prizeProgress(profile, prize) {
   return {earned, current: earned ? prize.target : Math.min(prize.target,
     Math.max(0, Math.floor(Number.isFinite(value) ? value : 0))), target: prize.target};
 }
-export function collectionFrom(value={}) {
+export function collectionFrom(value={}, options={}) {
   const puppies=['biscuit','mochi',...(Array.isArray(value?.puppies)?value.puppies:[])].filter((id,i,list)=>Object.hasOwn(PUPPIES,id)&&list.indexOf(id)===i);
   const costumes=['scarf',...(Array.isArray(value?.costumes)?value.costumes:[])].filter((id,i,list)=>Object.hasOwn(COSTUMES,id)&&list.indexOf(id)===i);
   const prizes=(Array.isArray(value?.prizes)?value.prizes:[]).filter((id,i,list)=>PRIZES.some(p=>p.id===id)&&list.indexOf(id)===i);
@@ -37,7 +37,18 @@ export function collectionFrom(value={}) {
   // during loading without replaying rewards or modifying the supplied save.
   for(const prize of PRIZES)
     if(prize.costume&&prizes.includes(prize.id)&&!costumes.includes(prize.costume))costumes.push(prize.costume);
-  return {puppies,costumes,puppy:puppies.includes(value?.puppy)?value.puppy:DEFAULT_PUPPY,costume:costumes.includes(value?.costume)?value.costume:'scarf',prizes,gifts:Math.max(0,Math.floor(Number.isFinite(value?.gifts)?value.gifts:0))};
+  const validPuppy=puppies.includes(value?.puppy);
+  // The first version of the runner silently saved Biscuit as its default.
+  // New saves record an explicit choice, so only an unmarked legacy Biscuit
+  // is migrated at the app boundary; backups and direct callers keep their
+  // stated puppy unless they opt into this repair.
+  const migrateLegacyDefault=options?.migrateLegacyDefault===true &&
+    validPuppy && value.puppy==='biscuit' && value.puppySelected!==true;
+  const puppy=migrateLegacyDefault?DEFAULT_PUPPY:validPuppy?value.puppy:DEFAULT_PUPPY;
+  const hasPuppyMarker=typeof value?.puppySelected==='boolean';
+  const puppySelected=!migrateLegacyDefault && validPuppy &&
+    (value?.puppySelected===true || !hasPuppyMarker && options?.migrateLegacyDefault!==true && Object.hasOwn(value,'puppy'));
+  return {puppies,costumes,puppy,puppySelected,costume:costumes.includes(value?.costume)?value.costume:'scarf',prizes,gifts:Math.max(0,Math.floor(Number.isFinite(value?.gifts)?value.gifts:0))};
 }
 export function equipOrBuy(profile,kind,id) {
   const catalog=kind==='puppy'?PUPPIES:kind==='costume'?COSTUMES:null;
@@ -48,7 +59,9 @@ export function equipOrBuy(profile,kind,id) {
     if(!Number.isFinite(cost)||profile.credits<cost)return false;
     profile.credits-=cost;owned.push(id);
   }
-  profile.collection[kind]=id;return true;
+  profile.collection[kind]=id;
+  if(kind==='puppy')profile.collection.puppySelected=true;
+  return true;
 }
 export function awardPrizes(profile,run) {
   if(!run.ended||run.prizesBanked)return [];

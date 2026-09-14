@@ -75,7 +75,7 @@ try {
     if (key !== "upgrades" && Number.isFinite(value?.[key]) && value[key] >= 0)
       saved[key] = value[key];
   saved.upgrades = levels(value?.upgrades);
-  saved.collection = collectionFrom(value?.collection);
+  saved.collection = collectionFrom(value?.collection,{migrateLegacyDefault:true});
   saved.mastery = masteryFrom(value?.mastery);
   saved.trailRecords = trailRecordsFrom(value?.trailRecords);
   saved.preferences = preferencesFrom(value?.preferences,reducedMotion);

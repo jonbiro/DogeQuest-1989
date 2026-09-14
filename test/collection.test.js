@@ -12,11 +12,14 @@ test("old and malformed saves receive safe collection defaults", () => {
   assert.deepEqual(c.puppies,["biscuit","mochi","pepper"]);
   assert.equal(c.puppy,"mochi"); assert.equal(c.costume,"hero");
   assert.equal(collectionFrom({puppy:"biscuit"}).puppy,"biscuit","explicit selections remain respected");
+  assert.equal(collectionFrom({puppy:"biscuit"},{migrateLegacyDefault:true}).puppy,"mochi","the app can repair the old silent Biscuit default");
+  assert.equal(collectionFrom({puppy:"biscuit",puppySelected:true},{migrateLegacyDefault:true}).puppy,"biscuit","an explicit Biscuit choice remains respected");
   assert.equal(c.gifts,0); assert.deepEqual(c.prizes,["long-run"]);
 });
 test("puppies and outfits buy once, persist and reject locked prizes", () => {
   const p = {credits:2200,collection:collectionFrom()};
   assert.ok(equipOrBuy(p,"puppy","pepper"));
+  assert.equal(p.collection.puppySelected,true);
   assert.ok(equipOrBuy(p,"costume","explorer"));
   assert.equal(p.credits,0);
   assert.ok(equipOrBuy(p,"puppy","mochi"));
