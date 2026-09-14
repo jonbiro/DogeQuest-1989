@@ -1291,6 +1291,18 @@ h1 { letter-spacing: -.055em; word-spacing: .07em; }
 #controls #fetch { border-radius:50%; font-size:10px; line-height:1.2; }
 #controls #fetch.ready { background:#94e6d8; border-color:#d8fff0; color:#183d3a; }
 
+/* An uncharged ability is useful status, not a sixth movement instruction.
+   Keep it readable while making the four movement buttons visually primary. */
+#controls #fetch.charging {
+  background: linear-gradient(155deg, #1c3b45e8, #142e38e8);
+  border: 1px dashed #9bbec566;
+  color: #b9cdd1;
+  box-shadow: inset 0 1px 0 #ffffff0c;
+  cursor: default;
+  font-size: 9px;
+  letter-spacing: .02em;
+}
+
 /* Give the action bar a clear home on touch screens. The panel separates
    controls from the trail without stealing playable space, and the larger
    labels make the fallback buttons understandable at a glance. */

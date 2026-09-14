@@ -1186,12 +1186,17 @@ function frame(now) {
       if (fetchButton.disabled && ready) tone('ready');
       fetchButton.disabled = !ready;
       fetchButton.classList.toggle('ready', !fetchButton.disabled);
+      fetchButton.classList.toggle('charging', !ready && run.fetchTime <= 0 && run.magnet <= 0);
       setText('fetch', run.fetchTime > 0 ? `FETCH · ${Math.ceil(run.fetchTime)}s`
         : run.magnet > 0 ? `MAGNET ACTIVE · ${run.fetchCharge}%`
         : run.fetchCharge === 100 ? 'FETCH READY · F' : `FETCH · ${run.fetchCharge}%`);
       fetchButton.setAttribute('aria-label', run.fetchTime > 0 ? 'Fetch active'
         : run.magnet > 0 ? `Magnet active. Fetch charge ${run.fetchCharge} percent`
-        : `Fetch ${run.fetchCharge === 100 ? 'ready. Tap or press F to collect nearby bones for four seconds' : `${run.fetchCharge} percent charged`}`);
+        : `Fetch ${run.fetchCharge === 100 ? 'ready. Tap or press F to collect nearby bones for four seconds' : `charge ${run.fetchCharge} percent. The Fetch meter becomes available at 100 percent`}`);
+      fetchButton.setAttribute('title', ready ? 'Fetch nearby bones for four seconds'
+        : run.fetchTime > 0 ? 'Fetch is active'
+        : run.magnet > 0 ? 'Magnet is active; Fetch recharges afterward'
+        : 'Collect bones and clear obstacles to charge Fetch');
       const turn = turnPrompt(run);
       $("scene").dataset.turn = turn ? `${turn.direction}-${turn.status}` : '';
       for (const direction of ['left','right']) {
