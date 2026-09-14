@@ -58,6 +58,7 @@ let graphicsReady = false;
 // not arrive in time.
 let contextRecovery = null;
 const CONTEXT_RESTORE_TIMEOUT = 4200;
+const MOBILE_CONTEXT_RESTORE_TIMEOUT = 10000;
 let storageAvailable = true;
 let profileReadable = true;
 let reducedMotion = window.matchMedia(
@@ -1356,8 +1357,13 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) pause('background');
   else refocusLifecyclePause();
 });
-$("scene").addEventListener("webglcontextlost", (event) => {
-  event.preventDefault();
+function contextRestoreTimeout() {
+  const mobile = window.matchMedia?.('(pointer: coarse)')?.matches === true
+    || /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(window.navigator?.userAgent || '');
+  return mobile ? MOBILE_CONTEXT_RESTORE_TIMEOUT : CONTEXT_RESTORE_TIMEOUT;
+}
+function handleContextLost(event) {
+  event?.preventDefault?.();
   if (state === 'graphics-error' || contextRecovery?.lost) return;
   const previousState = state;
   contextRecovery = {lost:true, previousState, timer:null};
@@ -1376,8 +1382,9 @@ $("scene").addEventListener("webglcontextlost", (event) => {
   }
   contextRecovery.timer = window.setTimeout(() => {
     if (contextRecovery?.lost) graphicsError();
-  }, CONTEXT_RESTORE_TIMEOUT);
-});
+  }, contextRestoreTimeout());
+}
+$("scene").addEventListener("webglcontextlost", handleContextLost);
 function clearContextRecovery() {
   if (contextRecovery?.timer) window.clearTimeout(contextRecovery.timer);
   contextRecovery = null;
@@ -1529,6 +1536,17 @@ function drawScene(runState, now, screenState, motionReduced, delta, blend, coll
   try {
     view.draw(runState, now, screenState, motionReduced, delta, blend, collection, frameDelta);
   } catch {
+    // A few iOS/WebKit builds mark the GL context lost before dispatching the
+    // DOM event. Treat that render exception as the same recoverable pause so
+    // one rejected frame cannot jump straight to the permanent rescue screen.
+    let contextLost;
+    try { contextLost = typeof view.contextLost === 'function' && view.contextLost() === true; }
+    catch { contextLost = false; }
+    if (contextLost) {
+      if (typeof handleContextLost === 'function') handleContextLost({preventDefault(){}});
+      return;
+    }
+    if (typeof contextRecovery !== 'undefined' && contextRecovery?.lost) return;
     graphicsError();
   }
 }
@@ -1672,6 +1690,14 @@ function frame(now) {
     // A mobile driver can reject a non-draw update (for example while its
     // canvas is being reclaimed). Keep the RAF chain alive and show the same
     // recoverable 3D screen instead of leaving a frozen, untouchable run.
+    let contextLost;
+    try { contextLost = typeof view !== 'undefined' && typeof view.contextLost === 'function' && view.contextLost() === true; }
+    catch { contextLost = false; }
+    if (contextLost) {
+      if (typeof handleContextLost === 'function') handleContextLost({preventDefault(){}});
+      return;
+    }
+    if (typeof contextRecovery !== 'undefined' && contextRecovery?.lost) return;
     graphicsError();
   } finally {
     requestAnimationFrame(frame);

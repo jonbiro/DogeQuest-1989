@@ -535,7 +535,7 @@ export function createView(canvas) {
   // alive for compatibility with the pose/diagnostic helpers, but take every
   // procedural dog part out of the render path so no low-poly pieces can peek
   // through the illustrated sprite during a swap or a costume preview.
-  const rasterArtwork = createPuppyArtwork();
+  const rasterArtwork = createPuppyArtwork({mobile});
   dog.add(rasterArtwork.group);
   // Keep the painted dog as the only anatomy source, but let the progression
   // costumes sit on top of it.  Previously this list swallowed the outfit
@@ -1408,6 +1408,14 @@ export function createView(canvas) {
       }
       renderer.render(scene, camera);
       if(menu&&shaderPreparation.status==='idle')void shaderPreparation.start();
+    },
+    // Some iOS/WebKit builds expose the context-lost flag one frame before
+    // dispatching the canvas event. The app uses this lightweight probe to
+    // enter the same paused recovery path instead of treating that frame as a
+    // fatal renderer exception.
+    contextLost() {
+      try { return renderer.getContext()?.isContextLost?.() === true; }
+      catch { return false; }
     },
     diagnostics() {
       return {shaderPreparation:shaderPreparation.status,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,activeObjects:active.size+boneBatch.count,boneInstances:boneBatch.count,boneCapacity:boneBatch.capacity,pooledObjects:Object.values(pools).reduce((sum,items)=>sum+items.length,0),puppyFrame:puppyFrame?{...puppyFrame}:null,legAngles:activeRig.legs.map(leg=>leg.rotation.x),bodyTransform:[...dog.position.toArray(),dog.rotation.x,dog.rotation.y,dog.rotation.z,...dog.scale.toArray()]};

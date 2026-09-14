@@ -284,6 +284,35 @@ function sourceSize(texture) {
   };
 }
 
+// iPhone/WebKit can evict a WebGL context when several full-size illustrated
+// poses are decoded at once. Gameplay sprites are never displayed larger than
+// a few hundred CSS pixels, so a compact canvas keeps the same painted edges
+// while cutting the decoded/GPU footprint dramatically on coarse-pointer
+// devices. Desktop keeps the source resolution untouched.
+function compactTexture(texture, maxDimension = 0) {
+  if (!maxDimension || typeof document === 'undefined') return texture;
+  const {width, height} = sourceSize(texture);
+  if (!width || !height || Math.max(width, height) <= maxDimension) return texture;
+  try {
+    const scale = maxDimension / Math.max(width, height);
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const context = canvas.getContext('2d');
+    if (!context) return texture;
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+    context.drawImage(texture.image, 0, 0, canvas.width, canvas.height);
+    const compact = new THREE.CanvasTexture(canvas);
+    texture.dispose();
+    return compact;
+  } catch {
+    // A restricted/managed browser may not expose a 2D canvas. Keep the
+    // original texture and let the normal renderer path continue.
+    return texture;
+  }
+}
+
 function pixelRect(rect, width, height) {
   return {
     x: rect[0] * width,
@@ -570,7 +599,7 @@ function worldY(pixel, height, unit) {
 // Load the equipped artwork once, then drive a compact full-body pose stack.
 // The legacy crop parts are still prepared for diagnostics and API stability,
 // but the runner never rotates them into visible anatomy.
-export function createPuppyArtwork() {
+export function createPuppyArtwork({mobile = false} = {}) {
   const group = new THREE.Group();
   group.name = 'puppy-illustrated-pose-stack';
   const loader = new THREE.TextureLoader();
@@ -724,6 +753,7 @@ export function createPuppyArtwork() {
   const accessoryTextures = new Map();
   const poseTextures = new Map();
   const poseLoads = new Set();
+  const maxTextureDimension = mobile ? 768 : 0;
   const poseBaseScales = {
     idle: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
     stride: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
@@ -816,7 +846,7 @@ export function createPuppyArtwork() {
         return;
       }
       alternateSlot.loading = false;
-      alternateSlot.texture = prepareTexture(loaded);
+      alternateSlot.texture = prepareTexture(compactTexture(loaded, maxTextureDimension));
       configurePoseSprite(alternateSprite, `${pose}Alt`, alternateSlot.texture, key);
     });
     return null;
@@ -833,6 +863,22 @@ export function createPuppyArtwork() {
   function frameBoundsFor(key, pose, width, height) {
     const frame = PUPPY_ARTWORK_BOUNDS[key]?.[pose];
     if (frame && frame.width === width && frame.height === height) return frame;
+    // Mobile paintings are drawn into a smaller canvas with the same aspect
+    // ratio. Scale the measured alpha bounds instead of falling back to the
+    // entire canvas, which would make a compact pose pop during a swap.
+    if (frame && frame.width && frame.height
+      && Math.abs(frame.width / frame.height - width / height) < .01) {
+      const scaleX = width / frame.width;
+      const scaleY = height / frame.height;
+      return {
+        width,
+        height,
+        x: frame.x * scaleX,
+        y: frame.y * scaleY,
+        boxWidth: frame.boxWidth * scaleX,
+        boxHeight: frame.boxHeight * scaleY,
+      };
+    }
     return {width, height, x: 0, y: 0, boxWidth: width, boxHeight: height};
   }
 
@@ -938,10 +984,11 @@ export function createPuppyArtwork() {
     if (!poseLoads.has(`${key}:${pose}`)) {
       poseLoads.add(`${key}:${pose}`);
       const texture = loader.load(url, loaded => {
-        prepareTexture(loaded);
-        map.set(pose, loaded);
+        const compact = compactTexture(loaded, maxTextureDimension);
+        prepareTexture(compact);
+        map.set(pose, compact);
         if (currentKey === key) {
-          configurePoseSprite(poseSprites[pose], pose, loaded, key);
+          configurePoseSprite(poseSprites[pose], pose, compact, key);
         }
       });
       map.set(pose, prepareTexture(texture));
@@ -1065,6 +1112,10 @@ export function createPuppyArtwork() {
 
   function prepare(key, texture) {
     if (prepared.has(key)) return;
+    texture = compactTexture(texture, maxTextureDimension);
+    // Replace the loader's full-size placeholder with the compact texture so
+    // every later pose lookup and the idle frame share the lower-memory image.
+    sourceTextures.set(key, texture);
     const {width, height} = sourceSize(texture);
     if (!width || !height) return;
     prepared.add(key);

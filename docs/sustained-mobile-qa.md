@@ -85,6 +85,15 @@ browser to the recovery screen. Desktop registration remains immediate, and
 the worker still deletes an incomplete cache rather than exposing a partial
 offline build.
 
+Mobile artwork now compacts each newly loaded painting to a 768px maximum
+canvas before it reaches Three.js. The authored illustrations and measured
+alpha bounds stay the same, but idle, stride and streamed action frames no
+longer reserve desktop-sized texture memory on an iPhone. If a WebKit build
+reports a lost context one frame before dispatching `webglcontextlost`, the
+render guard enters the same paused wake-up path; mobile recovery waits up to
+10 seconds for the browser to restore the context before banking the run and
+showing the clean-start screen.
+
 After this cull, the five-run accelerated renderer matrix measured 256 peak draw
 calls, 35 geometries, 9 textures and 91 active/pooled objects, with stable repeat
 laps and all 130 turns accepted. It still covers 90 km, 65 ziplines and 30 rafts.
