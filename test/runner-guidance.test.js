@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { actionCue, dockMode, eventNotice, runLesson } from "../src/runner/guidance.js";
+import { actionCue, dockMode, eventNotice, runLesson, touchCoach } from "../src/runner/guidance.js";
 import { swipeAction } from "../src/runner/gestures.js";
 import { act, createRun, LANES, step } from "../src/runner/world.js";
 import {courseAt} from '../src/runner/courses.js';
@@ -112,9 +112,12 @@ test('zipline approach explains aerial bones before the jump deadline and keeps 
 test("touch onboarding teaches the safe opening without changing desktop guidance", () => {
   assert.equal(actionCue(createRun(1989)), "", "desktop keeps the safe opening quiet");
   const touchRun=createRun(1989);touchRun.touchHint=true;
-  assert.equal(actionCue(touchRun), "SWIPE 1 LANE ← → · ↑ JUMP · ↓ SLIDE · PAUSE THEN REPEAT");
+  assert.equal(actionCue(touchRun), "", "the opening coach stays with the thumb controls");
+  assert.equal(touchCoach(touchRun), "PRESS + HOLD · DRAG 1 LANE ← → · ↑ JUMP · ↓ SLIDE · PAUSE · REPEAT");
   touchRun.inputCount=1;
-  assert.equal(actionCue(touchRun), "", "the cue disappears after the first action");
+  assert.equal(touchCoach(touchRun), "KEEP HOLDING · PAUSE · DRAG AGAIN");
+  touchRun.inputCount=2;
+  assert.equal(touchCoach(touchRun), "", "the coach disappears after the second action");
 
   for (const object of [
     { type: "rock", secondsAway: 0.501 },

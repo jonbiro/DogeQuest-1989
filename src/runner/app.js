@@ -25,7 +25,7 @@ import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound,resumeSound,traversalCue,feedbackPriority} from "./sound.js";
 import {createAreaSoundscape} from './soundscape.js';
-import {actionCue,eventNotice,dockMode,runLesson,routeChoiceCue} from "./guidance.js";
+import {actionCue,eventNotice,dockMode,runLesson,routeChoiceCue,touchCoach} from "./guidance.js";
 import {turnPrompt} from "./turns.js";
 import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,tapAction} from "./gestures.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
@@ -327,6 +327,12 @@ function syncDock() {
   for (const id of ['cue','route-choice','toast','mission-summary']) $(id).hidden = mode !== id;
   $("mission-hud").dataset.dock = mode || 'none';
   $("mission-hud").hidden = state !== 'playing' || !mode;
+  const coach = $('gesture-coach');
+  if (coach) {
+    const copy = touchCoach(run);
+    setText('gesture-coach', copy);
+    coach.hidden = state !== 'playing' || !copy || Boolean(mode && mode !== 'mission-summary');
+  }
 }
 const mobileTilt = supportsMobileTilt(window);
 let tiltSettings = $('tilt-settings');
@@ -458,7 +464,7 @@ function showOverlay(kind) {
         ? "New personal best. Very good dog!"
         : "The next great run is one tap away."
       : kind === "help"
-        ? "Drag left or right to change one lane; on a phone, tap an edge to steer or the center to jump. Keep your finger down, pause briefly between lane swipes, then make another clear swipe for another lane. A cross-direction swipe can switch between steering and jump or slide without lifting. Swipe up to jump or down to slide. The buttons always work."
+        ? "Press and hold on the trail. Drag one lane left or right; pause briefly, then drag again without lifting. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. Swipe up to jump or down to slide. The buttons always work."
         : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
   if(kind==='paused'&&!run.practice&&(run.raft||run.zipline))
     $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
@@ -1135,7 +1141,7 @@ function frame(now) {
         const active = turn && turn.status !== 'accepted' && turn.direction === direction;
         button.classList.toggle('turn-ready', Boolean(active));
         button.querySelector('small').textContent=active?'TURN':direction.toUpperCase();
-        button.setAttribute('aria-label', turn ? `Turn ${direction}` : `Move ${direction}`);
+        button.setAttribute('aria-label', turn ? `Turn ${direction}` : `Move ${direction} one lane`);
       }
       $("hearts").textContent =
         "♥ ".repeat(Math.max(0, run.hearts)) + "♡ ".repeat(3 - run.hearts);

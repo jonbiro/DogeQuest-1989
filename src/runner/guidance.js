@@ -73,13 +73,18 @@ export function actionCue(run) {
   const intro = run.course && run.course.start-run.distance < 40 &&
     run.course.start-run.distance > run.speed*.5 ? `${run.course.name} · ${run.course.scenic?'open lanes':'+180 clean'}` : '';
   if (!danger && relic && !relicLaneBlocked) return laneCue(run.lane,relic.lane,'RELIC') || '✦ RELIC AHEAD';
-  // On touch devices, teach the interaction in the quiet opening rather than
-  // making a new center-screen tutorial. The dock already sits above the
-  // thumb controls and disappears after the first action.
-  const touchOnboarding = run.touchHint && !run.inputCount && run.distance < 70
-    ? 'SWIPE 1 LANE ← → · ↑ JUMP · ↓ SLIDE · PAUSE THEN REPEAT' : '';
-  return !danger ? touchOnboarding || intro : ['arch', 'branch', 'gate'].includes(danger.type)
+  return !danger ? intro : ['arch', 'branch', 'gate'].includes(danger.type)
     ? '↓ SLIDE' : danger.type === 'gap' ? '↑ JUMP GAP' : '↑ JUMP';
+}
+
+// Keep the first touch lesson attached to the thumb controls instead of
+// placing another banner in the play corridor. It stays until the player has
+// made two deliberate actions, then the trail returns to quiet guidance.
+export function touchCoach(run) {
+  if (!run?.touchHint || (run.inputCount || 0) >= 2) return '';
+  return (run.inputCount || 0) === 0
+    ? 'PRESS + HOLD · DRAG 1 LANE ← → · ↑ JUMP · ↓ SLIDE · PAUSE · REPEAT'
+    : 'KEEP HOLDING · PAUSE · DRAG AGAIN';
 }
 
 // Gates reserve the final 45m from obstacle rows. Keep the actionable choice

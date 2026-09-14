@@ -37,8 +37,9 @@ test('runner headline and onboarding name bones as the core collectible',()=>{
   assert.match(html,/class="wordmark"[\s\S]*aria-label="Puppy Run — A Puppy Quest original"/);
   assert.match(html,/<h1 id="title">Run wild\.<br \/>Fetch <em>bones\.<\/em><\/h1>/);
   assert.match(html,/<span>MEET YOUR RUNNING BUDDY<\/span><strong>Mochi\.<\/strong>/);
-  assert.match(html,/aria-label="3D running trail\. Drag left or right to change one lane; pause briefly between held-drag lane segments so one long swipe does not overshoot\. A clear swipe can switch/);
-  assert.match(html,/A long one-way swipe intentionally stays one lane; to move farther without lifting, pause briefly between lane swipes/);
+  assert.match(html,/aria-label="3D running trail\. Press and hold, drag one lane left or right, pause briefly, then drag again without lifting\. A clear swipe can switch/);
+  assert.match(html,/Press and hold on the trail, then drag one lane left or right\. Pause briefly and drag again without lifting/);
+  assert.match(html,/id="gesture-coach"[^>]*Press and hold\. Drag one lane\. Pause briefly\. Drag again without lifting/);
   assert.match(html,/tap the center of the trail to jump/);
   assert.match(html,/tap a left or right edge to steer on touch screens/);
   assert.match(html,/Drag left or right and use the buttons by default/);
