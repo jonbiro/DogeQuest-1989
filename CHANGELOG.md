@@ -11,6 +11,9 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 - Made the held-drag pause detector ignore tiny resting-thumb jitter, so a
   player can pause and continue a no-lift lane drag even when a phone emits
   small pointer samples beneath a stationary finger.
+- Reworded touch onboarding around one clear rule: one swipe equals one move;
+  the pause-and-drag continuation is now explicit without suggesting that a
+  single long swipe should steer across the whole trail.
 - Made full WebGL2 presentation the runner's only default: browsers with GPU
   acceleration disabled now receive an actionable 3D setup screen instead of a
   silent 2D downgrade. Chrome's hardware-acceleration steps are shown inline,

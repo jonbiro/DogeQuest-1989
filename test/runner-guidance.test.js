@@ -113,24 +113,24 @@ test("touch onboarding teaches the safe opening without changing desktop guidanc
   assert.equal(actionCue(createRun(1989)), "", "desktop keeps the safe opening quiet");
   const touchRun=createRun(1989);touchRun.touchHint=true;
   assert.equal(actionCue(touchRun), "", "the opening coach stays with the thumb controls");
-  assert.equal(touchCoach(touchRun), "TAP OR DRAG · MOVE ONE LANE");
+  assert.equal(touchCoach(touchRun), "TAP BUTTONS · ONE SWIPE = ONE MOVE");
   touchRun.touchActionCount=1;
   assert.equal(touchCoach(touchRun), "ONE TAP = ONE MOVE · SWIPES OPTIONAL");
   touchRun.touchSwipeSeen=true;
-  assert.equal(touchCoach(touchRun), "DRAG ONE LANE · STOP, THEN DRAG AGAIN");
+  assert.equal(touchCoach(touchRun), "ONE SWIPE = ONE MOVE · PAUSE, THEN DRAG");
   touchRun.touchOverdrag=true;
-  assert.equal(touchCoach(touchRun), "ONE LANE AT A TIME · STOP, THEN DRAG AGAIN");
+  assert.equal(touchCoach(touchRun), "ONE SWIPE = ONE MOVE · PAUSE, THEN DRAG");
   touchRun.touchActionCount=2;
-  assert.equal(touchCoach(touchRun), "ONE LANE AT A TIME · STOP, THEN DRAG AGAIN", "the held-drag hint remains until the next move acknowledges it");
+  assert.equal(touchCoach(touchRun), "ONE SWIPE = ONE MOVE · PAUSE, THEN DRAG", "the held-drag hint remains until the next move acknowledges it");
   touchRun.touchOverdrag=false;
-  assert.equal(touchCoach(touchRun), "DRAG ONE LANE · STOP, THEN DRAG AGAIN", "the coach stays available while a new player is still learning");
+  assert.equal(touchCoach(touchRun), "ONE SWIPE = ONE MOVE · PAUSE, THEN DRAG", "the coach stays available while a new player is still learning");
   touchRun.touchActionCount=3;
-  assert.equal(touchCoach(touchRun), "DRAG ONE LANE · STOP, THEN DRAG AGAIN");
+  assert.equal(touchCoach(touchRun), "ONE SWIPE = ONE MOVE · PAUSE, THEN DRAG");
   touchRun.touchActionCount=4;
   assert.equal(touchCoach(touchRun), "", "the coach fades after the first few actions");
   touchRun.touchActionCount=0;
   touchRun.inputCount=8;
-  assert.equal(touchCoach(touchRun), "TAP OR DRAG · MOVE ONE LANE", "simulation inputs do not spend the touch lesson");
+  assert.equal(touchCoach(touchRun), "TAP BUTTONS · ONE SWIPE = ONE MOVE", "simulation inputs do not spend the touch lesson");
   assert.equal(touchCoachVisible(touchRun, "mission-summary"), true);
   assert.equal(touchCoachVisible(touchRun, "cue"), true, "a quiet opening cue does not hide the coach");
   assert.equal(touchCoachVisible(touchRun, "cue", "playing", "Root scramble · +180 clean"), true);
@@ -162,11 +162,11 @@ test("touch onboarding teaches the safe opening without changing desktop guidanc
 test("live touch coaching explains the gesture where the thumb is held", () => {
   assert.equal(touchGestureCoach(null), "");
   assert.equal(touchGestureCoach({pointerType:'mouse'}), "");
-  assert.equal(touchGestureCoach({pointerType:'touch'}), "DRAG A SHORT WAY · ONE MOVE");
-  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'left'}), "← ONE LANE · STOP, THEN DRAG");
-  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'right'}), "→ ONE LANE · STOP, THEN DRAG");
-  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'jump'}), "↑ JUMP · STOP, THEN DRAG");
-  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'slide'}), "↓ SLIDE · STOP, THEN DRAG");
+  assert.equal(touchGestureCoach({pointerType:'touch'}), "DRAG ONE WAY · ONE MOVE");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'left'}), "← ONE LANE · PAUSE, THEN DRAG");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'right'}), "→ ONE LANE · PAUSE, THEN DRAG");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'jump'}), "↑ JUMP · PAUSE, THEN DRAG");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'slide'}), "↓ SLIDE · PAUSE, THEN DRAG");
 });
 
 test('area relic guidance is brief, lane-aware and never masks an immediate hazard',()=>{
