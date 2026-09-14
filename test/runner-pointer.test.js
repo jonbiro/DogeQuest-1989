@@ -243,6 +243,8 @@ test('touch taps offer forgiving edge steering while center taps still jump',()=
   assert.equal(tapAction(centre,{clientX:195,clientY:400,timeStamp:200},390,true),'jump');
   assert.equal(tapAction(left,{clientX:40,clientY:400,timeStamp:200},390,false),'jump');
   assert.equal(tapAction({...left,travel:28},{clientX:40,clientY:400,timeStamp:200},390,true),null);
+  assert.equal(tapAction({x:77,y:400,started:100,travel:0},{clientX:80,clientY:400,timeStamp:200},390,true),'left','small release drift keeps the edge intent');
+  assert.equal(tapAction({x:313,y:400,started:100,travel:0},{clientX:310,clientY:400,timeStamp:200},390,true),'right','small release drift keeps the opposite edge intent');
 });
 
 test('the live pointer listener maps a touch edge tap without changing desktop taps',()=>{

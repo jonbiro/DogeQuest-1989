@@ -29,8 +29,12 @@ export function tapAction(pointer, event, screenWidth, touch = false) {
   if (!isJumpTap(pointer, event)) return null;
   if (!touch || !Number.isFinite(screenWidth) || screenWidth <= 0) return 'jump';
   const edge = Math.min(84, Math.max(56, screenWidth * .2));
-  if (event.clientX <= edge) return 'left';
-  if (event.clientX >= screenWidth - edge) return 'right';
+  // Use the touch-down position for edge steering. A thumb can drift a few
+  // pixels while lifting; the place it landed is the player's clear intent,
+  // whereas the release coordinate is just touch noise.
+  const tapX = Number.isFinite(pointer?.x) ? pointer.x : event.clientX;
+  if (tapX <= edge) return 'left';
+  if (tapX >= screenWidth - edge) return 'right';
   return 'jump';
 }
 
