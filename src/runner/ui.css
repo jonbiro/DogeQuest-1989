@@ -438,6 +438,31 @@ h1 em {
   font-size: 11px;
   letter-spacing: 0;
 }
+.touch-launch-hint {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 12px auto 0;
+  max-width: 330px;
+  color: #e5f4ed;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: .035em;
+  line-height: 1.35;
+  text-align: center;
+}
+.touch-launch-hint span {
+  display: inline-grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border: 1px solid #f4cf8466;
+  border-radius: 50%;
+  background: #f4cf8420;
+  color: #ffe3a8;
+  font-size: 14px;
+}
 .trail-tag {
   display: flex;
   gap: 16px;
@@ -1223,14 +1248,16 @@ kbd {
 @media (max-width: 700px) and (orientation: portrait) {
   /* Portrait is the primary phone layout: equal, thumb-sized fallback controls. */
   #controls {
+    left: max(2%, calc(var(--safe-left) + 6px));
+    right: max(2%, calc(var(--safe-right) + 6px));
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 7px;
+    gap: 6px;
   }
   #controls button, #controls #fetch {
     width: 100%;
     min-width: 0;
-    height: 60px;
+    height: 68px;
   }
   #controls button[data-action="slide"] { margin-left: 0; }
   #mission-hud { bottom: calc(96px + var(--safe-bottom)); }
@@ -1396,12 +1423,12 @@ h1 { letter-spacing: -.055em; word-spacing: .07em; }
 }
 @media (max-width: 700px) and (orientation: portrait) {
   #controls {
-    gap: 8px;
+    gap: 6px;
     padding: 6px;
   }
   #controls button,
   #controls #fetch {
-    height: 64px;
+    height: 68px;
     border-radius: 15px;
   }
   #controls button { font-size: 27px; }
@@ -1411,6 +1438,7 @@ h1 { letter-spacing: -.055em; word-spacing: .07em; }
    so only the four movement labels receive the action verb.  Fine-pointer
    desktop controls keep their compact labels and keyboard-first presentation. */
 @media (pointer: coarse) {
+  .touch-launch-hint { display: flex; }
   #controls button[data-action="left"] small::before,
   #controls button[data-action="right"] small::before,
   #controls button[data-action="slide"] small::before,

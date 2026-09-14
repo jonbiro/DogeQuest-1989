@@ -40,6 +40,8 @@ test('runner headline and onboarding name bones as the core collectible',()=>{
   assert.match(html,/aria-label="3D running trail\. The buttons are easiest: tap LEFT or RIGHT to move one lane, or JUMP and SLIDE for actions\. Swipes are optional: one swipe moves one lane/);
   assert.match(html,/The big movement buttons are the simplest option: tap LEFT or RIGHT for one lane, JUMP to clear a log or gap, and SLIDE under an overhead gate/);
   assert.match(html,/id="gesture-coach"[^>]*role="status"[^>]*aria-live="polite"[^>]*aria-atomic="true"[^>]*Tap left or right to move\. Tap jump or slide\. Swipes are optional: one swipe moves one lane\. Lift after a move, or pause with your finger down before dragging again/);
+  assert.match(html,/id="touch-launch-hint"[^>]*class="touch-launch-hint"/);
+  assert.match(html,/PHONE TIP · Tap a big button for one move\. Swipes are optional/);
   assert.match(html,/id="touch-ghost"[^>]*aria-hidden="true"[^>]*hidden/);
   assert.match(html,/The middle FETCH meter is status-only until it is ready/);
   assert.match(html,/center to jump/);
