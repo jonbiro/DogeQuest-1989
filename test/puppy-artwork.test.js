@@ -63,6 +63,7 @@ test('each action has a second authored beat with a stable URL resolver', () => 
     }
   }
   assert.equal(puppyPoseArtworkUrl('missing', 'jumpAlt'), PUPPY_ARTWORK_ALTERNATES.biscuit.jump);
+  assert.equal(puppyPoseArtworkUrl('mochi', null), PUPPY_ARTWORK.mochi);
 });
 
 test('pose paintings expose measured alpha bounds for stable frame swaps', () => {

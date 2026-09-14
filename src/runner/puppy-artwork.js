@@ -262,7 +262,7 @@ export function puppyArtworkUrl(id) {
 export function puppyPoseArtworkUrl(id, pose = 'idle') {
   const variants = PUPPY_ARTWORK_VARIANTS[id] || PUPPY_ARTWORK_VARIANTS.biscuit;
   if (variants[pose]) return variants[pose];
-  const basePose = pose.endsWith('Alt') ? pose.slice(0, -3) : null;
+  const basePose = typeof pose === 'string' && pose.endsWith('Alt') ? pose.slice(0, -3) : null;
   const alternates = PUPPY_ARTWORK_ALTERNATES[id] || PUPPY_ARTWORK_ALTERNATES.biscuit;
   return (basePose && alternates[basePose]) || variants.idle;
 }
