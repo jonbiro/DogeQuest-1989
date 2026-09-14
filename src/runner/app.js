@@ -1239,6 +1239,11 @@ for (const button of document.querySelectorAll("[data-action]")) {
   };
 }
 window.addEventListener("blur", () => pause('background'));
+// Mobile browsers can freeze or discard a page without delivering blur or a
+// visibilitychange first.  pagehide is the last reliable lifecycle signal;
+// pausing here prevents a restored page from looking frozen while its old run
+// continues behind the browser's back/forward cache.
+window.addEventListener("pagehide", () => pause('background'));
 // Rotation can move hazards and touch targets beneath a player's thumb.
 // Listen to device orientation, not resize: mobile browser chrome resizes often.
 if (window.screen?.orientation?.addEventListener)

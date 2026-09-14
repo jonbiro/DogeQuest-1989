@@ -36,6 +36,9 @@ test('browser lifecycle interruptions record an actionable pause reason',()=>{
   f.listeners.get('blur')();
   assert.equal(f.context.pauseReason,'background');
   f.state.value='playing';
+  f.listeners.get('pagehide')();
+  assert.equal(f.context.pauseReason,'background');
+  f.state.value='playing';
   f.listeners.get('screen:change')();
   assert.equal(f.context.pauseReason,'rotation');
 });
