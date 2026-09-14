@@ -790,6 +790,8 @@ const LANE_DRAG_LARGE_REVERSE_DISTANCE = 64;
 const LANE_DRAG_REVERSE_DELAY = 90;
 const CROSS_AXIS_DISTANCE = 32;
 function confirmTouchAction(action) {
+  if (run && typeof run === 'object' && !run.ended)
+    run.touchActionCount = (run.touchActionCount || 0) + 1;
   if (typeof document === 'undefined' || typeof document.querySelector !== 'function') return;
   const button = document.querySelector(`#controls [data-action="${action}"]`);
   if (!button) return;

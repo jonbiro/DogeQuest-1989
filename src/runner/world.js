@@ -111,6 +111,11 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     // The first-run touch cue is opt-in from the UI layer. Count accepted
     // action attempts so it can disappear as soon as the player finds a move.
     inputCount: 0,
+    // Keep touch onboarding independent from simulation/keyboard inputs. A
+    // novice can press Jump while airborne or tap a lane boundary without
+    // actually learning the touch controls; those attempts should not spend
+    // the small lesson budget.
+    touchActionCount: 0,
     // The UI only teaches no-lift swipes after a real swipe has been
     // recognized; button-first players keep a simpler lesson.
     touchSwipeSeen: false,

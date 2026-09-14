@@ -84,10 +84,12 @@ export function actionCue(run) {
 // attempt to discover the controls; this low-profile dock is the least noisy
 // place to keep that help available.
 export function touchCoach(run) {
-  if (!run?.touchHint || ((run.inputCount || 0) >= 4 && !run.touchOverdrag)) return '';
+  const actions = Number.isFinite(run?.touchActionCount)
+    ? run.touchActionCount : run?.inputCount || 0;
+  if (!run?.touchHint || (actions >= 4 && !run.touchOverdrag)) return '';
   if (run.touchOverdrag)
     return 'ONE DRAG = ONE LANE · PAUSE OR REVERSE TO MOVE AGAIN';
-  if ((run.inputCount || 0) === 0)
+  if (actions === 0)
     return 'EASIEST: TAP LEFT / RIGHT · TAP JUMP OR SLIDE';
   // Keep the first lesson aligned with the visible buttons. Only introduce
   // the no-lift gesture vocabulary after the player has actually tried one;
