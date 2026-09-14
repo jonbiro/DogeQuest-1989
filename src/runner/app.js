@@ -793,6 +793,10 @@ const LANE_DRAG_REPEAT_DISTANCE = 48;
 // slow, well-sampled over-swipe from walking the puppy across the trail while
 // still allowing a held finger to stop moving and drag again for the next lane.
 const LANE_DRAG_REPEAT_DELAY = 96;
+// Phones can emit a few CSS-pixel pointer samples while a thumb is resting.
+// Do not let that micro-jitter erase the quiet gap the player intentionally
+// created between held-drag segments.
+const LANE_DRAG_PAUSE_MOVE_DISTANCE = 6;
 // A single browser sample can cover much more than a thumb-width. Treat that
 // as one over-drag and rebase instead of turning it into an accidental second
 // lane move; a normal follow-up segment can still continue without a lift.
@@ -907,14 +911,15 @@ $("scene").addEventListener("pointermove", (event) => {
   showTouchGhost(event, pointer.laneDirection || 'ready');
   const dx = event.clientX - pointer.x,
     dy = event.clientY - pointer.y;
-  const pauseSinceMove = event.timeStamp -
-    (Number.isFinite(pointer.lastMoveAt) ? pointer.lastMoveAt : pointer.started);
-  pointer.lastMoveAt = event.timeStamp;
-  pointer.travel = Math.max(pointer.travel, Math.abs(dx), Math.abs(dy));
   const previousX = pointer.lastX,
     previousY = pointer.lastY,
     stepX = event.clientX - previousX,
     stepY = event.clientY - previousY;
+  const pauseSinceMove = event.timeStamp -
+    (Number.isFinite(pointer.lastMoveAt) ? pointer.lastMoveAt : pointer.started);
+  if (Math.max(Math.abs(stepX), Math.abs(stepY)) >= LANE_DRAG_PAUSE_MOVE_DISTANCE)
+    pointer.lastMoveAt = event.timeStamp;
+  pointer.travel = Math.max(pointer.travel, Math.abs(dx), Math.abs(dy));
   pointer.lastX = event.clientX;
   pointer.lastY = event.clientY;
   if (!pointer.axis) {

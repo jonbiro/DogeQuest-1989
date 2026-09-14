@@ -127,6 +127,25 @@ test('a held drag resumes after a silent interval without a lift',()=>{
   handlers.pointerup({...touch,clientX:140,timeStamp:520});
 });
 
+test('resting-thumb jitter does not erase the quiet gap for a held drag',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
+  const handlers={},actions=[];
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:82,timeStamp:120});
+  // A resting thumb can wobble by a few CSS pixels. Those samples should not
+  // make the player lift and re-touch just to re-arm the next lane move.
+  for (const [clientX,timeStamp] of [[84,150],[87,180],[89,220],[90,250]])
+    handlers.pointermove({...touch,clientX,timeStamp});
+  handlers.pointermove({...touch,clientX:140,timeStamp:320});
+  assert.deepEqual(actions,['right','right'],'meaningful movement after a jittery pause re-arms the held drag');
+});
+
 test('a coalesced giant first swipe remains one bounded snap',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');

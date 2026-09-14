@@ -8,6 +8,9 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
   re-arm only after the finger stops briefly, so slow over-swipes cannot walk
   the puppy across the trail. Guidance now says “STOP, THEN DRAG AGAIN” while
   preserving no-lift axis changes and the button fallback.
+- Made the held-drag pause detector ignore tiny resting-thumb jitter, so a
+  player can pause and continue a no-lift lane drag even when a phone emits
+  small pointer samples beneath a stationary finger.
 - Made full WebGL2 presentation the runner's only default: browsers with GPU
   acceleration disabled now receive an actionable 3D setup screen instead of a
   silent 2D downgrade. Chrome's hardware-acceleration steps are shown inline,
