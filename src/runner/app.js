@@ -328,16 +328,25 @@ function syncDock() {
   $("mission-hud").dataset.dock = mode || 'none';
   $("mission-hud").hidden = state !== 'playing' || !mode;
 }
-const tiltSettings = $('tilt-settings');
 const mobileTilt = supportsMobileTilt(window);
+let tiltSettings = $('tilt-settings');
 let tilt = noTiltController();
 if (!mobileTilt) {
-  // Do not expose a sensor permission flow on desktop. Removing the control
-  // entirely also keeps it out of the help dialog's keyboard order and copy.
-  tiltSettings?.remove();
+  // The panel lives in an inert template, so desktop never parses a tilt
+  // control into the live DOM or accessibility tree.
   $('game').dataset.tilt = 'disabled';
 } else {
   $('game').dataset.tilt = 'available';
+  // Materialize the opt-in panel only after the coarse-pointer/mobile check.
+  // This keeps desktop markup and its keyboard order completely tilt-free.
+  if (!tiltSettings) {
+    const template = $('tilt-settings-template');
+    const panel = template?.content.firstElementChild?.cloneNode(true);
+    if (panel) {
+      $('run-lesson')?.before(panel);
+      tiltSettings = panel;
+    }
+  }
   // Keep tilt out of the desktop bundle's startup path. On phones this small
   // module is loaded only after the coarse-pointer/mobile check succeeds.
   void import('./tilt-controls.js').then(({installTiltControls}) => {

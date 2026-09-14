@@ -69,3 +69,12 @@ test('WebGL startup failure stays 3D-first and exposes Chrome setup steps',()=>{
   for(const phrase of ['Use graphics acceleration when available','Relaunch Chrome','Chrome Settings → System'])
     assert.match(html,new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
 });
+
+test('tilt settings stay inert until a mobile capability check opts in',()=>{
+  const html=readFileSync(new URL('../runner/index.html',import.meta.url),'utf8');
+  const app=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  assert.match(html,/<template id="tilt-settings-template">[\s\S]*<details id="tilt-settings">/);
+  assert.doesNotMatch(html,/<details id="tilt-settings">[^]*<\/details>\s*<p id="run-lesson">/);
+  assert.match(app,/template\?\.content\.firstElementChild\?\.cloneNode\(true\)/);
+  assert.match(app,/supportsMobileTilt\(window\)/);
+});
