@@ -1467,7 +1467,14 @@ h1 { letter-spacing: -.055em; word-spacing: .07em; }
    where the pointer media query can remain fine despite touch controls being
    active. Keep the launch lesson in sync with the runtime affordance. */
 #game[data-touch="true"] .touch-launch-hint { display: flex; }
-@media(max-width:380px) { #cue:not(:empty) { font-size:12px; } #controls small { font-size:8px; } }
+/* Keep the narrowest phone labels legible. The five-column row still gives
+   every action a 48px+ touch target at 320px, so shrinking the copy to 8px
+   trades away recognition without buying meaningful space. */
+@media(max-width:380px) {
+  #cue:not(:empty) { font-size:12px; }
+  #controls small { font-size:9px; letter-spacing:.02em; }
+  #controls #fetch { font-size:9px; letter-spacing:-.01em; }
+}
 /* Touch tablets can be wider than a phone, but they still need the same
    thumb-level lesson. Only hide this dock when a fine pointer identifies a
    real desktop layout. */
