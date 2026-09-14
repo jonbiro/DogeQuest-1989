@@ -95,13 +95,27 @@ export function touchCoach(run) {
     : 'KEEP TAPPING THE BUTTONS · ONE TAP = ONE MOVE';
 }
 
+// Keep a live gesture label beside the controls while a touch is still down.
+// This closes the gap between a finger movement and the resulting lane/action
+// without adding a second message over the playable trail. Mouse pointers do
+// not need this coaching because desktop already has visible buttons/keys.
+export function touchGestureCoach(pointer) {
+  if (!pointer || pointer.pointerType !== 'touch') return '';
+  if (!pointer.axis) return 'DRAG A SHORT WAY · ONE MOVE';
+  if (pointer.laneDirection === 'left') return '← LEFT · ONE LANE';
+  if (pointer.laneDirection === 'right') return '→ RIGHT · ONE LANE';
+  if (pointer.laneDirection === 'jump') return '↑ JUMP';
+  if (pointer.laneDirection === 'slide') return '↓ SLIDE';
+  return '';
+}
+
 // Keep the coach visible beside a quiet opening/course cue, but yield the
 // limited lower screen to route decisions, timed result toasts and urgent
 // movement instructions. A player should never have to choose between two
 // different messages while an obstacle is inside its reaction window.
-export function touchCoachVisible(run, mode, state = 'playing', cue = '') {
+export function touchCoachVisible(run, mode, state = 'playing', cue = '', liveCopy = '') {
   const quietCourseCue = !cue || / · (?:open lanes|\+\d+ clean)$/.test(cue);
-  return state === 'playing' && Boolean(touchCoach(run)) &&
+  return state === 'playing' && Boolean(touchCoach(run) || liveCopy) &&
     !['route-choice', 'toast'].includes(mode) &&
     !(mode === 'cue' && !quietCourseCue);
 }

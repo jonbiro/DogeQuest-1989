@@ -25,7 +25,7 @@ import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound,resumeSound,traversalCue,feedbackPriority} from "./sound.js";
 import {createAreaSoundscape} from './soundscape.js';
-import {actionCue,eventNotice,dockMode,runLesson,routeChoiceCue,touchCoach,touchCoachVisible} from "./guidance.js";
+import {actionCue,eventNotice,dockMode,runLesson,routeChoiceCue,touchCoach,touchGestureCoach,touchCoachVisible} from "./guidance.js";
 import {turnPrompt} from "./turns.js";
 import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,tapAction} from "./gestures.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
@@ -329,9 +329,14 @@ function syncDock() {
   $("mission-hud").hidden = state !== 'playing' || !mode;
   const coach = $('gesture-coach');
   if (coach) {
-    const copy = touchCoach(run);
+    const liveCopy = touchGestureCoach(pointer);
+    // An overdrag explanation is more useful than the transient live label;
+    // otherwise keep the label attached to the controls while the finger is
+    // down, then fall back to the first-run lesson once it is released.
+    const copy = run.touchOverdrag ? touchCoach(run) : liveCopy || touchCoach(run);
     setText('gesture-coach', copy);
-    coach.hidden = !touchCoachVisible(run, mode, state, $('cue').textContent);
+    coach.classList.toggle('gesture-live', Boolean(liveCopy && !run.touchOverdrag));
+    coach.hidden = !touchCoachVisible(run, mode, state, $('cue').textContent, copy);
   }
 }
 const mobileTilt = supportsMobileTilt(window);
@@ -812,6 +817,7 @@ $("scene").addEventListener("pointerdown", (event) => {
   if (state !== "playing" || !canStartSwipe(event,pointer)) return;
   event.preventDefault?.();
   pointer = {
+    pointerType: event.pointerType,
     x: event.clientX,
     y: event.clientY,
     id: event.pointerId,

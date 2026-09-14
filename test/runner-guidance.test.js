@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { actionCue, dockMode, eventNotice, runLesson, touchCoach, touchCoachVisible } from "../src/runner/guidance.js";
+import { actionCue, dockMode, eventNotice, runLesson, touchCoach, touchGestureCoach, touchCoachVisible } from "../src/runner/guidance.js";
 import { swipeAction } from "../src/runner/gestures.js";
 import { act, createRun, LANES, step } from "../src/runner/world.js";
 import {courseAt} from '../src/runner/courses.js';
@@ -151,6 +151,16 @@ test("touch onboarding teaches the safe opening without changing desktop guidanc
     ];
     assert.equal(actionCue(run), "", JSON.stringify(object));
   }
+});
+
+test("live touch coaching explains the gesture where the thumb is held", () => {
+  assert.equal(touchGestureCoach(null), "");
+  assert.equal(touchGestureCoach({pointerType:'mouse'}), "");
+  assert.equal(touchGestureCoach({pointerType:'touch'}), "DRAG A SHORT WAY · ONE MOVE");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'left'}), "← LEFT · ONE LANE");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'right'}), "→ RIGHT · ONE LANE");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'jump'}), "↑ JUMP");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'slide'}), "↓ SLIDE");
 });
 
 test('area relic guidance is brief, lane-aware and never masks an immediate hazard',()=>{
