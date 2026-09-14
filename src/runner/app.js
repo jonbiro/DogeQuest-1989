@@ -458,7 +458,7 @@ function showOverlay(kind) {
         ? "New personal best. Very good dog!"
         : "The next great run is one tap away."
       : kind === "help"
-        ? "Drag left or right to change one lane; on a phone, tap an edge to steer or the center to jump. Keep your finger down, pause briefly at the snap, then make another clear swipe for another lane. A cross-direction swipe can switch between steering and jump or slide without lifting. Swipe up to jump or down to slide. The buttons always work."
+        ? "Drag left or right to change one lane; on a phone, tap an edge to steer or the center to jump. Keep your finger down, pause briefly between lane swipes, then make another clear swipe for another lane. A cross-direction swipe can switch between steering and jump or slide without lifting. Swipe up to jump or down to slide. The buttons always work."
         : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
   if(kind==='paused'&&!run.practice&&(run.raft||run.zipline))
     $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
@@ -761,11 +761,12 @@ window.addEventListener("keydown", (event) => {
 let pointer = null;
 // A gesture can stay active across deliberate action segments. The first move
 // commits one lane at the normal swipe threshold. A player can continue without
-// lifting, but must pause briefly at the snap before another lane segment is
-// armed; one long, fast drag therefore cannot throw the runner to the edge. A
-// clear cross-axis segment can follow a jump/slide (or a lane move) without
-// lifting too. A single very long sample still commits only one action, even
-// when the browser coalesces pointer events.
+// lifting, but must pause briefly between lane segments before another one is
+// armed; one long, fast drag therefore cannot throw the runner to the edge. The
+// pause can happen anywhere after the snap (a thumb that overshot does not need
+// to travel back), while a clear cross-axis segment can follow a jump/slide (or
+// a lane move) without lifting too. A single very long sample still commits
+// only one action, even when the browser coalesces pointer events.
 const LANE_DRAG_REPEAT_DISTANCE = 56;
 const LANE_DRAG_REPEAT_DELAY = 140;
 const LANE_DRAG_REARM_RADIUS = 20;
@@ -784,6 +785,9 @@ $("scene").addEventListener("pointerdown", (event) => {
     anchorX: event.clientX,
     anchorY: event.clientY,
     lastActionAt: null,
+    lastX: event.clientX,
+    lastY: event.clientY,
+    lastMoveAt: event.timeStamp,
     settledSince: null,
     laneRearmed: true,
   };
@@ -802,6 +806,14 @@ $("scene").addEventListener("pointermove", (event) => {
   const dx = event.clientX - pointer.x,
     dy = event.clientY - pointer.y;
   pointer.travel = Math.max(pointer.travel, Math.abs(dx), Math.abs(dy));
+  const previousX = pointer.lastX,
+    previousY = pointer.lastY,
+    previousMoveAt = pointer.lastMoveAt,
+    stepX = event.clientX - previousX,
+    stepY = event.clientY - previousY;
+  pointer.lastX = event.clientX;
+  pointer.lastY = event.clientY;
+  pointer.lastMoveAt = event.timeStamp;
   if (!pointer.axis) {
     const action = swipeAction(dx, dy);
     if (!action) return;
@@ -816,19 +828,35 @@ $("scene").addEventListener("pointermove", (event) => {
     act(run, action);
     return;
   }
-  const deltaX = event.clientX - pointer.anchorX;
-  const deltaY = event.clientY - pointer.anchorY;
+  let deltaX = event.clientX - pointer.anchorX;
+  let deltaY = event.clientY - pointer.anchorY;
   const elapsed = event.timeStamp - pointer.lastActionAt;
   // Same-axis horizontal segments remain deliberately thumb-length so a
-  // quick overlong move cannot skip lanes. A short dwell near the last snap
-  // re-arms the next horizontal segment; this is the no-lift equivalent of
-  // lifting and starting a fresh swipe. Vertical actions stay single-shot; a
-  // clear horizontal segment may follow one without lifting (and vice versa).
+  // quick overlong move cannot skip lanes. A short dwell between move samples
+  // re-arms the next horizontal segment anywhere after the last snap; this is
+  // the no-lift equivalent of lifting and starting a fresh swipe. A near-snap
+  // dwell remains a useful fallback for browsers that emit frequent samples
+  // while a thumb rests. Vertical actions stay single-shot; a clear horizontal
+  // segment may follow one without lifting (and vice versa).
   if (pointer.axis === 'horizontal') {
+    const pauseBetweenSegments = Number.isFinite(previousMoveAt) &&
+      Number.isFinite(event.timeStamp) &&
+      event.timeStamp - previousMoveAt >= LANE_DRAG_REARM_DWELL;
+    // Rebase at the thumb's actual resting point. This preserves the direction
+    // of a reverse swipe after an overshoot and prevents a large horizontal
+    // offset from masking the next jump or slide.
+    if (pauseBetweenSegments && !pointer.laneRearmed) {
+      pointer.anchorX = previousX;
+      pointer.anchorY = previousY;
+      pointer.laneRearmed = true;
+      deltaX = event.clientX - pointer.anchorX;
+      deltaY = event.clientY - pointer.anchorY;
+    }
     const nearSnap = Math.abs(deltaX) <= LANE_DRAG_REARM_RADIUS &&
       Math.abs(deltaY) <= LANE_DRAG_REARM_RADIUS;
     const dwellElapsed = Number.isFinite(pointer.settledSince) &&
       event.timeStamp - pointer.settledSince >= LANE_DRAG_REARM_DWELL;
+    if (pauseBetweenSegments) pointer.laneRearmed = true;
     if (nearSnap) {
       pointer.settledSince ??= event.timeStamp;
       if (event.timeStamp - pointer.settledSince >= LANE_DRAG_REARM_DWELL)
@@ -838,6 +866,22 @@ $("scene").addEventListener("pointermove", (event) => {
       // snap sample followed by enough elapsed time is still a real pause.
       if (dwellElapsed) pointer.laneRearmed = true;
       pointer.settledSince = null;
+    }
+    const verticalStep = Math.abs(stepY) >= CROSS_AXIS_DISTANCE &&
+      Math.abs(stepY) > Math.abs(stepX) * 1.12;
+    const vertical = Math.abs(deltaY) >= CROSS_AXIS_DISTANCE &&
+      Math.abs(deltaY) > Math.abs(deltaX) * 1.12;
+    // Prefer a clear local vertical movement to a stale horizontal offset.
+    // This lets a player jump or slide after steering too far without lifting.
+    if (verticalStep || vertical) {
+      pointer.axis = 'vertical';
+      pointer.anchorX = event.clientX;
+      pointer.anchorY = event.clientY;
+      pointer.lastActionAt = event.timeStamp;
+      pointer.settledSince = null;
+      pointer.laneRearmed = false;
+      act(run, deltaY > 0 ? 'slide' : 'jump');
+      return;
     }
     if (Math.abs(deltaX) >= LANE_DRAG_REPEAT_DISTANCE) {
       if (!pointer.laneRearmed) return;
@@ -850,20 +894,12 @@ $("scene").addEventListener("pointermove", (event) => {
       act(run, deltaX > 0 ? 'right' : 'left');
       return;
     }
-    const vertical = Math.abs(deltaY) >= CROSS_AXIS_DISTANCE &&
-      Math.abs(deltaY) > Math.abs(deltaX) * 1.12;
-    if (!vertical) return;
-    pointer.axis = 'vertical';
-    pointer.anchorX = event.clientX;
-    pointer.anchorY = event.clientY;
-    pointer.lastActionAt = event.timeStamp;
-    pointer.settledSince = null;
-    pointer.laneRearmed = false;
-    act(run, deltaY > 0 ? 'slide' : 'jump');
     return;
   }
   if (pointer.axis !== 'vertical') return;
-  const horizontal = Math.abs(deltaX) >= CROSS_AXIS_DISTANCE &&
+  const horizontalStep = Math.abs(stepX) >= CROSS_AXIS_DISTANCE &&
+    Math.abs(stepX) > Math.abs(stepY) * 1.12;
+  const horizontal = horizontalStep || Math.abs(deltaX) >= CROSS_AXIS_DISTANCE &&
     Math.abs(deltaX) > Math.abs(deltaY) * 1.12;
   if (!horizontal) return;
   pointer.axis = 'horizontal';

@@ -112,7 +112,7 @@ test('zipline approach explains aerial bones before the jump deadline and keeps 
 test("touch onboarding teaches the safe opening without changing desktop guidance", () => {
   assert.equal(actionCue(createRun(1989)), "", "desktop keeps the safe opening quiet");
   const touchRun=createRun(1989);touchRun.touchHint=true;
-  assert.equal(actionCue(touchRun), "SWIPE ← → STEER · ↑ JUMP · ↓ SLIDE · PAUSE TO REPEAT");
+  assert.equal(actionCue(touchRun), "SWIPE 1 LANE ← → · ↑ JUMP · ↓ SLIDE · PAUSE THEN REPEAT");
   touchRun.inputCount=1;
   assert.equal(actionCue(touchRun), "", "the cue disappears after the first action");
 

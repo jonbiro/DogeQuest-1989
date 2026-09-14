@@ -50,15 +50,18 @@ test('a held horizontal drag can cross lanes one segment at a time without overs
   handlers.pointerdown(touch);
   handlers.pointermove({...touch,clientX:82,timeStamp:120});
   // A long, continuous drag stays on the first snap. Pausing near the snap
-  // re-arms the next no-lift segment, just like lifting and touching again.
+  // or anywhere else re-arms the next no-lift segment, just like lifting and
+  // touching again.
+  handlers.pointermove({...touch,clientX:120,timeStamp:180});
   handlers.pointermove({...touch,clientX:150,timeStamp:260});
   assert.deepEqual(actions,['right'],'continuous overlong drag remains one lane');
-  handlers.pointermove({...touch,clientX:86,timeStamp:300});
-  handlers.pointermove({...touch,clientX:150,timeStamp:440});
-  handlers.pointermove({...touch,clientX:88,timeStamp:460});
-  handlers.pointermove({...touch,clientX:150,timeStamp:620});
-  handlers.pointermove({...touch,clientX:70,timeStamp:800});
-  handlers.pointerup({...touch,clientX:70,timeStamp:820});
+  handlers.pointermove({...touch,clientX:150,timeStamp:400});
+  handlers.pointermove({...touch,clientX:210,timeStamp:460});
+  assert.deepEqual(actions,['right','right'],'a pause anywhere re-arms the next lane');
+  handlers.pointermove({...touch,clientX:150,timeStamp:520});
+  handlers.pointermove({...touch,clientX:150,timeStamp:680});
+  handlers.pointermove({...touch,clientX:90,timeStamp:740});
+  handlers.pointerup({...touch,clientX:70,timeStamp:800});
   assert.deepEqual(actions,['right','right','left'],'continued drag changes one lane per thumb segment and can reverse');
 });
 
@@ -76,6 +79,24 @@ test('a fast overlong thumb drag does not chain a second lane before the snap se
   handlers.pointermove({...touch,clientX:180,timeStamp:150});
   handlers.pointerup({...touch,clientX:180,timeStamp:170});
   assert.deepEqual(actions,['right'],'a quick overlong drag still commits just one lane');
+});
+
+test('an overshot horizontal drag can switch to a jump from its resting point',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]"))',start);
+  const handlers={},actions=[];
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerId:1,button:0,isPrimary:true,clientX:50,clientY:120,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:82,timeStamp:120});
+  handlers.pointermove({...touch,clientX:180,timeStamp:160});
+  handlers.pointermove({...touch,clientX:180,timeStamp:300});
+  handlers.pointermove({...touch,clientX:180,clientY:60,timeStamp:360});
+  handlers.pointerup({...touch,clientX:180,clientY:60,timeStamp:380});
+  assert.deepEqual(actions,['right','jump'],'vertical intent wins after a horizontal overshoot and pause');
 });
 
 test('a held vertical drag remains a single jump or slide action',()=>{
