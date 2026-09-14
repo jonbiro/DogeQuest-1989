@@ -782,9 +782,9 @@ let pointer = null;
 // lane, while a short timing guard prevents a single noisy sample from firing
 // twice. A clear cross-axis segment can follow a jump/slide (or a lane move)
 // without lifting too. A deliberate short reversal re-arms the next lane
-// immediately, so one finger can scrub back and forth naturally. A single very
-// long sample still commits only one action, even when the browser coalesces
-// events; a following sample can continue the drag normally.
+// immediately, so one finger can scrub back and forth naturally. Same-direction
+// travel must stop briefly before it re-arms; a single very long sample still
+// commits only one action, even when the browser coalesces events.
 // A second same-direction segment needs about one thumb-width, not a full phone
 // lane. This makes held drags comfortable on narrow screens while the natural
 // world lane clamp prevents the puppy from travelling beyond the trail.
