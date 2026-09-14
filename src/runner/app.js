@@ -48,6 +48,9 @@ let run = createRun(),
   noticePriority = 0,
   sound = false,
   audio = null;
+// Keep the reason for a lifecycle pause so a phone never appears to freeze
+// without explaining what happened or how to continue.
+let pauseReason = 'manual';
 let graphicsReady = false;
 let storageAvailable = true;
 let profileReadable = true;
@@ -415,6 +418,7 @@ function setState(next) {
 }
 function start() {
   if(!graphicsReady)return;
+  pauseReason = 'manual';
   // A results-screen retry is a rematch, not a new random obstacle layout.
   // Camp/help use random adventures unless an explicit shared trail is active.
   const retry = rematchFor(run,state==='ended');
@@ -476,7 +480,23 @@ function showOverlay(kind) {
         : "The next great run is one tap away."
       : kind === "help"
         ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. One swipe equals one move. To keep your finger down, stop your thumb briefly, then drag again; lifting is always okay. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
-        : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
+        : kind === "paused"
+          ? run.practice
+            ? pauseReason === 'background'
+              ? "Practice is unscored. The browser moved this page to the background, so the run is paused. Tap Keep running when you are back."
+              : pauseReason === 'rotation'
+                ? "Practice is unscored. The screen rotated, so the run is paused. Hold the phone upright, then tap Keep running."
+                : pauseReason === 'touch'
+                  ? "Practice is unscored. The browser interrupted that touch, so the run is paused. Try a shorter swipe or use the big buttons."
+                  : "Practice is unscored. Take a breather, then tap Keep running whenever you are ready."
+            : pauseReason === 'background'
+              ? "The browser moved this page to the background, so your run is paused. Tap Keep running when you are back, or finish now to bank your points, bones and gifts."
+              : pauseReason === 'rotation'
+                ? "The screen rotated, so your run is paused. Hold the phone upright, then tap Keep running, or finish now to bank your points, bones and gifts."
+                : pauseReason === 'touch'
+                  ? "The browser interrupted that touch, so your run is paused. Try a shorter swipe or use the big buttons, then tap Keep running."
+                  : "Keep running, or finish now to bank the points, bones and gifts you have earned."
+          : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
   if(kind==='paused'&&!run.practice&&(run.raft||run.zipline))
     $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
   $("home").textContent = kind === 'paused' ? run.practice ? 'Leave practice' : 'Finish & bank points' : 'Back to camp';
@@ -490,10 +510,13 @@ function showOverlay(kind) {
   setState(kind);
 }
 function pause() {
+  const reason = arguments[0];
+  pauseReason = ['background','rotation','touch','manual'].includes(reason) ? reason : 'manual';
   if (audio) stopSound(audio);
   if (state === "playing") showOverlay("paused");
 }
 function resume() {
+  pauseReason = 'manual';
   if (sound) resumeSound(audio);
   run.resumeRemaining = RESUME_DURATION;
   setState('playing');
@@ -668,7 +691,7 @@ $("help").onclick = () => {
 };
 $("shop").onclick = shop;
 $("kennel").onclick = kennel;
-$("pause-button").onclick = pause;
+$("pause-button").onclick = () => pause('manual');
 $("home").onclick = () => {
   if (state === 'paused' && !run.practice) {
     run.retired = true;
@@ -757,7 +780,7 @@ window.addEventListener("keydown", (event) => {
   if (event.code === "Escape") {
     event.preventDefault();
     if (event.repeat) return;
-    if (state === "playing") pause();
+    if (state === "playing") pause('manual');
     else if (state === "paused") {
       resume();
     } else if (["help", "shop", "kennel"].includes(state)) {
@@ -913,7 +936,7 @@ $("scene").addEventListener("pointerdown", (event) => {
   catch {
     hideTouchGhost();
     pointer=null;
-    pause(); // A vanished touch must not leave the trail running without input.
+    pause('touch'); // A vanished touch must not leave the trail running without input.
   }
 });
 function processPointerMove(event) {
@@ -1194,7 +1217,7 @@ const cancelOwnedPointer = event => {
   hideTouchGhost();
   pointer=null;
   // The browser took over this gesture. Do not keep running under a system UI.
-  pause();
+  pause('touch');
 };
 $("scene").addEventListener("pointercancel", cancelOwnedPointer);
 $("scene").addEventListener("lostpointercapture", cancelOwnedPointer);
@@ -1215,14 +1238,14 @@ for (const button of document.querySelectorAll("[data-action]")) {
     }
   };
 }
-window.addEventListener("blur", pause);
+window.addEventListener("blur", () => pause('background'));
 // Rotation can move hazards and touch targets beneath a player's thumb.
 // Listen to device orientation, not resize: mobile browser chrome resizes often.
 if (window.screen?.orientation?.addEventListener)
-  window.screen.orientation.addEventListener('change', pause);
-else window.addEventListener('orientationchange', pause);
+  window.screen.orientation.addEventListener('change', () => pause('rotation'));
+else window.addEventListener('orientationchange', () => pause('rotation'));
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden) pause();
+  if (document.hidden) pause('background');
 });
 $("scene").addEventListener("webglcontextlost", (event) => {
   event.preventDefault();

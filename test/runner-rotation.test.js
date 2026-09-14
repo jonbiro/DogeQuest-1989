@@ -14,9 +14,10 @@ function fixture(modern) {
   };
   Object.defineProperty(context,'state',{get:()=>state.value});
   const pause=source.slice(source.indexOf('function pause() {'),source.indexOf('function resume() {'));
-  const bindings=source.slice(source.indexOf('window.addEventListener("blur", pause);'),source.indexOf('document.addEventListener("visibilitychange"'));
+  const bindings=source.slice(source.indexOf(`window.addEventListener("blur", () => pause('background'));`),source.indexOf('document.addEventListener("visibilitychange"'));
+  context.pauseReason='manual';
   runInNewContext(pause+bindings,context);
-  return {state,listeners};
+  return {state,listeners,context};
 }
 test('device rotation pauses the active run once, without binding ordinary resize',()=>{
   for(const modern of [true,false]) {
@@ -25,9 +26,18 @@ test('device rotation pauses the active run once, without binding ordinary resiz
     assert.equal(f.listeners.has(modern?'orientationchange':'screen:change'),false);
     f.listeners.get(event)();
     assert.equal(f.state.value,'paused');assert.equal(f.state.pauses,1);
+    assert.equal(f.context.pauseReason,'rotation');
     assert.equal(f.state.audioStops,1);
     f.listeners.get(event)();assert.equal(f.state.pauses,1,'another rotation cannot resume or reopen the run');
   }
+});
+test('browser lifecycle interruptions record an actionable pause reason',()=>{
+  const f=fixture(true);
+  f.listeners.get('blur')();
+  assert.equal(f.context.pauseReason,'background');
+  f.state.value='playing';
+  f.listeners.get('screen:change')();
+  assert.equal(f.context.pauseReason,'rotation');
 });
 test('rotating in camp, results, or another panel does not replace that screen',()=>{
   for(const value of ['menu','ended','help','shop','kennel','paused']) {

@@ -562,7 +562,7 @@ test('unrelated touch cancellation cannot clear the active swipe',()=>{
 test('action buttons support a second thumb while rejecting alternate mouse buttons and duplicate clicks',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('for (const button of document.querySelectorAll("[data-action]"))');
-  const end=source.indexOf('window.addEventListener("blur", pause);',start);
+  const end=source.indexOf(`window.addEventListener("blur", () => pause('background'));`,start);
   assert.ok(start>=0 && end>start,'actual action-button listener block exists');
   const button={dataset:{action:'jump'}};
   const actions=[];
@@ -591,7 +591,7 @@ test('action buttons support a second thumb while rejecting alternate mouse butt
 test('two-thumb buttons combine steering and jumping without a phantom trail release',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');
-  const end=source.indexOf('window.addEventListener("blur", pause);',start);
+  const end=source.indexOf(`window.addEventListener("blur", () => pause('background'));`,start);
   const buttons=['left','jump','slide'].map(action=>({dataset:{action}}));
   const handlers={},actions=[];
   const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
