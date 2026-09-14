@@ -117,15 +117,15 @@ test("touch onboarding teaches the safe opening without changing desktop guidanc
   touchRun.touchActionCount=1;
   assert.equal(touchCoach(touchRun), "ONE TAP = ONE MOVE · SWIPES OPTIONAL");
   touchRun.touchSwipeSeen=true;
-  assert.equal(touchCoach(touchRun), "DRAG ONE LANE · PAUSE, THEN DRAG AGAIN");
+  assert.equal(touchCoach(touchRun), "DRAG ONE LANE · STOP, THEN DRAG AGAIN");
   touchRun.touchOverdrag=true;
-  assert.equal(touchCoach(touchRun), "ONE LANE AT A TIME · PAUSE, THEN DRAG AGAIN");
+  assert.equal(touchCoach(touchRun), "ONE LANE AT A TIME · STOP, THEN DRAG AGAIN");
   touchRun.touchActionCount=2;
-  assert.equal(touchCoach(touchRun), "ONE LANE AT A TIME · PAUSE, THEN DRAG AGAIN", "the held-drag hint remains until the next move acknowledges it");
+  assert.equal(touchCoach(touchRun), "ONE LANE AT A TIME · STOP, THEN DRAG AGAIN", "the held-drag hint remains until the next move acknowledges it");
   touchRun.touchOverdrag=false;
-  assert.equal(touchCoach(touchRun), "DRAG ONE LANE · PAUSE, THEN DRAG AGAIN", "the coach stays available while a new player is still learning");
+  assert.equal(touchCoach(touchRun), "DRAG ONE LANE · STOP, THEN DRAG AGAIN", "the coach stays available while a new player is still learning");
   touchRun.touchActionCount=3;
-  assert.equal(touchCoach(touchRun), "DRAG ONE LANE · PAUSE, THEN DRAG AGAIN");
+  assert.equal(touchCoach(touchRun), "DRAG ONE LANE · STOP, THEN DRAG AGAIN");
   touchRun.touchActionCount=4;
   assert.equal(touchCoach(touchRun), "", "the coach fades after the first few actions");
   touchRun.touchActionCount=0;
@@ -163,10 +163,10 @@ test("live touch coaching explains the gesture where the thumb is held", () => {
   assert.equal(touchGestureCoach(null), "");
   assert.equal(touchGestureCoach({pointerType:'mouse'}), "");
   assert.equal(touchGestureCoach({pointerType:'touch'}), "DRAG A SHORT WAY · ONE MOVE");
-  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'left'}), "← ONE LANE · PAUSE, THEN DRAG");
-  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'right'}), "→ ONE LANE · PAUSE, THEN DRAG");
-  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'jump'}), "↑ JUMP · PAUSE, THEN DRAG");
-  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'slide'}), "↓ SLIDE · PAUSE, THEN DRAG");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'left'}), "← ONE LANE · STOP, THEN DRAG");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'right'}), "→ ONE LANE · STOP, THEN DRAG");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'jump'}), "↑ JUMP · STOP, THEN DRAG");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'slide'}), "↓ SLIDE · STOP, THEN DRAG");
 });
 
 test('area relic guidance is brief, lane-aware and never masks an immediate hazard',()=>{

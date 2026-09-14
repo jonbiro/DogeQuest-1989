@@ -37,9 +37,9 @@ test('runner headline and onboarding name bones as the core collectible',()=>{
   assert.match(html,/class="wordmark"[\s\S]*aria-label="Puppy Run — A Puppy Quest original"/);
   assert.match(html,/<h1 id="title">Run wild\.<br \/>Fetch <em>bones\.<\/em><\/h1>/);
   assert.match(html,/<span>MEET YOUR RUNNING BUDDY<\/span><strong>Mochi\.<\/strong>/);
-  assert.match(html,/aria-label="3D running trail\. The buttons are easiest: tap LEFT or RIGHT to move one lane, or JUMP and SLIDE for actions\. Swipes are optional: drag one lane, then keep your finger down, pause briefly, and drag again for another lane move/);
+  assert.match(html,/aria-label="3D running trail\. The buttons are easiest: tap LEFT or RIGHT to move one lane, or JUMP and SLIDE for actions\. Swipes are optional: drag one lane, then keep your finger down, stop moving briefly, and drag again for another lane move/);
   assert.match(html,/The big movement buttons are the simplest option: tap LEFT or RIGHT for one lane, JUMP to clear a log or gap, and SLIDE under an overhead gate/);
-  assert.match(html,/id="gesture-coach"[^>]*role="status"[^>]*aria-live="polite"[^>]*aria-atomic="true"[^>]*Tap left or right to move\. Tap jump or slide\. Swipes are optional: drag one lane, then keep your finger down, pause briefly, and drag again for another lane move/);
+  assert.match(html,/id="gesture-coach"[^>]*role="status"[^>]*aria-live="polite"[^>]*aria-atomic="true"[^>]*Tap left or right to move\. Tap jump or slide\. Swipes are optional: drag one lane, then keep your finger down, stop moving briefly, and drag again for another lane move/);
   assert.match(html,/id="touch-launch-hint"[^>]*class="touch-launch-hint"/);
   assert.match(html,/PHONE TIP · TAP TO MOVE · DRAG TO STEER · LIFTING OPTIONAL/);
   assert.match(html,/id="touch-ghost"[^>]*aria-hidden="true"[^>]*hidden/);
