@@ -473,7 +473,7 @@ function showOverlay(kind) {
         ? "New personal best. Very good dog!"
         : "The next great run is one tap away."
       : kind === "help"
-        ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. Swipes are optional: drag one lane at a time. Lift after a move, or keep holding and drag again after a short beat. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
+        ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. Swipes are optional: one swipe moves one lane. Lift after a move, or pause with your finger down before dragging again. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
         : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
   if(kind==='paused'&&!run.practice&&(run.raft||run.zipline))
     $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
@@ -789,7 +789,7 @@ let pointer = null;
 // on narrow screens while the one-action-per-beat guard still prevents skips.
 const LANE_DRAG_REPEAT_DISTANCE = 48;
 const LANE_DRAG_REPEAT_DELAY = 140;
-const LANE_DRAG_CONTINUOUS_REARM_DELAY = 260;
+const LANE_DRAG_SETTLE_DELAY = 260;
 const LANE_DRAG_REARM_RADIUS = 20;
 const LANE_DRAG_REARM_DWELL = 110;
 const LANE_DRAG_REVERSE_DISTANCE = 28;
@@ -829,14 +829,28 @@ function scheduleLaneRearm(target) {
   const host = typeof window !== 'undefined' ? window : null;
   if (typeof host?.setTimeout !== 'function') return;
   clearLaneRearm(target);
+  // A long finger path must never turn into an accidental second lane move
+  // merely because the original timer elapsed. Capture the last movement
+  // sample and only re-arm when that sample is still the latest one. If the
+  // thumb is still travelling, defer the same short settle window from the
+  // newest sample instead. This preserves no-lift play after a real pause,
+  // including browsers that emit no resting samples, without letting a single
+  // overlong drag keep walking the puppy across the trail.
+  const scheduledMoveAt = target.lastMoveAt;
+  const scheduledX = target.lastX;
+  const scheduledY = target.lastY;
   target.rearmTimer = host.setTimeout(() => {
     target.rearmTimer = null;
     if (pointer !== target || state !== 'playing' || target.axis !== 'horizontal' || target.laneRearmed) return;
+    if (target.lastMoveAt !== scheduledMoveAt || target.lastX !== scheduledX || target.lastY !== scheduledY) {
+      scheduleLaneRearm(target);
+      return;
+    }
     target.anchorX = target.lastX;
     target.anchorY = target.lastY;
     target.laneRearmed = true;
     target.settledSince = target.lastMoveAt;
-  }, LANE_DRAG_CONTINUOUS_REARM_DELAY);
+  }, LANE_DRAG_SETTLE_DELAY);
 }
 function confirmTouchAction(action) {
   if (run && typeof run === 'object' && !run.ended)
@@ -962,22 +976,21 @@ $("scene").addEventListener("pointermove", (event) => {
   const elapsed = event.timeStamp - pointer.lastActionAt;
   // Same-axis horizontal segments remain deliberately thumb-length so a
   // quick overlong move cannot skip lanes. A short dwell between move samples
-  // re-arms the next horizontal segment anywhere after the last snap; this is
-  // the no-lift equivalent of lifting and starting a fresh swipe. A near-snap
-  // dwell remains a useful fallback for browsers that emit frequent samples
-  // while a thumb rests. Vertical actions stay single-shot; a clear horizontal
-  // segment may follow one without lifting (and vice versa).
+  // re-arms the next horizontal segment only when the thumb is still close to
+  // its last sample; the settle timer handles phones that emit no resting
+  // samples at all. This is the no-lift equivalent of lifting and starting a
+  // fresh swipe, without turning a sparse long drag into a second lane move.
+  // Vertical actions stay single-shot; a clear horizontal segment may follow
+  // one without lifting (and vice versa).
   if (pointer.axis === 'horizontal') {
     const pauseBetweenSegments = Number.isFinite(previousMoveAt) &&
       Number.isFinite(event.timeStamp) &&
-      event.timeStamp - previousMoveAt >= LANE_DRAG_REARM_DWELL;
-    const slowContinuousRearm = event.pointerType === 'touch' &&
-      !pointer.laneRearmed && Number.isFinite(elapsed) &&
-      elapsed >= LANE_DRAG_CONTINUOUS_REARM_DELAY;
+      event.timeStamp - previousMoveAt >= LANE_DRAG_REARM_DWELL &&
+      Math.max(Math.abs(stepX), Math.abs(stepY)) <= LANE_DRAG_REARM_RADIUS;
     // Rebase at the thumb's actual resting point. This preserves the direction
     // of a reverse swipe after an overshoot and prevents a large horizontal
     // offset from masking the next jump or slide.
-    if ((pauseBetweenSegments || slowContinuousRearm) && !pointer.laneRearmed) {
+    if (pauseBetweenSegments && !pointer.laneRearmed) {
       pointer.anchorX = previousX;
       pointer.anchorY = previousY;
       pointer.laneRearmed = true;

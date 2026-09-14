@@ -89,25 +89,39 @@ test('a held horizontal drag can cross lanes one segment at a time without overs
   assert.deepEqual(actions,['right','right','left'],'continued drag changes one lane per thumb segment and can reverse');
 });
 
-test('a slow continuous touch drag can continue one lane at a time without lifting',()=>{
+test('a continuous over-drag waits for the thumb to settle before another lane',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');
   const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
-  const handlers={},actions=[],run={};
+  const handlers={},actions=[],run={},timers=[];
+  const fakeWindow={
+    setTimeout(callback){timers.push(callback);return timers.length-1;},
+    clearTimeout(id){timers[id]=null;},
+  };
   const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
-  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run,
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run,window:fakeWindow,
     act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
   const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
   handlers.pointerdown(touch);
   handlers.pointermove({...touch,clientX:82,timeStamp:120});
   // Keep samples frequent enough that this is a continuous drag, not the
-  // normal short pause re-arm. The first lane remains the only fast action.
+  // normal short pause re-arm. The first lane remains the only action while
+  // the thumb is still travelling; otherwise a single long swipe can feel
+  // like an accidental second lane move.
   for (const [clientX,timeStamp] of [[110,180],[140,240],[170,300],[200,360],[230,420]])
     handlers.pointermove({...touch,clientX,timeStamp});
   assert.deepEqual(actions,['right'],'a steady over-drag does not chain immediately');
   handlers.pointermove({...touch,clientX:260,timeStamp:500});
-  assert.deepEqual(actions,['right','right'],'the shorter settle window lets a held finger continue after a short beat');
-  handlers.pointerup({...touch,clientX:260,timeStamp:560});
+  assert.deepEqual(actions,['right'],'continued travel stays capped at one lane');
+  // Once the thumb has actually stopped, the deferred timer re-arms the next
+  // segment even though the player never lifted their finger. A stale timer
+  // notices the movement and defers; the latest timer then observes the quiet
+  // thumb and unlocks the next segment.
+  timers[0]();
+  timers.at(-1)();
+  handlers.pointermove({...touch,clientX:320,timeStamp:760});
+  assert.deepEqual(actions,['right','right'],'a settled held finger can continue one lane at a time');
+  handlers.pointerup({...touch,clientX:260,timeStamp:820});
   assert.equal(run.touchOverdrag,false,'the accepted segment clears over-drag guidance');
 });
 

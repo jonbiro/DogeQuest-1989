@@ -113,24 +113,24 @@ test("touch onboarding teaches the safe opening without changing desktop guidanc
   assert.equal(actionCue(createRun(1989)), "", "desktop keeps the safe opening quiet");
   const touchRun=createRun(1989);touchRun.touchHint=true;
   assert.equal(actionCue(touchRun), "", "the opening coach stays with the thumb controls");
-  assert.equal(touchCoach(touchRun), "EASIEST: TAP LEFT / RIGHT · TAP JUMP OR SLIDE");
+  assert.equal(touchCoach(touchRun), "TAP THE BIG BUTTONS · SWIPES OPTIONAL");
   touchRun.touchActionCount=1;
-  assert.equal(touchCoach(touchRun), "KEEP TAPPING THE BUTTONS · ONE TAP = ONE MOVE");
+  assert.equal(touchCoach(touchRun), "ONE TAP = ONE MOVE · BUTTONS STAY READY");
   touchRun.touchSwipeSeen=true;
-  assert.equal(touchCoach(touchRun), "DRAG ONE LANE · LIFT, OR DRAG AGAIN AFTER A BEAT");
+  assert.equal(touchCoach(touchRun), "ONE SWIPE = ONE LANE · LIFT OR PAUSE, THEN DRAG");
   touchRun.touchOverdrag=true;
-  assert.equal(touchCoach(touchRun), "ONE LANE LOCKED · WAIT A BEAT, DRAG AGAIN");
+  assert.equal(touchCoach(touchRun), "ONE LANE ONLY · PAUSE, THEN DRAG AGAIN");
   touchRun.touchActionCount=2;
-  assert.equal(touchCoach(touchRun), "ONE LANE LOCKED · WAIT A BEAT, DRAG AGAIN", "an overdrag hint remains until the next move acknowledges it");
+  assert.equal(touchCoach(touchRun), "ONE LANE ONLY · PAUSE, THEN DRAG AGAIN", "an overdrag hint remains until the next move acknowledges it");
   touchRun.touchOverdrag=false;
-  assert.equal(touchCoach(touchRun), "DRAG ONE LANE · LIFT, OR DRAG AGAIN AFTER A BEAT", "the coach stays available while a new player is still learning");
+  assert.equal(touchCoach(touchRun), "ONE SWIPE = ONE LANE · LIFT OR PAUSE, THEN DRAG", "the coach stays available while a new player is still learning");
   touchRun.touchActionCount=3;
-  assert.equal(touchCoach(touchRun), "DRAG ONE LANE · LIFT, OR DRAG AGAIN AFTER A BEAT");
+  assert.equal(touchCoach(touchRun), "ONE SWIPE = ONE LANE · LIFT OR PAUSE, THEN DRAG");
   touchRun.touchActionCount=4;
   assert.equal(touchCoach(touchRun), "", "the coach fades after the first few actions");
   touchRun.touchActionCount=0;
   touchRun.inputCount=8;
-  assert.equal(touchCoach(touchRun), "EASIEST: TAP LEFT / RIGHT · TAP JUMP OR SLIDE", "simulation inputs do not spend the touch lesson");
+  assert.equal(touchCoach(touchRun), "TAP THE BIG BUTTONS · SWIPES OPTIONAL", "simulation inputs do not spend the touch lesson");
   assert.equal(touchCoachVisible(touchRun, "mission-summary"), true);
   assert.equal(touchCoachVisible(touchRun, "cue"), true, "a quiet opening cue does not hide the coach");
   assert.equal(touchCoachVisible(touchRun, "cue", "playing", "Root scramble · +180 clean"), true);
@@ -163,10 +163,10 @@ test("live touch coaching explains the gesture where the thumb is held", () => {
   assert.equal(touchGestureCoach(null), "");
   assert.equal(touchGestureCoach({pointerType:'mouse'}), "");
   assert.equal(touchGestureCoach({pointerType:'touch'}), "DRAG A SHORT WAY · ONE MOVE");
-  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'left'}), "← ONE LANE · LIFT OR DRAG AGAIN");
-  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'right'}), "→ ONE LANE · LIFT OR DRAG AGAIN");
-  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'jump'}), "↑ JUMP · LIFT OR DRAG AGAIN");
-  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'slide'}), "↓ SLIDE · LIFT OR DRAG AGAIN");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'left'}), "← ONE LANE · LIFT OR PAUSE, THEN DRAG");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'right'}), "→ ONE LANE · LIFT OR PAUSE, THEN DRAG");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'jump'}), "↑ JUMP · LIFT OR PAUSE, THEN DRAG");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'slide'}), "↓ SLIDE · LIFT OR PAUSE, THEN DRAG");
 });
 
 test('area relic guidance is brief, lane-aware and never masks an immediate hazard',()=>{
