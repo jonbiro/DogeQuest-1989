@@ -4,7 +4,7 @@
 
 Meet Mochi: a soft, silver-curled dog with a red scarf and five handcrafted trails to explore. Reach the doghouse to finish each trail. Bones are optional; elevated routes reward exploration. Checkpoint flags save your place, and retries are unlimited.
 
-## New companion: Biscuit Dash
+## New companion: Puppy Run
 
 The runner now explores six visual destinations within its three mastery regions:
 Sunleaf Woods, Bamboo Sanctuary, Redrock Pass, Palm Oasis, Crystal Reach, and
@@ -21,7 +21,7 @@ Movement uses interpolated rendering, momentum-aware lane changes, smooth camera
 
 Jumps return to the ground in 0.72 seconds at every upgrade level; Spring paws adds 10% height per level instead of longer airtime. Standard slides last 0.58 seconds, rising to 0.79 seconds with all three upgrades. Action hints anticipate the puppy's physical lane and disappear when the current move already covers the obstacle. Swipes wait for a clear horizontal or vertical direction to avoid accidental diagonal actions.
 
-[Play Biscuit Dash in 3D](https://jonbiro.github.io/DogeQuest-1989/runner/)
+[Play Puppy Run in 3D](https://jonbiro.github.io/DogeQuest-1989/runner/)
 
 A separate mobile-first endless runner through jungle ruins, a sunlit canyon and a moonlit crystal glade. Puppy Quest is still available unchanged at the main address.
 
@@ -102,7 +102,7 @@ Open http://127.0.0.1:3000. Run `npm run build` again after changes; the server 
 - `src/runner/app.js`, `src/runner/ui.css`, `runner/index.html`: runner controls, states, saved records, and mobile interface.
 - `test/runner.test.js`: route fairness, bounded object counts, movement, power-ups, collision, and a two-minute survival simulation.
 
-Both simulations advance at 120 Hz independently of display refresh rate. Audio is generated locally and enabled by a user gesture. No external fonts or artwork are requested. Biscuit Dash uses Three.js bundled locally by esbuild; the original game does not load this bundle. The retired neon engine remains recoverable through Git history. Three.js attribution is retained in the generated bundle's linked legal notices, with its full MIT license in `runner/THREE-LICENSE.txt` in the built output.
+Both simulations advance at 120 Hz independently of display refresh rate. Audio is generated locally and enabled by a user gesture. No external fonts or artwork are requested. Puppy Run uses Three.js bundled locally by esbuild; the original game does not load this bundle. The retired neon engine remains recoverable through Git history. Three.js attribution is retained in the generated bundle's linked legal notices, with its full MIT license in `runner/THREE-LICENSE.txt` in the built output.
 
 ## Deployment and verification
 

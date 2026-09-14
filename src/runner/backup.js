@@ -30,9 +30,9 @@ export function encodeBackup(profile) {
 export function decodeBackup(text) {
   if(typeof text!=='string' || text.length>MAX_BACKUP_BYTES)throw Error('This backup is too large.');
   let data;
-  try {data=JSON.parse(text);} catch {throw Error('Choose a valid Biscuit Dash backup file.');}
+  try {data=JSON.parse(text);} catch {throw Error('Choose a valid Puppy Run backup file.');}
   if(data?.format!=='biscuit-dash-backup' || data.version!==1)
-    throw Error('This file is not a supported Biscuit Dash backup.');
+    throw Error('This file is not a supported Puppy Run backup.');
   return cleanProfile(data.profile);
 }
 export function restoreBackup(storage, profile) {
