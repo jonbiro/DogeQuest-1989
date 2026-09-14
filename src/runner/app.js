@@ -342,6 +342,17 @@ function setText(id, text) {
   const node = $(id);
   if (node && node.textContent !== text) node.textContent = text;
 }
+function setHTML(id, html) {
+  const node = $(id);
+  if (node && node.innerHTML !== html) node.innerHTML = html;
+}
+function setAttribute(id, name, value) {
+  $(id)?.setAttribute?.(name, String(value));
+}
+function setProperty(id, name, value) {
+  const node = $(id);
+  if (node) node[name] = value;
+}
 function textOf(id) {
   const node = $(id);
   return typeof node?.textContent === 'string' ? node.textContent : '';
@@ -1787,32 +1798,35 @@ function frame(now) {
     run.events = [];
     updateTraversalControls(traversalButtons,run);
     const sceneDescription=traversalDescription(run);
-    if($('scene').getAttribute('aria-label')!==sceneDescription)$('scene').setAttribute('aria-label',sceneDescription);
-    $("scene").dataset.lane = String(run.lane + 1);
-    $("scene").dataset.turns = String(run.turns);
-    $("scene").dataset.missedTurns = String(run.missedTurns);
-    $("scene").dataset.courses = run.regionalCourses.join(',');
-    $("scene").dataset.course = run.course?.name || '';
-    $("scene").dataset.posture =
+    const scene = $('scene');
+    if (scene) {
+      if(scene.getAttribute('aria-label')!==sceneDescription)scene.setAttribute('aria-label',sceneDescription);
+      scene.dataset.lane = String(run.lane + 1);
+      scene.dataset.turns = String(run.turns);
+      scene.dataset.missedTurns = String(run.missedTurns);
+      scene.dataset.courses = run.regionalCourses.join(',');
+      scene.dataset.course = run.course?.name || '';
+      scene.dataset.posture =
       run.raft ? "raft" : run.zipline ? "zipline" : run.y > 0.05 ? "jump" : run.slide > 0 ? "slide" : "run";
+    }
     // Decision cues follow each rendered frame; counters can wait for the HUD tick.
     setText('cue', run.practice ? practiceCue(run) : actionCue(run));
     if (Math.floor(run.time * 10) !== lastHud || run.ended) {
       lastHud = Math.floor(run.time * 10);
-      $("distance").innerHTML = `${Math.floor(run.distance-(run.practice?.start || 0))}<small> m</small>`;
+      setHTML('distance', `${Math.floor(run.distance-(run.practice?.start || 0))}<small> m</small>`);
       const labels=runHudLabels(run,saved.best);
-      $("region-name").textContent = labels.region;
-      $("area-rhythm").textContent = labels.rhythm;
+      setText('region-name', labels.region);
+      setText('area-rhythm', labels.rhythm);
       setText('route-choice', routeChoiceCue(run));
-      $("bones").textContent = run.bones;
-      $("run-score").textContent = labels.score;
+      setText('bones', run.bones);
+      setText('run-score', labels.score);
       const progress = missionProgress(run, currentMission);
       const courseStatus=courseProgress(run);
-      $("mission-label").textContent = courseStatus?.label ??
-        `${run.missions.indexOf(currentMission)+1}/3 · ${currentMission.title} · ${progress}/${currentMission.target} ${currentMission.unit}`;
-      $("mission-progress").max = courseStatus?.max ?? currentMission.target;
-      $("mission-progress").value = courseStatus?.value ?? progress;
-      $("mission-progress").setAttribute('aria-label',courseStatus?.ariaLabel ?? (courseStatus?'Clean course moves':'Challenge progress'));
+      setText('mission-label', courseStatus?.label ??
+        `${run.missions.indexOf(currentMission)+1}/3 · ${currentMission.title} · ${progress}/${currentMission.target} ${currentMission.unit}`);
+      setProperty('mission-progress', 'max', courseStatus?.max ?? currentMission.target);
+      setProperty('mission-progress', 'value', courseStatus?.value ?? progress);
+      setAttribute('mission-progress', 'aria-label', courseStatus?.ariaLabel ?? (courseStatus?'Clean course moves':'Challenge progress'));
       if (progress === currentMission.target && !missionAnnounced) {
         missionAnnounced = true;
         toast(
@@ -1825,7 +1839,7 @@ function frame(now) {
         if (next) { currentMission = next; missionAnnounced = false; }
       }
       const fetchButton = $('fetch');
-      $('scene').dataset.fetchUses = String(run.fetchUses);
+      if (scene?.dataset) scene.dataset.fetchUses = String(run.fetchUses);
       if (fetchButton) {
         const ready = fetchReady(run);
         if (fetchButton.disabled && ready) tone('ready');
@@ -1844,13 +1858,16 @@ function frame(now) {
           : 'Collect bones and clear obstacles to charge Fetch');
       }
       const turn = turnPrompt(run);
-      $("scene").dataset.turn = turn ? `${turn.direction}-${turn.status}` : '';
+      if (scene?.dataset) scene.dataset.turn = turn ? `${turn.direction}-${turn.status}` : '';
       updateTurnControls(turnButtons, turn);
-      $("hearts").textContent =
-        "♥ ".repeat(Math.max(0, run.hearts)) + "♡ ".repeat(3 - run.hearts);
-      $("hearts").setAttribute("aria-label", `${run.hearts} hearts remaining`);
-      if (run.practice) { $('hearts').textContent = '∞'; $('hearts').setAttribute('aria-label','Practice: unlimited tries'); }
-      $("hud").classList.toggle("has-powers", updatePowerHud(run));
+      setText('hearts',
+        "♥ ".repeat(Math.max(0, run.hearts)) + "♡ ".repeat(3 - run.hearts));
+      setAttribute('hearts', 'aria-label', `${run.hearts} hearts remaining`);
+      if (run.practice) {
+        setText('hearts', '∞');
+        setAttribute('hearts', 'aria-label', 'Practice: unlimited tries');
+      }
+      toggleClass('hud', 'has-powers', updatePowerHud(run));
     }
     if (run.ended) finish();
     }
