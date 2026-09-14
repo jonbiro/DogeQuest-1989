@@ -25,6 +25,8 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
   direction changes even when Chrome reports the whole path as one event.
 - Replaced abstract touch coaching with the literal action “STOP, THEN DRAG
   AGAIN,” making the no-lift pause easier to understand at a glance.
+- Bounded a hung mobile motion-permission request so the runner returns to
+  touch controls instead of waiting forever with gameplay paused.
 - Made full WebGL2 presentation the runner's only default: browsers with GPU
   acceleration disabled now receive an actionable 3D setup screen instead of a
   silent 2D downgrade. Chrome's hardware-acceleration steps are shown inline,

@@ -70,6 +70,28 @@ test('mobile Play keeps touch controls default; explicit tilt opt-in requests pe
   assert.match(message.textContent,/Tilt is off/,'manual off is not advertised as pending automatic activation');
 });
 
+test('a hung motion permission request returns to touch controls',async()=>{
+  let resolve,timeout,requests=0;
+  const listeners=new Map();
+  const host={isSecureContext:true,matchMedia:()=>({matches:true}),
+    DeviceOrientationEvent:{requestPermission:()=>{requests++;return new Promise(r=>{resolve=r;});}},
+    performance:{now:()=>0},setTimeout:callback=>{timeout=callback;return 1;},clearTimeout(){},
+    addEventListener:(name,callback)=>listeners.set(name,callback),
+    removeEventListener:name=>listeners.delete(name)};
+  const toggle={setAttribute(){}},message={},controls=installTiltControls(host,
+    {toggle,recenter:{},message,onAction(){},canSteer:()=>true});
+  const pending=toggle.onclick();
+  assert.equal(requests,1);assert.equal(controls.isRequesting(),true);
+  timeout();
+  await pending;
+  assert.equal(controls.isRequesting(),false);
+  assert.equal(toggle.disabled,false,'the opt-in control is usable after a timeout');
+  assert.match(message.textContent,/took too long/);
+  resolve('granted');
+  await new Promise(r=>setImmediate(r));
+  assert.equal(listeners.size,0,'a late permission response cannot re-enable tilt');
+});
+
 test('desktop Play does not request tilt by default',()=>{
   const f=setup();f.controller.enableDefault();
   assert.equal(f.listeners.size,0);assert.equal(f.controller.isRequesting(),false);
