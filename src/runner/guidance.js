@@ -78,11 +78,13 @@ export function actionCue(run) {
 }
 
 // Keep the first touch lesson attached to the thumb controls instead of
-// placing another banner in the play corridor. It stays until the player has
-// made two deliberate actions, with one extra explanation when a long drag
-// hits the intentional one-lane safety cap.
+// placing another banner in the play corridor. It stays through the first few
+// deliberate actions, with one extra explanation when a long drag hits the
+// intentional one-lane safety cap. A new player often needs more than one
+// attempt to discover the controls; this low-profile dock is the least noisy
+// place to keep that help available.
 export function touchCoach(run) {
-  if (!run?.touchHint || ((run.inputCount || 0) >= 2 && !run.touchOverdrag)) return '';
+  if (!run?.touchHint || ((run.inputCount || 0) >= 4 && !run.touchOverdrag)) return '';
   if (run.touchOverdrag)
     return 'ONE DRAG = ONE LANE · PAUSE OR REVERSE TO MOVE AGAIN';
   if ((run.inputCount || 0) === 0)

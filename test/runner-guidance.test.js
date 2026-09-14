@@ -123,7 +123,11 @@ test("touch onboarding teaches the safe opening without changing desktop guidanc
   touchRun.inputCount=2;
   assert.equal(touchCoach(touchRun), "ONE DRAG = ONE LANE · PAUSE OR REVERSE TO MOVE AGAIN", "an overdrag hint remains until the next move acknowledges it");
   touchRun.touchOverdrag=false;
-  assert.equal(touchCoach(touchRun), "", "the coach disappears after the second action");
+  assert.equal(touchCoach(touchRun), "SWIPES OPTIONAL: SHORT DRAG = ONE MOVE · REVERSE WITHOUT LIFTING", "the coach stays available while a new player is still learning");
+  touchRun.inputCount=3;
+  assert.equal(touchCoach(touchRun), "SWIPES OPTIONAL: SHORT DRAG = ONE MOVE · REVERSE WITHOUT LIFTING");
+  touchRun.inputCount=4;
+  assert.equal(touchCoach(touchRun), "", "the coach fades after the first few actions");
   touchRun.inputCount=0;
   assert.equal(touchCoachVisible(touchRun, "mission-summary"), true);
   assert.equal(touchCoachVisible(touchRun, "cue"), true, "a quiet opening cue does not hide the coach");

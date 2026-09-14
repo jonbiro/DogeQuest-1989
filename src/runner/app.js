@@ -871,6 +871,12 @@ $("scene").addEventListener("pointermove", (event) => {
     pointer.settledSince = null;
     pointer.laneRearmed = false;
     commitPointerAction(action, event);
+    // A browser can coalesce a fast thumb movement into one very large
+    // pointermove. It still gets exactly one lane, but should also receive
+    // the same pause/reverse explanation as a sampled overdrag.
+    if (event.pointerType === 'touch' && pointer.axis === 'horizontal' &&
+      Math.abs(dx) >= LANE_DRAG_REPEAT_DISTANCE)
+      run.touchOverdrag = true;
     return;
   }
   let deltaX = event.clientX - pointer.anchorX;

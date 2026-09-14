@@ -67,6 +67,22 @@ test('a held horizontal drag can cross lanes one segment at a time without overs
   assert.deepEqual(actions,['right','right','left'],'continued drag changes one lane per thumb segment and can reverse');
 });
 
+test('a coalesced giant first swipe still explains the one-lane cap',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
+  const handlers={},actions=[],run={};
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run,
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:260,timeStamp:140});
+  handlers.pointerup({...touch,clientX:260,timeStamp:180});
+  assert.deepEqual(actions,['right'],'one coalesced sample cannot throw the puppy across lanes');
+  assert.equal(run.touchOverdrag,true,'a giant first sample receives recovery guidance');
+});
+
 test('a clear reverse segment re-arms a held swipe without requiring a lift',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');
