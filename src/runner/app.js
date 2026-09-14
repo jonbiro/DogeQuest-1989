@@ -18,7 +18,7 @@ import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLin
 import {dailyTrail,restoredTrailSelection} from './daily-trail.js';
 import {trailRecordsFrom,trailBest} from './trail-records.js';
 import {updateTraversalControls,traversalDescription} from './traversal-controls.js';
-import {supportsMobileTilt,noTiltController} from './tilt-platform.js';
+import {supportsMobileTilt,supportsTouchControls,noTiltController} from './tilt-platform.js';
 import {scoreBreakdown} from './score-breakdown.js';
 import {rematchFor} from './rematch.js';
 import {preferencesFrom} from "./preferences.js";
@@ -342,6 +342,7 @@ function syncDock() {
   $('controls').classList.toggle('touch-overdrag', Boolean(run.touchOverdrag));
 }
 const mobileTilt = supportsMobileTilt(window);
+const touchControls = supportsTouchControls(window);
 let tiltSettings = $('tilt-settings');
 let tilt = noTiltController();
 if (!mobileTilt) {
@@ -427,9 +428,11 @@ function start() {
   run.localDailyTarget=retry?Boolean(retry.localDailyTarget):localDailyTarget;
   run.puppy = saved.collection.puppy;
   run.appearance = { ...saved.collection };
-  // Keep the opening interaction hint for actual phone/tablet players only;
+  // Keep the opening interaction hint for touch-capable players; fine-pointer
   // desktop stays focused on the authored trail and explicit buttons.
-  run.touchHint = typeof mobileTilt === 'boolean' && mobileTilt;
+  // Touch coaching is independent from optional motion sensors. A phone can
+  // decline sensor access and still needs the tap-first lesson.
+  run.touchHint = touchControls;
   run.missions = missionPackFor(saved.challenges);
   currentMission = run.missions[0];
   missionAnnounced = false;

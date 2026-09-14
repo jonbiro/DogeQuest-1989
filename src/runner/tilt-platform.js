@@ -13,6 +13,16 @@ export function supportsMobileTilt(host = globalThis) {
   return mobileUserAgent || touchMac;
 }
 
+// Touch guidance is useful even when motion sensors are unavailable, denied,
+// or intentionally disabled. Keep this broader than supportsMobileTilt so a
+// touch laptop, an iPad in desktop-UA mode, and a phone with sensor permission
+// turned off still get the tap-first lesson and touch feedback.
+export function supportsTouchControls(host = globalThis) {
+  const coarse = host.matchMedia?.('(pointer: coarse)')?.matches === true;
+  const navigator = host.navigator ?? {};
+  return coarse || Number(navigator.maxTouchPoints) > 0 || 'ontouchstart' in host;
+}
+
 export function noTiltController() {
   return {
     enable: async () => false,
