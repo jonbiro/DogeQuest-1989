@@ -5,7 +5,13 @@ import {ZIPLINE_LENGTH} from './ziplines.js';
 // Keep progress nodes alive between updates and activations, including their
 // accessibility identity. Only labels, values and visibility change at 10Hz.
 export function createPowerHud(container) {
-  const doc=container.ownerDocument;
+  // A cached shell can briefly predate the power-chip container. Keep the
+  // renderer's optional HUD feature as a no-op in that case instead of
+  // crashing module evaluation before the recovery screen can explain it.
+  const doc=container?.ownerDocument;
+  if (!container || typeof container.append !== 'function' ||
+      typeof doc?.createElement !== 'function' ||
+      typeof doc?.createTextNode !== 'function') return () => false;
   const specifications=[
     ['shield','Zipline ride','Zipline distance remaining'],
     ['double',null,'Zoomies time remaining'],

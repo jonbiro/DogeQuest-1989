@@ -15,6 +15,10 @@ function fixture() {
   const container=doc.createElement('div');container.ownerDocument=doc;
   return {container,counts:()=>[allocations,appends]};
 }
+test('a stale shell without the optional power container stays playable',()=>{
+  const update=createPowerHud(null);
+  assert.equal(update(createRun(1)),false);
+});
 test('raft distance reuses the traversal chip and restores cable semantics',()=>{
   const f=fixture(),update=createPowerHud(f.container),run=createRun(1);
   const nodes=[...f.container.children],counts=f.counts();
