@@ -813,13 +813,13 @@ $("scene").addEventListener("pointermove", (event) => {
   const deltaX = event.clientX - pointer.anchorX;
   const deltaY = event.clientY - pointer.anchorY;
   const elapsed = event.timeStamp - pointer.lastActionAt;
-  if (Number.isFinite(elapsed) && elapsed < LANE_DRAG_REPEAT_DELAY) return;
   // Same-axis horizontal segments remain deliberately thumb-length so a
   // quick overlong move cannot skip lanes. Vertical actions stay single-shot;
   // a new vertical swipe needs a fresh touch, but a clear horizontal segment
   // may follow it without lifting (and vice versa).
   if (pointer.axis === 'horizontal') {
     if (Math.abs(deltaX) >= LANE_DRAG_REPEAT_DISTANCE) {
+      if (Number.isFinite(elapsed) && elapsed < LANE_DRAG_REPEAT_DELAY) return;
       pointer.anchorX = event.clientX;
       pointer.anchorY = event.clientY;
       pointer.lastActionAt = event.timeStamp;

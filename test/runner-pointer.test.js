@@ -101,9 +101,9 @@ test('a held gesture can deliberately switch axes without lifting',()=>{
   handlers.pointermove({...touch,clientY:82,timeStamp:120});
   // A clear horizontal segment after the jump is a new move, not a second
   // jump, even though the same finger is still down.
-  handlers.pointermove({...touch,clientX:120,clientY:82,timeStamp:280});
-  handlers.pointermove({...touch,clientX:180,clientY:82,timeStamp:440});
-  handlers.pointerup({...touch,clientX:180,clientY:82,timeStamp:460});
+  handlers.pointermove({...touch,clientX:120,clientY:82,timeStamp:130});
+  handlers.pointermove({...touch,clientX:180,clientY:82,timeStamp:290});
+  handlers.pointerup({...touch,clientX:180,clientY:82,timeStamp:310});
   assert.deepEqual(actions,['jump','right','right']);
 
   actions.length=0;
@@ -111,7 +111,7 @@ test('a held gesture can deliberately switch axes without lifting',()=>{
   handlers.pointermove({...touch,pointerId:2,clientX:90,clientY:50,timeStamp:520});
   // The reverse transition works too: a deliberate vertical segment after a
   // lane move can slide/jump without requiring a release and re-touch.
-  handlers.pointermove({...touch,pointerId:2,clientX:90,clientY:10,timeStamp:700});
+  handlers.pointermove({...touch,pointerId:2,clientX:90,clientY:10,timeStamp:530});
   assert.deepEqual(actions,['right','jump']);
 });
 
@@ -136,7 +136,7 @@ test('tap jumps require quick contact without a wandering drag',()=>{
   assert.equal(isJumpTap({...pointer,travel:30},release),false,'returning a diagonal drag to its origin is not a tap');
 });
 
-test('touch taps offer forgiving edge steering while centre taps still jump',()=>{
+test('touch taps offer forgiving edge steering while center taps still jump',()=>{
   const left={x:40,y:400,started:100,travel:0};
   const right={x:350,y:400,started:100,travel:0};
   const centre={x:195,y:400,started:100,travel:0};
