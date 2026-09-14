@@ -475,7 +475,7 @@ function showOverlay(kind) {
         ? "New personal best. Very good dog!"
         : "The next great run is one tap away."
       : kind === "help"
-        ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. Swipes are optional: drag one lane, then keep your finger down for another lane move, or lift whenever comfortable. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
+        ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. Swipes are optional: drag one lane, then keep your finger down, pause briefly, and drag again for another lane move, or lift whenever comfortable. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
         : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
   if(kind==='paused'&&!run.practice&&(run.raft||run.zipline))
     $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
@@ -789,7 +789,10 @@ let pointer = null;
 // lane. This makes held drags comfortable on narrow screens while the natural
 // world lane clamp prevents the puppy from travelling beyond the trail.
 const LANE_DRAG_REPEAT_DISTANCE = 48;
-const LANE_DRAG_REPEAT_DELAY = 48;
+// Require a brief pause between same-direction lane moves. This keeps a fast,
+// well-sampled over-swipe from walking the puppy across the trail while still
+// allowing a held finger to pause and drag again for the next lane.
+const LANE_DRAG_REPEAT_DELAY = 96;
 // A single browser sample can cover much more than a thumb-width. Treat that
 // as one over-drag and rebase instead of turning it into an accidental second
 // lane move; a normal follow-up segment can still continue without a lift.

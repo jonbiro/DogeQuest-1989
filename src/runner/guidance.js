@@ -88,14 +88,14 @@ export function touchCoach(run) {
     ? run.touchActionCount : run?.inputCount || 0;
   if (!run?.touchHint || (actions >= 4 && !run.touchOverdrag)) return '';
   if (run.touchOverdrag)
-    return 'ONE LANE AT A TIME · KEEP FINGER DOWN';
+    return 'ONE LANE AT A TIME · PAUSE, THEN DRAG AGAIN';
   if (actions === 0)
     return 'TAP OR DRAG · MOVE ONE LANE';
   // Keep the first lesson aligned with the visible buttons. Only introduce
   // the no-lift gesture vocabulary after the player has actually tried one;
   // a first-time player should never feel that a swipe is required.
   return run.touchSwipeSeen
-    ? 'DRAG ONE LANE · KEEP FINGER DOWN'
+    ? 'DRAG ONE LANE · PAUSE, THEN DRAG AGAIN'
     : 'ONE TAP = ONE MOVE · SWIPES OPTIONAL';
 }
 
@@ -106,10 +106,10 @@ export function touchCoach(run) {
 export function touchGestureCoach(pointer) {
   if (!pointer || pointer.pointerType !== 'touch') return '';
   if (!pointer.axis) return 'DRAG A SHORT WAY · ONE MOVE';
-  if (pointer.laneDirection === 'left') return '← ONE LANE · KEEP FINGER DOWN';
-  if (pointer.laneDirection === 'right') return '→ ONE LANE · KEEP FINGER DOWN';
-  if (pointer.laneDirection === 'jump') return '↑ JUMP · KEEP FINGER DOWN';
-  if (pointer.laneDirection === 'slide') return '↓ SLIDE · KEEP FINGER DOWN';
+  if (pointer.laneDirection === 'left') return '← ONE LANE · PAUSE, THEN DRAG';
+  if (pointer.laneDirection === 'right') return '→ ONE LANE · PAUSE, THEN DRAG';
+  if (pointer.laneDirection === 'jump') return '↑ JUMP · PAUSE, THEN DRAG';
+  if (pointer.laneDirection === 'slide') return '↓ SLIDE · PAUSE, THEN DRAG';
   return '';
 }
 
