@@ -106,11 +106,34 @@ test('a slow continuous touch drag can continue one lane at a time without lifti
     handlers.pointermove({...touch,clientX,timeStamp});
   assert.deepEqual(actions,['right'],'a steady over-drag does not chain immediately');
   handlers.pointermove({...touch,clientX:260,timeStamp:500});
-  assert.deepEqual(actions,['right'],'the slow re-arm rebases before accepting a new segment');
-  handlers.pointermove({...touch,clientX:316,timeStamp:540});
-  assert.deepEqual(actions,['right','right'],'a held finger can deliberately continue after the settle window');
-  handlers.pointerup({...touch,clientX:316,timeStamp:560});
+  assert.deepEqual(actions,['right','right'],'the shorter settle window lets a held finger continue after a short beat');
+  handlers.pointerup({...touch,clientX:260,timeStamp:560});
   assert.equal(run.touchOverdrag,false,'the accepted segment clears over-drag guidance');
+});
+
+test('a held drag re-arms even when a phone emits no resting samples',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
+  const handlers={},actions=[],timers=[];
+  const fakeWindow={
+    setTimeout(callback){timers.push(callback);return timers.length-1;},
+    clearTimeout(id){timers[id]=null;},
+  };
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},window:fakeWindow,
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:82,timeStamp:120});
+  assert.deepEqual(actions,['right']);
+  assert.equal(timers.length,1,'the first lane schedules a no-lift reset');
+  // There is no pointermove while the thumb rests. The timer must still make
+  // the next same-direction drag start from that resting point.
+  timers[0]();
+  handlers.pointermove({...touch,clientX:140,timeStamp:500});
+  assert.deepEqual(actions,['right','right']);
+  handlers.pointerup({...touch,clientX:140,timeStamp:520});
 });
 
 test('a coalesced giant first swipe still explains the one-lane cap',()=>{

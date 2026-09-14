@@ -117,15 +117,15 @@ test("touch onboarding teaches the safe opening without changing desktop guidanc
   touchRun.touchActionCount=1;
   assert.equal(touchCoach(touchRun), "KEEP TAPPING THE BUTTONS · ONE TAP = ONE MOVE");
   touchRun.touchSwipeSeen=true;
-  assert.equal(touchCoach(touchRun), "SWIPES OPTIONAL: SHORT DRAG = ONE MOVE · LIFT, PAUSE, OR REVERSE");
+  assert.equal(touchCoach(touchRun), "DRAG ONE LANE · LIFT, OR DRAG AGAIN AFTER A BEAT");
   touchRun.touchOverdrag=true;
-  assert.equal(touchCoach(touchRun), "ONE DRAG = ONE LANE · LIFT, PAUSE, OR REVERSE");
+  assert.equal(touchCoach(touchRun), "ONE LANE LOCKED · WAIT A BEAT, DRAG AGAIN");
   touchRun.touchActionCount=2;
-  assert.equal(touchCoach(touchRun), "ONE DRAG = ONE LANE · LIFT, PAUSE, OR REVERSE", "an overdrag hint remains until the next move acknowledges it");
+  assert.equal(touchCoach(touchRun), "ONE LANE LOCKED · WAIT A BEAT, DRAG AGAIN", "an overdrag hint remains until the next move acknowledges it");
   touchRun.touchOverdrag=false;
-  assert.equal(touchCoach(touchRun), "SWIPES OPTIONAL: SHORT DRAG = ONE MOVE · LIFT, PAUSE, OR REVERSE", "the coach stays available while a new player is still learning");
+  assert.equal(touchCoach(touchRun), "DRAG ONE LANE · LIFT, OR DRAG AGAIN AFTER A BEAT", "the coach stays available while a new player is still learning");
   touchRun.touchActionCount=3;
-  assert.equal(touchCoach(touchRun), "SWIPES OPTIONAL: SHORT DRAG = ONE MOVE · LIFT, PAUSE, OR REVERSE");
+  assert.equal(touchCoach(touchRun), "DRAG ONE LANE · LIFT, OR DRAG AGAIN AFTER A BEAT");
   touchRun.touchActionCount=4;
   assert.equal(touchCoach(touchRun), "", "the coach fades after the first few actions");
   touchRun.touchActionCount=0;
@@ -162,11 +162,11 @@ test("touch onboarding teaches the safe opening without changing desktop guidanc
 test("live touch coaching explains the gesture where the thumb is held", () => {
   assert.equal(touchGestureCoach(null), "");
   assert.equal(touchGestureCoach({pointerType:'mouse'}), "");
-  assert.equal(touchGestureCoach({pointerType:'touch'}), "SHORT DRAG · ONE MOVE · LIFT");
-  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'left'}), "← LEFT · ONE LANE · LIFT OR PAUSE");
-  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'right'}), "→ RIGHT · ONE LANE · LIFT OR PAUSE");
-  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'jump'}), "↑ JUMP · LIFT TO RESET");
-  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'slide'}), "↓ SLIDE · LIFT TO RESET");
+  assert.equal(touchGestureCoach({pointerType:'touch'}), "DRAG A SHORT WAY · ONE MOVE");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'left'}), "← ONE LANE · LIFT OR DRAG AGAIN");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'horizontal',laneDirection:'right'}), "→ ONE LANE · LIFT OR DRAG AGAIN");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'jump'}), "↑ JUMP · LIFT OR DRAG AGAIN");
+  assert.equal(touchGestureCoach({pointerType:'touch',axis:'vertical',laneDirection:'slide'}), "↓ SLIDE · LIFT OR DRAG AGAIN");
 });
 
 test('area relic guidance is brief, lane-aware and never masks an immediate hazard',()=>{

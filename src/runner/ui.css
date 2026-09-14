@@ -123,6 +123,60 @@ canvas:focus-visible {
     linear-gradient(0deg, #102a28bd, transparent 25%);
   z-index: 1;
 }
+#touch-ghost {
+  --touch-x: 50vw;
+  --touch-y: 50vh;
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 2;
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  transform: translate3d(var(--touch-x), var(--touch-y), 0) translate(-50%, -50%);
+  border: 2px solid #ffe0a0cc;
+  border-radius: 50%;
+  background: #ffe0a01c;
+  box-shadow: 0 0 0 7px #ffe0a012, 0 6px 18px #061a2438;
+  color: #fff4d1;
+  font-size: 24px;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity .12s ease, background-color .12s ease, border-color .12s ease;
+}
+#touch-ghost:not([hidden]) { opacity: .9; }
+#touch-ghost[data-action="ready"] {
+  border-color: #b9e9dfcc;
+  background: #b9e9df1b;
+  color: #e4fff7;
+}
+#touch-ghost[data-action="left"],
+#touch-ghost[data-action="right"] {
+  border-color: #ffe0a0e8;
+  background: #ffe0a02a;
+}
+#touch-ghost[data-action="jump"],
+#touch-ghost[data-action="slide"] {
+  border-color: #9bded6e8;
+  background: #9bded62a;
+}
+#touch-ghost span {
+  display: block;
+  transform: translateY(-1px);
+  font-weight: 900;
+  text-shadow: 0 1px 4px #061a2455;
+}
+#touch-ghost[data-action="ready"] span { font-size: 18px; }
+#touch-ghost[data-action="left"] span { transform: translateX(-1px); }
+#touch-ghost[data-action="right"] span { transform: translateX(1px); }
+#touch-ghost[data-action="jump"] span { transform: translateY(-1px); }
+#touch-ghost[data-action="slide"] span { transform: translateY(1px); }
+@media (prefers-reduced-motion: reduce) {
+  #touch-ghost { transition: none; }
+}
 header {
   position: absolute;
   top: 0;

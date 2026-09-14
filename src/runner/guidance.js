@@ -88,14 +88,14 @@ export function touchCoach(run) {
     ? run.touchActionCount : run?.inputCount || 0;
   if (!run?.touchHint || (actions >= 4 && !run.touchOverdrag)) return '';
   if (run.touchOverdrag)
-    return 'ONE DRAG = ONE LANE · LIFT, PAUSE, OR REVERSE';
+    return 'ONE LANE LOCKED · WAIT A BEAT, DRAG AGAIN';
   if (actions === 0)
     return 'EASIEST: TAP LEFT / RIGHT · TAP JUMP OR SLIDE';
   // Keep the first lesson aligned with the visible buttons. Only introduce
   // the no-lift gesture vocabulary after the player has actually tried one;
   // a first-time player should never feel that a missed swipe is required.
   return run.touchSwipeSeen
-    ? 'SWIPES OPTIONAL: SHORT DRAG = ONE MOVE · LIFT, PAUSE, OR REVERSE'
+    ? 'DRAG ONE LANE · LIFT, OR DRAG AGAIN AFTER A BEAT'
     : 'KEEP TAPPING THE BUTTONS · ONE TAP = ONE MOVE';
 }
 
@@ -105,11 +105,11 @@ export function touchCoach(run) {
 // not need this coaching because desktop already has visible buttons/keys.
 export function touchGestureCoach(pointer) {
   if (!pointer || pointer.pointerType !== 'touch') return '';
-  if (!pointer.axis) return 'SHORT DRAG · ONE MOVE · LIFT';
-  if (pointer.laneDirection === 'left') return '← LEFT · ONE LANE · LIFT OR PAUSE';
-  if (pointer.laneDirection === 'right') return '→ RIGHT · ONE LANE · LIFT OR PAUSE';
-  if (pointer.laneDirection === 'jump') return '↑ JUMP · LIFT TO RESET';
-  if (pointer.laneDirection === 'slide') return '↓ SLIDE · LIFT TO RESET';
+  if (!pointer.axis) return 'DRAG A SHORT WAY · ONE MOVE';
+  if (pointer.laneDirection === 'left') return '← ONE LANE · LIFT OR DRAG AGAIN';
+  if (pointer.laneDirection === 'right') return '→ ONE LANE · LIFT OR DRAG AGAIN';
+  if (pointer.laneDirection === 'jump') return '↑ JUMP · LIFT OR DRAG AGAIN';
+  if (pointer.laneDirection === 'slide') return '↓ SLIDE · LIFT OR DRAG AGAIN';
   return '';
 }
 

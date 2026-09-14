@@ -409,7 +409,9 @@ function setState(next) {
     focusOverlay();
   }
   accumulator = 0;
+  if (typeof clearLaneRearm === 'function') clearLaneRearm(pointer);
   pointer = null;
+  if (typeof hideTouchGhost === 'function') hideTouchGhost();
 }
 function start() {
   if(!graphicsReady)return;
@@ -471,7 +473,7 @@ function showOverlay(kind) {
         ? "New personal best. Very good dog!"
         : "The next great run is one tap away."
       : kind === "help"
-        ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. Swipes are optional: use a short drag for one move, then lift, pause, or reverse before another move. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
+        ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. Swipes are optional: drag one lane at a time. Lift after a move, or keep holding and drag again after a short beat. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
         : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
   if(kind==='paused'&&!run.practice&&(run.raft||run.zipline))
     $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
@@ -774,25 +776,68 @@ window.addEventListener("keydown", (event) => {
 let pointer = null;
 // A gesture can stay active across deliberate action segments. The first move
 // commits one lane at the normal swipe threshold. A player can continue without
-// lifting, but must pause briefly between lane segments before another one is
-// armed; one long, fast drag therefore cannot throw the runner to the edge. The
-// pause can happen anywhere after the snap (a thumb that overshot does not need
-// to travel back), while a clear cross-axis segment can follow a jump/slide (or
-// a lane move) without lifting too. A deliberate short reversal also re-arms
-// the next lane immediately, so one finger can scrub back and forth naturally.
-// If a phone streams a continuous, slow drag instead of reporting a pause,
-// rebase after a longer settle window so a held finger can continue one lane at
-// a time without allowing a fast over-drag to chain actions. A single very long
-// sample still commits only one action, even when the browser coalesces events.
-const LANE_DRAG_REPEAT_DISTANCE = 56;
+// lifting; a short beat automatically re-arms the next same-direction segment,
+// while a fast over-drag still cannot throw the runner to the edge. The pause
+// can happen anywhere after the snap (a thumb that overshot does not need to
+// travel back), while a clear cross-axis segment can follow a jump/slide (or a
+// lane move) without lifting too. A deliberate short reversal also re-arms the
+// next lane immediately, so one finger can scrub back and forth naturally. A
+// single very long sample still commits only one action, even when the browser
+// coalesces events.
+// A second same-direction segment needs about one thumb-width after the
+// automatic settle, not a full phone lane. This makes held drags comfortable
+// on narrow screens while the one-action-per-beat guard still prevents skips.
+const LANE_DRAG_REPEAT_DISTANCE = 48;
 const LANE_DRAG_REPEAT_DELAY = 140;
-const LANE_DRAG_CONTINUOUS_REARM_DELAY = 420;
+const LANE_DRAG_CONTINUOUS_REARM_DELAY = 260;
 const LANE_DRAG_REARM_RADIUS = 20;
 const LANE_DRAG_REARM_DWELL = 110;
 const LANE_DRAG_REVERSE_DISTANCE = 28;
 const LANE_DRAG_LARGE_REVERSE_DISTANCE = 64;
 const LANE_DRAG_REVERSE_DELAY = 90;
 const CROSS_AXIS_DISTANCE = 32;
+function touchGhostElement() {
+  if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return null;
+  return document.getElementById('touch-ghost');
+}
+function showTouchGhost(event, action = 'ready') {
+  if (event?.pointerType !== 'touch') return;
+  const ghost = touchGhostElement();
+  if (!ghost) return;
+  if (Number.isFinite(event.clientX)) ghost.style.setProperty('--touch-x', `${event.clientX}px`);
+  if (Number.isFinite(event.clientY)) ghost.style.setProperty('--touch-y', `${event.clientY}px`);
+  ghost.hidden = false;
+  ghost.dataset.action = action;
+  ghost.dataset.visible = 'true';
+  const icon = ghost.firstElementChild;
+  if (icon) icon.textContent = {left:'←',right:'→',jump:'↑',slide:'↓'}[action] || '•';
+}
+function hideTouchGhost() {
+  const ghost = touchGhostElement();
+  if (!ghost) return;
+  ghost.hidden = true;
+  ghost.dataset.visible = 'false';
+}
+function clearLaneRearm(target) {
+  if (!target || target.rearmTimer == null) return;
+  const host = typeof window !== 'undefined' ? window : null;
+  if (typeof host?.clearTimeout === 'function') host.clearTimeout(target.rearmTimer);
+  target.rearmTimer = null;
+}
+function scheduleLaneRearm(target) {
+  if (!target || target.pointerType !== 'touch' || target.axis !== 'horizontal') return;
+  const host = typeof window !== 'undefined' ? window : null;
+  if (typeof host?.setTimeout !== 'function') return;
+  clearLaneRearm(target);
+  target.rearmTimer = host.setTimeout(() => {
+    target.rearmTimer = null;
+    if (pointer !== target || state !== 'playing' || target.axis !== 'horizontal' || target.laneRearmed) return;
+    target.anchorX = target.lastX;
+    target.anchorY = target.lastY;
+    target.laneRearmed = true;
+    target.settledSince = target.lastMoveAt;
+  }, LANE_DRAG_CONTINUOUS_REARM_DELAY);
+}
 function confirmTouchAction(action) {
   if (run && typeof run === 'object' && !run.ended)
     run.touchFeedback = '';
@@ -839,6 +884,8 @@ const commitPointerAction = (action, event) => {
   }
   markTouchSwipe(event);
   performTouchAction(action, event);
+  if (event?.pointerType === 'touch' && (action === 'left' || action === 'right'))
+    scheduleLaneRearm(pointer);
 };
 $("scene").addEventListener("pointerdown", (event) => {
   if (state !== "playing" || !canStartSwipe(event,pointer)) return;
@@ -862,8 +909,10 @@ $("scene").addEventListener("pointerdown", (event) => {
     settledSince: null,
     laneRearmed: true,
   };
+  showTouchGhost(event);
   try { $("scene").setPointerCapture(event.pointerId); }
   catch {
+    hideTouchGhost();
     pointer=null;
     pause(); // A vanished touch must not leave the trail running without input.
   }
@@ -874,6 +923,7 @@ $("scene").addEventListener("pointermove", (event) => {
   )
     return;
   event.preventDefault?.();
+  showTouchGhost(event, pointer.laneDirection || 'ready');
   const dx = event.clientX - pointer.x,
     dy = event.clientY - pointer.y;
   pointer.travel = Math.max(pointer.travel, Math.abs(dx), Math.abs(dy));
@@ -898,6 +948,7 @@ $("scene").addEventListener("pointermove", (event) => {
     pointer.settledSince = null;
     pointer.laneRearmed = false;
     commitPointerAction(action, event);
+    showTouchGhost(event, action);
     // A browser can coalesce a fast thumb movement into one very large
     // pointermove. It still gets exactly one lane, but should also receive
     // the same pause/reverse explanation as a sampled overdrag.
@@ -961,7 +1012,9 @@ $("scene").addEventListener("pointermove", (event) => {
       pointer.lastActionAt = event.timeStamp;
       pointer.settledSince = null;
       pointer.laneRearmed = false;
-      commitPointerAction(deltaY > 0 ? 'slide' : 'jump', event);
+      const verticalAction = deltaY > 0 ? 'slide' : 'jump';
+      commitPointerAction(verticalAction, event);
+      showTouchGhost(event, verticalAction);
       return;
     }
     // A player who keeps their finger down often swipes back immediately after
@@ -983,6 +1036,7 @@ $("scene").addEventListener("pointermove", (event) => {
       pointer.laneRearmed = false;
       pointer.laneDirection = localDirection;
       commitPointerAction(localDirection, event);
+      showTouchGhost(event, localDirection);
       return;
     }
     if (Math.abs(deltaX) >= LANE_DRAG_REPEAT_DISTANCE) {
@@ -998,6 +1052,7 @@ $("scene").addEventListener("pointermove", (event) => {
       pointer.laneRearmed = false;
       pointer.laneDirection = deltaX > 0 ? 'right' : 'left';
       commitPointerAction(deltaX > 0 ? 'right' : 'left', event);
+      showTouchGhost(event, pointer.laneDirection);
       return;
     }
     return;
@@ -1016,11 +1071,14 @@ $("scene").addEventListener("pointermove", (event) => {
   pointer.laneRearmed = false;
   pointer.laneDirection = deltaX > 0 ? 'right' : 'left';
   commitPointerAction(pointer.laneDirection, event);
+  showTouchGhost(event, pointer.laneDirection);
 });
 $("scene").addEventListener("pointerup", (event) => {
   if (!pointer || pointer.id !== event.pointerId) return;
   event.preventDefault?.();
   if (pointer.axis) {
+    clearLaneRearm(pointer);
+    hideTouchGhost();
     pointer = null;
     return;
   }
@@ -1031,6 +1089,8 @@ $("scene").addEventListener("pointerup", (event) => {
   const action = tapAction(pointer, event, screenWidth,
     event.pointerType === 'touch');
   const touchPointer = pointer;
+  clearLaneRearm(touchPointer);
+  hideTouchGhost();
   pointer = null;
   if (state !== "playing") return;
   if (action) {
@@ -1050,6 +1110,8 @@ $("scene").addEventListener("pointerup", (event) => {
 });
 const cancelOwnedPointer = event => {
   if(!ownsSwipe(event,pointer))return;
+  clearLaneRearm(pointer);
+  hideTouchGhost();
   pointer=null;
   // The browser took over this gesture. Do not keep running under a system UI.
   pause();
@@ -1060,6 +1122,8 @@ for (const button of document.querySelectorAll("[data-action]")) {
   button.onpointerdown = (event) => {
     if (state === "playing" && canPressAction(event)) {
       event.preventDefault();
+      if (typeof clearLaneRearm === 'function') clearLaneRearm(pointer);
+      if (typeof hideTouchGhost === 'function') hideTouchGhost();
       pointer = null; // A button supersedes an unfinished trail tap, not a second move on release.
       if (event.pointerType === 'touch') run.touchFeedback = '';
       performTouchAction(button.dataset.action, event);
