@@ -810,6 +810,22 @@ function confirmTouchAction(action) {
   if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function')
     navigator.vibrate(8);
 }
+function performTouchAction(action, event) {
+  const isTouch = event?.pointerType === 'touch';
+  const laneBefore = run?.lane;
+  const turnBefore = run?.turnAttempt;
+  act(run, action);
+  if (!isTouch) return;
+  confirmTouchAction(action);
+  // A bounded lane input at the trail edge is a valid touch, but it looks like
+  // a missed gesture unless we explain why the puppy stayed put. Turn inputs
+  // intentionally keep ownership of the same horizontal gesture and must not
+  // be mislabeled as an edge hit.
+  if ((action === 'left' || action === 'right') &&
+      Number.isFinite(laneBefore) && run.lane === laneBefore &&
+      run.turnAttempt === turnBefore)
+    run.touchFeedback = 'AT THE EDGE · TRY THE OTHER WAY';
+}
 const markTouchSwipe = event => {
   if (event?.pointerType === 'touch') run.touchSwipeSeen = true;
 };
@@ -822,8 +838,7 @@ const commitPointerAction = (action, event) => {
     run.touchFeedback = '';
   }
   markTouchSwipe(event);
-  act(run, action);
-  if (event?.pointerType === 'touch') confirmTouchAction(action);
+  performTouchAction(action, event);
 };
 $("scene").addEventListener("pointerdown", (event) => {
   if (state !== "playing" || !canStartSwipe(event,pointer)) return;
@@ -1019,8 +1034,7 @@ $("scene").addEventListener("pointerup", (event) => {
   pointer = null;
   if (state !== "playing") return;
   if (action) {
-    act(run, action);
-    if (event.pointerType === 'touch') confirmTouchAction(action);
+    performTouchAction(action, event);
   }
   else {
     const action = swipeAction(dx, dy, true);
@@ -1048,9 +1062,7 @@ for (const button of document.querySelectorAll("[data-action]")) {
       event.preventDefault();
       pointer = null; // A button supersedes an unfinished trail tap, not a second move on release.
       if (event.pointerType === 'touch') run.touchFeedback = '';
-      act(run, button.dataset.action);
-      if (event.pointerType === 'touch' && typeof confirmTouchAction === 'function')
-        confirmTouchAction(button.dataset.action);
+      performTouchAction(button.dataset.action, event);
     }
   };
   button.onclick = (event) => {

@@ -310,6 +310,22 @@ test('the live pointer listener maps a touch edge tap without changing desktop t
   assert.deepEqual(actions,['left','jump']);
 });
 
+test('a touch attempt at the lane edge leaves a localized recovery cue',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
+  const handlers={},actions=[],run={lane:0,turnAttempt:null};
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run,
+    act:(_,action)=>{actions.push(action);if(action==='left')run.lane=Math.max(0,run.lane-1);if(action==='right')run.lane=Math.min(2,run.lane+1);},
+    canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:110,clientY:120,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:76,timeStamp:140});
+  assert.deepEqual(actions,['left']);
+  assert.equal(run.touchFeedback,'AT THE EDGE · TRY THE OTHER WAY');
+});
+
 test('the touch coach learns swipe vocabulary only after a touch swipe',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');
@@ -350,6 +366,7 @@ test('action buttons support a second thumb while rejecting alternate mouse butt
   const actions=[];
   const context={document:{querySelectorAll:()=>[button]},state:'playing',pointer:null,
     canPressAction,run:{},act:(_,action)=>actions.push(action)};
+  context.performTouchAction=action=>context.act(context.run,action);
   runInNewContext(source.slice(start,end),context);
   const press=overrides=>button.onpointerdown({button:0,isPrimary:true,preventDefault(){},...overrides});
   press({button:2});
