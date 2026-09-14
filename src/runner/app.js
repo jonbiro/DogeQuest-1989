@@ -1093,16 +1093,40 @@ $("scene").addEventListener("pointerup", (event) => {
     if (event.pointerType === 'touch' && pointer.axis === 'horizontal' &&
       pointer.laneDirection && Number.isFinite(pointer.lastActionAt)) {
       const deltaX = event.clientX - pointer.anchorX;
+      const deltaY = event.clientY - pointer.anchorY;
       const segmentDirection = deltaX > 0 ? 'right' : 'left';
       const elapsed = event.timeStamp - pointer.lastActionAt;
       const pauseSinceMove = event.timeStamp -
         (Number.isFinite(pointer.lastMoveAt) ? pointer.lastMoveAt : pointer.started);
-      if (segmentDirection === pointer.laneDirection &&
+      const verticalIntent = Math.abs(deltaY) >= CROSS_AXIS_DISTANCE &&
+        Math.abs(deltaY) > Math.abs(deltaX) * 1.12;
+      if (verticalIntent) {
+        // The final upward/downward part of a held gesture can be delivered
+        // only on pointerup when the browser coalesces touch samples.
+        commitPointerAction(deltaY > 0 ? 'slide' : 'jump', event);
+      } else if (segmentDirection === pointer.laneDirection &&
         Math.abs(deltaX) >= LANE_DRAG_REPEAT_DISTANCE &&
         Math.abs(deltaX) <= LANE_DRAG_MAX_AUTO_DISTANCE &&
         elapsed >= LANE_DRAG_REPEAT_DELAY &&
         (!Number.isFinite(pauseSinceMove) || pauseSinceMove >= LANE_DRAG_REPEAT_DELAY)) {
         commitPointerAction(segmentDirection, event);
+      } else if (segmentDirection !== pointer.laneDirection) {
+        // A reverse may also be represented by the release coordinate alone.
+        // Use an accumulated start when pointermove saw part of the return;
+        // otherwise the last accepted snap is the safe origin.
+        const reverseStart = pointer.reverseDirection === segmentDirection &&
+          Number.isFinite(pointer.reverseStartX)
+          ? pointer.reverseStartX : pointer.anchorX;
+        const reverseDistance = Math.abs(event.clientX - reverseStart);
+        if (reverseDistance >= LANE_DRAG_REVERSE_DISTANCE &&
+          Number.isFinite(pointer.lastActionAt) &&
+          (reverseDistance >= LANE_DRAG_LARGE_REVERSE_DISTANCE ||
+            elapsed >= LANE_DRAG_REVERSE_DELAY)) {
+          pointer.reverseDirection = null;
+          pointer.reverseStartX = null;
+          pointer.laneDirection = segmentDirection;
+          commitPointerAction(segmentDirection, event);
+        }
       }
     }
     hideTouchGhost();

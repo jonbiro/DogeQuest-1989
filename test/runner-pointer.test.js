@@ -222,6 +222,39 @@ test('a gradual cross-axis correction accumulates after a horizontal overdrag',(
   assert.deepEqual(actions,['right','jump'],'sampled vertical intent wins after a horizontal overdrag');
 });
 
+test('a sparse release can finish a reverse segment without a final move event',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
+  const handlers={},actions=[];
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:120,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:82,timeStamp:120});
+  // The browser gives us the return coordinate only with pointerup.
+  handlers.pointerup({...touch,clientX:50,timeStamp:240});
+  assert.deepEqual(actions,['right','left'],'release-only reverse travel is one clear move');
+});
+
+test('a sparse release can finish a vertical correction after a lane overdrag',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
+  const handlers={},actions=[];
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:120,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:82,timeStamp:120});
+  handlers.pointermove({...touch,clientX:180,timeStamp:160});
+  // The final upward movement arrives only at release from a coalesced path.
+  handlers.pointerup({...touch,clientX:180,clientY:80,timeStamp:240});
+  assert.deepEqual(actions,['right','jump'],'release-only vertical intent is preserved');
+});
+
 test('a large reverse recovers immediately after an overdrag',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');

@@ -19,6 +19,8 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
   one deliberate move instead of being mistaken for jitter.
 - Applied the same sampled-path handling when a held horizontal drag turns into
   a jump or slide, so fast over-swipes no longer strand the next vertical move.
+- Added a release-time fallback for browsers that coalesce the final reverse,
+  jump, or slide samples into `pointerup`, preserving one deliberate action.
 - Made full WebGL2 presentation the runner's only default: browsers with GPU
   acceleration disabled now receive an actionable 3D setup screen instead of a
   silent 2D downgrade. Chrome's hardware-acceleration steps are shown inline,
