@@ -325,6 +325,25 @@
               </ol>
               <p class="graphics-recovery-note">Some managed browsers and older devices do not expose WebGL2. Your saved puppies, points and bones stay in this browser.</p>
             </div>
+            <div id="graphics-restart-help" hidden>
+              <p class="graphics-recovery-title">Get back on the trail</p>
+              <ol>
+                <li>Choose <strong>Start again</strong> — the trail reloads fresh.</li>
+                <li>Your points, bones and prizes are already saved.</li>
+                <li>If it keeps happening, the code below says what went wrong.</li>
+              </ol>
+              <p class="graphics-recovery-note">This was an error in the game, not a limitation of your device or browser. There is nothing to change in your settings.</p>
+            </div>
+            <div id="graphics-context-help" hidden>
+              <p class="graphics-recovery-title">The browser reported a 3D context loss</p>
+              <ol>
+                <li>Choose <strong>Restart trail</strong> to rebuild the renderer.</li>
+                <li>The cause code below records what the browser reported.</li>
+                <li>If it repeats, close other WebGL-heavy tabs and try once more.</li>
+              </ol>
+              <p class="graphics-recovery-note">This screen reports a context interruption; it does not assume your phone ran out of RAM.</p>
+            </div>
+            <p id="graphics-diagnostic" class="graphics-diagnostic" role="status" aria-live="polite" aria-atomic="true" hidden></p>
           </section>
           </div>
           <div class="modal-actions">

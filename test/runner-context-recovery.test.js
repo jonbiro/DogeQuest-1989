@@ -6,7 +6,7 @@ import {runInNewContext} from 'node:vm';
 
 const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
 const start=source.indexOf('function contextRestoreTimeout()');
-const end=source.indexOf('function graphicsError()',start);
+const end=source.indexOf('function graphicsError(',start);
 const contextSource=source.slice(start,end);
 
 function fixture(initialState='playing') {

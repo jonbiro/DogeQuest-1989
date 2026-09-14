@@ -29,6 +29,7 @@ import {actionCue,eventNotice,dockMode,runLesson,routeChoiceCue,touchCoach,touch
 import {turnPrompt} from "./turns.js";
 import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,tapAction} from "./gestures.js";
 import {hudReserve,hudReserveApplies} from "./hud-layout.js";
+import {graphicsFailureKind,graphicsFailureCopy,graphicsDiagnostic} from "./graphics-failure.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
 import { puppyArtworkUrl } from "./puppy-artwork.js";
 const $ = (id) => document.getElementById(id);
@@ -53,6 +54,10 @@ let run = createRun(),
 // without explaining what happened or how to continue.
 let pauseReason = 'manual';
 let graphicsReady = false;
+// Keep the last accepted input around so a browser-reported context loss can
+// say which action was on screen when it happened. It is diagnostic context,
+// not gameplay state, and is never used to change the run.
+let lastInput = null;
 // A mobile GPU may evict the WebGL context while Safari/Brave backgrounds or
 // snapshots the tab. Keep the run paused while the same renderer asks Three to
 // rebuild its programs; only show the full recovery screen if restoration does
@@ -426,7 +431,7 @@ if (!mobileTilt) {
       sensitivity:$('tilt-sensitivity'),
       initialSensitivity:saved.preferences.tiltSensitivity,
       onSensitivity:value=>{saved.preferences.tiltSensitivity=value;persist();updateSaveNotice();},
-      canSteer:()=>state==='playing'&&!document.hidden&&!run.ended&&!turnPrompt(run),onAction:action=>act(run,action)});
+      canSteer:()=>state==='playing'&&!document.hidden&&!run.ended&&!turnPrompt(run),onAction:action=>invokeAction(action,'tilt')});
     tiltSettings.hidden = !['help','paused'].includes(state);
   }).catch(() => {
     // A missing sensor module must never block touch or keyboard play.
@@ -750,8 +755,8 @@ $("help").onclick = () => {
   try {
     for(const image of document.querySelectorAll('[data-guide]'))
       if(!image.src)image.src=view.instructionImage(image.dataset.guide);
-  } catch {
-    graphicsError();
+  } catch (error) {
+    graphicsError('asset-error', error);
     return;
   }
   drawScene(run,time,state,reducedMotion,0,1,saved.collection);
@@ -859,7 +864,12 @@ window.addEventListener("keydown", (event) => {
   }
   if (state === "playing" && keyActions[event.code]) {
     event.preventDefault();
-    if (!event.repeat) act(run, keyActions[event.code]);
+    if (!event.repeat) {
+      // The fallback is only for the small handler extraction used by the
+      // keyboard contract tests; the full app always has invokeAction.
+      if (typeof invokeAction === 'function') invokeAction(keyActions[event.code], 'keyboard');
+      else act(run, keyActions[event.code]);
+    }
   }
   if (
     state === "menu" &&
@@ -906,6 +916,13 @@ const CROSS_AXIS_DISTANCE = 32;
 // but allow a later primary touch to take over after a short quiet interval so
 // one missing terminal event cannot make every following swipe look dead.
 const TOUCH_POINTER_RECOVERY_DELAY = 1800;
+const dispatchPointerAction = (action, source) => {
+  // Keep the pointer block independently testable while routing production
+  // input through the guarded dispatcher above.
+  if (typeof invokeAction === 'function') return invokeAction(action, source);
+  act(run, action);
+  return true;
+};
 function touchGhostElement() {
   if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return null;
   return document.getElementById('touch-ghost');
@@ -945,21 +962,47 @@ function confirmTouchAction(action) {
   if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function')
     navigator.vibrate(8);
 }
+function invokeAction(action, source = 'input') {
+  lastInput = {action, source, at: Date.now()};
+  try {
+    act(run, action);
+    return true;
+  } catch (error) {
+    // Input handlers run outside the RAF try/catch. Preserve the original
+    // exception and the action that triggered it so a swipe bug reports as an
+    // input/runtime failure instead of falling through to a generic GPU page.
+    const diagnosticError = withLastInput(error);
+    graphicsError('input-error', diagnosticError);
+    return false;
+  }
+}
+function withLastInput(error) {
+  const diagnosticError = error instanceof Error ? error : new Error(String(error));
+  if (lastInput) diagnosticError.lastInput = {...lastInput};
+  return diagnosticError;
+}
 function performTouchAction(action, event) {
   const isTouch = event?.pointerType === 'touch';
   const laneBefore = run?.lane;
   const turnBefore = run?.turnAttempt;
-  act(run, action);
-  if (!isTouch) return;
-  confirmTouchAction(action);
-  // A bounded lane input at the trail edge is a valid touch, but it looks like
-  // a missed gesture unless we explain why the puppy stayed put. Turn inputs
-  // intentionally keep ownership of the same horizontal gesture and must not
-  // be mislabeled as an edge hit.
-  if ((action === 'left' || action === 'right') &&
-      Number.isFinite(laneBefore) && run.lane === laneBefore &&
-      run.turnAttempt === turnBefore)
-    run.touchFeedback = 'AT THE EDGE · TRY THE OTHER WAY';
+  try {
+    if (!dispatchPointerAction(action, isTouch ? 'touch' : 'pointer')) return;
+    if (!isTouch) return;
+    confirmTouchAction(action);
+    // A bounded lane input at the trail edge is a valid touch, but it looks
+    // like a missed gesture unless we explain why the puppy stayed put. Turn
+    // inputs intentionally keep ownership of the same horizontal gesture and
+    // must not be mislabeled as an edge hit.
+    if ((action === 'left' || action === 'right') &&
+        Number.isFinite(laneBefore) && run.lane === laneBefore &&
+        run.turnAttempt === turnBefore)
+      run.touchFeedback = 'AT THE EDGE · TRY THE OTHER WAY';
+  } catch (error) {
+    const diagnosticError = withLastInput(error);
+    if (!diagnosticError.lastInput)
+      diagnosticError.lastInput = {action, source:isTouch ? 'touch' : 'pointer'};
+    graphicsError('input-error', diagnosticError);
+  }
 }
 const markTouchSwipe = event => {
   if (event?.pointerType === 'touch') run.touchSwipeSeen = true;
@@ -1364,7 +1407,8 @@ for (const button of document.querySelectorAll("[data-action]")) {
   button.onclick = (event) => {
     if (state === "playing" && event.detail === 0) {
       pointer = null;
-      act(run, button.dataset.action);
+      if (typeof invokeAction === 'function') invokeAction(button.dataset.action, 'button');
+      else act(run, button.dataset.action); // handler extraction fallback
     }
   };
 }
@@ -1409,7 +1453,17 @@ function handleContextLost(event) {
   event?.preventDefault?.();
   if (state === 'graphics-error' || contextRecovery?.lost) return;
   const previousState = state;
-  contextRecovery = {lost:true, previousState, timer:null};
+  const statusMessage = typeof event?.statusMessage === 'string' ? event.statusMessage.trim() : '';
+  const reportedReason = typeof event?.reason === 'string' ? event.reason.trim() : '';
+  contextRecovery = {
+    lost:true,
+    previousState,
+    timer:null,
+    statusMessage,
+    reason:reportedReason,
+    error:event?.error || null,
+    lastInput:typeof lastInput !== 'undefined' && lastInput ? {...lastInput} : null,
+  };
   graphicsReady = false;
   if (previousState === 'playing') pause('background');
   else if (previousState === 'paused') pauseReason = 'background';
@@ -1417,14 +1471,14 @@ function handleContextLost(event) {
     $('overlay-primary').disabled = true;
     $('overlay-primary').textContent = 'Waking 3D trail…';
     $('overlay-copy').textContent = run.practice
-      ? 'The phone briefly paused the 3D trail while its graphics memory woke up. Keep this page open; your practice run will be ready in a moment.'
-      : 'The phone briefly paused the 3D trail while its graphics memory woke up. Keep this page open; your points and bones are still safe.';
+      ? 'The browser reported a temporary 3D context loss. Keep this page open; your practice run will be ready in a moment.'
+      : 'The browser reported a temporary 3D context loss. Keep this page open; your points and bones are still safe.';
   } else if (state === 'menu') {
     $('play').disabled = true;
     $('play').textContent = 'Waking the trail…';
   }
   contextRecovery.timer = window.setTimeout(() => {
-    if (contextRecovery?.lost) graphicsError();
+    if (contextRecovery?.lost) graphicsError('context-lost', contextRecovery);
   }, contextRestoreTimeout());
 }
 $("scene").addEventListener("webglcontextlost", handleContextLost);
@@ -1462,15 +1516,17 @@ function handleContextRestored() {
       } else if (state === 'menu' && (!document.activeElement || document.activeElement === document.body)) {
         $('play').focus({preventScroll:true});
       }
-    }).catch(() => {
-      if (state !== 'graphics-error') graphicsError();
+    }).catch((error) => {
+      if (state !== 'graphics-error') graphicsError('restore-error', error);
     });
-  } catch {
-    graphicsError();
+  } catch (error) {
+    graphicsError('restore-error', error);
   }
 }
 $('scene').addEventListener('webglcontextrestored', handleContextRestored);
-function graphicsError() {
+// `reason` says which path failed and `error` is whatever was thrown, so the
+// screen can stop describing every failure as a graphics eviction.
+function graphicsError(reason = 'context-lost', error = null) {
   // Keep recovery idempotent even if the original failure happened while the
   // finish/overlay path was already unwinding. A second RAF must not bank or
   // replace the same run again.
@@ -1496,27 +1552,53 @@ function graphicsError() {
   showOverlay("graphics-error");
   $("overlay-label").textContent="LET’S GET YOUR PAWS BACK ON THE TRAIL";
   const mobileGraphics = window.matchMedia?.('(pointer: coarse)')?.matches === true;
+  const failure = graphicsFailureCopy(reason, {mobile: mobileGraphics});
+  const failureKind = graphicsFailureKind(reason);
+  const helpMode = failure.help;
   const desktopHelp = $('graphics-desktop-help');
   const mobileHelp = $('graphics-mobile-help');
-  if (desktopHelp) desktopHelp.hidden = mobileGraphics;
-  if (mobileHelp) mobileHelp.hidden = !mobileGraphics;
-  $('graphics-recovery')?.setAttribute?.('aria-label',
-    mobileGraphics ? 'Restore full 3D graphics on this device' : 'Turn on full 3D graphics');
-  $("overlay-title").textContent = mobileGraphics
-    ? "This device needs a clean 3D start."
-    : "Chrome needs hardware acceleration.";
-  $("overlay-copy").textContent = mobileGraphics
-    ? run.graphicsRescued
-      ? storageAvailable
-        ? 'The trail was interrupted on this device, but your earned points, bones and completed challenges were saved. Close other games or 3D-heavy tabs, relaunch your browser if needed, then try the 3D trail again.'
-        : 'The trail was interrupted on this device. Earned rewards were counted for this visit, but saving is unavailable. Close other games or 3D-heavy tabs, relaunch your browser if needed, then try the 3D trail again.'
-      : 'This device or browser did not expose the WebGL2 graphics context the full 3D trail needs. Close other games or 3D-heavy tabs, relaunch your browser, then choose Try 3D again. Older or managed browsers may not support the full 3D trail. Your saved puppies, outfits and points stay in this browser; practice never changes your progress.'
-    : run.graphicsRescued
-      ? storageAvailable
-        ? 'The trail was interrupted, but your earned points, bones and completed challenges were saved. Turn on Chrome hardware acceleration, then try the 3D trail again.'
-        : 'The trail was interrupted. Earned rewards were counted for this visit, but saving is unavailable. Turn on Chrome hardware acceleration, then try the 3D trail again.'
-      : 'Chrome is not exposing the WebGL2 graphics context the full 3D trail needs. Turn on hardware acceleration using the steps below, relaunch Chrome, then try again. Your saved puppies, outfits and points stay in this browser; practice never changes your progress.';
-  $("overlay-primary").textContent = "Try 3D again";
+  const restartHelp = $('graphics-restart-help');
+  const contextHelp = $('graphics-context-help');
+  if (desktopHelp) desktopHelp.hidden = helpMode !== 'desktop';
+  if (mobileHelp) mobileHelp.hidden = helpMode !== 'mobile';
+  if (restartHelp) restartHelp.hidden = helpMode !== 'restart';
+  if (contextHelp) contextHelp.hidden = helpMode !== 'context';
+  const game = $('game');
+  if (game?.dataset) {
+    game.dataset.graphicsFailure = reason;
+    game.dataset.graphicsFailureKind = failureKind;
+  }
+  // The failure's cause, in one screenshot-friendly line. Without it a thrown
+  // exception and a real GPU eviction are indistinguishable to the player and
+  // to anyone they report it to.
+  const diagnostic = $('graphics-diagnostic');
+  if (diagnostic) {
+    diagnostic.textContent = `Cause: ${graphicsDiagnostic(reason, error)}`;
+    diagnostic.hidden = false;
+  }
+  $('graphics-recovery')?.setAttribute?.('aria-label', helpMode === 'context'
+    ? 'Restart the trail after a browser-reported 3D context loss'
+    : helpMode === 'restart'
+      ? 'Restart the trail after an unexpected game error'
+      : mobileGraphics ? 'Restore full 3D graphics on this device' : 'Restore full 3D graphics in this browser');
+  $("overlay-title").textContent = failure.title;
+  const progress = run.graphicsRescued
+    ? storageAvailable
+      ? 'Your earned points, bones and completed challenges were saved.'
+      : 'Earned rewards were counted for this visit, but saving is unavailable.'
+    : 'No new rewards were banked. Your saved puppies, outfits and points stay in this browser; practice never changes your progress.';
+  const nextStep = helpMode === 'context'
+    ? 'Restart the trail to rebuild the browser graphics session.'
+    : helpMode === 'restart'
+      ? 'Choose Start again to retry the trail.'
+      : helpMode === 'mobile'
+        ? 'Close other games or 3D-heavy tabs, relaunch your browser, then choose Try 3D again.'
+        : helpMode === 'desktop'
+          ? 'Turn on Chrome hardware acceleration, relaunch Chrome, then choose Try 3D again.'
+          : 'Choose Try 3D again to re-probe the WebGL2 renderer.';
+  $("overlay-copy").textContent = `${failure.lead} ${progress} ${nextStep}`;
+  $("overlay-primary").textContent = helpMode === 'mobile' || helpMode === 'desktop'
+    ? 'Try 3D again' : helpMode === 'context' ? 'Restart trail' : 'Start again';
   $("overlay-primary").onclick = () => {
     // A normal reload can keep an interrupted module graph in a service
     // worker cache. Change only a disposable retry parameter so the browser
@@ -1526,6 +1608,24 @@ function graphicsError() {
     if (typeof window.location.assign === 'function') window.location.assign(url.href);
     else window.location.reload();
   };
+}
+// Pointer events, promise callbacks, and browser integrations all run outside
+// the RAF guard. If one escapes, keep the trail from silently freezing and
+// show the same evidence-driven screen instead of inventing a GPU diagnosis.
+function reportUnhandledGraphicsFailure(reason, error) {
+  if (!['playing','paused'].includes(state) || state === 'graphics-error') return;
+  const detail = typeof withLastInput === 'function' ? withLastInput(error) : error;
+  graphicsError(reason, detail);
+}
+if (typeof window?.addEventListener === 'function') {
+  window.addEventListener('error', event => {
+    const error = event?.error || new Error(event?.message || 'Unhandled window error');
+    reportUnhandledGraphicsFailure('unhandled-error', error);
+  });
+  window.addEventListener('unhandledrejection', event => {
+    const reason = event?.reason instanceof Error ? event.reason : new Error(String(event?.reason || 'Unhandled promise rejection'));
+    reportUnhandledGraphicsFailure('unhandled-rejection', reason);
+  });
 }
 let view;
 try {
@@ -1551,14 +1651,14 @@ try {
       $("play").textContent = playLabel();
       if(state==='menu' && (!document.activeElement || document.activeElement===document.body))
         $("play").focus({preventScroll:true});
-    }).catch(()=>{
+    }).catch((error)=>{
       // Keep an unexpected preparation rejection from leaving the Play button
       // stranded on “Preparing the trail…”. The normal helper resolves false,
       // but a browser/driver promise can still reject outside that guard.
-      if(state!=='graphics-error') graphicsError();
+      if(state!=='graphics-error') graphicsError('prepare-error', error);
     });
   }
-} catch {
+} catch (error) {
   // Full 3D is intentional: never silently downgrade the runner to a
   // different presentation. The recovery overlay explains the one browser
   // setting that can restore the authored trail and offers a cache-busted
@@ -1569,7 +1669,7 @@ try {
   $("scene").setAttribute('aria-label', mobileGraphics
     ? 'Full 3D running trail unavailable on this device. Close other games or 3D-heavy tabs and choose Try 3D again.'
     : 'Full 3D running trail unavailable. Turn on Chrome hardware acceleration and choose Try 3D again.');
-  graphicsError();
+  graphicsError('no-context', error);
 }
 // A mobile GPU can lose a texture or reject a draw without delivering the
 // WebGL context-lost event first. Keep one bad frame from silently terminating
@@ -1578,7 +1678,7 @@ function drawScene(runState, now, screenState, motionReduced, delta, blend, coll
   if (!view || !graphicsReady) return;
   try {
     view.draw(runState, now, screenState, motionReduced, delta, blend, collection, frameDelta);
-  } catch {
+  } catch (error) {
     // A few iOS/WebKit builds mark the GL context lost before dispatching the
     // DOM event. Treat that render exception as the same recoverable pause so
     // one rejected frame cannot jump straight to the permanent rescue screen.
@@ -1586,11 +1686,16 @@ function drawScene(runState, now, screenState, motionReduced, delta, blend, coll
     try { contextLost = typeof view.contextLost === 'function' && view.contextLost() === true; }
     catch { contextLost = false; }
     if (contextLost) {
-      if (typeof handleContextLost === 'function') handleContextLost({preventDefault(){}});
+      if (typeof handleContextLost === 'function') handleContextLost({
+        preventDefault(){},
+        statusMessage:'contextLost() reported true during drawing',
+        error,
+        lastInput:typeof lastInput !== 'undefined' && lastInput ? {...lastInput} : null,
+      });
       return;
     }
     if (typeof contextRecovery !== 'undefined' && contextRecovery?.lost) return;
-    graphicsError();
+    graphicsError('render-error', typeof withLastInput === 'function' ? withLastInput(error) : error);
   }
 }
 let currentMission = missionFor(saved.challenges),
@@ -1729,7 +1834,7 @@ function frame(now) {
     }catch{soundscape.stop();} // Optional audio must never interrupt animation.
     syncDock();
     drawScene(run, time, state, reducedMotion, dt, accumulator / (1 / 120), saved.collection, frameDt);
-  } catch {
+  } catch (error) {
     // A mobile driver can reject a non-draw update (for example while its
     // canvas is being reclaimed). Keep the RAF chain alive and show the same
     // recoverable 3D screen instead of leaving a frozen, untouchable run.
@@ -1737,11 +1842,16 @@ function frame(now) {
     try { contextLost = typeof view !== 'undefined' && typeof view.contextLost === 'function' && view.contextLost() === true; }
     catch { contextLost = false; }
     if (contextLost) {
-      if (typeof handleContextLost === 'function') handleContextLost({preventDefault(){}});
+      if (typeof handleContextLost === 'function') handleContextLost({
+        preventDefault(){},
+        statusMessage:'contextLost() reported true during the frame update',
+        error,
+        lastInput:typeof lastInput !== 'undefined' && lastInput ? {...lastInput} : null,
+      });
       return;
     }
     if (typeof contextRecovery !== 'undefined' && contextRecovery?.lost) return;
-    graphicsError();
+    graphicsError('frame-error', typeof withLastInput === 'function' ? withLastInput(error) : error);
   } finally {
     requestAnimationFrame(frame);
   }

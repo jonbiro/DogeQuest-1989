@@ -56,6 +56,6 @@ test('the animation loop keeps scheduling frames after a mobile runtime fault', 
   assert.ok(start >= 0 && end > start);
   const frame = source.slice(start, end);
   assert.match(frame, /try\s*\{/);
-  assert.match(frame, /catch\s*\{[\s\S]*graphicsError\(\);/);
+  assert.match(frame, /catch\s*\(error\)\s*\{[\s\S]*graphicsError\('frame-error',/);
   assert.match(frame, /finally\s*\{[\s\S]*requestAnimationFrame\(frame\);/);
 });
