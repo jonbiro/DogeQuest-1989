@@ -3,7 +3,7 @@ import {jumpLandingTime} from './motion.js';
 export function traversalDescription(run){
   if(run.raft)return 'River raft. Drag left or right, or use arrow buttons, to steer between rocks. Jump and slide return at the shore. Escape pauses.';
   if(run.zipline)return 'Zipline ride. Drag left or right, or use arrow buttons, to collect bones. Jump and slide return after the cable. Escape pauses.';
-  return '3D running trail. Left and right arrows change lanes. Up or Space jumps. Down slides. Escape pauses.';
+  return '3D running trail. Drag left or right to change one lane; keep dragging to cross another lane without lifting. Swipe up to jump, down to slide, or tap to jump. Buttons and arrow keys also work. Escape pauses.';
 }
 export function updateTraversalControls(buttons, run) {
   const riding=Boolean(run.zipline||run.raft);
@@ -26,7 +26,7 @@ export function updateTraversalControls(buttons, run) {
       button.setAttribute('aria-label',`${button.dataset.action==='jump'?'Jump':'Slide'} queued after ${next}`);
       button.setAttribute('title','Next move accepted');
     } else {
-      button.removeAttribute('aria-label');
+      button.setAttribute('aria-label', button.dataset.action === 'jump' ? 'Jump' : 'Slide');
       button.removeAttribute('title');
     }
   }

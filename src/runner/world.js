@@ -108,6 +108,9 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     lastMistake: null,
     lastMistakeDetail: null,
     slideExpiredAt: null,
+    // The first-run touch cue is opt-in from the UI layer. Count accepted
+    // action attempts so it can disappear as soon as the player finds a move.
+    inputCount: 0,
     previous: { x: 0, y: 0, distance: 0 },
   };
   fillTrack(run);
@@ -275,6 +278,7 @@ export function fillTrack(run) {
 }
 export function act(run, action) {
   if (run.ended) return;
+  run.inputCount = (run.inputCount || 0) + 1;
   if (action === 'fetch') { activateFetch(run); return; }
   if (action === "left" && !applyTurnInput(run, action)) run.lane = Math.max(0, run.lane - 1);
   if (action === "right" && !applyTurnInput(run, action)) run.lane = Math.min(2, run.lane + 1);

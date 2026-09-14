@@ -10,7 +10,8 @@ function button(action) {
 test('scene instructions match the available traversal actions',()=>{
   assert.match(traversalDescription({raft:{}}),/Jump and slide return at the shore/);
   assert.match(traversalDescription({zipline:{}}),/return after the cable/);
-  assert.match(traversalDescription({}),/Up or Space jumps/);
+  assert.match(traversalDescription({}),/Drag left or right/);
+  assert.match(traversalDescription({}),/tap to jump/);
 });
 test('raft controls explain shore availability and restore after real dismount',()=>{
   const run=createRun(1989),buttons=['left','right','fetch','jump','slide'].map(button);
@@ -54,7 +55,9 @@ test('cable controls disable only jump and slide, with an explanation and no lay
   for(const b of buttons.slice(3))assert.match(b.attributes['aria-label'],/available after the zipline/);
   updateTraversalControls(buttons,{zipline:{end:790}});
   updateTraversalControls(buttons,{zipline:null});
-  assert.ok(buttons.every(b=>!b.disabled));assert.ok(buttons.every(b=>Object.keys(b.attributes).length===0));
+  assert.ok(buttons.every(b=>!b.disabled));
+  assert.match(buttons[3].attributes['aria-label'],/^Jump$/);
+  assert.match(buttons[4].attributes['aria-label'],/^Slide$/);
 });
 test('actual cable dismount restores the jump and slide controls for the next movement',()=>{
   const run=createRun(1989),buttons=['jump','slide'].map(button);

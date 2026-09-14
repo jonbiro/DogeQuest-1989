@@ -109,8 +109,12 @@ test('zipline approach explains aerial bones before the jump deadline and keeps 
   assert.equal(actionCue(run), '', 'successful catch returns focus to steering');
 });
 
-test("action guidance stays quiet without an immediate on-path hazard", () => {
-  assert.equal(actionCue(createRun(1989)), "", "the safe opening has no prompt");
+test("touch onboarding teaches the safe opening without changing desktop guidance", () => {
+  assert.equal(actionCue(createRun(1989)), "", "desktop keeps the safe opening quiet");
+  const touchRun=createRun(1989);touchRun.touchHint=true;
+  assert.equal(actionCue(touchRun), "DRAG ↔ TO STEER · TAP TO JUMP");
+  touchRun.inputCount=1;
+  assert.equal(actionCue(touchRun), "", "the cue disappears after the first action");
 
   for (const object of [
     { type: "rock", secondsAway: 0.501 },

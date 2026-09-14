@@ -73,7 +73,12 @@ export function actionCue(run) {
   const intro = run.course && run.course.start-run.distance < 40 &&
     run.course.start-run.distance > run.speed*.5 ? `${run.course.name} · ${run.course.scenic?'open lanes':'+180 clean'}` : '';
   if (!danger && relic && !relicLaneBlocked) return laneCue(run.lane,relic.lane,'RELIC') || '✦ RELIC AHEAD';
-  return !danger ? intro : ['arch', 'branch', 'gate'].includes(danger.type)
+  // On touch devices, teach the interaction in the quiet opening rather than
+  // making a new center-screen tutorial. The dock already sits above the
+  // thumb controls and disappears after the first action.
+  const touchOnboarding = run.touchHint && !run.inputCount && run.distance < 70
+    ? 'DRAG ↔ TO STEER · TAP TO JUMP' : '';
+  return !danger ? touchOnboarding || intro : ['arch', 'branch', 'gate'].includes(danger.type)
     ? '↓ SLIDE' : danger.type === 'gap' ? '↑ JUMP GAP' : '↑ JUMP';
 }
 

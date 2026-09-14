@@ -38,6 +38,7 @@ test('runner headline and onboarding name bones as the core collectible',()=>{
   assert.match(html,/<h1 id="title">Run wild\.<br \/>Fetch <em>bones\.<\/em><\/h1>/);
   assert.match(html,/<span>MEET YOUR RUNNING BUDDY<\/span><strong>Mochi\.<\/strong>/);
   assert.match(html,/aria-label="3D running trail\. Drag left or right to change one lane; keep dragging to cross another lane without lifting\./);
+  assert.match(html,/adds a tiny pause between snaps so a long swipe will not throw you to the edge/);
   assert.match(html,/Drag left or right and use the buttons by default/);
   assert.match(html,/chase glowing bones/);
   assert.match(html,/Zipline bones ↗︎/);

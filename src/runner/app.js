@@ -412,6 +412,9 @@ function start() {
   run.localDailyTarget=retry?Boolean(retry.localDailyTarget):localDailyTarget;
   run.puppy = saved.collection.puppy;
   run.appearance = { ...saved.collection };
+  // Keep the opening interaction hint for actual phone/tablet players only;
+  // desktop stays focused on the authored trail and explicit buttons.
+  run.touchHint = typeof mobileTilt === 'boolean' && mobileTilt;
   run.missions = missionPackFor(saved.challenges);
   currentMission = run.missions[0];
   missionAnnounced = false;
@@ -759,9 +762,12 @@ let pointer = null;
 // A horizontal gesture can stay active across lane changes. The first move
 // commits at the normal swipe threshold; each additional thumb-length segment
 // commits one more lane, so players do not need to lift between swipes. A
-// single very long sample still commits only one lane, preventing an accidental
-// overshoot when the browser coalesces pointer events.
-const LANE_DRAG_REPEAT_DISTANCE = 44;
+// short resistance window after each snap gives the puppy time to settle and
+// prevents a quick overlong thumb swipe from throwing the runner to the edge.
+// A single very long sample still commits only one lane, even when the browser
+// coalesces pointer events.
+const LANE_DRAG_REPEAT_DISTANCE = 56;
+const LANE_DRAG_REPEAT_DELAY = 140;
 $("scene").addEventListener("pointerdown", (event) => {
   if (state !== "playing" || !canStartSwipe(event,pointer)) return;
   event.preventDefault?.();
@@ -773,6 +779,7 @@ $("scene").addEventListener("pointerdown", (event) => {
     travel: 0,
     axis: null,
     anchorX: event.clientX,
+    lastActionAt: null,
   };
   try { $("scene").setPointerCapture(event.pointerId); }
   catch {
@@ -795,6 +802,7 @@ $("scene").addEventListener("pointermove", (event) => {
     pointer.axis = action === 'left' || action === 'right' ? 'horizontal' : 'vertical';
     pointer.consumed = true;
     pointer.anchorX = event.clientX;
+    pointer.lastActionAt = event.timeStamp;
     act(run, action);
     return;
   }
@@ -803,7 +811,10 @@ $("scene").addEventListener("pointermove", (event) => {
   if (pointer.axis !== 'horizontal') return;
   const deltaX = event.clientX - pointer.anchorX;
   if (Math.abs(deltaX) < LANE_DRAG_REPEAT_DISTANCE) return;
+  const elapsed = event.timeStamp - pointer.lastActionAt;
+  if (Number.isFinite(elapsed) && elapsed < LANE_DRAG_REPEAT_DELAY) return;
   pointer.anchorX = event.clientX;
+  pointer.lastActionAt = event.timeStamp;
   act(run, deltaX > 0 ? 'right' : 'left');
 });
 $("scene").addEventListener("pointerup", (event) => {

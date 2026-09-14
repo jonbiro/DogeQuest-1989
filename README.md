@@ -19,7 +19,7 @@ existing seeds, upgrades, and passport progress.
 
 Movement uses interpolated rendering, momentum-aware lane changes, smooth camera follow and accelerated airborne dives. A jump pressed just before landing is buffered for the next takeoff; diving preserves the full ground-slide duration. Velocity-driven leaning and a brief landing compression add weight without changing obstacle clearance. Decorative weight effects respect reduced-motion mode. Magnet bones curve toward Mochi from all three lanes within 16 meters ahead; points are credited on arrival, once per bone. Already-attracted bones finish their trip if the magnet expires. Magnetic field rings, pickup halos, collection sparkles, and timer bars make power-up states visible.
 
-Jumps return to the ground in 0.72 seconds at every upgrade level; Spring paws adds 10% height per level instead of longer airtime. Standard slides last 0.58 seconds, rising to 0.79 seconds with all three upgrades. Action hints anticipate the puppy's physical lane and disappear when the current move already covers the obstacle. Swipes wait for a clear horizontal or vertical direction to avoid accidental diagonal actions.
+Jumps return to the ground in 0.72 seconds at every upgrade level; Spring paws adds 10% height per level instead of longer airtime. Standard slides last 0.58 seconds, rising to 0.79 seconds with all three upgrades. Action hints anticipate the puppy's physical lane and disappear when the current move already covers the obstacle. Drag and swipe input accepts natural thumb diagonals, snaps one lane at a time, and adds a short resistance window before another held-drag lane change so overlong swipes do not overshoot.
 
 [Play Puppy Run in 3D](https://jonbiro.github.io/DogeQuest-1989/runner/)
 
