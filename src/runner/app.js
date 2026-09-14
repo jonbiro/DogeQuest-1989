@@ -205,7 +205,7 @@ function kennel() {
       row.append(image,copy, button); content.append(row);
     }
   }
-  view.draw(run,time,state,reducedMotion,0,1,saved.collection);
+  drawScene(run,time,state,reducedMotion,0,1,saved.collection);
   if(clubhouseCategory!=='prizes')return;
   const heading = document.createElement("h3"); heading.textContent = "Your prize cabinet"; content.append(heading);
   for (const prize of PRIZES) {
@@ -657,9 +657,14 @@ for (const id of ['mission-help','practice-help']) {
 }
 $("help").onclick = () => {
   showOverlay("help");
-  for(const image of document.querySelectorAll('[data-guide]'))
-    if(!image.src)image.src=view.instructionImage(image.dataset.guide);
-  view.draw(run,time,state,reducedMotion,0,1,saved.collection);
+  try {
+    for(const image of document.querySelectorAll('[data-guide]'))
+      if(!image.src)image.src=view.instructionImage(image.dataset.guide);
+  } catch {
+    graphicsError();
+    return;
+  }
+  drawScene(run,time,state,reducedMotion,0,1,saved.collection);
 };
 $("shop").onclick = shop;
 $("kennel").onclick = kennel;

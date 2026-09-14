@@ -22,3 +22,9 @@ test('a draw failure enters graphics recovery instead of stopping the frame loop
   assert.equal(recovered, 1);
   assert.equal(context.graphicsReady, false);
 });
+
+test('menu and help rendering share the guarded draw path', () => {
+  const source = readFileSync(new URL('../src/runner/app.js', import.meta.url), 'utf8');
+  assert.equal((source.match(/\bview\.draw\(/g) || []).length, 1,
+    'only drawScene should call the renderer directly');
+});
