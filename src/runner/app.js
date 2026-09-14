@@ -458,7 +458,7 @@ function showOverlay(kind) {
         ? "New personal best. Very good dog!"
         : "The next great run is one tap away."
       : kind === "help"
-        ? "Drag left or right to change lanes; on a phone, tap an edge to steer or the center to jump. Keep your finger down to make a clear swipe in another direction. Swipe up to jump or down to slide. The buttons always work."
+        ? "Drag left or right to change one lane; on a phone, tap an edge to steer or the center to jump. Keep your finger down, pause briefly at the snap, then make another clear swipe for another lane. A cross-direction swipe can switch between steering and jump or slide without lifting. Swipe up to jump or down to slide. The buttons always work."
         : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
   if(kind==='paused'&&!run.practice&&(run.raft||run.zipline))
     $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
@@ -760,15 +760,16 @@ window.addEventListener("keydown", (event) => {
 });
 let pointer = null;
 // A gesture can stay active across deliberate action segments. The first move
-// commits at the normal swipe threshold; each additional thumb-length segment
-// commits one more lane, so players do not need to lift between swipes. A
+// commits one lane at the normal swipe threshold. A player can continue without
+// lifting, but must pause briefly at the snap before another lane segment is
+// armed; one long, fast drag therefore cannot throw the runner to the edge. A
 // clear cross-axis segment can follow a jump/slide (or a lane move) without
-// lifting too. A short resistance window after each snap gives the puppy time
-// to settle and prevents a quick overlong thumb swipe from throwing the runner
-// to the edge. A single very long sample still commits only one action, even
+// lifting too. A single very long sample still commits only one action, even
 // when the browser coalesces pointer events.
 const LANE_DRAG_REPEAT_DISTANCE = 56;
 const LANE_DRAG_REPEAT_DELAY = 140;
+const LANE_DRAG_REARM_RADIUS = 20;
+const LANE_DRAG_REARM_DWELL = 110;
 const CROSS_AXIS_DISTANCE = 32;
 $("scene").addEventListener("pointerdown", (event) => {
   if (state !== "playing" || !canStartSwipe(event,pointer)) return;
@@ -783,6 +784,8 @@ $("scene").addEventListener("pointerdown", (event) => {
     anchorX: event.clientX,
     anchorY: event.clientY,
     lastActionAt: null,
+    settledSince: null,
+    laneRearmed: true,
   };
   try { $("scene").setPointerCapture(event.pointerId); }
   catch {
@@ -807,6 +810,9 @@ $("scene").addEventListener("pointermove", (event) => {
     pointer.anchorX = event.clientX;
     pointer.anchorY = event.clientY;
     pointer.lastActionAt = event.timeStamp;
+    // The action sample is the snap itself, not a pause at that snap.
+    pointer.settledSince = null;
+    pointer.laneRearmed = false;
     act(run, action);
     return;
   }
@@ -814,15 +820,33 @@ $("scene").addEventListener("pointermove", (event) => {
   const deltaY = event.clientY - pointer.anchorY;
   const elapsed = event.timeStamp - pointer.lastActionAt;
   // Same-axis horizontal segments remain deliberately thumb-length so a
-  // quick overlong move cannot skip lanes. Vertical actions stay single-shot;
-  // a new vertical swipe needs a fresh touch, but a clear horizontal segment
-  // may follow it without lifting (and vice versa).
+  // quick overlong move cannot skip lanes. A short dwell near the last snap
+  // re-arms the next horizontal segment; this is the no-lift equivalent of
+  // lifting and starting a fresh swipe. Vertical actions stay single-shot; a
+  // clear horizontal segment may follow one without lifting (and vice versa).
   if (pointer.axis === 'horizontal') {
+    const nearSnap = Math.abs(deltaX) <= LANE_DRAG_REARM_RADIUS &&
+      Math.abs(deltaY) <= LANE_DRAG_REARM_RADIUS;
+    const dwellElapsed = Number.isFinite(pointer.settledSince) &&
+      event.timeStamp - pointer.settledSince >= LANE_DRAG_REARM_DWELL;
+    if (nearSnap) {
+      pointer.settledSince ??= event.timeStamp;
+      if (event.timeStamp - pointer.settledSince >= LANE_DRAG_REARM_DWELL)
+        pointer.laneRearmed = true;
+    } else {
+      // A phone may emit no move events while the thumb is resting. A near-
+      // snap sample followed by enough elapsed time is still a real pause.
+      if (dwellElapsed) pointer.laneRearmed = true;
+      pointer.settledSince = null;
+    }
     if (Math.abs(deltaX) >= LANE_DRAG_REPEAT_DISTANCE) {
+      if (!pointer.laneRearmed) return;
       if (Number.isFinite(elapsed) && elapsed < LANE_DRAG_REPEAT_DELAY) return;
       pointer.anchorX = event.clientX;
       pointer.anchorY = event.clientY;
       pointer.lastActionAt = event.timeStamp;
+      pointer.settledSince = null;
+      pointer.laneRearmed = false;
       act(run, deltaX > 0 ? 'right' : 'left');
       return;
     }
@@ -833,6 +857,8 @@ $("scene").addEventListener("pointermove", (event) => {
     pointer.anchorX = event.clientX;
     pointer.anchorY = event.clientY;
     pointer.lastActionAt = event.timeStamp;
+    pointer.settledSince = null;
+    pointer.laneRearmed = false;
     act(run, deltaY > 0 ? 'slide' : 'jump');
     return;
   }
@@ -844,6 +870,8 @@ $("scene").addEventListener("pointermove", (event) => {
   pointer.anchorX = event.clientX;
   pointer.anchorY = event.clientY;
   pointer.lastActionAt = event.timeStamp;
+  pointer.settledSince = null;
+  pointer.laneRearmed = false;
   act(run, deltaX > 0 ? 'right' : 'left');
 });
 $("scene").addEventListener("pointerup", (event) => {

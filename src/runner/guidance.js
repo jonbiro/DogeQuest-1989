@@ -77,7 +77,7 @@ export function actionCue(run) {
   // making a new center-screen tutorial. The dock already sits above the
   // thumb controls and disappears after the first action.
   const touchOnboarding = run.touchHint && !run.inputCount && run.distance < 70
-    ? 'DRAG ONE LANE ↔ · TAP EDGES TO STEER · CENTER JUMPS' : '';
+    ? 'SWIPE ← → STEER · ↑ JUMP · ↓ SLIDE · PAUSE TO REPEAT' : '';
   return !danger ? touchOnboarding || intro : ['arch', 'branch', 'gate'].includes(danger.type)
     ? '↓ SLIDE' : danger.type === 'gap' ? '↑ JUMP GAP' : '↑ JUMP';
 }

@@ -1256,6 +1256,48 @@ h1 { letter-spacing: -.055em; word-spacing: .07em; }
 #controls small { letter-spacing:.08em; font-size:9px; font-weight:800; }
 #controls #fetch { border-radius:50%; font-size:10px; line-height:1.2; }
 #controls #fetch.ready { background:#94e6d8; border-color:#d8fff0; color:#183d3a; }
+
+/* Give the action bar a clear home on touch screens. The panel separates
+   controls from the trail without stealing playable space, and the larger
+   labels make the fallback buttons understandable at a glance. */
+#controls {
+  padding: 6px;
+  border: 1px solid #b8d0d355;
+  border-radius: 22px;
+  background: linear-gradient(155deg, #102d39e8, #10252edb);
+  box-shadow: 0 8px 24px #061a2438, inset 0 1px 0 #ffffff14;
+  backdrop-filter: blur(10px);
+}
+#controls.swipe-only {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+#cue:not(:empty) {
+  background: #102d39f4;
+  border: 1px solid #efbf6755;
+  border-left: 3px solid #efbf67;
+  border-radius: 10px;
+  padding: 7px 10px;
+  text-align: center;
+  box-shadow: 0 5px 16px #071b2626;
+}
+@media (max-width: 700px) and (orientation: portrait) {
+  #controls {
+    gap: 8px;
+    padding: 6px;
+  }
+  #controls button,
+  #controls #fetch {
+    height: 64px;
+    border-radius: 15px;
+  }
+  #controls button { font-size: 27px; }
+  #controls small { font-size: 10px; letter-spacing: .1em; }
+}
 @media(max-width:380px) { #cue:not(:empty) { font-size:12px; } #controls small { font-size:8px; } }
 #tilt-sensitivity{display:block;width:100%;min-height:44px;margin:8px 0 12px;padding:10px;border:1px solid #72948c;border-radius:10px;background:#163a35;color:#fff;font:inherit;}
 #game[data-tilt="disabled"] #tilt-settings { display: none !important; }

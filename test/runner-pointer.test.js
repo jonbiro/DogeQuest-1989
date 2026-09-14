@@ -49,10 +49,16 @@ test('a held horizontal drag can cross lanes one segment at a time without overs
   const touch={pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
   handlers.pointerdown(touch);
   handlers.pointermove({...touch,clientX:82,timeStamp:120});
-  handlers.pointermove({...touch,clientX:126,timeStamp:140});
+  // A long, continuous drag stays on the first snap. Pausing near the snap
+  // re-arms the next no-lift segment, just like lifting and touching again.
   handlers.pointermove({...touch,clientX:150,timeStamp:260});
-  handlers.pointermove({...touch,clientX:70,timeStamp:440});
-  handlers.pointerup({...touch,clientX:70,timeStamp:460});
+  assert.deepEqual(actions,['right'],'continuous overlong drag remains one lane');
+  handlers.pointermove({...touch,clientX:86,timeStamp:300});
+  handlers.pointermove({...touch,clientX:150,timeStamp:440});
+  handlers.pointermove({...touch,clientX:88,timeStamp:460});
+  handlers.pointermove({...touch,clientX:150,timeStamp:620});
+  handlers.pointermove({...touch,clientX:70,timeStamp:800});
+  handlers.pointerup({...touch,clientX:70,timeStamp:820});
   assert.deepEqual(actions,['right','right','left'],'continued drag changes one lane per thumb segment and can reverse');
 });
 
@@ -102,8 +108,10 @@ test('a held gesture can deliberately switch axes without lifting',()=>{
   // A clear horizontal segment after the jump is a new move, not a second
   // jump, even though the same finger is still down.
   handlers.pointermove({...touch,clientX:120,clientY:82,timeStamp:130});
-  handlers.pointermove({...touch,clientX:180,clientY:82,timeStamp:290});
-  handlers.pointerup({...touch,clientX:180,clientY:82,timeStamp:310});
+  handlers.pointermove({...touch,clientX:124,clientY:82,timeStamp:220});
+  handlers.pointermove({...touch,clientX:124,clientY:82,timeStamp:340});
+  handlers.pointermove({...touch,clientX:180,clientY:82,timeStamp:500});
+  handlers.pointerup({...touch,clientX:180,clientY:82,timeStamp:520});
   assert.deepEqual(actions,['jump','right','right']);
 
   actions.length=0;

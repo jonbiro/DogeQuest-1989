@@ -11,6 +11,7 @@ test('scene instructions match the available traversal actions',()=>{
   assert.match(traversalDescription({raft:{}}),/Jump and slide return at the shore/);
   assert.match(traversalDescription({zipline:{}}),/return after the cable/);
   assert.match(traversalDescription({}),/Drag left or right/);
+  assert.match(traversalDescription({}),/pause briefly at the snap/);
   assert.match(traversalDescription({}),/tap a left or right edge to steer/);
   assert.match(traversalDescription({}),/center to jump/);
   assert.match(traversalDescription({}),/switch between steering and jump\/slide/);
