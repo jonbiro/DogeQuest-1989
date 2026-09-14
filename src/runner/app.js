@@ -896,6 +896,10 @@ $("scene").addEventListener("pointerdown", (event) => {
     // time makes an ordinary return drag look like harmless jitter.
     reverseDirection: null,
     reverseStartX: null,
+    // Cross-axis corrections need the same treatment after a horizontal
+    // overswipe: a jump/slide may arrive as several small vertical samples.
+    crossAxisDirection: null,
+    crossAxisStartY: null,
     lastX: event.clientX,
     lastY: event.clientY,
   };
@@ -958,14 +962,35 @@ $("scene").addEventListener("pointermove", (event) => {
       Math.abs(stepY) > Math.abs(stepX) * 1.12;
     const vertical = Math.abs(deltaY) >= CROSS_AXIS_DISTANCE &&
       Math.abs(deltaY) > Math.abs(deltaX) * 1.12;
+    const verticalPathDirection = Math.abs(stepY) >= LANE_DRAG_PAUSE_MOVE_DISTANCE &&
+      Math.abs(stepY) > Math.abs(stepX) * 1.12
+      ? stepY > 0 ? 'slide' : 'jump' : null;
+    let verticalPathReady = false;
+    if (verticalPathDirection) {
+      if (pointer.crossAxisDirection !== verticalPathDirection) {
+        pointer.crossAxisDirection = verticalPathDirection;
+        pointer.crossAxisStartY = previousY;
+      }
+      verticalPathReady = Number.isFinite(pointer.crossAxisStartY) &&
+        Math.abs(event.clientY - pointer.crossAxisStartY) >= CROSS_AXIS_DISTANCE;
+    } else if (Math.abs(stepX) >= LANE_DRAG_PAUSE_MOVE_DISTANCE) {
+      // A meaningful horizontal segment abandons a partial vertical path;
+      // tiny rest jitter does not.
+      pointer.crossAxisDirection = null;
+      pointer.crossAxisStartY = null;
+    }
     // Prefer a clear local vertical movement to a stale horizontal offset.
     // This lets a player jump or slide after steering too far without lifting.
-    if (verticalStep || vertical) {
+    if (verticalStep || vertical || verticalPathReady) {
       pointer.axis = 'vertical';
       pointer.anchorX = event.clientX;
       pointer.anchorY = event.clientY;
       pointer.lastActionAt = event.timeStamp;
-      const verticalAction = deltaY > 0 ? 'slide' : 'jump';
+      const verticalAction = verticalPathDirection || (deltaY > 0 ? 'slide' : 'jump');
+      pointer.crossAxisDirection = null;
+      pointer.crossAxisStartY = null;
+      pointer.reverseDirection = null;
+      pointer.reverseStartX = null;
       commitPointerAction(verticalAction, event);
       showTouchGhost(event, verticalAction);
       return;
@@ -999,6 +1024,8 @@ $("scene").addEventListener("pointermove", (event) => {
       pointer.anchorY = event.clientY;
       pointer.lastActionAt = event.timeStamp;
       pointer.laneDirection = localDirection;
+      pointer.crossAxisDirection = null;
+      pointer.crossAxisStartY = null;
       commitPointerAction(localDirection, event);
       showTouchGhost(event, localDirection);
       return;
@@ -1034,6 +1061,8 @@ $("scene").addEventListener("pointermove", (event) => {
       pointer.anchorY = event.clientY;
       pointer.lastActionAt = event.timeStamp;
       pointer.laneDirection = segmentDirection;
+      pointer.crossAxisDirection = null;
+      pointer.crossAxisStartY = null;
       commitPointerAction(segmentDirection, event);
       showTouchGhost(event, pointer.laneDirection);
       return;
