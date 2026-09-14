@@ -25,7 +25,7 @@ import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound,resumeSound,traversalCue,feedbackPriority} from "./sound.js";
 import {createAreaSoundscape} from './soundscape.js';
-import {actionCue,eventNotice,dockMode,runLesson,routeChoiceCue,touchCoach} from "./guidance.js";
+import {actionCue,eventNotice,dockMode,runLesson,routeChoiceCue,touchCoach,touchCoachVisible} from "./guidance.js";
 import {turnPrompt} from "./turns.js";
 import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,tapAction} from "./gestures.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
@@ -331,7 +331,7 @@ function syncDock() {
   if (coach) {
     const copy = touchCoach(run);
     setText('gesture-coach', copy);
-    coach.hidden = state !== 'playing' || !copy || Boolean(mode && mode !== 'mission-summary');
+    coach.hidden = !touchCoachVisible(run, mode, state);
   }
 }
 const mobileTilt = supportsMobileTilt(window);

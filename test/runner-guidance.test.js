@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { actionCue, dockMode, eventNotice, runLesson, touchCoach } from "../src/runner/guidance.js";
+import { actionCue, dockMode, eventNotice, runLesson, touchCoach, touchCoachVisible } from "../src/runner/guidance.js";
 import { swipeAction } from "../src/runner/gestures.js";
 import { act, createRun, LANES, step } from "../src/runner/world.js";
 import {courseAt} from '../src/runner/courses.js';
@@ -118,6 +118,12 @@ test("touch onboarding teaches the safe opening without changing desktop guidanc
   assert.equal(touchCoach(touchRun), "SWIPE: HOLD → DRAG ONE LANE → PAUSE → DRAG AGAIN · UP / DOWN JUMP / SLIDE");
   touchRun.inputCount=2;
   assert.equal(touchCoach(touchRun), "", "the coach disappears after the second action");
+  touchRun.inputCount=0;
+  assert.equal(touchCoachVisible(touchRun, "mission-summary"), true);
+  assert.equal(touchCoachVisible(touchRun, "cue"), true, "a quiet opening cue does not hide the coach");
+  assert.equal(touchCoachVisible(touchRun, "route-choice"), false);
+  assert.equal(touchCoachVisible(touchRun, "toast"), false);
+  assert.equal(touchCoachVisible(touchRun, "cue", "paused"), false);
 
   for (const object of [
     { type: "rock", secondsAway: 0.501 },

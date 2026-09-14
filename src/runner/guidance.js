@@ -87,6 +87,13 @@ export function touchCoach(run) {
     : 'SWIPE: HOLD → DRAG ONE LANE → PAUSE → DRAG AGAIN · UP / DOWN JUMP / SLIDE';
 }
 
+// Keep the coach visible beside a quiet opening/course cue, but yield the
+// limited lower screen to route decisions and timed result toasts.
+export function touchCoachVisible(run, mode, state = 'playing') {
+  return state === 'playing' && Boolean(touchCoach(run)) &&
+    !['route-choice', 'toast'].includes(mode);
+}
+
 // Gates reserve the final 45m from obstacle rows. Keep the actionable choice
 // inside that clear stretch, with room for the last hazard's collision depth.
 export function routeChoiceCue(run) {
