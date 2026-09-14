@@ -4,6 +4,10 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Normalized the alternate puppy paintings against each dog's canonical watercolor
+  artwork. Removed generated matte halos and cutout gaps, restored the correct
+  coat/collar palette for every action and sailor frame, and re-measured visible
+  alpha bounds so swapping poses no longer causes a size or baseline pop.
 - Added a dedicated sailor rafting look for every puppy. Each dog now swaps to a
   connected, transparent captain painting with a navy cap, striped neckerchief,
   and anchor detail when boarding the river raft; the shared streaming slot

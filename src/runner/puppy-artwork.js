@@ -99,25 +99,26 @@ export const PUPPY_ARTWORK_ALTERNATES = Object.freeze({
 });
 
 // Transparent canvases are intentionally kept as authored paintings, but the
-// paintings do not all use the same amount of breathing room.  These measured
-// alpha bounds let the renderer normalize the *visible* puppy (not the empty
-// canvas) before swapping poses. Without this, a wide stride can pop larger or
-// smaller than the idle frame even when both are 2.48 world units tall. Bounds
-// use the same top-left pixel coordinates as the source images.
+// paintings do not all use the same amount of breathing room. These measured
+// alpha bounds (the stable 32/255 alpha edge, after matte cleanup) let the
+// renderer normalize the *visible* puppy (not the empty canvas) before swapping
+// poses. Without this, a wide stride can pop larger or smaller than the idle
+// frame even when both are 2.48 world units tall. Bounds use the same top-left
+// pixel coordinates as the source images.
 export const PUPPY_ARTWORK_BOUNDS = Object.freeze({
   biscuit: Object.freeze({
     idle: Object.freeze({width: 1254, height: 1254, x: 104, y: 42, boxWidth: 1078, boxHeight: 1181}),
-    stride: Object.freeze({width: 1254, height: 1254, x: 24, y: 15, boxWidth: 1227, boxHeight: 1192}),
-    strideAlt: Object.freeze({width: 1254, height: 1254, x: 36, y: 60, boxWidth: 1212, boxHeight: 1147}),
+    stride: Object.freeze({width: 1254, height: 1254, x: 159, y: 7, boxWidth: 915, boxHeight: 1207}),
+    strideAlt: Object.freeze({width: 1254, height: 1254, x: 55, y: 62, boxWidth: 1166, boxHeight: 1133}),
     jump: Object.freeze({width: 1254, height: 1254, x: 65, y: 41, boxWidth: 1140, boxHeight: 1040}),
-    jumpAlt: Object.freeze({width: 1254, height: 1254, x: 67, y: 63, boxWidth: 1161, boxHeight: 1116}),
+    jumpAlt: Object.freeze({width: 1254, height: 1254, x: 36, y: 46, boxWidth: 1201, boxHeight: 1078}),
     slide: Object.freeze({width: 1254, height: 1254, x: 20, y: 147, boxWidth: 1214, boxHeight: 974}),
-    slideAlt: Object.freeze({width: 1254, height: 1254, x: 39, y: 310, boxWidth: 1197, boxHeight: 649}),
+    slideAlt: Object.freeze({width: 1254, height: 1254, x: 24, y: 231, boxWidth: 1225, boxHeight: 935}),
     turn: Object.freeze({width: 1254, height: 1254, x: 21, y: 18, boxWidth: 1228, boxHeight: 1211}),
-    turnAlt: Object.freeze({width: 1254, height: 1254, x: 149, y: 130, boxWidth: 1032, boxHeight: 1024}),
+    turnAlt: Object.freeze({width: 1254, height: 1254, x: 30, y: 80, boxWidth: 1214, boxHeight: 1133}),
     hang: Object.freeze({width: 1024, height: 1536, x: 88, y: 13, boxWidth: 892, boxHeight: 1458}),
-    hangAlt: Object.freeze({width: 1024, height: 1536, x: 162, y: 11, boxWidth: 743, boxHeight: 1407}),
-    raftAlt: Object.freeze({width: 1145, height: 1374, x: 13, y: 0, boxWidth: 1132, boxHeight: 1365}),
+    hangAlt: Object.freeze({width: 1024, height: 1536, x: 100, y: 17, boxWidth: 867, boxHeight: 1451}),
+    raftAlt: Object.freeze({width: 1145, height: 1374, x: 15, y: 6, boxWidth: 1114, boxHeight: 1325}),
   }),
   mochi: Object.freeze({
     idle: Object.freeze({width: 1230, height: 1278, x: 117, y: 39, boxWidth: 1037, boxHeight: 1210}),
@@ -131,44 +132,44 @@ export const PUPPY_ARTWORK_BOUNDS = Object.freeze({
     jump: Object.freeze({width: 1230, height: 1278, x: 63, y: 72, boxWidth: 1111, boxHeight: 1097}),
     slide: Object.freeze({width: 1536, height: 1024, x: 47, y: 71, boxWidth: 1450, boxHeight: 893}),
     turn: Object.freeze({width: 1254, height: 1254, x: 110, y: 79, boxWidth: 1065, boxHeight: 1123}),
-    jumpAlt: Object.freeze({width: 1254, height: 1254, x: 184, y: 40, boxWidth: 949, boxHeight: 1137}),
+    jumpAlt: Object.freeze({width: 1254, height: 1254, x: 72, y: 27, boxWidth: 1148, boxHeight: 1182}),
     hang: Object.freeze({width: 1024, height: 1536, x: 122, y: 8, boxWidth: 835, boxHeight: 1409}),
-    slideAlt: Object.freeze({width: 1254, height: 1254, x: 43, y: 254, boxWidth: 1187, boxHeight: 776}),
-    turnAlt: Object.freeze({width: 1254, height: 1254, x: 146, y: 125, boxWidth: 1065, boxHeight: 1008}),
-    hangAlt: Object.freeze({width: 1024, height: 1536, x: 112, y: 90, boxWidth: 847, boxHeight: 1349}),
+    slideAlt: Object.freeze({width: 1254, height: 1254, x: 15, y: 197, boxWidth: 1225, boxHeight: 879}),
+    turnAlt: Object.freeze({width: 1254, height: 1254, x: 100, y: 45, boxWidth: 1103, boxHeight: 1165}),
+    hangAlt: Object.freeze({width: 1024, height: 1536, x: 132, y: 14, boxWidth: 821, boxHeight: 1398}),
     // Measured from the generated rear chase-camera painting. The high tail
     // and lifted paw are intentionally included in the visible bounds so the
     // frame stays centered when it swaps with the forward stride painting.
     away: Object.freeze({width: 1254, height: 1254, x: 236, y: 30, boxWidth: 822, boxHeight: 1190}),
-    raftAlt: Object.freeze({width: 1214, height: 1295, x: 111, y: 13, boxWidth: 1001, boxHeight: 1257}),
+    raftAlt: Object.freeze({width: 1214, height: 1295, x: 79, y: 17, boxWidth: 1054, boxHeight: 1255}),
   }),
   pepper: Object.freeze({
     idle: Object.freeze({width: 1254, height: 1254, x: 158, y: 24, boxWidth: 1000, boxHeight: 1200}),
     stride: Object.freeze({width: 1254, height: 1254, x: 34, y: 66, boxWidth: 1184, boxHeight: 1150}),
-    strideAlt: Object.freeze({width: 1254, height: 1254, x: 168, y: 75, boxWidth: 1020, boxHeight: 1044}),
+    strideAlt: Object.freeze({width: 1254, height: 1254, x: 117, y: 105, boxWidth: 1048, boxHeight: 1091}),
     jump: Object.freeze({width: 1254, height: 1254, x: 58, y: 52, boxWidth: 1145, boxHeight: 1039}),
-    jumpAlt: Object.freeze({width: 1254, height: 1254, x: 239, y: 55, boxWidth: 917, boxHeight: 1118}),
+    jumpAlt: Object.freeze({width: 1254, height: 1254, x: 85, y: 71, boxWidth: 1093, boxHeight: 1062}),
     slide: Object.freeze({width: 1254, height: 1254, x: 71, y: 142, boxWidth: 1127, boxHeight: 956}),
-    slideAlt: Object.freeze({width: 1254, height: 1254, x: 31, y: 280, boxWidth: 1176, boxHeight: 699}),
+    slideAlt: Object.freeze({width: 1254, height: 1254, x: 24, y: 370, boxWidth: 1206, boxHeight: 623}),
     turn: Object.freeze({width: 1254, height: 1254, x: 30, y: 78, boxWidth: 1201, boxHeight: 1115}),
-    turnAlt: Object.freeze({width: 1254, height: 1254, x: 49, y: 111, boxWidth: 1171, boxHeight: 1031}),
+    turnAlt: Object.freeze({width: 1254, height: 1254, x: 82, y: 25, boxWidth: 1105, boxHeight: 1188}),
     hang: Object.freeze({width: 1024, height: 1536, x: 111, y: 28, boxWidth: 866, boxHeight: 1431}),
-    hangAlt: Object.freeze({width: 1024, height: 1536, x: 141, y: 41, boxWidth: 771, boxHeight: 1326}),
-    raftAlt: Object.freeze({width: 1145, height: 1374, x: 25, y: 6, boxWidth: 1105, boxHeight: 1353}),
+    hangAlt: Object.freeze({width: 1024, height: 1536, x: 132, y: 29, boxWidth: 825, boxHeight: 1443}),
+    raftAlt: Object.freeze({width: 1145, height: 1374, x: 29, y: 36, boxWidth: 1091, boxHeight: 1307}),
   }),
   luna: Object.freeze({
     idle: Object.freeze({width: 1254, height: 1254, x: 94, y: 8, boxWidth: 1084, boxHeight: 1232}),
-    stride: Object.freeze({width: 1254, height: 1254, x: 217, y: 16, boxWidth: 929, boxHeight: 1218}),
-    strideAlt: Object.freeze({width: 1254, height: 1254, x: 191, y: 49, boxWidth: 880, boxHeight: 1122}),
+    stride: Object.freeze({width: 1254, height: 1254, x: 200, y: 19, boxWidth: 915, boxHeight: 1215}),
+    strideAlt: Object.freeze({width: 1254, height: 1254, x: 115, y: 89, boxWidth: 1052, boxHeight: 1062}),
     jump: Object.freeze({width: 1254, height: 1254, x: 86, y: 20, boxWidth: 1098, boxHeight: 1132}),
-    jumpAlt: Object.freeze({width: 1254, height: 1254, x: 142, y: 34, boxWidth: 1024, boxHeight: 1101}),
+    jumpAlt: Object.freeze({width: 1254, height: 1254, x: 78, y: 88, boxWidth: 1099, boxHeight: 1006}),
     slide: Object.freeze({width: 1254, height: 1254, x: 20, y: 166, boxWidth: 1218, boxHeight: 944}),
-    slideAlt: Object.freeze({width: 1254, height: 1254, x: 127, y: 335, boxWidth: 1022, boxHeight: 688}),
+    slideAlt: Object.freeze({width: 1254, height: 1254, x: 24, y: 369, boxWidth: 1222, boxHeight: 613}),
     turn: Object.freeze({width: 1254, height: 1254, x: 60, y: 8, boxWidth: 1150, boxHeight: 1219}),
-    turnAlt: Object.freeze({width: 1254, height: 1254, x: 161, y: 82, boxWidth: 951, boxHeight: 1082}),
+    turnAlt: Object.freeze({width: 1254, height: 1254, x: 72, y: 44, boxWidth: 1111, boxHeight: 1167}),
     hang: Object.freeze({width: 1024, height: 1536, x: 120, y: 10, boxWidth: 880, boxHeight: 1438}),
-    hangAlt: Object.freeze({width: 1024, height: 1536, x: 168, y: 101, boxWidth: 625, boxHeight: 1325}),
-    raftAlt: Object.freeze({width: 1214, height: 1295, x: 15, y: 9, boxWidth: 1193, boxHeight: 1268}),
+    hangAlt: Object.freeze({width: 1024, height: 1536, x: 128, y: 12, boxWidth: 812, boxHeight: 1438}),
+    raftAlt: Object.freeze({width: 1214, height: 1295, x: 44, y: 13, boxWidth: 1138, boxHeight: 1244}),
   }),
 });
 
