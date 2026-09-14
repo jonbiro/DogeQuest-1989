@@ -834,6 +834,12 @@ const LANE_DRAG_REVERSE_DISTANCE = 28;
 const LANE_DRAG_LARGE_REVERSE_DISTANCE = 64;
 const LANE_DRAG_REVERSE_DELAY = 90;
 const CROSS_AXIS_DISTANCE = 32;
+// A few mobile browsers can drop a primary touch while the page stays visible
+// (for example when the browser chrome steals the gesture) without delivering
+// pointercancel or lostpointercapture.  Keep the owner for normal held drags,
+// but allow a later primary touch to take over after a short quiet interval so
+// one missing terminal event cannot make every following swipe look dead.
+const TOUCH_POINTER_RECOVERY_DELAY = 1800;
 function touchGhostElement() {
   if (typeof document === 'undefined' || typeof document.getElementById !== 'function') return null;
   return document.getElementById('touch-ghost');
@@ -904,7 +910,21 @@ const commitPointerAction = (action, event) => {
   performTouchAction(action, event);
 };
 $("scene").addEventListener("pointerdown", (event) => {
-  if (state !== "playing" || !canStartSwipe(event,pointer)) return;
+  if (state !== "playing") return;
+  const previousPointer = pointer;
+  const previousTouchAge = previousPointer && event.pointerType === 'touch' &&
+    previousPointer.pointerType === 'touch' && event.isPrimary !== false &&
+    event.pointerId !== previousPointer.id
+    ? event.timeStamp - (Number.isFinite(previousPointer.lastMoveAt)
+      ? previousPointer.lastMoveAt : previousPointer.started)
+    : 0;
+  if (previousPointer && previousTouchAge >= TOUCH_POINTER_RECOVERY_DELAY) {
+    // Only a new primary touch can reclaim a stale touch owner. Secondary
+    // fingers and mouse input must never interrupt an intentional gesture.
+    hideTouchGhost();
+    pointer = null;
+  }
+  if (!canStartSwipe(event,pointer)) return;
   event.preventDefault?.();
   if (event.pointerType === 'touch') run.touchFeedback = '';
   pointer = {

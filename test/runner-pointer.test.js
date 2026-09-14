@@ -38,6 +38,25 @@ test('track listeners ignore holds but keep taps and deliberate swipes responsiv
   assert.equal(actions.length,3);
 });
 
+test('a later primary touch can recover an orphaned mobile pointer owner',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
+  const handlers={},actions=[];
+  const scene={clientWidth:390,addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const first={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:195,clientY:500,timeStamp:100};
+  handlers.pointerdown(first);
+  // Simulate a browser losing the first pointer without sending a terminal
+  // event. A fresh primary touch well after the quiet interval must still be
+  // able to control the run.
+  const replacement={...first,pointerId:2,timeStamp:2000};
+  handlers.pointerdown(replacement);
+  handlers.pointerup({...replacement,timeStamp:2100});
+  assert.deepEqual(actions,['jump'],'a fresh primary touch reclaims a stale owner');
+});
+
 test('ambiguous touch releases leave a dock recovery cue and clear on retry',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');
