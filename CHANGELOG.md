@@ -4,6 +4,9 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Guarded the render loop against mobile GPU or texture draw exceptions. A
+  failed frame now opens the existing 3D recovery screen instead of silently
+  stopping animation and leaving the runner looking stuck.
 - Hardened held touch steering for real thumbs: same-direction lane moves now
   re-arm only after the finger stops briefly, so slow over-swipes cannot walk
   the puppy across the trail. Guidance now says “STOP, THEN DRAG AGAIN” while

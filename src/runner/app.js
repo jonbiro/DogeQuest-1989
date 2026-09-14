@@ -1278,6 +1278,17 @@ try {
   $("scene").setAttribute('aria-label', 'Full 3D running trail unavailable. Turn on Chrome hardware acceleration and choose Try 3D again.');
   graphicsError();
 }
+// A mobile GPU can lose a texture or reject a draw without delivering the
+// WebGL context-lost event first. Keep one bad frame from silently terminating
+// requestAnimationFrame; the existing recovery screen is a much safer exit.
+function drawScene(runState, now, screenState, motionReduced, delta, blend, collection, frameDelta) {
+  if (!view || !graphicsReady) return;
+  try {
+    view.draw(runState, now, screenState, motionReduced, delta, blend, collection, frameDelta);
+  } catch {
+    graphicsError();
+  }
+}
 let currentMission = missionFor(saved.challenges),
   missionAnnounced = false;
 let lastHud = -1;
@@ -1412,8 +1423,7 @@ function frame(now) {
       time:run.time,distance:run.distance,quiet:!$('cue').textContent&&!routeChoiceCue(run)&&!run.practice});
   }catch{soundscape.stop();} // Optional audio must never interrupt animation.
   syncDock();
-  if (view && graphicsReady)
-    view.draw(run, time, state, reducedMotion, dt, accumulator / (1 / 120), saved.collection, frameDt);
+  drawScene(run, time, state, reducedMotion, dt, accumulator / (1 / 120), saved.collection, frameDt);
   requestAnimationFrame(frame);
 }
 if(graphicsReady)$("play").focus({ preventScroll: true });
