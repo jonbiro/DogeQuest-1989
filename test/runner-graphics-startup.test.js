@@ -78,3 +78,13 @@ test('tilt settings stay inert until a mobile capability check opts in',()=>{
   assert.match(app,/template\?\.content\.firstElementChild\?\.cloneNode\(true\)/);
   assert.match(app,/supportsMobileTilt\(window\)/);
 });
+
+test('desktop game bundle does not contain the optional motion adapter',()=>{
+  const game=readFileSync(new URL('../dist/runner/game.js',import.meta.url),'utf8');
+  const tilt=readFileSync(new URL('../dist/runner/tilt-controls.js',import.meta.url),'utf8');
+  assert.doesNotMatch(game,/DeviceOrientation/);
+  assert.doesNotMatch(game,/deviceorientation/);
+  assert.match(game,/import\("\.\/tilt-controls\.js"\)/);
+  assert.match(tilt,/DeviceOrientation/);
+  assert.match(tilt,/installTiltControls/);
+});

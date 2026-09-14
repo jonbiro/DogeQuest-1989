@@ -69,10 +69,25 @@ export async function build() {
     entryPoints: [path.join(projectRoot, "src/runner/app.js")],
     outfile: path.join(distDirectory, "runner/game.js"),
     bundle: true,
+    // Keep the optional sensor adapter out of the desktop download. The
+    // runtime imports it only after the coarse-pointer/mobile capability
+    // check, so desktop never fetches or parses motion APIs.
+    external: ["./tilt-controls.js"],
     minify: true,
     format: "esm",
     target: ["es2022"],
     legalComments: "linked",
+  });
+  await bundle({
+    entryPoints: [path.join(projectRoot, "src/runner/tilt-controls.js")],
+    outfile: path.join(distDirectory, "runner/tilt-controls.js"),
+    bundle: true,
+    minify: true,
+    format: "esm",
+    target: ["es2022"],
+    // This module is first-party and intentionally has no third-party legal
+    // notices; avoid emitting a second sidecar for the tiny opt-in bundle.
+    legalComments: "none",
   });
   await copyFile(
     path.join(projectRoot, "node_modules/three/LICENSE"),
@@ -92,6 +107,7 @@ export async function build() {
   for(const file of [
     'index.html',
     'game.js',
+    'tilt-controls.js',
     'style.css',
     '../favicon.svg',
     'puppies/biscuit.webp',

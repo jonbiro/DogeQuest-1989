@@ -8,7 +8,7 @@ const {URL,Response}=globalThis;
 const template=await readFile(new URL('../src/runner/offline-worker.js',import.meta.url),'utf8');
 function fixture({mismatch=false,quota=false}={}) {
   const scope='https://example.test/game/runner/';
-  const files=new Map([['index.html','<html>game</html>'],['game.js?v=abc','game()']]);
+  const files=new Map([['index.html','<html>game</html>'],['game.js?v=abc','game()'],['tilt-controls.js','tilt()']]);
   const assets=[...files].map(([url,body])=>({url,sha256:createHash('sha256').update(body).digest('hex')}));
   const handlers={},stores=new Map([['another-app',new Map()],['biscuit-runner-offline-old',new Map()]]);
   const state={online:true,skipped:false,claimed:false,fetches:0,status:200,storageFailed:false};
@@ -32,6 +32,7 @@ test('offline install verifies a full build; activation preserves other applicat
   f.state.online=false;
   assert.equal(await (await f.request('./?launch=home')).text(),'<html>game</html>');
   assert.equal(await (await f.request('game.js?v=abc','cors')).text(),'game()');
+  assert.equal(await (await f.request('tilt-controls.js','cors')).text(),'tilt()');
 });
 test('mismatched deployments and full storage never activate an incomplete cache',async()=>{
   for(const options of [{mismatch:true},{quota:true}]) {
@@ -49,7 +50,7 @@ test('online navigation stays fresh and unknown requests are not intercepted',as
 test('published offline manifest hashes match the exact release files',async()=>{
   const source=await readFile(new URL('../dist/runner/offline-worker.js',import.meta.url),'utf8');
   const assets=JSON.parse(source.match(/const ASSETS = (\[.*\]);/)[1]);
-  assert.equal(assets.length,53);assert.ok(!source.includes('build:version'));
+  assert.equal(assets.length,54);assert.ok(!source.includes('build:version'));
   for(const asset of assets) {
     const body=await readFile(new URL('../dist/runner/'+asset.url.split('?')[0],import.meta.url));
     assert.equal(createHash('sha256').update(body).digest('hex'),asset.sha256);

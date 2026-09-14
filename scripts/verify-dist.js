@@ -44,6 +44,7 @@ export async function verifyDist() {
   for (const file of [
     "runner/index.html",
     "runner/game.js",
+    "runner/tilt-controls.js",
     "runner/THREE-LICENSE.txt",
     "runner/offline-worker.js",
   ]) {
