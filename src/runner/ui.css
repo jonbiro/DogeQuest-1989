@@ -1139,6 +1139,22 @@ kbd {
   .trail-tag i,.trail-tag b { display:none; }
   .trail-tag span { font-size:11px; line-height:1.4; margin-top:4px; }
 }
+/* Keep the full start menu usable on short portrait phones. The compact
+   layout used to place its actions below the clipped game viewport; shrink
+   the gap and give the panel a contained scroll fallback for unusually short
+   screens, while keeping every start option reachable. */
+@media (max-width:700px) and (orientation:portrait) and (min-height:521px) and (max-height:600px) {
+  .menu {
+    top: calc(var(--safe-top) + 72px);
+    max-height: calc(100svh - var(--safe-top) - var(--safe-bottom) - 80px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 4px;
+  }
+  .start-actions { margin-top: 24px; }
+  .start-actions:has(#shared-trail:not([hidden])) { margin-top: 16px; }
+  .trail-tag { margin-bottom: 8px; }
+}
 @media (max-width:700px) and (min-height:701px) {
   .start-actions { position:fixed; left:7%; right:7%; bottom:calc(15svh + var(--safe-bottom)); max-width:none; margin:0; gap:8px; }
   .start-actions button { padding:12px 8px; font-size:12px; }
