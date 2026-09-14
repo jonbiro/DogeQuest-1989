@@ -803,6 +803,10 @@ kbd {
   background: #153c47f7;
   color: #d8fff5;
 }
+#controls.touch-overdrag {
+  border-color: #efbf67cc;
+  box-shadow: 0 8px 24px #061a2438, 0 0 0 3px #efbf6730, inset 0 1px 0 #ffffff14;
+}
 .mastery-card { border: 1px solid #d5edb633; border-radius: 14px; padding: 12px; margin: 10px 0; background: #102a2840; }
 #trail-passport summary { cursor: pointer; padding: 14px 0; font-weight: 800; color: var(--lime); }
 .mastery-card h3 { margin: 0 0 8px; font-size:15px; color: var(--lime); }

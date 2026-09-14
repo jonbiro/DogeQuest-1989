@@ -338,6 +338,7 @@ function syncDock() {
     coach.classList.toggle('gesture-live', Boolean(liveCopy && !run.touchOverdrag));
     coach.hidden = !touchCoachVisible(run, mode, state, $('cue').textContent, copy);
   }
+  $('controls').classList.toggle('touch-overdrag', Boolean(run.touchOverdrag));
 }
 const mobileTilt = supportsMobileTilt(window);
 let tiltSettings = $('tilt-settings');
