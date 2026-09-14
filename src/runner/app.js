@@ -911,7 +911,7 @@ $("scene").addEventListener("pointerdown", (event) => {
     pause(); // A vanished touch must not leave the trail running without input.
   }
 });
-$("scene").addEventListener("pointermove", (event) => {
+function processPointerMove(event) {
   if (
     !pointer || pointer.id !== event.pointerId || state !== "playing"
   )
@@ -1082,6 +1082,25 @@ $("scene").addEventListener("pointermove", (event) => {
   pointer.laneDirection = deltaX > 0 ? 'right' : 'left';
   commitPointerAction(pointer.laneDirection, event);
   showTouchGhost(event, pointer.laneDirection);
+}
+$("scene").addEventListener("pointermove", (event) => {
+  if (!pointer || pointer.id !== event.pointerId || state !== "playing") return;
+  event.preventDefault?.();
+  // PointerEvent coalescing is common during fast touch paths. Process the
+  // samples that the browser kept instead of judging a whole out-and-back
+  // gesture from its final coordinate alone. The terminal event is appended
+  // only when it is not already represented by the coalesced list.
+  const coalesced = typeof event.getCoalescedEvents === 'function'
+    ? event.getCoalescedEvents() : [];
+  const samples = Array.isArray(coalesced) ? [...coalesced] : [];
+  const last = samples[samples.length - 1];
+  if (!last || last.timeStamp !== event.timeStamp ||
+    last.clientX !== event.clientX || last.clientY !== event.clientY)
+    samples.push(event);
+  for (const sample of samples) {
+    processPointerMove(sample);
+    if (!pointer || state !== "playing") break;
+  }
 });
 $("scene").addEventListener("pointerup", (event) => {
   if (!pointer || pointer.id !== event.pointerId) return;
