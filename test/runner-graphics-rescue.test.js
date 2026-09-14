@@ -54,3 +54,12 @@ test('mobile graphics recovery gives device-safe restart guidance',()=>{
   assert.match(f.nodes['overlay-title'].textContent,/clean 3D start/);
   assert.match(f.nodes['overlay-copy'].textContent,/Close other games or 3D-heavy tabs/);
 });
+
+test('recovery still exposes a retry when banking the interrupted run throws',()=>{
+  const f=fixture('playing');
+  f.context.finish=()=>{throw new Error('storage path interrupted');};
+  assert.doesNotThrow(()=>f.context.graphicsError());
+  assert.equal(f.run.graphicsRescued,false);
+  assert.equal(f.context.state,'graphics-error');
+  assert.equal(f.nodes.play.disabled,true);
+});

@@ -1255,13 +1255,19 @@ function graphicsError() {
   // Keep recovery idempotent even if the original failure happened while the
   // finish/overlay path was already unwinding. A second RAF must not bank or
   // replace the same run again.
-  if (graphicsError.handled) return;
+  if (graphicsError.handled && state === 'graphics-error') return;
   graphicsError.handled = true;
   if (['playing','paused'].includes(state) && !run.practice) {
     run.retired = true;
     run.ended = true;
-    finish();
-    run.graphicsRescued = Boolean(run.receipt);
+    try {
+      finish();
+      run.graphicsRescued = Boolean(run.receipt);
+    } catch {
+      // A storage or DOM failure while banking must not prevent the recovery
+      // screen from appearing; keep the run unclaimed and offer a clean retry.
+      run.graphicsRescued = false;
+    }
   }
   if(audio)stopSound(audio);
   graphicsReady=false;
