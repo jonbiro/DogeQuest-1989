@@ -1052,6 +1052,11 @@ export function createView(canvas) {
     },
     draw(run, time, state, reducedMotion, dt, alpha = 1, collection, frameDt = dt) {
       const menu = ["menu", "help", "shop", "kennel"].includes(state);
+      // Action paintings are warmed when a trail actually starts, not while the
+      // menu idles. Streaming them on the menu uploaded textures the player had
+      // not asked for and pushed mobile GPUs toward a context loss; deferring
+      // them to the first jump instead made that first silhouette pop.
+      if (!menu && state === 'playing') rasterArtwork.warmActionPoses();
       const fov=menu ? 52 : gameplayFov(camera.aspect);
       if(camera.fov!==fov) { camera.fov=fov;camera.updateProjectionMatrix(); }
       dress(menu ? collection : run.appearance);

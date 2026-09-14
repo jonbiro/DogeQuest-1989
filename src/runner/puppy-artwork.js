@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {DEFAULT_PUPPY} from './collection.js';
 
 // The puppies are illustrated raster artwork, rather than a collection of
 // procedural meshes. Keeping the paths in one place means the clubhouse cards
@@ -264,15 +265,18 @@ const WORLD_HEIGHT = 2.48;
 // the artwork and renderer.
 export const PUPPY_HANG_HANDLE_HEIGHT = 1.15;
 
+// Every unknown or corrupted id resolves to the collection's DEFAULT_PUPPY.
+// Mochi is the runner's face, so a damaged save shows the dog the menus, the
+// hero art and the Play button all promise, not a different starter.
 export function puppyArtworkUrl(id) {
-  return PUPPY_ARTWORK[id] || PUPPY_ARTWORK.biscuit;
+  return PUPPY_ARTWORK[id] || PUPPY_ARTWORK[DEFAULT_PUPPY];
 }
 
 export function puppyPoseArtworkUrl(id, pose = 'idle') {
-  const variants = PUPPY_ARTWORK_VARIANTS[id] || PUPPY_ARTWORK_VARIANTS.biscuit;
+  const variants = PUPPY_ARTWORK_VARIANTS[id] || PUPPY_ARTWORK_VARIANTS[DEFAULT_PUPPY];
   if (variants[pose]) return variants[pose];
   const basePose = typeof pose === 'string' && pose.endsWith('Alt') ? pose.slice(0, -3) : null;
-  const alternates = PUPPY_ARTWORK_ALTERNATES[id] || PUPPY_ARTWORK_ALTERNATES.biscuit;
+  const alternates = PUPPY_ARTWORK_ALTERNATES[id] || PUPPY_ARTWORK_ALTERNATES[DEFAULT_PUPPY];
   return (basePose && alternates[basePose]) || variants.idle;
 }
 
@@ -599,10 +603,13 @@ function worldY(pixel, height, unit) {
 // Load the equipped artwork once, then drive a compact full-body pose stack.
 // The legacy crop parts are still prepared for diagnostics and API stability,
 // but the runner never rotates them into visible anatomy.
-export function createPuppyArtwork({mobile = false} = {}) {
+// `loader` is injectable so tests can assert exactly which paintings the
+// runner asks a device to download and upload. Streaming discipline is a
+// correctness property on iOS, not a detail: an unrequested large texture at
+// startup is what pushes Safari into evicting the WebGL context.
+export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLoader()} = {}) {
   const group = new THREE.Group();
   group.name = 'puppy-illustrated-pose-stack';
-  const loader = new THREE.TextureLoader();
   const sourceTextures = new Map();
   const bodyTextures = new Map();
   const headTextures = new Map();
@@ -748,7 +755,11 @@ export function createPuppyArtwork({mobile = false} = {}) {
     return {group: legGroup, sprite, basePosition: new THREE.Vector3(), baseScale: new THREE.Vector3()};
   });
 
-  let currentKey = 'biscuit';
+  // Mochi is the runner's face and the collection's DEFAULT_PUPPY. Starting the
+  // sprite stack on any other dog meant a boot-time image callback that landed
+  // before the first apply() prepared the wrong puppy, and an unknown/corrupt
+  // saved id fell back to Biscuit instead of the documented default.
+  let currentKey = DEFAULT_PUPPY;
   let currentCostume = 'scarf';
   const accessoryTextures = new Map();
   const poseTextures = new Map();
@@ -1020,7 +1031,7 @@ export function createPuppyArtwork({mobile = false} = {}) {
   }
 
   function requestPose(key, pose) {
-    const variants = PUPPY_ARTWORK_VARIANTS[key] || PUPPY_ARTWORK_VARIANTS.biscuit;
+    const variants = PUPPY_ARTWORK_VARIANTS[key] || PUPPY_ARTWORK_VARIANTS[DEFAULT_PUPPY];
     // Optional poses are real variants only for the puppy that owns them.
     // Falling back to idle here would silently allocate another idle texture
     // for every other puppy and make a missing rear frame look like a broken
@@ -1205,7 +1216,7 @@ export function createPuppyArtwork({mobile = false} = {}) {
   }
 
   function textureFor(id) {
-    const key = Object.hasOwn(PUPPY_ARTWORK, id) ? id : 'biscuit';
+    const key = Object.hasOwn(PUPPY_ARTWORK, id) ? id : DEFAULT_PUPPY;
     if (!sourceTextures.has(key)) {
       const token = Symbol(key);
       sourceLoadTokens.set(key, token);
@@ -1231,7 +1242,7 @@ export function createPuppyArtwork({mobile = false} = {}) {
 
   function apply(puppy) {
     const id = typeof puppy === 'string' ? puppy : puppy?.id;
-    const nextKey = Object.hasOwn(PUPPY_ARTWORK, id) ? id : 'biscuit';
+    const nextKey = Object.hasOwn(PUPPY_ARTWORK, id) ? id : DEFAULT_PUPPY;
     pruneMobileCaches(nextKey);
     // Set the active key before starting a new image request. ImageLoader is
     // normally asynchronous, but a cached/managed browser can complete an
@@ -1241,6 +1252,16 @@ export function createPuppyArtwork({mobile = false} = {}) {
     const {key, texture} = textureFor(id);
     configureParts(key, texture);
     return key;
+  }
+
+  // The menu deliberately holds only the idle and stride paintings so a phone
+  // that is merely sitting on the start screen never pays for action art. A
+  // player does jump within the first seconds of a real run, though, so warm
+  // the two immediate action silhouettes at the moment the trail actually
+  // starts. Turn, hang, rear-chase and every authored second beat still stream
+  // strictly on demand.
+  function warmActionPoses() {
+    for (const pose of ['jump', 'slide']) requestPose(currentKey, pose);
   }
 
   function setCostume(costume = 'scarf') {
@@ -1273,7 +1294,14 @@ export function createPuppyArtwork({mobile = false} = {}) {
     const gaitRate = hanging ? 3.1 : rafting ? 3.6 : menu ? 2.8 : sliding ? 8.8 : airborne ? 7.2 : 8.4;
     const gait = motion ? (Math.sin(time * gaitRate - Math.PI / 2) + 1) / 2 : 0;
     const turnAmount = motion ? THREE.MathUtils.clamp((Math.abs(look) - .16) / .64, 0, 1) : 0;
-    const poseReady = pose => {
+    // `request` separates "the physics wants this silhouette" from "is anything
+    // at all drawable yet". Only the former may start a fetch. The trailing
+    // fallback chain below probes with request=false: before the idle painting
+    // has decoded, every one of its probes used to fire a large texture load in
+    // the same frame, so a phone sitting on the menu downloaded and uploaded
+    // jump, slide and turn art it had not been asked for. That startup burst is
+    // exactly the GPU pressure that makes iOS evict the WebGL context.
+    const poseReady = (pose, request = true) => {
       const sprite = pose === 'strideAlt'
         ? poseSprites.strideAlt
         : pose.endsWith('Alt')
@@ -1284,7 +1312,7 @@ export function createPuppyArtwork({mobile = false} = {}) {
       // Base action art is intentionally streamed. Calling requestPose here
       // is idempotent and lets the first jump/slide/turn start its own fetch
       // without preloading every large texture during the menu.
-      if (!ready && !pose.endsWith('Alt') && pose !== 'idle') requestPose(currentKey, pose);
+      if (request && !ready && !pose.endsWith('Alt') && pose !== 'idle') requestPose(currentKey, pose);
       return ready;
     };
     const alternatePoseReady = pose => alternateReady(currentKey, pose);
@@ -1330,9 +1358,13 @@ export function createPuppyArtwork({mobile = false} = {}) {
     if (!activePose && strideRequested && poseReady('stride')) activePose = 'stride';
     if (!activePose && poseReady('idle')) activePose = 'idle';
     if (!activePose && poseReady('stride')) activePose = 'stride';
-    if (!activePose && poseReady('jump')) activePose = 'jump';
-    if (!activePose && poseReady('slide')) activePose = 'slide';
-    if (!activePose && poseReady('turn')) activePose = 'turn';
+    // Last-resort silhouettes: draw an action painting that some earlier state
+    // already streamed rather than nothing, but never fetch one to satisfy the
+    // probe. `idle` and `stride` are the only warm set, and configurePoseStack
+    // has already put both in flight, so this chain stays a pure read.
+    if (!activePose && poseReady('jump', false)) activePose = 'jump';
+    if (!activePose && poseReady('slide', false)) activePose = 'slide';
+    if (!activePose && poseReady('turn', false)) activePose = 'turn';
     // Stream one authored second beat for the current action.  The slot is
     // requested even during the first/base half of the cadence so it is warm
     // by the time the phase flips, but it is only shown after the load and
@@ -1391,13 +1423,15 @@ export function createPuppyArtwork({mobile = false} = {}) {
       if (!scale || !active) continue;
       const basePose = basePoseFor(pose);
       const basePosition = poseBasePositions[pose] || bodyBasePosition;
-      // Mirroring the rear painting on alternating footfalls gives Mochi a
-      // readable side-to-side tail sweep without adding a second GPU texture.
-      // Turns still use their deliberate directional flip first.
+      // The rear painting is asymmetric: the head is tucked to one side of the
+      // spine and the tail plume sweeps to the other. Mirroring it on
+      // alternating footfalls therefore did not read as a tail sweep -- at the
+      // 8.4 rad/s ground cadence it snapped the whole head and tail across the
+      // body about three times a second. The pose keeps its authored direction
+      // now; `awayMotion` below still supplies the gait's rotation, squash and
+      // sway. Turns keep their deliberate directional flip.
       const authoredFlip = pose === 'strideAlt' ? -1 : 1;
-      const flip = authoredFlip * (basePose === 'turn' && look < 0
-        ? -1
-        : basePose === 'away' && Math.sin(time * gaitRate) < 0 ? -1 : 1);
+      const flip = authoredFlip * (basePose === 'turn' && look < 0 ? -1 : 1);
       const actionRotation = basePose === 'jump'
         ? jumpMotion * .045 - vertical * .055
         : basePose === 'slide'
@@ -1480,5 +1514,6 @@ export function createPuppyArtwork({mobile = false} = {}) {
     apply,
     setCostume,
     setPose,
+    warmActionPoses,
   };
 }

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { DEFAULT_PUPPY } from '../src/runner/collection.js';
 import { createPuppyArtwork, PUPPY_ARTWORK, PUPPY_ARTWORK_ALTERNATES, PUPPY_ARTWORK_BOUNDS, PUPPY_ARTWORK_LAYOUTS, PUPPY_ARTWORK_VARIANTS, puppyArtworkUrl, puppyPoseArtworkUrl } from '../src/runner/puppy-artwork.js';
 
 test('every collection puppy points at a shipped raster illustration', () => {
@@ -9,9 +10,14 @@ test('every collection puppy points at a shipped raster illustration', () => {
   }
 });
 
-test('unknown puppy ids use the dependable starter artwork', () => {
-  assert.equal(puppyArtworkUrl('missing'), PUPPY_ARTWORK.biscuit);
-  assert.equal(puppyArtworkUrl(undefined), PUPPY_ARTWORK.biscuit);
+test('unknown puppy ids fall back to the collection default, not another starter', () => {
+  // Mochi is DEFAULT_PUPPY. A corrupted or unknown saved id must show the dog
+  // the menu, the hero art and the Play button all promise.
+  assert.equal(DEFAULT_PUPPY, 'mochi');
+  assert.equal(puppyArtworkUrl('missing'), PUPPY_ARTWORK[DEFAULT_PUPPY]);
+  assert.equal(puppyArtworkUrl(undefined), PUPPY_ARTWORK[DEFAULT_PUPPY]);
+  assert.equal(puppyPoseArtworkUrl('missing', 'turn'), PUPPY_ARTWORK_VARIANTS[DEFAULT_PUPPY].turn);
+  assert.equal(puppyPoseArtworkUrl('missing', 'jumpAlt'), PUPPY_ARTWORK_ALTERNATES[DEFAULT_PUPPY].jump);
 });
 
 test('each puppy has complete raster stride, jump, slide, turn, and hang poses', () => {
@@ -47,7 +53,6 @@ test('each puppy has complete raster stride, jump, slide, turn, and hang poses',
   assert.equal(PUPPY_ARTWORK_VARIANTS.mochi.stride, './puppies/mochi-run-side.webp');
   assert.equal(PUPPY_ARTWORK_VARIANTS.mochi.strideAlt, './puppies/mochi-run-side-alt.webp');
   assert.equal(puppyPoseArtworkUrl('mochi', 'away'), PUPPY_ARTWORK_VARIANTS.mochi.away);
-  assert.equal(puppyPoseArtworkUrl('missing', 'turn'), PUPPY_ARTWORK_VARIANTS.biscuit.turn);
 });
 
 test('each action has a second authored beat with a stable URL resolver', () => {
@@ -62,7 +67,6 @@ test('each action has a second authored beat with a stable URL resolver', () => 
       assert.notEqual(alternates[pose], PUPPY_ARTWORK_VARIANTS[id][pose]);
     }
   }
-  assert.equal(puppyPoseArtworkUrl('missing', 'jumpAlt'), PUPPY_ARTWORK_ALTERNATES.biscuit.jump);
   assert.equal(puppyPoseArtworkUrl('mochi', null), PUPPY_ARTWORK.mochi);
 });
 

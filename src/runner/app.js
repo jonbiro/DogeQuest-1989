@@ -28,6 +28,7 @@ import {createAreaSoundscape} from './soundscape.js';
 import {actionCue,eventNotice,dockMode,runLesson,routeChoiceCue,touchCoach,touchGestureCoach,touchCoachVisible} from "./guidance.js";
 import {turnPrompt} from "./turns.js";
 import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,tapAction} from "./gestures.js";
+import {hudReserve,hudReserveApplies} from "./hud-layout.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
 import { puppyArtworkUrl } from "./puppy-artwork.js";
 const $ = (id) => document.getElementById(id);
@@ -353,6 +354,48 @@ function syncDock() {
     coach.hidden = !touchCoachVisible(run, mode, state, $('cue').textContent, copy);
   }
   $('controls').classList.toggle('touch-overdrag', Boolean(run.touchOverdrag));
+}
+// syncDock runs every frame, so the dock's clearance is never measured there.
+// A ResizeObserver already fires when the button row reflows and when the coach
+// banner switches between display:none and a real box, which is exactly when
+// the reserve can change.
+let hudReserveFrame = 0, hudReserveValue = null;
+function applyHudReserve() {
+  hudReserveFrame = 0;
+  const game = $('game'), controls = $('controls');
+  if (!game?.style || !controls?.getBoundingClientRect) return;
+  const width = window.innerWidth, height = window.innerHeight;
+  const coach = $('gesture-coach');
+  const tops = hudReserveApplies(width, height)
+    ? [controls.getBoundingClientRect().top,
+      coach && coach.hidden !== true ? coach.getBoundingClientRect().top : NaN]
+    : [];
+  const reserve = hudReserve(height, tops);
+  if (reserve === hudReserveValue) return;
+  hudReserveValue = reserve;
+  if (reserve === null) game.style.removeProperty('--hud-reserve');
+  else game.style.setProperty('--hud-reserve', `${reserve}px`);
+}
+function scheduleHudReserve() {
+  if (hudReserveFrame) return;
+  hudReserveFrame = typeof window.requestAnimationFrame === 'function'
+    ? window.requestAnimationFrame(applyHudReserve)
+    : window.setTimeout(applyHudReserve, 0);
+}
+try {
+  if (typeof window.ResizeObserver === 'function') {
+    const observer = new window.ResizeObserver(scheduleHudReserve);
+    for (const id of ['controls', 'gesture-coach']) {
+      const node = $(id);
+      if (node) observer.observe(node);
+    }
+  }
+  window.addEventListener('resize', scheduleHudReserve, {passive: true});
+  window.addEventListener('orientationchange', scheduleHudReserve, {passive: true});
+  scheduleHudReserve();
+} catch {
+  // Layout polish must never stop the runner from booting. Without the
+  // observer the CSS fallback offsets still apply.
 }
 const mobileTilt = supportsMobileTilt(window);
 const touchControls = supportsTouchControls(window);

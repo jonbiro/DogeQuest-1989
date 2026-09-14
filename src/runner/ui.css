@@ -28,7 +28,11 @@
 #mission-hud {
   display: none;
   position: absolute;
-  bottom: calc(92px + var(--safe-bottom));
+  /* --hud-reserve is measured from the live control stack (button row plus the
+     gesture coach banner) so the dock can never be printed over. The literal
+     offsets stay as the fallback for a first paint or a browser without
+     ResizeObserver. */
+  bottom: var(--hud-reserve, calc(92px + var(--safe-bottom)));
   left: 5%;
   right: 5%;
   z-index: 2;
@@ -1276,7 +1280,7 @@ kbd {
     height: 68px;
   }
   #controls button[data-action="slide"] { margin-left: 0; }
-  #mission-hud { bottom: calc(96px + var(--safe-bottom)); }
+  #mission-hud { bottom: var(--hud-reserve, calc(118px + var(--safe-bottom))); }
   #power {
     gap: 4px;
   }
