@@ -780,6 +780,7 @@ const LANE_DRAG_REPEAT_DELAY = 140;
 const LANE_DRAG_REARM_RADIUS = 20;
 const LANE_DRAG_REARM_DWELL = 110;
 const LANE_DRAG_REVERSE_DISTANCE = 28;
+const LANE_DRAG_LARGE_REVERSE_DISTANCE = 64;
 const LANE_DRAG_REVERSE_DELAY = 90;
 const CROSS_AXIS_DISTANCE = 32;
 function confirmTouchAction(action) {
@@ -925,7 +926,8 @@ $("scene").addEventListener("pointermove", (event) => {
       localDirection !== pointer.laneDirection &&
       Math.abs(stepX) >= LANE_DRAG_REVERSE_DISTANCE &&
       Number.isFinite(pointer.lastActionAt) &&
-      event.timeStamp - pointer.lastActionAt >= LANE_DRAG_REVERSE_DELAY;
+      (Math.abs(stepX) >= LANE_DRAG_LARGE_REVERSE_DISTANCE ||
+        event.timeStamp - pointer.lastActionAt >= LANE_DRAG_REVERSE_DELAY);
     if (reversing) {
       pointer.anchorX = event.clientX;
       pointer.anchorY = event.clientY;

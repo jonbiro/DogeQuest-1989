@@ -83,6 +83,24 @@ test('a clear reverse segment re-arms a held swipe without requiring a lift',()=
   assert.deepEqual(actions,['right','left']);
 });
 
+test('a large reverse recovers immediately after an overdrag',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
+  const handlers={},actions=[];
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:82,timeStamp:120});
+  // The browser may coalesce a thumb's return into one large reverse sample.
+  // It should still feel like one deliberate opposite swipe, not a stuck drag.
+  handlers.pointermove({...touch,clientX:300,timeStamp:140});
+  handlers.pointermove({...touch,clientX:90,timeStamp:150});
+  assert.deepEqual(actions,['right','left']);
+});
+
 test('a quick post-snap wobble does not reverse a held swipe',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');
