@@ -475,7 +475,7 @@ function showOverlay(kind) {
         ? "New personal best. Very good dog!"
         : "The next great run is one tap away."
       : kind === "help"
-        ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. One swipe equals one move. To keep your finger down, pause briefly before dragging again; lifting is always okay. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
+        ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. One swipe equals one move. To keep your finger down, stop your thumb briefly, then drag again; lifting is always okay. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
         : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
   if(kind==='paused'&&!run.practice&&(run.raft||run.zipline))
     $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
@@ -1090,8 +1090,15 @@ $("scene").addEventListener("pointermove", (event) => {
   // samples that the browser kept instead of judging a whole out-and-back
   // gesture from its final coordinate alone. The terminal event is appended
   // only when it is not already represented by the coalesced list.
-  const coalesced = typeof event.getCoalescedEvents === 'function'
-    ? event.getCoalescedEvents() : [];
+  let coalesced = [];
+  try {
+    coalesced = typeof event.getCoalescedEvents === 'function'
+      ? event.getCoalescedEvents() : [];
+  } catch {
+    // A few embedded browsers expose the method but throw when touch
+    // hardware does not provide a coalesced sample buffer. The terminal
+    // PointerEvent is still a valid sample and remains our safe fallback.
+  }
   const samples = Array.isArray(coalesced) ? [...coalesced] : [];
   const last = samples[samples.length - 1];
   if (!last || last.timeStamp !== event.timeStamp ||

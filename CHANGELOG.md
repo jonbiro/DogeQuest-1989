@@ -23,6 +23,8 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
   jump, or slide samples into `pointerup`, preserving one deliberate action.
 - Processed coalesced touch samples in order, so a fast held swipe keeps its
   direction changes even when Chrome reports the whole path as one event.
+- Replaced abstract touch coaching with the literal action “STOP, THEN DRAG
+  AGAIN,” making the no-lift pause easier to understand at a glance.
 - Made full WebGL2 presentation the runner's only default: browsers with GPU
   acceleration disabled now receive an actionable 3D setup screen instead of a
   silent 2D downgrade. Chrome's hardware-acceleration steps are shown inline,
