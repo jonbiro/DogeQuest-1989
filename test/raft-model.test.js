@@ -5,14 +5,19 @@ import {createRaftModel} from '../src/runner/raft-model.js';
 import {puppyPose} from '../src/runner/puppy-pose.js';
 import {createWaterSurface} from '../src/runner/water.js';
 
-test('raft reuses twelve mesh parts and keeps its deck beneath the puppy',()=>{
+test('raft reuses shared mesh parts and gives the sailor two animated paddles',()=>{
   const box=new THREE.BoxGeometry(),trunk=new THREE.CylinderGeometry(.7,1,1,10);
   const material=new THREE.MeshStandardMaterial();
   const raft=createRaftModel((parent,geometry,color,x,y,z,sx,sy,sz)=>{
     const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.scale.set(sx,sy,sz);parent.add(mesh);return mesh;
   },box,trunk);
-  assert.equal(raft.children.length,12);assert.equal(raft.visible,false);
-  assert.ok(raft.children.every(part=>part.geometry===box||part.geometry===trunk));
+  assert.equal(raft.children.length,14);assert.equal(raft.visible,false);
+  const meshes=[];raft.traverse(part=>{if(part.isMesh)meshes.push(part);});
+  assert.equal(meshes.length,16);
+  assert.ok(meshes.every(part=>part.geometry===box||part.geometry===trunk));
+  assert.equal(raft.userData.oars.length,2);
+  assert.deepEqual(raft.userData.oars.map(oar=>oar.userData.side),[-1,1]);
+  assert.ok(raft.userData.oars.every(oar=>oar.children.length===2));
   for(const log of raft.children.slice(0,7))assert.equal(log.rotation.x,Math.PI/2);
   for(const distance of [1150,1170,1200])assert.deepEqual(puppyPose(2,distance,{rafting:true}).legs,[-.15,.18,-.15,.18]);
   box.dispose();trunk.dispose();material.dispose();

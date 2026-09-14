@@ -1164,6 +1164,23 @@ export function createView(canvas) {
         raftModel.position.set(boarding.x+x*Math.cos(boarding.yaw),boarding.y,boarding.z-x*Math.sin(boarding.yaw));
         raftModel.rotation.set(boarding.pitch,boarding.yaw,0,'YXZ');
       }
+      // Stroke the shared raft paddles as a paired, out-of-phase gesture. The
+      // motion is cosmetic and frozen for reduced-motion users, while the
+      // existing parent transform keeps the paddles aligned to bends and
+      // banking just like the logs and the sailor puppy.
+      const raftOars=raftModel.userData.oars||[];
+      const paddleAnimated=state==='playing'&&!reducedMotion&&raftModel.visible;
+      const paddleStroke=paddleAnimated?Math.sin(time*4.8)*.22:0;
+      raftOars.forEach((oar,index)=>{
+        const base=oar.userData.baseRotation||{x:0,y:0,z:0};
+        const side=oar.userData.side|| (index===0?-1:1);
+        const phase=paddleAnimated?Math.sin(time*4.8+index*Math.PI)*.22:0;
+        oar.rotation.set(
+          base.x + phase,
+          base.y + paddleStroke*.16*side,
+          base.z,
+        );
+      });
       let rasterAngles = activeRig.legs.map(leg => leg.rotation.x);
       if (state === "playing" || menu) {
         rasterAngles=smoothLegAngles(rasterAngles,personality.legs,dt);

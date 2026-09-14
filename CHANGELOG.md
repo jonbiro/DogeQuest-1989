@@ -9,6 +9,9 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
   and anchor detail when boarding the river raft; the shared streaming slot
   keeps the richer art within the mobile texture budget while a gentle bob and
   paddle sway follow the raft's movement.
+- Added paired animated raft paddles with a reduced-motion-safe stroke, tying
+  the sailor puppy to the boat visually while preserving the shared geometry
+  budget.
 - Added a Mochi-specific rear chase-camera painting based on the supplied
   running-away references. Normal ground runs now show his curled tail, back,
   collar, and lifted paws moving away from the player, with a subtle whole-body
