@@ -1407,6 +1407,18 @@ h1 { letter-spacing: -.055em; word-spacing: .07em; }
   #controls button { font-size: 27px; }
   #controls small { font-size: 10px; letter-spacing: .1em; }
 }
+/* Make the touch-first affordance literal.  The Fetch chip is a status meter,
+   so only the four movement labels receive the action verb.  Fine-pointer
+   desktop controls keep their compact labels and keyboard-first presentation. */
+@media (pointer: coarse) {
+  #controls button[data-action="left"] small::before,
+  #controls button[data-action="right"] small::before,
+  #controls button[data-action="slide"] small::before,
+  #controls button[data-action="jump"] small::before {
+    content: "TAP ";
+  }
+  #controls button[data-action] small { white-space: nowrap; }
+}
 @media(max-width:380px) { #cue:not(:empty) { font-size:12px; } #controls small { font-size:8px; } }
 /* Touch tablets can be wider than a phone, but they still need the same
    thumb-level lesson. Only hide this dock when a fine pointer identifies a
