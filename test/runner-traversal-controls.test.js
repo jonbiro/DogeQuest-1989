@@ -1,11 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {updateTraversalControls,traversalDescription} from '../src/runner/traversal-controls.js';
+import {updateTraversalControls,updateTurnControls,traversalDescription} from '../src/runner/traversal-controls.js';
 import {createRun,act,step} from '../src/runner/world.js';
 function button(action) {
   const label={textContent:action.toUpperCase()};
   return {dataset:{action},disabled:false,attributes:{},querySelector:()=>label,
     setAttribute(key,value){this.attributes[key]=value;},removeAttribute(key){delete this.attributes[key];}};
+}
+function legacyTurnButton(action) {
+  return {dataset:{action},attributes:{},classList:{toggle(){}},querySelector:()=>null,
+    ownerDocument:{createElement(tag){assert.equal(tag,'small');return {textContent:''};}},
+    append(node){this.repairedLabel=node;},
+    setAttribute(key,value){this.attributes[key]=value;}};
 }
 test('scene instructions match the available traversal actions',()=>{
   assert.match(traversalDescription({raft:{}}),/Jump and slide return at the shore/);
@@ -70,4 +76,13 @@ test('actual cable dismount restores the jump and slide controls for the next mo
   step(run,1/30);assert.equal(run.zipline,null);
   updateTraversalControls(buttons,run);assert.ok(buttons.every(b=>!b.disabled));
   act(run,'slide');assert.equal(run.diving,true,'the restored slide control can dive after dismount');
+});
+
+test('turn labels repair the legacy bare-arrow markup without crashing the frame',()=>{
+  const buttons=[legacyTurnButton('left'),legacyTurnButton('right')];
+  assert.doesNotThrow(()=>updateTurnControls(buttons,{status:'ready',direction:'left'}));
+  assert.equal(buttons[0].repairedLabel.textContent,'TURN');
+  assert.equal(buttons[1].repairedLabel.textContent,'RIGHT');
+  assert.equal(buttons[0].attributes['aria-label'],'Turn left');
+  assert.equal(buttons[1].attributes['aria-label'],'Turn right');
 });

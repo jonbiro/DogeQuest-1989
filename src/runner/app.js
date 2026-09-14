@@ -17,7 +17,7 @@ import {createPowerHud} from './power-hud.js';
 import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLink} from './trail-link.js';
 import {dailyTrail,restoredTrailSelection} from './daily-trail.js';
 import {trailRecordsFrom,trailBest} from './trail-records.js';
-import {updateTraversalControls,traversalDescription} from './traversal-controls.js';
+import {updateTraversalControls,updateTurnControls,traversalDescription} from './traversal-controls.js';
 import {supportsMobileTilt,supportsTouchControls,noTiltController} from './tilt-platform.js';
 import {scoreBreakdown} from './score-breakdown.js';
 import {rematchFor} from './rematch.js';
@@ -36,6 +36,7 @@ const $ = (id) => document.getElementById(id);
 const updatePowerHud = createPowerHud($('power'));
 const soundscape=createAreaSoundscape();
 const traversalButtons=document.querySelectorAll('#controls [data-action="jump"], #controls [data-action="slide"]');
+const turnButtons=document.querySelectorAll('#controls [data-action="left"], #controls [data-action="right"]');
 let sharedSeed = readTrailSeed(window.location.search);
 let sharedVersion = readTrailVersion(window.location.search);
 let sharedTarget = readTrailTarget(window.location.search);
@@ -1812,13 +1813,7 @@ function frame(now) {
         : 'Collect bones and clear obstacles to charge Fetch');
       const turn = turnPrompt(run);
       $("scene").dataset.turn = turn ? `${turn.direction}-${turn.status}` : '';
-      for (const direction of ['left','right']) {
-        const button = document.querySelector(`[data-action="${direction}"]`);
-        const active = turn && turn.status !== 'accepted' && turn.direction === direction;
-        button.classList.toggle('turn-ready', Boolean(active));
-        button.querySelector('small').textContent=active?'TURN':direction.toUpperCase();
-        button.setAttribute('aria-label', turn ? `Turn ${direction}` : `Move ${direction} one lane`);
-      }
+      updateTurnControls(turnButtons, turn);
       $("hearts").textContent =
         "♥ ".repeat(Math.max(0, run.hearts)) + "♡ ".repeat(3 - run.hearts);
       $("hearts").setAttribute("aria-label", `${run.hearts} hearts remaining`);

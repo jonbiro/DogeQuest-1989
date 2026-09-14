@@ -31,3 +31,33 @@ export function updateTraversalControls(buttons, run) {
     }
   }
 }
+
+// The runner can briefly pair a newer game bundle with an older cached shell.
+// Early shells rendered LEFT/RIGHT as a bare arrow without the nested <small>
+// label that the turn prompt later updates. Repair that small bit of markup in
+// place instead of allowing a stale service-worker response to crash the frame
+// loop after an otherwise valid swipe.
+export function updateTurnControls(buttons, turn) {
+  for (const button of buttons || []) {
+    const direction=button?.dataset?.action;
+    if (!['left','right'].includes(direction)) continue;
+    const active=Boolean(turn && turn.status !== 'accepted' && turn.direction === direction);
+    button?.classList?.toggle?.('turn-ready', active);
+    let label=button?.querySelector?.('small') || null;
+    if (!label) {
+      const doc=button?.ownerDocument;
+      if (doc && typeof doc.createElement === 'function') {
+        const repaired=doc.createElement('small');
+        if (typeof button?.append === 'function') {
+          button.append(repaired);
+          label=repaired;
+        } else if (typeof button?.appendChild === 'function') {
+          button.appendChild(repaired);
+          label=repaired;
+        }
+      }
+    }
+    if (label) label.textContent=active ? 'TURN' : direction.toUpperCase();
+    button?.setAttribute?.('aria-label', turn ? `Turn ${direction}` : `Move ${direction} one lane`);
+  }
+}
