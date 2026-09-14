@@ -48,6 +48,24 @@ test('finishing shader preparation preserves a player-selected menu control',asy
   assert.equal(focus,0);assert.equal(document.activeElement,audio);
 });
 
+test('an unexpected shader-preparation rejection opens the recovery screen instead of stranding Play',async()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const block=source.slice(source.indexOf('let view;'),source.indexOf('let currentMission ='));
+  let recovered=0;
+  const play={disabled:true};
+  const overlayPrimary={disabled:true};
+  const context={graphicsReady:false,state:'menu',document:{body:{},activeElement:null},
+    $:id=>id==='play'?play:overlayPrimary,
+    createView:()=>({prepareShaders:()=>Promise.resolve(true)}),
+    prepareFirstFrame:()=>Promise.reject(Error('driver rejected')),
+    playLabel:()=> 'Run',graphicsError:()=>{recovered++;context.graphicsReady=false;}};
+  runInNewContext(block,context);
+  await Promise.resolve();
+  await Promise.resolve();
+  assert.equal(recovered,1);
+  assert.equal(context.graphicsReady,false);
+});
+
 test('dialogs focus a usable target while their Run button is preparing',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const block=source.slice(source.indexOf('function focusOverlay()'),source.indexOf('function setState(next)'));

@@ -11,10 +11,12 @@ function fixture(modern) {
     window:{addEventListener:(name,callback)=>listeners.set(name,callback),
       screen:modern?{orientation:{addEventListener:(name,callback)=>listeners.set(`screen:${name}`,callback)}}:{}},
     audio:{},stopSound:()=>state.audioStops++,showOverlay:next=>{state.value=next;state.pauses++;},
+    document:{hidden:false,addEventListener:(name,callback)=>listeners.set(`document:${name}`,callback)},
+    focusOverlay:()=>state.focuses=(state.focuses||0)+1,
   };
   Object.defineProperty(context,'state',{get:()=>state.value});
   const pause=source.slice(source.indexOf('function pause() {'),source.indexOf('function resume() {'));
-  const bindings=source.slice(source.indexOf(`window.addEventListener("blur", () => pause('background'));`),source.indexOf('document.addEventListener("visibilitychange"'));
+  const bindings=source.slice(source.indexOf(`window.addEventListener("blur", () => pause('background'));`),source.indexOf('$("scene").addEventListener("webglcontextlost"'));
   context.pauseReason='manual';
   runInNewContext(pause+bindings,context);
   return {state,listeners,context};
@@ -41,6 +43,20 @@ test('browser lifecycle interruptions record an actionable pause reason',()=>{
   f.state.value='playing';
   f.listeners.get('screen:change')();
   assert.equal(f.context.pauseReason,'rotation');
+});
+test('mobile page freeze pauses safely and refocuses the recovery action on return',()=>{
+  const f=fixture(true);
+  f.listeners.get('freeze')();
+  assert.equal(f.state.value,'paused');
+  assert.equal(f.context.pauseReason,'background');
+  f.context.document.hidden=true;
+  f.listeners.get('resume')();
+  assert.equal(f.state.focuses||0,0,'a hidden page cannot steal focus');
+  f.context.document.hidden=false;
+  f.listeners.get('document:visibilitychange')();
+  assert.equal(f.state.focuses,1,'returning to a paused run restores the action target');
+  f.listeners.get('pageshow')();
+  assert.equal(f.state.focuses,2,'bfcache restore also restores the action target');
 });
 test('rotating in camp, results, or another panel does not replace that screen',()=>{
   for(const value of ['menu','ended','help','shop','kennel','paused']) {

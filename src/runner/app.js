@@ -1308,6 +1308,16 @@ window.addEventListener("blur", () => pause('background'));
 // pausing here prevents a restored page from looking frozen while its old run
 // continues behind the browser's back/forward cache.
 window.addEventListener("pagehide", () => pause('background'));
+// Page Lifecycle freeze is used by mobile Chrome/Safari when reclaiming a tab.
+// Pause before the JavaScript clock is suspended so a thawed run never jumps
+// ahead or appears unresponsive. The overlay is restored when the page returns.
+window.addEventListener("freeze", () => pause('background'));
+function refocusLifecyclePause() {
+  if (!document.hidden && state === 'paused' && pauseReason === 'background')
+    focusOverlay();
+}
+window.addEventListener("pageshow", refocusLifecyclePause);
+window.addEventListener("resume", refocusLifecyclePause);
 // Rotation can move hazards and touch targets beneath a player's thumb.
 // Listen to device orientation, not resize: mobile browser chrome resizes often.
 if (window.screen?.orientation?.addEventListener)
@@ -1315,6 +1325,7 @@ if (window.screen?.orientation?.addEventListener)
 else window.addEventListener('orientationchange', () => pause('rotation'));
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) pause('background');
+  else refocusLifecyclePause();
 });
 $("scene").addEventListener("webglcontextlost", (event) => {
   event.preventDefault();
@@ -1389,6 +1400,11 @@ try {
     $("play").textContent = playLabel();
     if(state==='menu' && (!document.activeElement || document.activeElement===document.body))
       $("play").focus({preventScroll:true});
+  }).catch(()=>{
+    // Keep an unexpected preparation rejection from leaving the Play button
+    // stranded on “Preparing the trail…”. The normal helper resolves false,
+    // but a browser/driver promise can still reject outside that guard.
+    if(state!=='graphics-error') graphicsError();
   });
 } catch {
   // Full 3D is intentional: never silently downgrade the runner to a
