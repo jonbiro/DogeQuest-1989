@@ -165,26 +165,51 @@ test('the rear chase painting still carries the gait as rotation and sway', () =
   assert.ok(offsets.size > 5, 'the rear painting keeps a live gait sway');
 });
 
-test('a starting run warms exactly the two immediate action silhouettes', () => {
+test('a starting run warms every silhouette reachable in its first seconds', () => {
   const loader = recordingLoader();
   const artwork = createPuppyArtwork({mobile: true, loader});
   artwork.apply(DEFAULT_PUPPY);
   artwork.setPose({time: 0, menu: true});
   const menuRequests = new Set(loader.requested);
-  artwork.warmActionPoses();
+  // One painting per call, spread across frames; the renderer calls this on
+  // every playing frame, so a handful of frames warms the whole set.
+  assert.equal(artwork.warmActionPoses(), 'jump');
+  assert.equal(artwork.warmActionPoses(), 'slide');
+  assert.equal(artwork.warmActionPoses(), 'turn');
+  assert.equal(artwork.warmActionPoses(), null, 'a warmed set stops requesting');
   const warmed = loader.requested.filter(url => !menuRequests.has(url));
-  assert.deepEqual(warmed.sort(), [
-    puppyPoseArtworkUrl(DEFAULT_PUPPY, 'jump'),
-    puppyPoseArtworkUrl(DEFAULT_PUPPY, 'slide'),
-  ].sort());
-  // Turn, hang and the rear chase frame stay strictly on demand.
-  for (const pose of ['turn', 'hang', 'away'])
+  assert.deepEqual(warmed.sort(), ['jump', 'slide', 'turn']
+    .map(pose => puppyPoseArtworkUrl(DEFAULT_PUPPY, pose)).sort());
+  // Hang and the rear chase frame are reached later in a run and still stream.
+  for (const pose of ['hang', 'away'])
     assert.ok(!loader.requested.includes(puppyPoseArtworkUrl(DEFAULT_PUPPY, pose)),
       `${pose} must still stream only when the physics asks`);
   // Warming is idempotent: a per-frame call must not re-request anything.
   const before = loader.requested.length;
   for (let i = 0; i < 30; i++) artwork.warmActionPoses();
   assert.equal(loader.requested.length, before);
+});
+
+test('a lane change never has to upload a painting mid-run', () => {
+  // Regression: deferring the turn painting to first use meant the first
+  // left/right swipe downloaded a 1254px image, downscaled it on the main
+  // thread and uploaded it to the GPU while the scene was running. On iOS that
+  // mid-run upload lost the WebGL context, so every first swipe ended on the
+  // recovery screen instead of changing lane.
+  const loader = recordingLoader();
+  const artwork = createPuppyArtwork({mobile: true, loader});
+  artwork.apply(DEFAULT_PUPPY);
+  // The renderer warms one painting per playing frame.
+  for (let i = 0; i < 5; i++) artwork.warmActionPoses();
+  const warmed = loader.requested.length;
+  // A hard lane change: full turn amount, on the ground.
+  for (let i = 0; i < 10; i++) artwork.setPose({time: i * .05, look: 1, turn: 1});
+  const turnUrl = puppyPoseArtworkUrl(DEFAULT_PUPPY, 'turn');
+  assert.ok(loader.requested.slice(0, warmed).includes(turnUrl),
+    'the turn painting must already be warm before the first swipe');
+  const duringSwipe = loader.requested.slice(warmed);
+  assert.ok(!duringSwipe.includes(turnUrl),
+    `a swipe re-requested the turn painting: ${duringSwipe}`);
 });
 
 test('the renderer warms action art only once a trail is actually playing', () => {

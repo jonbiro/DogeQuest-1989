@@ -227,10 +227,11 @@ header {
   height: 44px;
   border: 1px solid #ffffff40;
   border-radius: 50%;
-  background: #102a28d9;
+  /* Also over the live canvas during play -- see #controls. Opaque instead of
+     blurred, which reads the same and costs the compositor nothing. */
+  background: #102a28f0;
   color: #fff;
   font-size: 20px;
-  backdrop-filter: blur(10px);
 }
 .back-link {
   font-size: 11px;
@@ -1420,9 +1421,15 @@ h1 { letter-spacing: -.055em; word-spacing: .07em; }
   padding: 6px;
   border: 1px solid #b8d0d355;
   border-radius: 22px;
-  background: linear-gradient(155deg, #102d39e8, #10252edb);
+  /* No backdrop-filter here. This panel sits over the live WebGL canvas for the
+     whole of every touch run, and on iOS a blurred backdrop over an animating
+     GL surface makes the compositor read back and blur that region every frame
+     -- continuous GPU work and an extra full-width surface on exactly the
+     devices that can least afford it. The panel was already 86-91% opaque, so
+     the blur contributed almost nothing; these slightly denser stops keep the
+     same separation from the trail (and a little more label contrast). */
+  background: linear-gradient(155deg, #102d39f4, #10252ef0);
   box-shadow: 0 8px 24px #061a2438, inset 0 1px 0 #ffffff14;
-  backdrop-filter: blur(10px);
 }
 #controls.swipe-only {
   padding: 0;

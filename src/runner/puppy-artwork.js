@@ -1255,13 +1255,32 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
   }
 
   // The menu deliberately holds only the idle and stride paintings so a phone
-  // that is merely sitting on the start screen never pays for action art. A
-  // player does jump within the first seconds of a real run, though, so warm
-  // the two immediate action silhouettes at the moment the trail actually
-  // starts. Turn, hang, rear-chase and every authored second beat still stream
-  // strictly on demand.
+  // that is merely sitting on the start screen never pays for action art. The
+  // silhouettes a player reaches in the first seconds of a real run are warmed
+  // the moment the trail starts instead.
+  //
+  // `turn` belongs in this set. Leaving it to stream on demand meant the first
+  // left/right swipe had to download a 1254px painting, downscale it on the
+  // main thread and upload it to the GPU *while the scene was running* -- and
+  // on iOS that mid-run upload is exactly what loses the WebGL context, so
+  // every first swipe ended on the recovery screen. Hang, the rear-chase frame
+  // and every authored second beat are reached later in a run and still stream
+  // on demand.
+  //
+  // One painting per call, not all three at once. The renderer calls this on
+  // every playing frame, so the set still finishes warming within a few frames
+  // of the trail starting -- long before a player's first swipe -- but the
+  // decode/downscale/upload work is spread across frames instead of landing as
+  // a single burst at the exact moment the run begins.
+  const WARM_RUN_POSES = Object.freeze(['jump', 'slide', 'turn']);
   function warmActionPoses() {
-    for (const pose of ['jump', 'slide']) requestPose(currentKey, pose);
+    const map = poseMapFor(currentKey);
+    for (const pose of WARM_RUN_POSES) {
+      if (map.has(pose)) continue;
+      requestPose(currentKey, pose);
+      return pose;
+    }
+    return null;
   }
 
   function setCostume(costume = 'scarf') {
