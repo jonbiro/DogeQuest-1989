@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import {URL} from 'node:url';
-import {canStartSwipe,canPressAction,ownsSwipe,isJumpTap,swipeAction} from '../src/runner/gestures.js';
+import {canStartSwipe,canPressAction,ownsSwipe,isJumpTap,swipeAction,tapAction} from '../src/runner/gestures.js';
 
 test('track listeners ignore holds but keep taps and deliberate swipes responsive',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
@@ -13,7 +13,7 @@ test('track listeners ignore holds but keep taps and deliberate swipes responsiv
   const handlers={},actions=[];
   const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
   runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
-    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction});
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
   const contact={pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
   handlers.pointerdown(contact);
   handlers.pointerup({...contact,timeStamp:2000});
@@ -45,7 +45,7 @@ test('a held horizontal drag can cross lanes one segment at a time without overs
   const handlers={},actions=[];
   const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
   runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
-    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction});
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
   const touch={pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
   handlers.pointerdown(touch);
   handlers.pointermove({...touch,clientX:82,timeStamp:120});
@@ -63,7 +63,7 @@ test('a fast overlong thumb drag does not chain a second lane before the snap se
   const handlers={},actions=[];
   const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
   runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
-    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction});
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
   const touch={pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
   handlers.pointerdown(touch);
   handlers.pointermove({...touch,clientX:82,timeStamp:120});
@@ -79,7 +79,7 @@ test('a held vertical drag remains a single jump or slide action',()=>{
   const handlers={},actions=[];
   const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
   runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
-    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction});
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
   const touch={pointerId:1,button:0,isPrimary:true,clientX:80,clientY:120,timeStamp:100};
   handlers.pointerdown(touch);
   handlers.pointermove({...touch,clientY:82,timeStamp:120});
@@ -107,6 +107,34 @@ test('tap jumps require quick contact without a wandering drag',()=>{
   assert.equal(isJumpTap(pointer,{...release,timeStamp:99}),false);
   assert.equal(isJumpTap(pointer,{...release,clientX:74}),false);
   assert.equal(isJumpTap({...pointer,travel:30},release),false,'returning a diagonal drag to its origin is not a tap');
+});
+
+test('touch taps offer forgiving edge steering while centre taps still jump',()=>{
+  const left={x:40,y:400,started:100,travel:0};
+  const right={x:350,y:400,started:100,travel:0};
+  const centre={x:195,y:400,started:100,travel:0};
+  assert.equal(tapAction(left,{clientX:40,clientY:400,timeStamp:200},390,true),'left');
+  assert.equal(tapAction(right,{clientX:350,clientY:400,timeStamp:200},390,true),'right');
+  assert.equal(tapAction(centre,{clientX:195,clientY:400,timeStamp:200},390,true),'jump');
+  assert.equal(tapAction(left,{clientX:40,clientY:400,timeStamp:200},390,false),'jump');
+  assert.equal(tapAction({...left,travel:28},{clientX:40,clientY:400,timeStamp:200},390,true),null);
+});
+
+test('the live pointer listener maps a touch edge tap without changing desktop taps',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]"))',start);
+  const handlers={},actions=[];
+  const scene={clientWidth:390,addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,tapAction,swipeAction});
+  const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:36,clientY:500,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointerup({...touch,timeStamp:200});
+  assert.deepEqual(actions,['left']);
+  handlers.pointerdown({...touch,pointerId:2,pointerType:'mouse'});
+  handlers.pointerup({...touch,pointerId:2,pointerType:'mouse',timeStamp:200});
+  assert.deepEqual(actions,['left','jump']);
 });
 
 test('only a primary contact or left mouse button may begin a free swipe',()=>{
@@ -162,7 +190,7 @@ test('two-thumb buttons combine steering and jumping without a phantom trail rel
   const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
   runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
     document:{querySelectorAll:()=>buttons},act:(_,action)=>actions.push(action),
-    canStartSwipe,canPressAction,ownsSwipe,isJumpTap,swipeAction});
+    canStartSwipe,canPressAction,ownsSwipe,isJumpTap,swipeAction,tapAction});
   const first={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100,preventDefault(){}};
   const second={...first,pointerId:2,isPrimary:false};
   buttons[0].onpointerdown(first);
@@ -189,7 +217,7 @@ test('browser cancellation pauses only the owned gesture and cannot replay it af
   const handlers={},actions=[];let pauses=0;
   const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
   const context={$:()=>scene,state:'playing',run:{},act:(_,a)=>actions.push(a),
-    canStartSwipe,ownsSwipe,isJumpTap,swipeAction,pause(){pauses++;context.state='paused';}};
+    canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction,pause(){pauses++;context.state='paused';}};
   runInNewContext(source.slice(start,end),context);
   const touch={pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
   handlers.pointerdown(touch);

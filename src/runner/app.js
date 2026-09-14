@@ -27,7 +27,7 @@ import {CUES,playNotes,stopSound,resumeSound,traversalCue,feedbackPriority} from
 import {createAreaSoundscape} from './soundscape.js';
 import {actionCue,eventNotice,dockMode,runLesson,routeChoiceCue} from "./guidance.js";
 import {turnPrompt} from "./turns.js";
-import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,isJumpTap} from "./gestures.js";
+import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,tapAction} from "./gestures.js";
 import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
 import { puppyArtworkUrl } from "./puppy-artwork.js";
 const $ = (id) => document.getElementById(id);
@@ -458,7 +458,7 @@ function showOverlay(kind) {
         ? "New personal best. Very good dog!"
         : "The next great run is one tap away."
       : kind === "help"
-        ? "Drag left or right to change lanes; swipe up to jump or down to slide. A short tap jumps, and the buttons always work."
+        ? "Drag left or right to change lanes; on a phone, tap an edge to steer or the centre to jump. Swipe up to jump or down to slide. The buttons always work."
         : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
   if(kind==='paused'&&!run.practice&&(run.raft||run.zipline))
     $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
@@ -826,10 +826,13 @@ $("scene").addEventListener("pointerup", (event) => {
   }
   const dx = event.clientX - pointer.x,
     dy = event.clientY - pointer.y;
-  const tap = isJumpTap(pointer, event);
+  const screenWidth = $("scene").clientWidth || event.view?.innerWidth ||
+    (typeof window !== 'undefined' ? window.innerWidth : 0);
+  const action = tapAction(pointer, event, screenWidth,
+    event.pointerType === 'touch');
   pointer = null;
   if (state !== "playing") return;
-  if (tap) act(run, "jump");
+  if (action) act(run, action);
   else {
     const action = swipeAction(dx, dy, true);
     if (action) act(run, action);
