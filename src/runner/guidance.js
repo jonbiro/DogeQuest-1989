@@ -80,7 +80,7 @@ export function actionCue(run) {
 // Keep the first touch lesson attached to the thumb controls instead of
 // placing another banner in the play corridor. It stays through the first few
 // deliberate actions, with one extra explanation when a long drag is broken
-// into several small lane snaps. A new player often needs more than one
+// into several small lane moves. A new player often needs more than one
 // attempt to discover the controls; this low-profile dock is the least noisy
 // place to keep that help available.
 export function touchCoach(run) {
@@ -88,14 +88,14 @@ export function touchCoach(run) {
     ? run.touchActionCount : run?.inputCount || 0;
   if (!run?.touchHint || (actions >= 4 && !run.touchOverdrag)) return '';
   if (run.touchOverdrag)
-    return 'KEEP DRAGGING · ONE LANE PER SNAP';
+    return 'ONE LANE AT A TIME · KEEP FINGER DOWN';
   if (actions === 0)
-    return 'TAP TO MOVE · DRAG TO STEER';
+    return 'TAP OR DRAG · MOVE ONE LANE';
   // Keep the first lesson aligned with the visible buttons. Only introduce
   // the no-lift gesture vocabulary after the player has actually tried one;
   // a first-time player should never feel that a swipe is required.
   return run.touchSwipeSeen
-    ? 'DRAG ONE LANE · KEEP MOVING OR LIFT'
+    ? 'DRAG ONE LANE · KEEP FINGER DOWN'
     : 'ONE TAP = ONE MOVE · SWIPES OPTIONAL';
 }
 
@@ -106,10 +106,10 @@ export function touchCoach(run) {
 export function touchGestureCoach(pointer) {
   if (!pointer || pointer.pointerType !== 'touch') return '';
   if (!pointer.axis) return 'DRAG A SHORT WAY · ONE MOVE';
-  if (pointer.laneDirection === 'left') return '← ONE LANE · KEEP DRAGGING OR LIFT';
-  if (pointer.laneDirection === 'right') return '→ ONE LANE · KEEP DRAGGING OR LIFT';
-  if (pointer.laneDirection === 'jump') return '↑ JUMP · KEEP PLAYING OR LIFT';
-  if (pointer.laneDirection === 'slide') return '↓ SLIDE · KEEP PLAYING OR LIFT';
+  if (pointer.laneDirection === 'left') return '← ONE LANE · KEEP FINGER DOWN';
+  if (pointer.laneDirection === 'right') return '→ ONE LANE · KEEP FINGER DOWN';
+  if (pointer.laneDirection === 'jump') return '↑ JUMP · KEEP FINGER DOWN';
+  if (pointer.laneDirection === 'slide') return '↓ SLIDE · KEEP FINGER DOWN';
   return '';
 }
 

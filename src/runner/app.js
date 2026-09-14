@@ -475,7 +475,7 @@ function showOverlay(kind) {
         ? "New personal best. Very good dog!"
         : "The next great run is one tap away."
       : kind === "help"
-        ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. Swipes are optional: drag one lane, then keep moving for another snap or lift whenever comfortable. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
+        ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. Swipes are optional: drag one lane, then keep your finger down for another lane move, or lift whenever comfortable. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
         : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
   if(kind==='paused'&&!run.practice&&(run.raft||run.zipline))
     $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
@@ -914,7 +914,6 @@ $("scene").addEventListener("pointermove", (event) => {
     const action = swipeAction(dx, dy);
     if (!action) return;
     pointer.axis = action === 'left' || action === 'right' ? 'horizontal' : 'vertical';
-    pointer.consumed = true;
     pointer.anchorX = event.clientX;
     pointer.anchorY = event.clientY;
     pointer.lastActionAt = event.timeStamp;
@@ -929,8 +928,8 @@ $("scene").addEventListener("pointermove", (event) => {
       run.touchOverdrag = true;
     return;
   }
-  let deltaX = event.clientX - pointer.anchorX;
-  let deltaY = event.clientY - pointer.anchorY;
+  const deltaX = event.clientX - pointer.anchorX;
+  const deltaY = event.clientY - pointer.anchorY;
   const elapsed = event.timeStamp - pointer.lastActionAt;
   // Same-axis horizontal segments remain deliberately thumb-length. Each
   // additional segment can snap another lane without requiring a lift; the
