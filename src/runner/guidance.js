@@ -83,8 +83,8 @@ export function actionCue(run) {
 export function touchCoach(run) {
   if (!run?.touchHint || (run.inputCount || 0) >= 2) return '';
   return (run.inputCount || 0) === 0
-    ? 'EASIEST: TAP LEFT / RIGHT TO MOVE · TAP JUMP OR SLIDE'
-    : 'SWIPE: HOLD → DRAG ONE LANE → PAUSE → DRAG AGAIN · UP / DOWN JUMP / SLIDE';
+    ? 'EASIEST: TAP LEFT / RIGHT · TAP JUMP OR SLIDE'
+    : 'SWIPES OPTIONAL: SHORT DRAG = ONE MOVE · REVERSE WITHOUT LIFTING';
 }
 
 // Keep the coach visible beside a quiet opening/course cue, but yield the

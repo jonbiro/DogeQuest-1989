@@ -39,10 +39,10 @@ test('runner headline and onboarding name bones as the core collectible',()=>{
   assert.match(html,/<span>MEET YOUR RUNNING BUDDY<\/span><strong>Mochi\.<\/strong>/);
   assert.match(html,/aria-label="3D running trail\. The buttons are easiest: tap LEFT or RIGHT to move one lane, or JUMP and SLIDE for actions\. Swipes also work/);
   assert.match(html,/The big movement buttons are the simplest option: tap LEFT or RIGHT for one lane, JUMP to clear a log or gap, and SLIDE under an overhead gate/);
-  assert.match(html,/id="gesture-coach"[^>]*Tap left or right to move\. Tap jump or slide\. Swipe by holding, dragging one lane, pausing, then dragging again/);
+  assert.match(html,/id="gesture-coach"[^>]*Tap left or right to move\. Tap jump or slide\. Swipes are optional: use a short drag for one move and reverse without lifting/);
   assert.match(html,/center to jump/);
   assert.match(html,/tap a left or right edge to steer/);
-  assert.match(html,/Drag left or right and use the buttons by default/);
+  assert.match(html,/Use the movement buttons by default: tap LEFT or RIGHT for one lane/);
   assert.match(html,/chase glowing bones/);
   assert.match(html,/Zipline bones ↗︎/);
   assert.match(html,/id="area-rhythm"/);

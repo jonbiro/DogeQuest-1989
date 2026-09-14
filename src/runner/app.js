@@ -464,7 +464,7 @@ function showOverlay(kind) {
         ? "New personal best. Very good dog!"
         : "The next great run is one tap away."
       : kind === "help"
-        ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. Swipes are optional: press and hold, drag one lane, pause briefly, then drag again without lifting. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
+        ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. Swipes are optional: use a short drag for one move, reverse without lifting, or pause briefly before another same-direction drag. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
         : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
   if(kind==='paused'&&!run.practice&&(run.raft||run.zipline))
     $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
@@ -771,13 +771,34 @@ let pointer = null;
 // armed; one long, fast drag therefore cannot throw the runner to the edge. The
 // pause can happen anywhere after the snap (a thumb that overshot does not need
 // to travel back), while a clear cross-axis segment can follow a jump/slide (or
-// a lane move) without lifting too. A single very long sample still commits
-// only one action, even when the browser coalesces pointer events.
+// a lane move) without lifting too. A deliberate short reversal also re-arms
+// the next lane immediately, so one finger can scrub back and forth naturally.
+// A single very long sample still commits only one action, even when the browser
+// coalesces pointer events.
 const LANE_DRAG_REPEAT_DISTANCE = 56;
 const LANE_DRAG_REPEAT_DELAY = 140;
 const LANE_DRAG_REARM_RADIUS = 20;
 const LANE_DRAG_REARM_DWELL = 110;
+const LANE_DRAG_REVERSE_DISTANCE = 28;
+const LANE_DRAG_REVERSE_DELAY = 90;
 const CROSS_AXIS_DISTANCE = 32;
+function confirmTouchAction(action) {
+  if (typeof document === 'undefined' || typeof document.querySelector !== 'function') return;
+  const button = document.querySelector(`#controls [data-action="${action}"]`);
+  if (!button) return;
+  button.classList.remove('touch-confirmed');
+  // Force a new animation when two quick actions use the same button.
+  void button.offsetWidth;
+  button.classList.add('touch-confirmed');
+  if (typeof window !== 'undefined' && typeof window.setTimeout === 'function')
+    window.setTimeout(() => button.classList.remove('touch-confirmed'), 240);
+  if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function')
+    navigator.vibrate(8);
+}
+const commitPointerAction = (action, event) => {
+  act(run, action);
+  if (event?.pointerType === 'touch') confirmTouchAction(action);
+};
 $("scene").addEventListener("pointerdown", (event) => {
   if (state !== "playing" || !canStartSwipe(event,pointer)) return;
   event.preventDefault?.();
@@ -791,6 +812,7 @@ $("scene").addEventListener("pointerdown", (event) => {
     anchorX: event.clientX,
     anchorY: event.clientY,
     lastActionAt: null,
+    laneDirection: null,
     lastX: event.clientX,
     lastY: event.clientY,
     lastMoveAt: event.timeStamp,
@@ -828,10 +850,11 @@ $("scene").addEventListener("pointermove", (event) => {
     pointer.anchorX = event.clientX;
     pointer.anchorY = event.clientY;
     pointer.lastActionAt = event.timeStamp;
+    pointer.laneDirection = action;
     // The action sample is the snap itself, not a pause at that snap.
     pointer.settledSince = null;
     pointer.laneRearmed = false;
-    act(run, action);
+    commitPointerAction(action, event);
     return;
   }
   let deltaX = event.clientX - pointer.anchorX;
@@ -886,7 +909,27 @@ $("scene").addEventListener("pointermove", (event) => {
       pointer.lastActionAt = event.timeStamp;
       pointer.settledSince = null;
       pointer.laneRearmed = false;
-      act(run, deltaY > 0 ? 'slide' : 'jump');
+      commitPointerAction(deltaY > 0 ? 'slide' : 'jump', event);
+      return;
+    }
+    // A player who keeps their finger down often swipes back immediately after
+    // an overdrag. Treat a clear opposite local segment as the next lane move
+    // instead of waiting for the dwell-to-rearm timer. The distance and delay
+    // filters keep small thumb wobble near the snap from reversing the puppy.
+    const localDirection = stepX > 0 ? 'right' : stepX < 0 ? 'left' : null;
+    const reversing = localDirection && pointer.laneDirection &&
+      localDirection !== pointer.laneDirection &&
+      Math.abs(stepX) >= LANE_DRAG_REVERSE_DISTANCE &&
+      Number.isFinite(pointer.lastActionAt) &&
+      event.timeStamp - pointer.lastActionAt >= LANE_DRAG_REVERSE_DELAY;
+    if (reversing) {
+      pointer.anchorX = event.clientX;
+      pointer.anchorY = event.clientY;
+      pointer.lastActionAt = event.timeStamp;
+      pointer.settledSince = null;
+      pointer.laneRearmed = false;
+      pointer.laneDirection = localDirection;
+      commitPointerAction(localDirection, event);
       return;
     }
     if (Math.abs(deltaX) >= LANE_DRAG_REPEAT_DISTANCE) {
@@ -897,7 +940,8 @@ $("scene").addEventListener("pointermove", (event) => {
       pointer.lastActionAt = event.timeStamp;
       pointer.settledSince = null;
       pointer.laneRearmed = false;
-      act(run, deltaX > 0 ? 'right' : 'left');
+      pointer.laneDirection = deltaX > 0 ? 'right' : 'left';
+      commitPointerAction(deltaX > 0 ? 'right' : 'left', event);
       return;
     }
     return;
@@ -914,7 +958,8 @@ $("scene").addEventListener("pointermove", (event) => {
   pointer.lastActionAt = event.timeStamp;
   pointer.settledSince = null;
   pointer.laneRearmed = false;
-  act(run, deltaX > 0 ? 'right' : 'left');
+  pointer.laneDirection = deltaX > 0 ? 'right' : 'left';
+  commitPointerAction(pointer.laneDirection, event);
 });
 $("scene").addEventListener("pointerup", (event) => {
   if (!pointer || pointer.id !== event.pointerId) return;
@@ -931,10 +976,16 @@ $("scene").addEventListener("pointerup", (event) => {
     event.pointerType === 'touch');
   pointer = null;
   if (state !== "playing") return;
-  if (action) act(run, action);
+  if (action) {
+    act(run, action);
+    if (event.pointerType === 'touch') confirmTouchAction(action);
+  }
   else {
     const action = swipeAction(dx, dy, true);
-    if (action) act(run, action);
+    if (action) {
+      act(run, action);
+      if (event.pointerType === 'touch') confirmTouchAction(action);
+    }
   }
 });
 const cancelOwnedPointer = event => {
@@ -951,6 +1002,8 @@ for (const button of document.querySelectorAll("[data-action]")) {
       event.preventDefault();
       pointer = null; // A button supersedes an unfinished trail tap, not a second move on release.
       act(run, button.dataset.action);
+      if (event.pointerType === 'touch' && typeof confirmTouchAction === 'function')
+        confirmTouchAction(button.dataset.action);
     }
   };
   button.onclick = (event) => {

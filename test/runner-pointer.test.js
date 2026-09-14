@@ -65,6 +65,39 @@ test('a held horizontal drag can cross lanes one segment at a time without overs
   assert.deepEqual(actions,['right','right','left'],'continued drag changes one lane per thumb segment and can reverse');
 });
 
+test('a clear reverse segment re-arms a held swipe without requiring a lift',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]"))',start);
+  const handlers={},actions=[];
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:82,timeStamp:120});
+  handlers.pointermove({...touch,clientX:130,timeStamp:160});
+  // The thumb reverses by a short, distinct segment. It is accepted without
+  // the old pause-and-lift sequence, but only after the snap has settled.
+  handlers.pointermove({...touch,clientX:98,timeStamp:240});
+  assert.deepEqual(actions,['right','left']);
+});
+
+test('a quick post-snap wobble does not reverse a held swipe',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]"))',start);
+  const handlers={},actions=[];
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:82,timeStamp:120});
+  handlers.pointermove({...touch,clientX:50,timeStamp:140});
+  assert.deepEqual(actions,['right'],'a fast wobble remains the original one-lane move');
+});
+
 test('a fast overlong thumb drag does not chain a second lane before the snap settles',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');

@@ -113,9 +113,9 @@ test("touch onboarding teaches the safe opening without changing desktop guidanc
   assert.equal(actionCue(createRun(1989)), "", "desktop keeps the safe opening quiet");
   const touchRun=createRun(1989);touchRun.touchHint=true;
   assert.equal(actionCue(touchRun), "", "the opening coach stays with the thumb controls");
-  assert.equal(touchCoach(touchRun), "EASIEST: TAP LEFT / RIGHT TO MOVE · TAP JUMP OR SLIDE");
+  assert.equal(touchCoach(touchRun), "EASIEST: TAP LEFT / RIGHT · TAP JUMP OR SLIDE");
   touchRun.inputCount=1;
-  assert.equal(touchCoach(touchRun), "SWIPE: HOLD → DRAG ONE LANE → PAUSE → DRAG AGAIN · UP / DOWN JUMP / SLIDE");
+  assert.equal(touchCoach(touchRun), "SWIPES OPTIONAL: SHORT DRAG = ONE MOVE · REVERSE WITHOUT LIFTING");
   touchRun.inputCount=2;
   assert.equal(touchCoach(touchRun), "", "the coach disappears after the second action");
   touchRun.inputCount=0;
