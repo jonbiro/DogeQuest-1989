@@ -49,7 +49,7 @@ test('online navigation stays fresh and unknown requests are not intercepted',as
 test('published offline manifest hashes match the exact release files',async()=>{
   const source=await readFile(new URL('../dist/runner/offline-worker.js',import.meta.url),'utf8');
   const assets=JSON.parse(source.match(/const ASSETS = (\[.*\]);/)[1]);
-  assert.equal(assets.length,49);assert.ok(!source.includes('build:version'));
+  assert.equal(assets.length,53);assert.ok(!source.includes('build:version'));
   for(const asset of assets) {
     const body=await readFile(new URL('../dist/runner/'+asset.url.split('?')[0],import.meta.url));
     assert.equal(createHash('sha256').update(body).digest('hex'),asset.sha256);

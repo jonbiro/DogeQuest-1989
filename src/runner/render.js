@@ -1193,6 +1193,7 @@ export function createView(canvas) {
         airborne:y>.1 && !run.zipline && !run.raft,
         sliding:run.slide>0,
         hanging:!menu && Boolean(run.zipline),
+        rafting:!menu && Boolean(run.raft),
         // Mochi's default ground run is viewed from the owner's chase-camera
         // perspective. The dedicated rear painting is optional and scoped to
         // Mochi, while jumps, slides, turns, ziplines, and raft travel keep

@@ -105,6 +105,7 @@ export async function build() {
     'puppies/biscuit-turn-alt.webp',
     'puppies/biscuit-hang.webp',
     'puppies/biscuit-hang-alt.webp',
+    'puppies/biscuit-raft.webp',
     'puppies/mochi.webp',
     'puppies/mochi-run-side.webp',
     'puppies/mochi-run-side-alt.webp',
@@ -117,6 +118,7 @@ export async function build() {
     'puppies/mochi-hang.webp',
     'puppies/mochi-hang-alt.webp',
     'puppies/mochi-away.webp',
+    'puppies/mochi-raft.webp',
     'puppies/pepper.webp',
     'puppies/pepper-run-front.webp',
     'puppies/pepper-run-alt.webp',
@@ -128,6 +130,7 @@ export async function build() {
     'puppies/pepper-turn-alt.webp',
     'puppies/pepper-hang.webp',
     'puppies/pepper-hang-alt.webp',
+    'puppies/pepper-raft.webp',
     'puppies/luna.webp',
     'puppies/luna-run-front.webp',
     'puppies/luna-run-alt.webp',
@@ -139,6 +142,7 @@ export async function build() {
     'puppies/luna-turn-alt.webp',
     'puppies/luna-hang.webp',
     'puppies/luna-hang-alt.webp',
+    'puppies/luna-raft.webp',
   ]) {
     const sha256=createHash('sha256').update(await readFile(path.join(distDirectory,'runner',file))).digest('hex');
     const url=['game.js','style.css'].includes(file)?`${file}?v=${sha256.slice(0,16)}`:file;

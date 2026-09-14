@@ -66,11 +66,21 @@ test('each action has a second authored beat with a stable URL resolver', () => 
   assert.equal(puppyPoseArtworkUrl('mochi', null), PUPPY_ARTWORK.mochi);
 });
 
+test('every puppy has a sailor rafting painting with a stable URL resolver', () => {
+  for (const id of Object.keys(PUPPY_ARTWORK)) {
+    const raft = PUPPY_ARTWORK_ALTERNATES[id]?.raft;
+    assert.match(raft, new RegExp(`^\\.\\/puppies/${id}-raft\\.webp$`));
+    assert.equal(puppyPoseArtworkUrl(id, 'raftAlt'), raft);
+    assert.notEqual(raft, PUPPY_ARTWORK_VARIANTS[id].idle);
+    assert.ok(PUPPY_ARTWORK_BOUNDS[id].raftAlt, `${id} exposes measured raft bounds`);
+  }
+});
+
 test('pose paintings expose measured alpha bounds for stable frame swaps', () => {
   for (const id of Object.keys(PUPPY_ARTWORK)) {
     const frames = PUPPY_ARTWORK_BOUNDS[id];
     const expectedFrames = ['hang', 'idle', 'jump', 'slide', 'stride', 'turn'];
-    for (const pose of ['strideAlt', 'jumpAlt', 'slideAlt', 'turnAlt', 'hangAlt']) {
+    for (const pose of ['strideAlt', 'jumpAlt', 'slideAlt', 'turnAlt', 'hangAlt', 'raftAlt']) {
       const basePose = pose.endsWith('Alt') ? pose.slice(0, -3) : pose;
       if (PUPPY_ARTWORK_ALTERNATES[id]?.[basePose]) expectedFrames.push(pose);
     }
