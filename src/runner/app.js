@@ -410,7 +410,6 @@ function setState(next) {
     focusOverlay();
   }
   accumulator = 0;
-  if (typeof clearLaneRearm === 'function') clearLaneRearm(pointer);
   pointer = null;
   if (typeof hideTouchGhost === 'function') hideTouchGhost();
 }
@@ -476,7 +475,7 @@ function showOverlay(kind) {
         ? "New personal best. Very good dog!"
         : "The next great run is one tap away."
       : kind === "help"
-        ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. Swipes are optional: one swipe moves one lane. Lift after a move, or pause with your finger down before dragging again. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
+        ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. Swipes are optional: drag one lane, then keep moving for another snap or lift whenever comfortable. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
         : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
   if(kind==='paused'&&!run.practice&&(run.raft||run.zipline))
     $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
@@ -778,23 +777,23 @@ window.addEventListener("keydown", (event) => {
 });
 let pointer = null;
 // A gesture can stay active across deliberate action segments. The first move
-// commits one lane at the normal swipe threshold. A player can continue without
-// lifting; a short beat automatically re-arms the next same-direction segment,
-// while a fast over-drag still cannot throw the runner to the edge. The pause
-// can happen anywhere after the snap (a thumb that overshot does not need to
-// travel back), while a clear cross-axis segment can follow a jump/slide (or a
-// lane move) without lifting too. A deliberate short reversal also re-arms the
-// next lane immediately, so one finger can scrub back and forth naturally. A
-// single very long sample still commits only one action, even when the browser
-// coalesces events.
-// A second same-direction segment needs about one thumb-width after the
-// automatic settle, not a full phone lane. This makes held drags comfortable
-// on narrow screens while the one-action-per-beat guard still prevents skips.
+// Commits one lane at the normal swipe threshold. A player can continue without
+// lifting: every additional thumb-length in the same direction snaps one more
+// lane, while a short timing guard prevents a single noisy sample from firing
+// twice. A clear cross-axis segment can follow a jump/slide (or a lane move)
+// without lifting too. A deliberate short reversal re-arms the next lane
+// immediately, so one finger can scrub back and forth naturally. A single very
+// long sample still commits only one action, even when the browser coalesces
+// events; a following sample can continue the drag normally.
+// A second same-direction segment needs about one thumb-width, not a full phone
+// lane. This makes held drags comfortable on narrow screens while the natural
+// world lane clamp prevents the puppy from travelling beyond the trail.
 const LANE_DRAG_REPEAT_DISTANCE = 48;
-const LANE_DRAG_REPEAT_DELAY = 140;
-const LANE_DRAG_SETTLE_DELAY = 260;
-const LANE_DRAG_REARM_RADIUS = 20;
-const LANE_DRAG_REARM_DWELL = 110;
+const LANE_DRAG_REPEAT_DELAY = 48;
+// A single browser sample can cover much more than a thumb-width. Treat that
+// as one over-drag and rebase instead of turning it into an accidental second
+// lane move; a normal follow-up segment can still continue without a lift.
+const LANE_DRAG_MAX_AUTO_DISTANCE = 84;
 const LANE_DRAG_REVERSE_DISTANCE = 28;
 const LANE_DRAG_LARGE_REVERSE_DISTANCE = 64;
 const LANE_DRAG_REVERSE_DELAY = 90;
@@ -820,40 +819,6 @@ function hideTouchGhost() {
   if (!ghost) return;
   ghost.hidden = true;
   ghost.dataset.visible = 'false';
-}
-function clearLaneRearm(target) {
-  if (!target || target.rearmTimer == null) return;
-  const host = typeof window !== 'undefined' ? window : null;
-  if (typeof host?.clearTimeout === 'function') host.clearTimeout(target.rearmTimer);
-  target.rearmTimer = null;
-}
-function scheduleLaneRearm(target) {
-  if (!target || target.pointerType !== 'touch' || target.axis !== 'horizontal') return;
-  const host = typeof window !== 'undefined' ? window : null;
-  if (typeof host?.setTimeout !== 'function') return;
-  clearLaneRearm(target);
-  // A long finger path must never turn into an accidental second lane move
-  // merely because the original timer elapsed. Capture the last movement
-  // sample and only re-arm when that sample is still the latest one. If the
-  // thumb is still travelling, defer the same short settle window from the
-  // newest sample instead. This preserves no-lift play after a real pause,
-  // including browsers that emit no resting samples, without letting a single
-  // overlong drag keep walking the puppy across the trail.
-  const scheduledMoveAt = target.lastMoveAt;
-  const scheduledX = target.lastX;
-  const scheduledY = target.lastY;
-  target.rearmTimer = host.setTimeout(() => {
-    target.rearmTimer = null;
-    if (pointer !== target || state !== 'playing' || target.axis !== 'horizontal' || target.laneRearmed) return;
-    if (target.lastMoveAt !== scheduledMoveAt || target.lastX !== scheduledX || target.lastY !== scheduledY) {
-      scheduleLaneRearm(target);
-      return;
-    }
-    target.anchorX = target.lastX;
-    target.anchorY = target.lastY;
-    target.laneRearmed = true;
-    target.settledSince = target.lastMoveAt;
-  }, LANE_DRAG_SETTLE_DELAY);
 }
 function confirmTouchAction(action) {
   if (run && typeof run === 'object' && !run.ended)
@@ -892,17 +857,15 @@ const markTouchSwipe = event => {
   if (event?.pointerType === 'touch') run.touchSwipeSeen = true;
 };
 const commitPointerAction = (action, event) => {
-  // An overlong touch is deliberately capped at one lane. Once the player
-  // makes the next move, the adaptive hint has done its job and can return to
-  // the normal first-run lesson.
+  // A very long first sample still receives one bounded snap. Once the player
+  // makes the next thumb-length move, the adaptive hint has done its job and
+  // can return to the normal first-run lesson.
   if (event?.pointerType === 'touch') {
     run.touchOverdrag = false;
     run.touchFeedback = '';
   }
   markTouchSwipe(event);
   performTouchAction(action, event);
-  if (event?.pointerType === 'touch' && (action === 'left' || action === 'right'))
-    scheduleLaneRearm(pointer);
 };
 $("scene").addEventListener("pointerdown", (event) => {
   if (state !== "playing" || !canStartSwipe(event,pointer)) return;
@@ -922,9 +885,6 @@ $("scene").addEventListener("pointerdown", (event) => {
     laneDirection: null,
     lastX: event.clientX,
     lastY: event.clientY,
-    lastMoveAt: event.timeStamp,
-    settledSince: null,
-    laneRearmed: true,
   };
   showTouchGhost(event);
   try { $("scene").setPointerCapture(event.pointerId); }
@@ -946,12 +906,10 @@ $("scene").addEventListener("pointermove", (event) => {
   pointer.travel = Math.max(pointer.travel, Math.abs(dx), Math.abs(dy));
   const previousX = pointer.lastX,
     previousY = pointer.lastY,
-    previousMoveAt = pointer.lastMoveAt,
     stepX = event.clientX - previousX,
     stepY = event.clientY - previousY;
   pointer.lastX = event.clientX;
   pointer.lastY = event.clientY;
-  pointer.lastMoveAt = event.timeStamp;
   if (!pointer.axis) {
     const action = swipeAction(dx, dy);
     if (!action) return;
@@ -961,14 +919,11 @@ $("scene").addEventListener("pointermove", (event) => {
     pointer.anchorY = event.clientY;
     pointer.lastActionAt = event.timeStamp;
     pointer.laneDirection = action;
-    // The action sample is the snap itself, not a pause at that snap.
-    pointer.settledSince = null;
-    pointer.laneRearmed = false;
     commitPointerAction(action, event);
     showTouchGhost(event, action);
     // A browser can coalesce a fast thumb movement into one very large
     // pointermove. It still gets exactly one lane, but should also receive
-    // the same pause/reverse explanation as a sampled overdrag.
+    // the same held-drag explanation as a sampled overdrag.
     if (event.pointerType === 'touch' && pointer.axis === 'horizontal' &&
       Math.abs(dx) >= LANE_DRAG_REPEAT_DISTANCE)
       run.touchOverdrag = true;
@@ -977,44 +932,12 @@ $("scene").addEventListener("pointermove", (event) => {
   let deltaX = event.clientX - pointer.anchorX;
   let deltaY = event.clientY - pointer.anchorY;
   const elapsed = event.timeStamp - pointer.lastActionAt;
-  // Same-axis horizontal segments remain deliberately thumb-length so a
-  // quick overlong move cannot skip lanes. A short dwell between move samples
-  // re-arms the next horizontal segment only when the thumb is still close to
-  // its last sample; the settle timer handles phones that emit no resting
-  // samples at all. This is the no-lift equivalent of lifting and starting a
-  // fresh swipe, without turning a sparse long drag into a second lane move.
+  // Same-axis horizontal segments remain deliberately thumb-length. Each
+  // additional segment can snap another lane without requiring a lift; the
+  // small timing guard below prevents duplicate events from one noisy sample.
   // Vertical actions stay single-shot; a clear horizontal segment may follow
   // one without lifting (and vice versa).
   if (pointer.axis === 'horizontal') {
-    const pauseBetweenSegments = Number.isFinite(previousMoveAt) &&
-      Number.isFinite(event.timeStamp) &&
-      event.timeStamp - previousMoveAt >= LANE_DRAG_REARM_DWELL &&
-      Math.max(Math.abs(stepX), Math.abs(stepY)) <= LANE_DRAG_REARM_RADIUS;
-    // Rebase at the thumb's actual resting point. This preserves the direction
-    // of a reverse swipe after an overshoot and prevents a large horizontal
-    // offset from masking the next jump or slide.
-    if (pauseBetweenSegments && !pointer.laneRearmed) {
-      pointer.anchorX = previousX;
-      pointer.anchorY = previousY;
-      pointer.laneRearmed = true;
-      deltaX = event.clientX - pointer.anchorX;
-      deltaY = event.clientY - pointer.anchorY;
-    }
-    const nearSnap = Math.abs(deltaX) <= LANE_DRAG_REARM_RADIUS &&
-      Math.abs(deltaY) <= LANE_DRAG_REARM_RADIUS;
-    const dwellElapsed = Number.isFinite(pointer.settledSince) &&
-      event.timeStamp - pointer.settledSince >= LANE_DRAG_REARM_DWELL;
-    if (pauseBetweenSegments) pointer.laneRearmed = true;
-    if (nearSnap) {
-      pointer.settledSince ??= event.timeStamp;
-      if (event.timeStamp - pointer.settledSince >= LANE_DRAG_REARM_DWELL)
-        pointer.laneRearmed = true;
-    } else {
-      // A phone may emit no move events while the thumb is resting. A near-
-      // snap sample followed by enough elapsed time is still a real pause.
-      if (dwellElapsed) pointer.laneRearmed = true;
-      pointer.settledSince = null;
-    }
     const verticalStep = Math.abs(stepY) >= CROSS_AXIS_DISTANCE &&
       Math.abs(stepY) > Math.abs(stepX) * 1.12;
     const vertical = Math.abs(deltaY) >= CROSS_AXIS_DISTANCE &&
@@ -1026,17 +949,15 @@ $("scene").addEventListener("pointermove", (event) => {
       pointer.anchorX = event.clientX;
       pointer.anchorY = event.clientY;
       pointer.lastActionAt = event.timeStamp;
-      pointer.settledSince = null;
-      pointer.laneRearmed = false;
       const verticalAction = deltaY > 0 ? 'slide' : 'jump';
       commitPointerAction(verticalAction, event);
       showTouchGhost(event, verticalAction);
       return;
     }
     // A player who keeps their finger down often swipes back immediately after
-    // an overdrag. Treat a clear opposite local segment as the next lane move
-    // instead of waiting for the dwell-to-rearm timer. The distance and delay
-    // filters keep small thumb wobble near the snap from reversing the puppy.
+    // a long segment. Treat a clear opposite local segment as the next lane
+    // move. The distance and delay filters keep small thumb wobble near the
+    // snap from reversing the puppy.
     const localDirection = stepX > 0 ? 'right' : stepX < 0 ? 'left' : null;
     const reversing = localDirection && pointer.laneDirection &&
       localDirection !== pointer.laneDirection &&
@@ -1048,26 +969,33 @@ $("scene").addEventListener("pointermove", (event) => {
       pointer.anchorX = event.clientX;
       pointer.anchorY = event.clientY;
       pointer.lastActionAt = event.timeStamp;
-      pointer.settledSince = null;
-      pointer.laneRearmed = false;
       pointer.laneDirection = localDirection;
       commitPointerAction(localDirection, event);
       showTouchGhost(event, localDirection);
       return;
     }
     if (Math.abs(deltaX) >= LANE_DRAG_REPEAT_DISTANCE) {
-      if (!pointer.laneRearmed) {
+      // Only same-direction travel reaches this branch. Opposite movement is
+      // handled by the deliberate reversal guard above, which filters out
+      // tiny thumb wobble after a snap.
+      const segmentDirection = deltaX > 0 ? 'right' : 'left';
+      if (segmentDirection !== pointer.laneDirection) return;
+      if (Math.abs(deltaX) > LANE_DRAG_MAX_AUTO_DISTANCE) {
         if (event.pointerType === 'touch') run.touchOverdrag = true;
+        // Keep the thumb's current position as the next segment's origin. This
+        // prevents one coalesced over-drag from walking across the trail while
+        // preserving the no-lift path once the player moves another thumb-width.
+        pointer.anchorX = event.clientX;
+        pointer.anchorY = event.clientY;
+        pointer.lastActionAt = event.timeStamp;
         return;
       }
       if (Number.isFinite(elapsed) && elapsed < LANE_DRAG_REPEAT_DELAY) return;
       pointer.anchorX = event.clientX;
       pointer.anchorY = event.clientY;
       pointer.lastActionAt = event.timeStamp;
-      pointer.settledSince = null;
-      pointer.laneRearmed = false;
-      pointer.laneDirection = deltaX > 0 ? 'right' : 'left';
-      commitPointerAction(deltaX > 0 ? 'right' : 'left', event);
+      pointer.laneDirection = segmentDirection;
+      commitPointerAction(segmentDirection, event);
       showTouchGhost(event, pointer.laneDirection);
       return;
     }
@@ -1083,8 +1011,6 @@ $("scene").addEventListener("pointermove", (event) => {
   pointer.anchorX = event.clientX;
   pointer.anchorY = event.clientY;
   pointer.lastActionAt = event.timeStamp;
-  pointer.settledSince = null;
-  pointer.laneRearmed = false;
   pointer.laneDirection = deltaX > 0 ? 'right' : 'left';
   commitPointerAction(pointer.laneDirection, event);
   showTouchGhost(event, pointer.laneDirection);
@@ -1093,7 +1019,21 @@ $("scene").addEventListener("pointerup", (event) => {
   if (!pointer || pointer.id !== event.pointerId) return;
   event.preventDefault?.();
   if (pointer.axis) {
-    clearLaneRearm(pointer);
+    // A phone may deliver the final part of a fast swipe only on pointerup.
+    // Consume one trailing thumb-length segment so a player does not need to
+    // repeat the same gesture just because intermediate samples were sparse.
+    if (event.pointerType === 'touch' && pointer.axis === 'horizontal' &&
+      pointer.laneDirection && Number.isFinite(pointer.lastActionAt)) {
+      const deltaX = event.clientX - pointer.anchorX;
+      const segmentDirection = deltaX > 0 ? 'right' : 'left';
+      const elapsed = event.timeStamp - pointer.lastActionAt;
+      if (segmentDirection === pointer.laneDirection &&
+        Math.abs(deltaX) >= LANE_DRAG_REPEAT_DISTANCE &&
+        Math.abs(deltaX) <= LANE_DRAG_MAX_AUTO_DISTANCE &&
+        elapsed >= LANE_DRAG_REPEAT_DELAY) {
+        commitPointerAction(segmentDirection, event);
+      }
+    }
     hideTouchGhost();
     pointer = null;
     return;
@@ -1105,7 +1045,6 @@ $("scene").addEventListener("pointerup", (event) => {
   const action = tapAction(pointer, event, screenWidth,
     event.pointerType === 'touch');
   const touchPointer = pointer;
-  clearLaneRearm(touchPointer);
   hideTouchGhost();
   pointer = null;
   if (state !== "playing") return;
@@ -1126,7 +1065,6 @@ $("scene").addEventListener("pointerup", (event) => {
 });
 const cancelOwnedPointer = event => {
   if(!ownsSwipe(event,pointer))return;
-  clearLaneRearm(pointer);
   hideTouchGhost();
   pointer=null;
   // The browser took over this gesture. Do not keep running under a system UI.
@@ -1138,7 +1076,6 @@ for (const button of document.querySelectorAll("[data-action]")) {
   button.onpointerdown = (event) => {
     if (state === "playing" && canPressAction(event)) {
       event.preventDefault();
-      if (typeof clearLaneRearm === 'function') clearLaneRearm(pointer);
       if (typeof hideTouchGhost === 'function') hideTouchGhost();
       pointer = null; // A button supersedes an unfinished trail tap, not a second move on release.
       if (event.pointerType === 'touch') run.touchFeedback = '';

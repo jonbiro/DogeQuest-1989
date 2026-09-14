@@ -79,8 +79,8 @@ export function actionCue(run) {
 
 // Keep the first touch lesson attached to the thumb controls instead of
 // placing another banner in the play corridor. It stays through the first few
-// deliberate actions, with one extra explanation when a long drag hits the
-// intentional one-lane safety cap. A new player often needs more than one
+// deliberate actions, with one extra explanation when a long drag is broken
+// into several small lane snaps. A new player often needs more than one
 // attempt to discover the controls; this low-profile dock is the least noisy
 // place to keep that help available.
 export function touchCoach(run) {
@@ -88,15 +88,15 @@ export function touchCoach(run) {
     ? run.touchActionCount : run?.inputCount || 0;
   if (!run?.touchHint || (actions >= 4 && !run.touchOverdrag)) return '';
   if (run.touchOverdrag)
-    return 'ONE LANE ONLY · PAUSE, THEN DRAG AGAIN';
+    return 'KEEP DRAGGING · ONE LANE PER SNAP';
   if (actions === 0)
-    return 'TAP THE BIG BUTTONS · SWIPES OPTIONAL';
+    return 'TAP TO MOVE · DRAG TO STEER';
   // Keep the first lesson aligned with the visible buttons. Only introduce
   // the no-lift gesture vocabulary after the player has actually tried one;
-  // a first-time player should never feel that a missed swipe is required.
+  // a first-time player should never feel that a swipe is required.
   return run.touchSwipeSeen
-    ? 'ONE SWIPE = ONE LANE · LIFT OR PAUSE, THEN DRAG'
-    : 'ONE TAP = ONE MOVE · BUTTONS STAY READY';
+    ? 'DRAG ONE LANE · KEEP MOVING OR LIFT'
+    : 'ONE TAP = ONE MOVE · SWIPES OPTIONAL';
 }
 
 // Keep a live gesture label beside the controls while a touch is still down.
@@ -106,10 +106,10 @@ export function touchCoach(run) {
 export function touchGestureCoach(pointer) {
   if (!pointer || pointer.pointerType !== 'touch') return '';
   if (!pointer.axis) return 'DRAG A SHORT WAY · ONE MOVE';
-  if (pointer.laneDirection === 'left') return '← ONE LANE · LIFT OR PAUSE, THEN DRAG';
-  if (pointer.laneDirection === 'right') return '→ ONE LANE · LIFT OR PAUSE, THEN DRAG';
-  if (pointer.laneDirection === 'jump') return '↑ JUMP · LIFT OR PAUSE, THEN DRAG';
-  if (pointer.laneDirection === 'slide') return '↓ SLIDE · LIFT OR PAUSE, THEN DRAG';
+  if (pointer.laneDirection === 'left') return '← ONE LANE · KEEP DRAGGING OR LIFT';
+  if (pointer.laneDirection === 'right') return '→ ONE LANE · KEEP DRAGGING OR LIFT';
+  if (pointer.laneDirection === 'jump') return '↑ JUMP · KEEP PLAYING OR LIFT';
+  if (pointer.laneDirection === 'slide') return '↓ SLIDE · KEEP PLAYING OR LIFT';
   return '';
 }
 

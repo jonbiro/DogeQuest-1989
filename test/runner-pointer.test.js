@@ -60,7 +60,7 @@ test('ambiguous touch releases leave a dock recovery cue and clear on retry',()=
     'a held tap explains the faster tap or button fallback');
 });
 
-test('a held horizontal drag can cross lanes one segment at a time without overshooting',()=>{
+test('a held horizontal drag can cross lanes one segment at a time without lifting',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');
   const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]"))',start);
@@ -71,86 +71,60 @@ test('a held horizontal drag can cross lanes one segment at a time without overs
   const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
   handlers.pointerdown(touch);
   handlers.pointermove({...touch,clientX:82,timeStamp:120});
-  // A long, continuous drag stays on the first snap. Pausing near the snap
-  // or anywhere else re-arms the next no-lift segment, just like lifting and
-  // touching again.
+  // A long, continuous drag snaps again after one thumb-length. The player
+  // does not need to lift or discover a special pause gesture.
   handlers.pointermove({...touch,clientX:120,timeStamp:180});
   handlers.pointermove({...touch,clientX:150,timeStamp:260});
-  assert.deepEqual(actions,['right'],'continuous overlong drag remains one lane');
-  assert.equal(run.touchOverdrag,true,'the dock can explain why a continuous overdrag stopped');
-  handlers.pointermove({...touch,clientX:150,timeStamp:400});
-  handlers.pointermove({...touch,clientX:210,timeStamp:460});
-  assert.deepEqual(actions,['right','right'],'a pause anywhere re-arms the next lane');
-  assert.equal(run.touchOverdrag,false,'the hint clears after the next accepted move');
-  handlers.pointermove({...touch,clientX:150,timeStamp:520});
-  handlers.pointermove({...touch,clientX:150,timeStamp:680});
-  handlers.pointermove({...touch,clientX:90,timeStamp:740});
-  handlers.pointerup({...touch,clientX:70,timeStamp:800});
-  assert.deepEqual(actions,['right','right','left'],'continued drag changes one lane per thumb segment and can reverse');
+  assert.deepEqual(actions,['right','right'],'continuous drag accepts the next lane snap');
+  handlers.pointermove({...touch,clientX:198,timeStamp:320});
+  assert.deepEqual(actions,['right','right','right'],'a third snap is accepted without a lift');
+  handlers.pointermove({...touch,clientX:150,timeStamp:460});
+  assert.deepEqual(actions,['right','right','right','left'],'continued drag changes direction naturally');
 });
 
-test('a continuous over-drag waits for the thumb to settle before another lane',()=>{
+test('a fast held drag stays bounded to one lane per thumb segment',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');
   const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
-  const handlers={},actions=[],run={},timers=[];
-  const fakeWindow={
-    setTimeout(callback){timers.push(callback);return timers.length-1;},
-    clearTimeout(id){timers[id]=null;},
-  };
+  const handlers={},actions=[],run={};
   const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
-  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run,window:fakeWindow,
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run,
     act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
   const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
   handlers.pointerdown(touch);
   handlers.pointermove({...touch,clientX:82,timeStamp:120});
-  // Keep samples frequent enough that this is a continuous drag, not the
-  // normal short pause re-arm. The first lane remains the only action while
-  // the thumb is still travelling; otherwise a single long swipe can feel
-  // like an accidental second lane move.
+  // Keep samples frequent enough that the thumb crosses several segments.
+  // Each threshold can produce only one action, so a long path cannot skip
+  // multiple lanes in one browser event.
   for (const [clientX,timeStamp] of [[110,180],[140,240],[170,300],[200,360],[230,420]])
     handlers.pointermove({...touch,clientX,timeStamp});
-  assert.deepEqual(actions,['right'],'a steady over-drag does not chain immediately');
+  assert.deepEqual(actions,['right','right','right'],'each crossed segment produces one snap');
   handlers.pointermove({...touch,clientX:260,timeStamp:500});
-  assert.deepEqual(actions,['right'],'continued travel stays capped at one lane');
-  // Once the thumb has actually stopped, the deferred timer re-arms the next
-  // segment even though the player never lifted their finger. A stale timer
-  // notices the movement and defers; the latest timer then observes the quiet
-  // thumb and unlocks the next segment.
-  timers[0]();
-  timers.at(-1)();
-  handlers.pointermove({...touch,clientX:320,timeStamp:760});
-  assert.deepEqual(actions,['right','right'],'a settled held finger can continue one lane at a time');
+  assert.deepEqual(actions,['right','right','right','right'],'a later segment continues without a pause');
   handlers.pointerup({...touch,clientX:260,timeStamp:820});
-  assert.equal(run.touchOverdrag,false,'the accepted segment clears over-drag guidance');
+  assert.equal(run.touchOverdrag,false,'the accepted segments clear over-drag guidance');
 });
 
-test('a held drag re-arms even when a phone emits no resting samples',()=>{
+test('a held drag resumes after a silent interval without a lift',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');
   const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
-  const handlers={},actions=[],timers=[];
-  const fakeWindow={
-    setTimeout(callback){timers.push(callback);return timers.length-1;},
-    clearTimeout(id){timers[id]=null;},
-  };
+  const handlers={},actions=[];
   const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
-  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},window:fakeWindow,
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
     act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
   const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
   handlers.pointerdown(touch);
   handlers.pointermove({...touch,clientX:82,timeStamp:120});
   assert.deepEqual(actions,['right']);
-  assert.equal(timers.length,1,'the first lane schedules a no-lift reset');
-  // There is no pointermove while the thumb rests. The timer must still make
-  // the next same-direction drag start from that resting point.
-  timers[0]();
+  // There is no pointermove while the thumb rests. The next sample still
+  // starts another same-direction segment from the last accepted snap.
   handlers.pointermove({...touch,clientX:140,timeStamp:500});
   assert.deepEqual(actions,['right','right']);
   handlers.pointerup({...touch,clientX:140,timeStamp:520});
 });
 
-test('a coalesced giant first swipe still explains the one-lane cap',()=>{
+test('a coalesced giant first swipe remains one bounded snap',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');
   const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
@@ -163,7 +137,7 @@ test('a coalesced giant first swipe still explains the one-lane cap',()=>{
   handlers.pointermove({...touch,clientX:260,timeStamp:140});
   handlers.pointerup({...touch,clientX:260,timeStamp:180});
   assert.deepEqual(actions,['right'],'one coalesced sample cannot throw the puppy across lanes');
-  assert.equal(run.touchOverdrag,true,'a giant first sample receives recovery guidance');
+  assert.equal(run.touchOverdrag,true,'a giant first sample receives held-drag guidance');
 });
 
 test('a clear reverse segment re-arms a held swipe without requiring a lift',()=>{
@@ -179,7 +153,7 @@ test('a clear reverse segment re-arms a held swipe without requiring a lift',()=
   handlers.pointermove({...touch,clientX:82,timeStamp:120});
   handlers.pointermove({...touch,clientX:130,timeStamp:160});
   // The thumb reverses by a short, distinct segment. It is accepted without
-  // the old pause-and-lift sequence, but only after the snap has settled.
+  // lifting, while the timing guard filters a near-instant wobble.
   handlers.pointermove({...touch,clientX:98,timeStamp:240});
   assert.deepEqual(actions,['right','left']);
 });
@@ -217,7 +191,7 @@ test('a quick post-snap wobble does not reverse a held swipe',()=>{
   assert.deepEqual(actions,['right'],'a fast wobble remains the original one-lane move');
 });
 
-test('a fast overlong thumb drag does not chain a second lane before the snap settles',()=>{
+test('a fast overlong thumb drag waits briefly before a second snap',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');
   const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]"))',start);
@@ -229,8 +203,46 @@ test('a fast overlong thumb drag does not chain a second lane before the snap se
   handlers.pointerdown(touch);
   handlers.pointermove({...touch,clientX:82,timeStamp:120});
   handlers.pointermove({...touch,clientX:180,timeStamp:150});
-  handlers.pointerup({...touch,clientX:180,timeStamp:170});
+  handlers.pointerup({...touch,clientX:180,timeStamp:160});
   assert.deepEqual(actions,['right'],'a quick overlong drag still commits just one lane');
+});
+
+test('a sparse release can finish one trailing held-drag segment',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
+  const handlers={},actions=[];
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:82,timeStamp:120});
+  // No intermediate pointermove arrives for the rest of the thumb path.
+  handlers.pointerup({...touch,clientX:150,timeStamp:220});
+  assert.deepEqual(actions,['right','right'],'pointerup consumes one trailing same-direction segment');
+});
+
+test('an oversized second touch segment is bounded but can continue after rebasing',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
+  const handlers={},actions=[],run={};
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run,
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:82,timeStamp:120});
+  // A coalesced second sample is much larger than a thumb-width. Rebase it
+  // instead of turning one over-drag into two lane changes.
+  handlers.pointermove({...touch,clientX:180,timeStamp:180});
+  assert.deepEqual(actions,['right']);
+  assert.equal(run.touchOverdrag,true,'the touch coach calls out the oversized segment');
+  // A normal follow-up segment continues the held drag without a lift.
+  handlers.pointermove({...touch,clientX:230,timeStamp:260});
+  assert.deepEqual(actions,['right','right']);
+  handlers.pointerup({...touch,clientX:230,timeStamp:280});
 });
 
 test('an overshot horizontal drag can switch to a jump from its resting point',()=>{
