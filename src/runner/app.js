@@ -1252,6 +1252,11 @@ $("scene").addEventListener("webglcontextlost", (event) => {
   graphicsError();
 });
 function graphicsError() {
+  // Keep recovery idempotent even if the original failure happened while the
+  // finish/overlay path was already unwinding. A second RAF must not bank or
+  // replace the same run again.
+  if (graphicsError.handled) return;
+  graphicsError.handled = true;
   if (['playing','paused'].includes(state) && !run.practice) {
     run.retired = true;
     run.ended = true;
