@@ -78,3 +78,25 @@ test('the HUD skips an absent Fetch button from an older shell', () => {
   assert.ok(start >= 0 && end > start);
   assert.match(source.slice(start, end), /if\s*\(fetchButton\)\s*\{/);
 });
+
+test('a stale shell without dock message nodes cannot crash the frame', () => {
+  const source = readFileSync(new URL('../src/runner/app.js', import.meta.url), 'utf8');
+  const start = source.indexOf('function textOf(');
+  const end = source.indexOf('// syncDock runs every frame', start);
+  assert.ok(start >= 0 && end > start);
+  const context = {
+    $: () => null,
+    dockMode: () => '',
+    missionAnnounced: false,
+    activeCourse: () => false,
+    run: {touchOverdrag: false, touchFeedback: ''},
+    state: 'playing',
+    pointer: null,
+    touchGestureCoach: () => '',
+    touchCoach: () => '',
+    touchCoachVisible: () => false,
+  };
+  assert.doesNotThrow(() => runInNewContext(
+    `${source.slice(start, end)};syncDock();`, context,
+  ));
+});

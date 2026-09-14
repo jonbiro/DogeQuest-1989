@@ -342,6 +342,21 @@ function setText(id, text) {
   const node = $(id);
   if (node && node.textContent !== text) node.textContent = text;
 }
+function textOf(id) {
+  const node = $(id);
+  return typeof node?.textContent === 'string' ? node.textContent : '';
+}
+function setHidden(id, hidden) {
+  const node = $(id);
+  if (node) node.hidden = Boolean(hidden);
+}
+function setData(id, key, value) {
+  const node = $(id);
+  if (node?.dataset) node.dataset[key] = String(value);
+}
+function toggleClass(id, name, force) {
+  $(id)?.classList?.toggle?.(name, Boolean(force));
+}
 function toast(message, duration = 1.5, priority = 0) {
   if (time < toastUntil && priority < noticePriority) return;
   setText('toast', message);
@@ -349,11 +364,15 @@ function toast(message, duration = 1.5, priority = 0) {
   toastUntil = time + duration;
 }
 function syncDock() {
-  const mode = dockMode({cue:$("cue").textContent,route:$("route-choice").textContent,
-    notice:$("toast").textContent,missionComplete:missionAnnounced && !activeCourse(run)});
-  for (const id of ['cue','route-choice','toast','mission-summary']) $(id).hidden = mode !== id;
-  $("mission-hud").dataset.dock = mode || 'none';
-  $("mission-hud").hidden = state !== 'playing' || !mode;
+  // The dock is refreshed every frame. A browser cache can briefly pair this
+  // bundle with a shell from before one of the optional message nodes existed;
+  // read and write those nodes defensively so a missing label never becomes a
+  // second frame-error after an otherwise valid move.
+  const mode = dockMode({cue:textOf('cue'),route:textOf('route-choice'),
+    notice:textOf('toast'),missionComplete:missionAnnounced && !activeCourse(run)});
+  for (const id of ['cue','route-choice','toast','mission-summary']) setHidden(id, mode !== id);
+  setData('mission-hud', 'dock', mode || 'none');
+  setHidden('mission-hud', state !== 'playing' || !mode);
   const coach = $('gesture-coach');
   if (coach) {
     const liveCopy = touchGestureCoach(pointer);
@@ -364,9 +383,9 @@ function syncDock() {
     const copy = run.touchOverdrag ? touchCoach(run) : liveCopy || feedback || touchCoach(run);
     setText('gesture-coach', copy);
     coach.classList.toggle('gesture-live', Boolean(liveCopy && !run.touchOverdrag && !feedback));
-    coach.hidden = !touchCoachVisible(run, mode, state, $('cue').textContent, copy);
+    coach.hidden = !touchCoachVisible(run, mode, state, textOf('cue'), copy);
   }
-  $('controls').classList.toggle('touch-overdrag', Boolean(run.touchOverdrag));
+  toggleClass('controls', 'touch-overdrag', run.touchOverdrag);
 }
 // syncDock runs every frame, so the dock's clearance is never measured there.
 // A ResizeObserver already fires when the button row reflows and when the coach
