@@ -14,6 +14,9 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 - Reworded touch onboarding around one clear rule: one swipe equals one move;
   the pause-and-drag continuation is now explicit without suggesting that a
   single long swipe should steer across the whole trail.
+- Fixed no-lift reversals on sampled touch paths. A thumb can now drag back in
+  several small steps to change lanes; the complete opposite segment counts as
+  one deliberate move instead of being mistaken for jitter.
 - Made full WebGL2 presentation the runner's only default: browsers with GPU
   acceleration disabled now receive an actionable 3D setup screen instead of a
   silent 2D downgrade. Chrome's hardware-acceleration steps are shown inline,

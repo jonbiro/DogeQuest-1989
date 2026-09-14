@@ -180,6 +180,26 @@ test('a clear reverse segment re-arms a held swipe without requiring a lift',()=
   assert.deepEqual(actions,['right','left']);
 });
 
+test('a gradual reverse accumulates across sampled touch moves',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
+  const handlers={},actions=[];
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:82,timeStamp:120});
+  // A normal phone samples the return path in small increments. The total
+  // opposite travel is deliberate even though no individual step is 28px.
+  handlers.pointermove({...touch,clientX:76,timeStamp:150});
+  handlers.pointermove({...touch,clientX:68,timeStamp:190});
+  handlers.pointermove({...touch,clientX:58,timeStamp:230});
+  handlers.pointermove({...touch,clientX:50,timeStamp:270});
+  assert.deepEqual(actions,['right','left'],'a sampled no-lift reversal is one clear move');
+});
+
 test('a large reverse recovers immediately after an overdrag',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');

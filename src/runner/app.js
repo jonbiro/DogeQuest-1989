@@ -891,6 +891,11 @@ $("scene").addEventListener("pointerdown", (event) => {
     lastActionAt: null,
     lastMoveAt: event.timeStamp,
     laneDirection: null,
+    // Keep a cumulative opposite-direction segment. Mobile browsers usually
+    // sample a held thumb in small steps, so looking at one pointermove at a
+    // time makes an ordinary return drag look like harmless jitter.
+    reverseDirection: null,
+    reverseStartX: null,
     lastX: event.clientX,
     lastY: event.clientY,
   };
@@ -970,13 +975,26 @@ $("scene").addEventListener("pointermove", (event) => {
     // move. The distance and delay filters keep small thumb wobble near the
     // snap from reversing the puppy.
     const localDirection = stepX > 0 ? 'right' : stepX < 0 ? 'left' : null;
-    const reversing = localDirection && pointer.laneDirection &&
-      localDirection !== pointer.laneDirection &&
-      Math.abs(stepX) >= LANE_DRAG_REVERSE_DISTANCE &&
-      Number.isFinite(pointer.lastActionAt) &&
-      (Math.abs(stepX) >= LANE_DRAG_LARGE_REVERSE_DISTANCE ||
-        event.timeStamp - pointer.lastActionAt >= LANE_DRAG_REVERSE_DELAY);
-    if (reversing) {
+    if (localDirection && pointer.laneDirection &&
+      localDirection !== pointer.laneDirection) {
+      // Accumulate the whole opposite segment rather than requiring one
+      // unusually large pointermove. This is what makes a no-lift correction
+      // work on both high- and low-sampling phones.
+      if (pointer.reverseDirection !== localDirection) {
+        pointer.reverseDirection = localDirection;
+        pointer.reverseStartX = previousX;
+      }
+      const reverseDistance = Number.isFinite(pointer.reverseStartX)
+        ? Math.abs(event.clientX - pointer.reverseStartX) : Math.abs(stepX);
+      const reverseElapsed = Number.isFinite(pointer.lastActionAt)
+        ? event.timeStamp - pointer.lastActionAt : 0;
+      const reversing = reverseDistance >= LANE_DRAG_REVERSE_DISTANCE &&
+        Number.isFinite(pointer.lastActionAt) &&
+        (reverseDistance >= LANE_DRAG_LARGE_REVERSE_DISTANCE ||
+          reverseElapsed >= LANE_DRAG_REVERSE_DELAY);
+      if (!reversing) return;
+      pointer.reverseDirection = null;
+      pointer.reverseStartX = null;
       pointer.anchorX = event.clientX;
       pointer.anchorY = event.clientY;
       pointer.lastActionAt = event.timeStamp;
@@ -984,6 +1002,12 @@ $("scene").addEventListener("pointermove", (event) => {
       commitPointerAction(localDirection, event);
       showTouchGhost(event, localDirection);
       return;
+    }
+    // A same-direction sample starts a fresh potential reversal. A rest keeps
+    // the accumulated segment alive so the next small sample can finish it.
+    if (localDirection === pointer.laneDirection) {
+      pointer.reverseDirection = null;
+      pointer.reverseStartX = null;
     }
     if (Math.abs(deltaX) >= LANE_DRAG_REPEAT_DISTANCE) {
       // Only same-direction travel reaches this branch. Opposite movement is
