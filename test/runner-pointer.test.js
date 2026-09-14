@@ -89,6 +89,30 @@ test('a held horizontal drag can cross lanes one segment at a time without overs
   assert.deepEqual(actions,['right','right','left'],'continued drag changes one lane per thumb segment and can reverse');
 });
 
+test('a slow continuous touch drag can continue one lane at a time without lifting',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
+  const handlers={},actions=[],run={};
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run,
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:50,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientX:82,timeStamp:120});
+  // Keep samples frequent enough that this is a continuous drag, not the
+  // normal short pause re-arm. The first lane remains the only fast action.
+  for (const [clientX,timeStamp] of [[110,180],[140,240],[170,300],[200,360],[230,420]])
+    handlers.pointermove({...touch,clientX,timeStamp});
+  assert.deepEqual(actions,['right'],'a steady over-drag does not chain immediately');
+  handlers.pointermove({...touch,clientX:260,timeStamp:500});
+  assert.deepEqual(actions,['right'],'the slow re-arm rebases before accepting a new segment');
+  handlers.pointermove({...touch,clientX:316,timeStamp:540});
+  assert.deepEqual(actions,['right','right'],'a held finger can deliberately continue after the settle window');
+  handlers.pointerup({...touch,clientX:316,timeStamp:560});
+  assert.equal(run.touchOverdrag,false,'the accepted segment clears over-drag guidance');
+});
+
 test('a coalesced giant first swipe still explains the one-lane cap',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');

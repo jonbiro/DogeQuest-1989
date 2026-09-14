@@ -471,7 +471,7 @@ function showOverlay(kind) {
         ? "New personal best. Very good dog!"
         : "The next great run is one tap away."
       : kind === "help"
-        ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. Swipes are optional: use a short drag for one move, reverse without lifting, or pause briefly before another same-direction drag. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
+        ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. Swipes are optional: use a short drag for one move, then lift, pause, or reverse before another move. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
         : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
   if(kind==='paused'&&!run.practice&&(run.raft||run.zipline))
     $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
@@ -780,10 +780,13 @@ let pointer = null;
 // to travel back), while a clear cross-axis segment can follow a jump/slide (or
 // a lane move) without lifting too. A deliberate short reversal also re-arms
 // the next lane immediately, so one finger can scrub back and forth naturally.
-// A single very long sample still commits only one action, even when the browser
-// coalesces pointer events.
+// If a phone streams a continuous, slow drag instead of reporting a pause,
+// rebase after a longer settle window so a held finger can continue one lane at
+// a time without allowing a fast over-drag to chain actions. A single very long
+// sample still commits only one action, even when the browser coalesces events.
 const LANE_DRAG_REPEAT_DISTANCE = 56;
 const LANE_DRAG_REPEAT_DELAY = 140;
+const LANE_DRAG_CONTINUOUS_REARM_DELAY = 420;
 const LANE_DRAG_REARM_RADIUS = 20;
 const LANE_DRAG_REARM_DWELL = 110;
 const LANE_DRAG_REVERSE_DISTANCE = 28;
@@ -902,10 +905,13 @@ $("scene").addEventListener("pointermove", (event) => {
     const pauseBetweenSegments = Number.isFinite(previousMoveAt) &&
       Number.isFinite(event.timeStamp) &&
       event.timeStamp - previousMoveAt >= LANE_DRAG_REARM_DWELL;
+    const slowContinuousRearm = event.pointerType === 'touch' &&
+      !pointer.laneRearmed && Number.isFinite(elapsed) &&
+      elapsed >= LANE_DRAG_CONTINUOUS_REARM_DELAY;
     // Rebase at the thumb's actual resting point. This preserves the direction
     // of a reverse swipe after an overshoot and prevents a large horizontal
     // offset from masking the next jump or slide.
-    if (pauseBetweenSegments && !pointer.laneRearmed) {
+    if ((pauseBetweenSegments || slowContinuousRearm) && !pointer.laneRearmed) {
       pointer.anchorX = previousX;
       pointer.anchorY = previousY;
       pointer.laneRearmed = true;
