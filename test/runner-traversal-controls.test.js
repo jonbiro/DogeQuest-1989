@@ -12,7 +12,8 @@ test('scene instructions match the available traversal actions',()=>{
   assert.match(traversalDescription({zipline:{}}),/return after the cable/);
   assert.match(traversalDescription({}),/Drag left or right/);
   assert.match(traversalDescription({}),/tap a left or right edge to steer/);
-  assert.match(traversalDescription({}),/centre to jump/);
+  assert.match(traversalDescription({}),/center to jump/);
+  assert.match(traversalDescription({}),/switch between steering and jump\/slide/);
 });
 test('raft controls explain shore availability and restore after real dismount',()=>{
   const run=createRun(1989),buttons=['left','right','fetch','jump','slide'].map(button);

@@ -88,6 +88,33 @@ test('a held vertical drag remains a single jump or slide action',()=>{
   assert.deepEqual(actions,['jump'],'a long held vertical gesture cannot repeat jump');
 });
 
+test('a held gesture can deliberately switch axes without lifting',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]"))',start);
+  const handlers={},actions=[];
+  const scene={addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run:{},
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerId:1,button:0,isPrimary:true,clientX:80,clientY:120,timeStamp:100};
+  handlers.pointerdown(touch);
+  handlers.pointermove({...touch,clientY:82,timeStamp:120});
+  // A clear horizontal segment after the jump is a new move, not a second
+  // jump, even though the same finger is still down.
+  handlers.pointermove({...touch,clientX:120,clientY:82,timeStamp:280});
+  handlers.pointermove({...touch,clientX:180,clientY:82,timeStamp:440});
+  handlers.pointerup({...touch,clientX:180,clientY:82,timeStamp:460});
+  assert.deepEqual(actions,['jump','right','right']);
+
+  actions.length=0;
+  handlers.pointerdown({...touch,pointerId:2,clientX:50,clientY:50,timeStamp:500});
+  handlers.pointermove({...touch,pointerId:2,clientX:90,clientY:50,timeStamp:520});
+  // The reverse transition works too: a deliberate vertical segment after a
+  // lane move can slide/jump without requiring a release and re-touch.
+  handlers.pointermove({...touch,pointerId:2,clientX:90,clientY:10,timeStamp:700});
+  assert.deepEqual(actions,['right','jump']);
+});
+
 test('released thumb arcs resolve all four directions but not near-equal diagonals or tiny gestures',()=>{
   for (const [dx,dy,action] of [[40,34,'right'],[-40,34,'left'],[34,40,'slide'],[34,-40,'jump']]) {
     assert.equal(swipeAction(dx,dy),action);

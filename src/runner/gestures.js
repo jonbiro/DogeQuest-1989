@@ -22,7 +22,7 @@ export function isJumpTap(pointer, event) {
 }
 
 // A tap is a useful fallback for players who do not discover swipes. Keep the
-// edge zones deliberately narrow so a normal centre tap remains a jump. This
+// edge zones deliberately narrow so a normal center tap remains a jump. This
 // is only consumed by touch callers; mouse clicks keep their established jump
 // behaviour.
 export function tapAction(pointer, event, screenWidth, touch = false) {

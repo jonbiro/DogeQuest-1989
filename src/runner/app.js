@@ -458,7 +458,7 @@ function showOverlay(kind) {
         ? "New personal best. Very good dog!"
         : "The next great run is one tap away."
       : kind === "help"
-        ? "Drag left or right to change lanes; on a phone, tap an edge to steer or the centre to jump. Swipe up to jump or down to slide. The buttons always work."
+        ? "Drag left or right to change lanes; on a phone, tap an edge to steer or the center to jump. Keep your finger down to make a clear swipe in another direction. Swipe up to jump or down to slide. The buttons always work."
         : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
   if(kind==='paused'&&!run.practice&&(run.raft||run.zipline))
     $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
@@ -759,15 +759,17 @@ window.addEventListener("keydown", (event) => {
     start();
 });
 let pointer = null;
-// A horizontal gesture can stay active across lane changes. The first move
+// A gesture can stay active across deliberate action segments. The first move
 // commits at the normal swipe threshold; each additional thumb-length segment
 // commits one more lane, so players do not need to lift between swipes. A
-// short resistance window after each snap gives the puppy time to settle and
-// prevents a quick overlong thumb swipe from throwing the runner to the edge.
-// A single very long sample still commits only one lane, even when the browser
-// coalesces pointer events.
+// clear cross-axis segment can follow a jump/slide (or a lane move) without
+// lifting too. A short resistance window after each snap gives the puppy time
+// to settle and prevents a quick overlong thumb swipe from throwing the runner
+// to the edge. A single very long sample still commits only one action, even
+// when the browser coalesces pointer events.
 const LANE_DRAG_REPEAT_DISTANCE = 56;
 const LANE_DRAG_REPEAT_DELAY = 140;
+const CROSS_AXIS_DISTANCE = 32;
 $("scene").addEventListener("pointerdown", (event) => {
   if (state !== "playing" || !canStartSwipe(event,pointer)) return;
   event.preventDefault?.();
@@ -779,6 +781,7 @@ $("scene").addEventListener("pointerdown", (event) => {
     travel: 0,
     axis: null,
     anchorX: event.clientX,
+    anchorY: event.clientY,
     lastActionAt: null,
   };
   try { $("scene").setPointerCapture(event.pointerId); }
@@ -802,18 +805,44 @@ $("scene").addEventListener("pointermove", (event) => {
     pointer.axis = action === 'left' || action === 'right' ? 'horizontal' : 'vertical';
     pointer.consumed = true;
     pointer.anchorX = event.clientX;
+    pointer.anchorY = event.clientY;
     pointer.lastActionAt = event.timeStamp;
     act(run, action);
     return;
   }
-  // Vertical actions are single-shot. Horizontal drags remain armed so a
-  // second lane change can be made naturally while the finger stays down.
-  if (pointer.axis !== 'horizontal') return;
   const deltaX = event.clientX - pointer.anchorX;
-  if (Math.abs(deltaX) < LANE_DRAG_REPEAT_DISTANCE) return;
+  const deltaY = event.clientY - pointer.anchorY;
   const elapsed = event.timeStamp - pointer.lastActionAt;
   if (Number.isFinite(elapsed) && elapsed < LANE_DRAG_REPEAT_DELAY) return;
+  // Same-axis horizontal segments remain deliberately thumb-length so a
+  // quick overlong move cannot skip lanes. Vertical actions stay single-shot;
+  // a new vertical swipe needs a fresh touch, but a clear horizontal segment
+  // may follow it without lifting (and vice versa).
+  if (pointer.axis === 'horizontal') {
+    if (Math.abs(deltaX) >= LANE_DRAG_REPEAT_DISTANCE) {
+      pointer.anchorX = event.clientX;
+      pointer.anchorY = event.clientY;
+      pointer.lastActionAt = event.timeStamp;
+      act(run, deltaX > 0 ? 'right' : 'left');
+      return;
+    }
+    const vertical = Math.abs(deltaY) >= CROSS_AXIS_DISTANCE &&
+      Math.abs(deltaY) > Math.abs(deltaX) * 1.12;
+    if (!vertical) return;
+    pointer.axis = 'vertical';
+    pointer.anchorX = event.clientX;
+    pointer.anchorY = event.clientY;
+    pointer.lastActionAt = event.timeStamp;
+    act(run, deltaY > 0 ? 'slide' : 'jump');
+    return;
+  }
+  if (pointer.axis !== 'vertical') return;
+  const horizontal = Math.abs(deltaX) >= CROSS_AXIS_DISTANCE &&
+    Math.abs(deltaX) > Math.abs(deltaY) * 1.12;
+  if (!horizontal) return;
+  pointer.axis = 'horizontal';
   pointer.anchorX = event.clientX;
+  pointer.anchorY = event.clientY;
   pointer.lastActionAt = event.timeStamp;
   act(run, deltaX > 0 ? 'right' : 'left');
 });
