@@ -310,7 +310,10 @@ function shop() {
 }
 updateRecords();
 installBackupControls(()=>saved);
-installOfflineSupport();
+// Keep the large offline artwork pack out of a live mobile run. A phone that
+// is still rendering (or showing an action/portrait overlay) gets the trail
+// first; offline caching starts once the player is back at the quiet camp.
+installOfflineSupport({isBusy:()=>state !== 'menu'});
 function tone(frequency, duration = 0.08) {
   if (!sound) return;
   try {
@@ -1383,7 +1386,15 @@ function clearContextRecovery() {
 // preventDefault(), but its one-shot shader-preparation promise must be reset
 // before programs are compiled against the restored context.
 function handleContextRestored() {
-  if (!contextRecovery?.lost || !view || state === 'graphics-error') return;
+  if (!contextRecovery?.lost || state === 'graphics-error') return;
+  // A context can be evicted while Three is still constructing the scene. In
+  // that narrow window createView has not returned a view yet, so the browser
+  // may deliver the restore event before the normal listener can recompile.
+  // Remember it and finish the same recovery path as soon as the view exists.
+  if (!view) {
+    contextRecovery.restoredPending = true;
+    return;
+  }
   if (typeof clearContextRecovery === 'function') clearContextRecovery();
   try {
     void prepareFirstFrame(() => view.prepareShaders(true), 3000).then(() => {
@@ -1471,20 +1482,32 @@ try {
   view = createView($("scene"));
   $("play").textContent = 'Preparing the trail…';
   $("overlay-primary").disabled = true;
-  void prepareFirstFrame(()=>view.prepareShaders()).then(()=>{
-    if(state==='graphics-error')return;
-    graphicsReady=true;
-    $("play").disabled = false;
-    $("overlay-primary").disabled = false;
-    $("play").textContent = playLabel();
-    if(state==='menu' && (!document.activeElement || document.activeElement===document.body))
-      $("play").focus({preventScroll:true});
-  }).catch(()=>{
-    // Keep an unexpected preparation rejection from leaving the Play button
-    // stranded on “Preparing the trail…”. The normal helper resolves false,
-    // but a browser/driver promise can still reject outside that guard.
-    if(state!=='graphics-error') graphicsError();
-  });
+  const restoredDuringCreate = typeof contextRecovery !== 'undefined'
+    && contextRecovery?.restoredPending === true;
+  if (restoredDuringCreate) {
+    // The restore event arrived before createView returned. Let the normal
+    // recovery path clear the loss record and run one forced shader pass.
+    contextRecovery.restoredPending = false;
+    handleContextRestored();
+  } else {
+    void prepareFirstFrame(()=>view.prepareShaders()).then(()=>{
+      // If the context is still lost, the restore listener owns completion;
+      // do not mark a half-restored renderer as ready.
+      const contextLost = typeof contextRecovery !== 'undefined' && contextRecovery?.lost;
+      if (contextLost || state==='graphics-error') return;
+      graphicsReady=true;
+      $("play").disabled = false;
+      $("overlay-primary").disabled = false;
+      $("play").textContent = playLabel();
+      if(state==='menu' && (!document.activeElement || document.activeElement===document.body))
+        $("play").focus({preventScroll:true});
+    }).catch(()=>{
+      // Keep an unexpected preparation rejection from leaving the Play button
+      // stranded on “Preparing the trail…”. The normal helper resolves false,
+      // but a browser/driver promise can still reject outside that guard.
+      if(state!=='graphics-error') graphicsError();
+    });
+  }
 } catch {
   // Full 3D is intentional: never silently downgrade the runner to a
   // different presentation. The recovery overlay explains the one browser

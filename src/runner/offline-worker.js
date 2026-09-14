@@ -11,21 +11,35 @@ async function cachedResponse(request) {
   catch { return undefined; } // Storage eviction/failure must not break online play.
 }
 
+// Installing the complete illustrated catalogue used to verify every image in
+// parallel, retaining all response bodies until the final cache write. That is
+// a surprisingly large transient allocation on iPhone (the puppy catalogue is
+// roughly 16 MB before decoded textures), and it could evict the trail's WebGL
+// context while the player was opening the page. Keep the install atomic, but
+// only hold a small batch of verified responses at a time.
+const INSTALL_BATCH_SIZE = 4;
+async function verifyAsset(asset) {
+  const response = await worker.fetch(absolute(asset.url), {cache: 'reload'});
+  if (!response.ok) throw new Error('Offline download failed');
+  const digest = await worker.crypto.subtle.digest('SHA-256', await response.clone().arrayBuffer());
+  const hash = Array.from(new Uint8Array(digest), n => n.toString(16).padStart(2, '0')).join('');
+  if (hash !== asset.sha256) throw new Error('Offline build mismatch');
+  // Normalize redirects from static hosts (for example index.html -> /runner/).
+  // A redirected Response cannot satisfy a later manual-redirect navigation.
+  return new worker.Response(await response.arrayBuffer(), {status: response.status, headers: response.headers});
+}
+
 worker.addEventListener('install', event => event.waitUntil((async () => {
-  // A deployment can change files between requests. Accept only one verified build.
-  const responses = await Promise.all(ASSETS.map(async asset => {
-    const response = await worker.fetch(absolute(asset.url), {cache: 'reload'});
-    if (!response.ok) throw new Error('Offline download failed');
-    const digest = await worker.crypto.subtle.digest('SHA-256', await response.clone().arrayBuffer());
-    const hash = Array.from(new Uint8Array(digest), n => n.toString(16).padStart(2, '0')).join('');
-    if (hash !== asset.sha256) throw new Error('Offline build mismatch');
-    // Normalize redirects from static hosts (for example index.html -> /runner/).
-    // A redirected Response cannot satisfy a later manual-redirect navigation.
-    return new worker.Response(await response.arrayBuffer(), {status: response.status, headers: response.headers});
-  }));
+  // A deployment can change files between requests. Accept only one verified
+  // build, while bounding the number of response bodies retained in memory.
+  let cache;
   try {
-    const cache = await worker.caches.open(CACHE);
-    await Promise.all(ASSETS.map((asset, i) => cache.put(absolute(asset.url), responses[i])));
+    cache = await worker.caches.open(CACHE);
+    for (let start = 0; start < ASSETS.length; start += INSTALL_BATCH_SIZE) {
+      const batch = ASSETS.slice(start, start + INSTALL_BATCH_SIZE);
+      const responses = await Promise.all(batch.map(verifyAsset));
+      await Promise.all(batch.map((asset, index) => cache.put(absolute(asset.url), responses[index])));
+    }
   } catch (error) {
     await worker.caches.delete(CACHE);
     throw error;

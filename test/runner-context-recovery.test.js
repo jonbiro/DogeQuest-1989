@@ -69,3 +69,17 @@ test('a context loss in camp disables Play until the restored programs are ready
   assert.equal(f.nodes.get('play').disabled,false);
   assert.equal(f.nodes.get('play').textContent,'Run with Mochi ↗︎');
 });
+
+test('a restore delivered during scene construction is replayed after the view exists',async()=>{
+  const f=fixture('menu');
+  f.context.view=null;
+  f.listeners.get('webglcontextlost')({preventDefault(){}});
+  f.listeners.get('webglcontextrestored')();
+  assert.equal(f.context.contextRecovery.restoredPending,true);
+  f.context.view={prepareShaders(force){assert.equal(force,true);return Promise.resolve(true);}};
+  f.context.handleContextRestored();
+  await new Promise(resolve=>setTimeout(resolve,0));
+  assert.equal(f.context.graphicsReady,true);
+  assert.equal(f.context.contextRecovery,null);
+  assert.equal(f.nodes.get('play').disabled,false);
+});

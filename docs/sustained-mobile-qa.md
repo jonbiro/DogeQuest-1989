@@ -77,6 +77,14 @@ the mesh pools. This keeps the long-run draw path from allocating a fresh Map,
 Set and gap array on every portrait frame; the simulation and visual output are
 unchanged.
 
+The runner now defers mobile service-worker registration until the camp is quiet,
+then verifies and caches the 54-file artwork pack in four-response batches. The
+previous all-at-once install retained roughly 16 MB of image bodies while WebGL
+was starting, which could evict an iPhone graphics context and send a healthy
+browser to the recovery screen. Desktop registration remains immediate, and
+the worker still deletes an incomplete cache rather than exposing a partial
+offline build.
+
 After this cull, the five-run accelerated renderer matrix measured 256 peak draw
 calls, 35 geometries, 9 textures and 91 active/pooled objects, with stable repeat
 laps and all 130 turns accepted. It still covers 90 km, 65 ziplines and 30 rafts.
