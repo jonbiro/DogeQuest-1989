@@ -3,7 +3,7 @@ import {jumpLandingTime} from './motion.js';
 export function traversalDescription(run){
   if(run.raft)return 'River raft. Drag left or right, or use arrow buttons, to steer between rocks. Jump and slide return at the shore. Escape pauses.';
   if(run.zipline)return 'Zipline ride. Drag left or right, or use arrow buttons, to collect bones. Jump and slide return after the cable. Escape pauses.';
-  return '3D running trail. Press and hold, drag one lane left or right, pause briefly, then drag again without lifting. A clear swipe can switch between steering and jump/slide without lifting. On touch screens, tap a left or right edge to steer or the center to jump. Swipe up to jump, down to slide. Buttons and arrow keys also work. Escape pauses.';
+  return '3D running trail. The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. Swipes are optional: press and hold, drag one lane, pause briefly, then drag again without lifting. A clear swipe can switch between steering and jump/slide without lifting. On touch screens, tap a left or right edge to steer or the center to jump. Arrow keys also work. Escape pauses.';
 }
 export function updateTraversalControls(buttons, run) {
   const riding=Boolean(run.zipline||run.raft);
