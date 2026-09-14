@@ -59,3 +59,22 @@ test('the animation loop keeps scheduling frames after a mobile runtime fault', 
   assert.match(frame, /catch\s*\(error\)\s*\{[\s\S]*graphicsError\('frame-error',/);
   assert.match(frame, /finally\s*\{[\s\S]*requestAnimationFrame\(frame\);/);
 });
+
+test('stale shells cannot make the shared text helper throw on a missing node', () => {
+  const source = readFileSync(new URL('../src/runner/app.js', import.meta.url), 'utf8');
+  const start = source.indexOf('function setText(');
+  const end = source.indexOf('function toast(', start);
+  assert.ok(start >= 0 && end > start);
+  assert.doesNotThrow(() => runInNewContext(
+    `${source.slice(start, end)};setText('cue', 'safe retry');`,
+    { $: () => null },
+  ));
+});
+
+test('the HUD skips an absent Fetch button from an older shell', () => {
+  const source = readFileSync(new URL('../src/runner/app.js', import.meta.url), 'utf8');
+  const start = source.indexOf("const fetchButton = $('fetch');");
+  const end = source.indexOf('const turn = turnPrompt', start);
+  assert.ok(start >= 0 && end > start);
+  assert.match(source.slice(start, end), /if\s*\(fetchButton\)\s*\{/);
+});

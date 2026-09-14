@@ -110,8 +110,14 @@ reducedMotion=saved.preferences.reducedMotion;
 function updateRecords() {
   updateSaveNotice();
   $("play").textContent = playLabel();
-  $("buddy").querySelector("strong").textContent = `${PUPPIES[saved.collection.puppy].name}.`;
-  $("buddy").querySelector("p").textContent = PUPPIES[saved.collection.puppy].description;
+  // A service-worker/browser cache can briefly pair this bundle with an older
+  // shell. Keep a missing optional child from turning a camp refresh into a
+  // second opaque runtime failure before the player can retry.
+  const buddy = $("buddy");
+  const buddyName = buddy?.querySelector?.("strong");
+  const buddyDescription = buddy?.querySelector?.("p");
+  if (buddyName) buddyName.textContent = `${PUPPIES[saved.collection.puppy].name}.`;
+  if (buddyDescription) buddyDescription.textContent = PUPPIES[saved.collection.puppy].description;
   $("best").innerHTML =
     `${Math.floor(saved.best).toLocaleString()}<span> pts</span>`;
   $("bank").textContent = Math.floor(saved.bones).toLocaleString();
@@ -333,7 +339,8 @@ function tone(frequency, duration = 0.08) {
   }
 }
 function setText(id, text) {
-  if ($(id).textContent !== text) $(id).textContent = text;
+  const node = $(id);
+  if (node && node.textContent !== text) node.textContent = text;
 }
 function toast(message, duration = 1.5, priority = 0) {
   if (time < toastUntil && priority < noticePriority) return;
@@ -465,11 +472,15 @@ function setState(next) {
   $("pause-button").hidden = state !== "playing";
   $("overlay").hidden = !["paused", "ended", "help", "shop", "kennel", "graphics-error"].includes(state);
   const modal = !$("overlay").hidden;
-  $("scene").inert = state !== "playing";
-  document.querySelector("header").inert = modal;
-  $("hud").inert = modal;
+  const scene = $("scene");
+  const header = document.querySelector("header");
+  const hud = $("hud");
+  if (scene) scene.inert = state !== "playing";
+  if (header) header.inert = modal;
+  if (hud) hud.inert = modal;
   if (modal) {
-    if (previous !== next) document.querySelector('.modal-content').scrollTop = 0;
+    const modalContent = document.querySelector('.modal-content');
+    if (previous !== next && modalContent) modalContent.scrollTop = 0;
     focusOverlay();
   }
   accumulator = 0;
@@ -1796,21 +1807,23 @@ function frame(now) {
       }
       const fetchButton = $('fetch');
       $('scene').dataset.fetchUses = String(run.fetchUses);
-      const ready = fetchReady(run);
-      if (fetchButton.disabled && ready) tone('ready');
-      fetchButton.disabled = !ready;
-      fetchButton.classList.toggle('ready', !fetchButton.disabled);
-      fetchButton.classList.toggle('charging', !ready && run.fetchTime <= 0 && run.magnet <= 0);
-      setText('fetch', run.fetchTime > 0 ? `FETCH · ${Math.ceil(run.fetchTime)}s`
-        : run.magnet > 0 ? `MAGNET ACTIVE · ${run.fetchCharge}%`
-        : run.fetchCharge === 100 ? 'FETCH READY · F' : `FETCH · ${run.fetchCharge}%`);
-      fetchButton.setAttribute('aria-label', run.fetchTime > 0 ? 'Fetch active'
-        : run.magnet > 0 ? `Magnet active. Fetch charge ${run.fetchCharge} percent`
-        : `Fetch ${run.fetchCharge === 100 ? 'ready. Tap or press F to collect nearby bones for four seconds' : `charge ${run.fetchCharge} percent. The Fetch meter becomes available at 100 percent`}`);
-      fetchButton.setAttribute('title', ready ? 'Fetch nearby bones for four seconds'
-        : run.fetchTime > 0 ? 'Fetch is active'
-        : run.magnet > 0 ? 'Magnet is active; Fetch recharges afterward'
-        : 'Collect bones and clear obstacles to charge Fetch');
+      if (fetchButton) {
+        const ready = fetchReady(run);
+        if (fetchButton.disabled && ready) tone('ready');
+        fetchButton.disabled = !ready;
+        fetchButton.classList.toggle('ready', !fetchButton.disabled);
+        fetchButton.classList.toggle('charging', !ready && run.fetchTime <= 0 && run.magnet <= 0);
+        setText('fetch', run.fetchTime > 0 ? `FETCH · ${Math.ceil(run.fetchTime)}s`
+          : run.magnet > 0 ? `MAGNET ACTIVE · ${run.fetchCharge}%`
+          : run.fetchCharge === 100 ? 'FETCH READY · F' : `FETCH · ${run.fetchCharge}%`);
+        fetchButton.setAttribute('aria-label', run.fetchTime > 0 ? 'Fetch active'
+          : run.magnet > 0 ? `Magnet active. Fetch charge ${run.fetchCharge} percent`
+          : `Fetch ${run.fetchCharge === 100 ? 'ready. Tap or press F to collect nearby bones for four seconds' : `charge ${run.fetchCharge} percent. The Fetch meter becomes available at 100 percent`}`);
+        fetchButton.setAttribute('title', ready ? 'Fetch nearby bones for four seconds'
+          : run.fetchTime > 0 ? 'Fetch is active'
+          : run.magnet > 0 ? 'Magnet is active; Fetch recharges afterward'
+          : 'Collect bones and clear obstacles to charge Fetch');
+      }
       const turn = turnPrompt(run);
       $("scene").dataset.turn = turn ? `${turn.direction}-${turn.status}` : '';
       updateTurnControls(turnButtons, turn);
