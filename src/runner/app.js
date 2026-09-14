@@ -52,6 +52,12 @@ let run = createRun(),
 // without explaining what happened or how to continue.
 let pauseReason = 'manual';
 let graphicsReady = false;
+// A mobile GPU may evict the WebGL context while Safari/Brave backgrounds or
+// snapshots the tab. Keep the run paused while the same renderer asks Three to
+// rebuild its programs; only show the full recovery screen if restoration does
+// not arrive in time.
+let contextRecovery = null;
+const CONTEXT_RESTORE_TIMEOUT = 4200;
 let storageAvailable = true;
 let profileReadable = true;
 let reducedMotion = window.matchMedia(
@@ -517,6 +523,19 @@ function pause() {
   if (state === "playing") showOverlay("paused");
 }
 function resume() {
+  // A visible overlay can race a browser lifecycle transition. Never advance
+  // the simulation behind browser chrome or while the GPU context is still
+  // being rebuilt; the lifecycle handler will refocus this action afterward.
+  // Keep the action safe in tiny lifecycle/test harnesses that do not expose
+  // a document, while still refusing to wake a hidden page or a lost GPU
+  // context in the browser.
+  const pageHidden = globalThis.document?.hidden === true;
+  const contextLost = typeof contextRecovery !== 'undefined' && contextRecovery?.lost === true;
+  const graphicsUnavailable = typeof graphicsReady !== 'undefined' && graphicsReady === false;
+  if (pageHidden || contextLost || graphicsUnavailable) {
+    if (pageHidden) pauseReason = 'background';
+    return;
+  }
   pauseReason = 'manual';
   if (sound) resumeSound(audio);
   run.resumeRemaining = RESUME_DURATION;
@@ -1336,13 +1355,66 @@ document.addEventListener("visibilitychange", () => {
 });
 $("scene").addEventListener("webglcontextlost", (event) => {
   event.preventDefault();
-  graphicsError();
+  if (state === 'graphics-error' || contextRecovery?.lost) return;
+  const previousState = state;
+  contextRecovery = {lost:true, previousState, timer:null};
+  graphicsReady = false;
+  if (previousState === 'playing') pause('background');
+  else if (previousState === 'paused') pauseReason = 'background';
+  if (state === 'paused') {
+    $('overlay-primary').disabled = true;
+    $('overlay-primary').textContent = 'Waking 3D trail…';
+    $('overlay-copy').textContent = run.practice
+      ? 'The phone briefly paused the 3D trail while its graphics memory woke up. Keep this page open; your practice run will be ready in a moment.'
+      : 'The phone briefly paused the 3D trail while its graphics memory woke up. Keep this page open; your points and bones are still safe.';
+  } else if (state === 'menu') {
+    $('play').disabled = true;
+    $('play').textContent = 'Waking the trail…';
+  }
+  contextRecovery.timer = window.setTimeout(() => {
+    if (contextRecovery?.lost) graphicsError();
+  }, CONTEXT_RESTORE_TIMEOUT);
 });
+function clearContextRecovery() {
+  if (contextRecovery?.timer) window.clearTimeout(contextRecovery.timer);
+  contextRecovery = null;
+}
+// Three's renderer keeps the canvas and resource graph alive after
+// preventDefault(), but its one-shot shader-preparation promise must be reset
+// before programs are compiled against the restored context.
+function handleContextRestored() {
+  if (!contextRecovery?.lost || !view || state === 'graphics-error') return;
+  if (typeof clearContextRecovery === 'function') clearContextRecovery();
+  try {
+    void prepareFirstFrame(() => view.prepareShaders(true), 3000).then(() => {
+      if (state === 'graphics-error') return;
+      graphicsReady = true;
+      $('play').disabled = false;
+      $('play').textContent = playLabel();
+      if (state === 'paused') {
+        $('overlay-primary').disabled = false;
+        $('overlay-primary').textContent = 'Keep running →';
+        $('overlay-copy').textContent = run.practice
+          ? 'The 3D trail is ready again. Practice is unscored; tap Keep running whenever you are ready.'
+          : 'The 3D trail is ready again. Your run is paused so you can tap Keep running when you are ready.';
+        focusOverlay();
+      } else if (state === 'menu' && (!document.activeElement || document.activeElement === document.body)) {
+        $('play').focus({preventScroll:true});
+      }
+    }).catch(() => {
+      if (state !== 'graphics-error') graphicsError();
+    });
+  } catch {
+    graphicsError();
+  }
+}
+$('scene').addEventListener('webglcontextrestored', handleContextRestored);
 function graphicsError() {
   // Keep recovery idempotent even if the original failure happened while the
   // finish/overlay path was already unwinding. A second RAF must not bank or
   // replace the same run again.
   if (graphicsError.handled && state === 'graphics-error') return;
+  if (typeof clearContextRecovery === 'function') clearContextRecovery();
   graphicsError.handled = true;
   if (['playing','paused'].includes(state) && !run.practice) {
     run.retired = true;

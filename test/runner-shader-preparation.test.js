@@ -29,3 +29,16 @@ test('unsupported compilation and failed drivers cannot reject or block play',as
     await preparation.start();assert.equal(calls,supported?1:0);
   }
 });
+
+test('restored WebGL contexts can recompile after the original preparation promise resolved',async()=>{
+  let calls=0;
+  const renderer={extensions:{has:()=>true},compileAsync:async()=>{calls++;}};
+  const preparation=createShaderPreparation(renderer,{}, {}, {});
+  assert.equal(await preparation.start(),true);
+  assert.equal(calls,2);
+  assert.equal(await preparation.start(),true);
+  assert.equal(calls,2,'a normal frame still reuses the prepared programs');
+  assert.equal(await preparation.start(true),true);
+  assert.equal(calls,4,'a forced pass recompiles both scene and pickup templates');
+  assert.equal(preparation.status,'ready');
+});

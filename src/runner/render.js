@@ -48,6 +48,12 @@ import {createPuppyArtwork,PUPPY_HANG_HANDLE_HEIGHT} from './puppy-artwork.js';
 
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
+  // Resolve the device profile before asking the browser for a context. The
+  // context attributes are part of the allocation decision on iOS; changing
+  // quality after a high-cost context exists is too late to prevent a GPU
+  // process eviction.
+  const mobile = window.matchMedia?.('(pointer: coarse)')?.matches === true
+    || /Android|iPhone|iPad|iPod|Mobile|Tablet/i.test(window.navigator?.userAgent || '');
   // Probe the exact context that Three will use before constructing the full
   // scene. Some Chrome profiles report a WebGL creation failure only after
   // allocating a renderer, which used to leave the player in a reload loop.
@@ -63,26 +69,32 @@ export function createView(canvas) {
       antialias: false,
       premultipliedAlpha: true,
       preserveDrawingBuffer: false,
-      powerPreference: 'default',
+      powerPreference: mobile ? 'low-power' : 'default',
       failIfMajorPerformanceCaveat: false,
     });
   } catch {
     // Keep the null probe result and let the caller show its setup state.
   }
   if (!context) throw new Error('WebGL2 is unavailable; full 3D setup required');
+  // iOS keeps the page alive while the GPU process is aggressively budgeted.
+  // Treat a coarse-pointer/mobile canvas as a small-screen profile from the
+  // first allocation: one physical pixel per CSS pixel, no shadow atlas, and
+  // no high-anisotropy sampling. The authored trail, lighting and contact
+  // shadow remain intact, but the renderer leaves enough headroom for Safari
+  // or Brave to restore a backgrounded tab instead of killing its context.
   const renderer = new THREE.WebGLRenderer({
     canvas,
     context,
     antialias: false,
-    powerPreference: "default",
+    powerPreference: mobile ? "low-power" : "default",
     failIfMajorPerformanceCaveat: false,
   });
-  const quality = createQualityController(window.devicePixelRatio || 1);
+  const quality = createQualityController(mobile ? 1 : window.devicePixelRatio || 1);
   renderer.setPixelRatio(quality.ratio);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.12;
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = !mobile;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   const scene = new THREE.Scene();
   scene.background = new THREE.Color("#8ec5aa");
@@ -95,14 +107,14 @@ export function createView(canvas) {
   sun.position.set(-12, 24, 4);
   sun.target.position.set(0, 0, -12);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.mapSize.set(mobile ? 512 : 1024, mobile ? 512 : 1024);
   Object.assign(sun.shadow.camera, {left:-18,right:18,top:26,bottom:-18,near:1,far:90});
   sun.shadow.bias = -.0003;
   sun.shadow.normalBias = .045;
   sun.shadow.radius = 2;
   scene.add(sun, sun.target);
   const surface = createSurfaceTexture();
-  surface.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+  surface.anisotropy = Math.min(mobile ? 1 : 4, renderer.capabilities.getMaxAnisotropy());
   const materialCache = new Map();
   const mat = (color) => {
     if (!materialCache.has(color))
@@ -995,7 +1007,7 @@ export function createView(canvas) {
   templateScene.add(...Object.values(templates));
   const shaderPreparation=createShaderPreparation(renderer,scene,camera,templateScene);
   return {
-    prepareShaders:()=>shaderPreparation.start(),
+    prepareShaders:(force=false)=>shaderPreparation.start(force),
     instructionImage(action) {
       const subject=new THREE.Group();
       if(action==='lanes') {

@@ -908,6 +908,13 @@ export function createPuppyArtwork() {
     sprite.position.copy(basePosition);
     sprite.center.set(.5, .5);
     setSpriteMap(sprite, texture);
+    // A loaded pose is not necessarily the pose the renderer is showing this
+    // frame. Keep non-active paintings hidden until setPose selects them. This
+    // matters on iOS: assigning every loaded image to a visible Sprite makes
+    // WebGL upload the whole action catalog at once, even when opacity is 0.
+    // Hidden sprites retain their maps and become visible instantly when the
+    // corresponding physics state asks for them.
+    sprite.visible = pose === 'idle' || group.userData.activePose === pose;
     sprite.material.opacity = pose === 'idle' ? 1 : 0;
   }
 
@@ -945,10 +952,18 @@ export function createPuppyArtwork() {
   function configurePoseStack(key, texture) {
     const map = poseMapFor(key);
     map.set('idle', texture);
-    for (const pose of Object.keys(poseSprites)) {
-      if (pose === 'alternate') continue;
+    // Keep the first paint small. Idle and the next ground stride are enough
+    // to make the camp and opening run feel alive; jumps, slides, turns,
+    // hangs, and Mochi's rear view stream only when the physics requests them.
+    // The previous eager loop loaded eight large paintings before the player
+    // had even tapped Play, which could exhaust an iPhone GPU texture budget.
+    for (const pose of ['idle', 'stride']) {
       const poseTexture = requestPose(key, pose);
       configurePoseSprite(poseSprites[pose], pose, poseTexture, key);
+    }
+    for (const pose of ['jump', 'slide', 'turn', 'hang', 'away', 'strideAlt']) {
+      const sprite = poseSprites[pose];
+      configurePoseSprite(sprite, pose, null, key);
     }
     poseSprites.idle.material.opacity = 1;
     poseSprites.stride.material.opacity = 0;
@@ -1123,7 +1138,12 @@ export function createPuppyArtwork() {
           ? alternateSprite
           : poseSprites[pose];
       const {width, height} = sourceSize(sprite?.material?.map);
-      return Boolean(sprite?.material?.map && width && height && poseBaseScales[pose]?.x > 0);
+      const ready = Boolean(sprite?.material?.map && width && height && poseBaseScales[pose]?.x > 0);
+      // Base action art is intentionally streamed. Calling requestPose here
+      // is idempotent and lets the first jump/slide/turn start its own fetch
+      // without preloading every large texture during the menu.
+      if (!ready && !pose.endsWith('Alt') && pose !== 'idle') requestPose(currentKey, pose);
+      return ready;
     };
     const alternatePoseReady = pose => alternateReady(currentKey, pose);
     // A whole painted image is always visible at full opacity. The previous

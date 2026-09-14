@@ -14,7 +14,16 @@ export function createShaderPreparation(renderer,scene,camera,templates) {
   let status='idle',pending;
   return {
     get status(){return status;},
-    start(){
+    start(force=false){
+      // A WebGL context can be restored after iOS suspends a tab. Three resets
+      // its internal program cache in that case, so the old resolved promise
+      // is no longer proof that the restored context has valid programs.
+      // Allow the owner to explicitly invalidate this one-shot preparation
+      // without creating a second renderer or shader compiler.
+      if (force) {
+        pending=undefined;
+        status='idle';
+      }
       if(pending)return pending;
       if(!renderer.extensions.has('KHR_parallel_shader_compile')) {
         status='unsupported';pending=Promise.resolve(false);return pending;
@@ -30,6 +39,10 @@ export function createShaderPreparation(renderer,scene,camera,templates) {
         }
       })();
       return pending;
+    },
+    reset(){
+      pending=undefined;
+      status='idle';
     },
   };
 }
