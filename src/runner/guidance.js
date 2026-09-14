@@ -83,8 +83,8 @@ export function actionCue(run) {
 export function touchCoach(run) {
   if (!run?.touchHint || (run.inputCount || 0) >= 2) return '';
   return (run.inputCount || 0) === 0
-    ? 'PRESS + HOLD · DRAG 1 LANE ← → · ↑ JUMP · ↓ SLIDE · PAUSE · REPEAT'
-    : 'KEEP HOLDING · PAUSE · DRAG AGAIN';
+    ? 'EASIEST: TAP LEFT / RIGHT TO MOVE · TAP JUMP OR SLIDE'
+    : 'SWIPE: HOLD → DRAG ONE LANE → PAUSE → DRAG AGAIN · UP / DOWN JUMP / SLIDE';
 }
 
 // Gates reserve the final 45m from obstacle rows. Keep the actionable choice
