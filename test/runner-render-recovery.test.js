@@ -28,3 +28,14 @@ test('menu and help rendering share the guarded draw path', () => {
   assert.equal((source.match(/\bview\.draw\(/g) || []).length, 1,
     'only drawScene should call the renderer directly');
 });
+
+test('the animation loop keeps scheduling frames after a mobile runtime fault', () => {
+  const source = readFileSync(new URL('../src/runner/app.js', import.meta.url), 'utf8');
+  const start = source.indexOf('function frame(now) {');
+  const end = source.indexOf('if(graphicsReady)', start);
+  assert.ok(start >= 0 && end > start);
+  const frame = source.slice(start, end);
+  assert.match(frame, /try\s*\{/);
+  assert.match(frame, /catch\s*\{[\s\S]*graphicsError\(\);/);
+  assert.match(frame, /finally\s*\{[\s\S]*requestAnimationFrame\(frame\);/);
+});

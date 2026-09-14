@@ -1338,11 +1338,12 @@ let currentMission = missionFor(saved.challenges),
   missionAnnounced = false;
 let lastHud = -1;
 function frame(now) {
-  const frameDt = (now - last) / 1000 || 0;
-  const dt = Math.min(0.05, frameDt);
-  last = now;
-  time += dt;
-  if (state === "playing" && !tilt.isRequesting()) {
+  try {
+    const frameDt = (now - last) / 1000 || 0;
+    const dt = Math.min(0.05, frameDt);
+    last = now;
+    time += dt;
+    if (state === "playing" && !tilt.isRequesting()) {
     accumulator += resumeStep(run, dt);
     while (accumulator >= 1 / 120 && !run.ended) {
       if (run.practice) stepPractice(run, 1 / 120);
@@ -1461,15 +1462,22 @@ function frame(now) {
       $("hud").classList.toggle("has-powers", updatePowerHud(run));
     }
     if (run.ended) finish();
+    }
+    if (time > toastUntil) setText('toast', '');
+    try{
+      soundscape.update(audio,{enabled:sound&&saved.preferences.ambience&&state==='playing'&&!run.ended&&!document.hidden&&!tilt.isRequesting(),
+        time:run.time,distance:run.distance,quiet:!$('cue').textContent&&!routeChoiceCue(run)&&!run.practice});
+    }catch{soundscape.stop();} // Optional audio must never interrupt animation.
+    syncDock();
+    drawScene(run, time, state, reducedMotion, dt, accumulator / (1 / 120), saved.collection, frameDt);
+  } catch {
+    // A mobile driver can reject a non-draw update (for example while its
+    // canvas is being reclaimed). Keep the RAF chain alive and show the same
+    // recoverable 3D screen instead of leaving a frozen, untouchable run.
+    graphicsError();
+  } finally {
+    requestAnimationFrame(frame);
   }
-  if (time > toastUntil) setText('toast', '');
-  try{
-    soundscape.update(audio,{enabled:sound&&saved.preferences.ambience&&state==='playing'&&!run.ended&&!document.hidden&&!tilt.isRequesting(),
-      time:run.time,distance:run.distance,quiet:!$('cue').textContent&&!routeChoiceCue(run)&&!run.practice});
-  }catch{soundscape.stop();} // Optional audio must never interrupt animation.
-  syncDock();
-  drawScene(run, time, state, reducedMotion, dt, accumulator / (1 / 120), saved.collection, frameDt);
-  requestAnimationFrame(frame);
 }
 if(graphicsReady)$("play").focus({ preventScroll: true });
 requestAnimationFrame(frame);

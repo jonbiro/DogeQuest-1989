@@ -14,7 +14,10 @@ test('real frame simulation waits for motion permission and never catches up the
   const start=source.indexOf('function frame(now) {');
   const end=source.indexOf('    for (const event of run.events)',start);
   assert.ok(start>=0&&end>start);
-  const simulation=source.slice(start,end)+'}}';
+  // The production frame now has a recovery try/finally around the loop. Keep
+  // this focused simulation self-contained while preserving its permission
+  // gating assertions.
+  const simulation=source.slice(start,end)+'}}catch{}finally{}}';
   for(const practice of [false,true])for(const result of ['granted','denied','error']){
     let resolve,reject;
     const host={isSecureContext:true,matchMedia:()=>({matches:true}),
