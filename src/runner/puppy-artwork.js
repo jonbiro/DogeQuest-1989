@@ -753,7 +753,62 @@ export function createPuppyArtwork({mobile = false} = {}) {
   const accessoryTextures = new Map();
   const poseTextures = new Map();
   const poseLoads = new Set();
+  const sourceLoadTokens = new Map();
   const maxTextureDimension = mobile ? 768 : 0;
+  // A kennel preview can visit several puppies before the next run. Keep
+  // their idle source images available for an instant swap, but release old
+  // action/costume/crop textures on coarse-pointer devices. Without this
+  // small cache boundary, every jump/slide/turn preview could leave another
+  // set of decoded WebGL textures resident until iOS evicted the context.
+  function disposeTexture(texture, protectedTexture, disposed) {
+    if (!texture || texture === protectedTexture || disposed.has(texture)) return;
+    disposed.add(texture);
+    texture.dispose?.();
+  }
+  function pruneMobileCaches(keepKey) {
+    if (!mobile) return;
+    const disposed = new Set();
+    for (const [key, map] of poseTextures) {
+      if (key === keepKey) continue;
+      const source = sourceTextures.get(key);
+      for (const texture of map.values()) disposeTexture(texture, source, disposed);
+      poseTextures.delete(key);
+      for (const token of poseLoads)
+        if (token.startsWith(`${key}:`)) poseLoads.delete(token);
+    }
+    for (const [cacheKey, texture] of accessoryTextures) {
+      if (cacheKey.startsWith(`${keepKey}:`)) continue;
+      disposeTexture(texture, null, disposed);
+      accessoryTextures.delete(cacheKey);
+    }
+    for (const [key, texture] of bodyTextures) {
+      if (key === keepKey) continue;
+      disposeTexture(texture, sourceTextures.get(key), disposed);
+      bodyTextures.delete(key);
+    }
+    for (const [key, texture] of headTextures) {
+      if (key === keepKey) continue;
+      disposeTexture(texture, sourceTextures.get(key), disposed);
+      headTextures.delete(key);
+    }
+    for (const [cacheKey, texture] of partTextures) {
+      if (cacheKey.startsWith(`${keepKey}:`)) continue;
+      const key = cacheKey.split(':', 1)[0];
+      disposeTexture(texture, sourceTextures.get(key), disposed);
+      partTextures.delete(cacheKey);
+    }
+    // Idle paintings are also GPU resources once the sprite has rendered.
+    // Drop them with the rest of the inactive puppy so a long kennel session
+    // cannot accumulate one 768px texture per dog. A request token prevents
+    // a late image callback from resurrecting a discarded source.
+    for (const [key, texture] of sourceTextures) {
+      if (key === keepKey) continue;
+      sourceLoadTokens.delete(key);
+      disposeTexture(texture, null, disposed);
+      sourceTextures.delete(key);
+      prepared.delete(key);
+    }
+  }
   const poseBaseScales = {
     idle: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
     stride: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
@@ -985,6 +1040,14 @@ export function createPuppyArtwork({mobile = false} = {}) {
       poseLoads.add(`${key}:${pose}`);
       const texture = loader.load(url, loaded => {
         const compact = compactTexture(loaded, maxTextureDimension);
+        // The player may have changed puppies while this network request was
+        // in flight. Do not repopulate a pruned action cache on mobile; release
+        // that texture and let a future selection request it again if needed.
+        if (mobile && key !== currentKey && !poseTextures.has(key)) {
+          compact.dispose?.();
+          poseLoads.delete(`${key}:${pose}`);
+          return;
+        }
         prepareTexture(compact);
         map.set(pose, compact);
         if (currentKey === key) {
@@ -1120,15 +1183,21 @@ export function createPuppyArtwork({mobile = false} = {}) {
     if (!width || !height) return;
     prepared.add(key);
     prepareTexture(texture);
-    bodyTextures.set(key, maskedBodyTexture(texture, key));
-    headTextures.set(key, maskedHeadTexture(texture, key));
-    const layout = PUPPY_ARTWORK_LAYOUTS[key];
-    const tailRect = pixelRect(layout.tail.crop, width, height);
-    partTextures.set(`${key}:tail`, cropTexture(texture, tailRect, width, height));
-    layout.legs.forEach((leg, index) => {
-      const rect = pixelRect(leg.crop, width, height);
-      partTextures.set(`${key}:leg:${index}`, cropTexture(texture, rect, width, height));
-    });
+    // The crop rig remains available on desktop for legacy diagnostics. The
+    // live runner hides those parts, so avoid creating nine extra CanvasTexture
+    // objects per puppy on mobile; the complete pose sprite is all that is
+    // visible and is already compacted above.
+    if (!mobile) {
+      bodyTextures.set(key, maskedBodyTexture(texture, key));
+      headTextures.set(key, maskedHeadTexture(texture, key));
+      const layout = PUPPY_ARTWORK_LAYOUTS[key];
+      const tailRect = pixelRect(layout.tail.crop, width, height);
+      partTextures.set(`${key}:tail`, cropTexture(texture, tailRect, width, height));
+      layout.legs.forEach((leg, index) => {
+        const rect = pixelRect(leg.crop, width, height);
+        partTextures.set(`${key}:leg:${index}`, cropTexture(texture, rect, width, height));
+      });
+    }
     if (currentKey === key) {
       configureParts(key, texture);
       configureAccessories(key, currentCostume);
@@ -1138,7 +1207,23 @@ export function createPuppyArtwork({mobile = false} = {}) {
   function textureFor(id) {
     const key = Object.hasOwn(PUPPY_ARTWORK, id) ? id : 'biscuit';
     if (!sourceTextures.has(key)) {
-      const texture = loader.load(puppyArtworkUrl(key), loaded => prepare(key, loaded));
+      const token = Symbol(key);
+      sourceLoadTokens.set(key, token);
+      const texture = loader.load(puppyArtworkUrl(key), loaded => {
+        const compact = compactTexture(loaded, maxTextureDimension);
+        if (sourceLoadTokens.get(key) !== token) {
+          compact.dispose?.();
+          return;
+        }
+        sourceLoadTokens.delete(key);
+        if (mobile && key !== currentKey) {
+          compact.dispose?.();
+          sourceTextures.delete(key);
+          prepared.delete(key);
+          return;
+        }
+        prepare(key, compact);
+      });
       sourceTextures.set(key, prepareTexture(texture));
     }
     return {key, texture: sourceTextures.get(key)};
@@ -1146,8 +1231,14 @@ export function createPuppyArtwork({mobile = false} = {}) {
 
   function apply(puppy) {
     const id = typeof puppy === 'string' ? puppy : puppy?.id;
+    const nextKey = Object.hasOwn(PUPPY_ARTWORK, id) ? id : 'biscuit';
+    pruneMobileCaches(nextKey);
+    // Set the active key before starting a new image request. ImageLoader is
+    // normally asynchronous, but a cached/managed browser can complete an
+    // image callback during the same task; the callback must see the intended
+    // puppy rather than the previous preview.
+    currentKey = nextKey;
     const {key, texture} = textureFor(id);
-    currentKey = key;
     configureParts(key, texture);
     return key;
   }

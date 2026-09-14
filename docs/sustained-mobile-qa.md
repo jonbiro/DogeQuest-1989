@@ -94,6 +94,12 @@ render guard enters the same paused wake-up path; mobile recovery waits up to
 10 seconds for the browser to restore the context before banking the run and
 showing the clean-start screen.
 
+The mobile artwork cache now releases action, costume and legacy crop textures
+when the kennel switches to another puppy, and late pose loads are discarded
+if that puppy is no longer active. The complete painted pose stack remains the
+only visible anatomy, so this trims GPU residency without changing the dog or
+its action silhouettes.
+
 After this cull, the five-run accelerated renderer matrix measured 256 peak draw
 calls, 35 geometries, 9 textures and 91 active/pooled objects, with stable repeat
 laps and all 130 turns accepted. It still covers 90 km, 65 ziplines and 30 rafts.
