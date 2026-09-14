@@ -48,10 +48,34 @@ import {createPuppyArtwork,PUPPY_HANG_HANDLE_HEIGHT} from './puppy-artwork.js';
 
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
+  // Probe the exact context that Three will use before constructing the full
+  // scene. Some Chrome profiles report a WebGL creation failure only after
+  // allocating a renderer, which used to leave the player in a reload loop.
+  // A quiet probe lets app.js switch to its canvas fallback without logging a
+  // second renderer error or claiming the canvas for a context that does not
+  // exist.
+  let context = null;
+  try {
+    context = canvas.getContext('webgl2', {
+      alpha: true,
+      depth: true,
+      stencil: false,
+      antialias: false,
+      premultipliedAlpha: true,
+      preserveDrawingBuffer: false,
+      powerPreference: 'default',
+      failIfMajorPerformanceCaveat: false,
+    });
+  } catch {
+    // Keep the null probe result and let the caller choose its fallback.
+  }
+  if (!context) throw new Error('WebGL2 is unavailable; using canvas fallback');
   const renderer = new THREE.WebGLRenderer({
     canvas,
-    antialias: true,
-    powerPreference: "high-performance",
+    context,
+    antialias: false,
+    powerPreference: "default",
+    failIfMajorPerformanceCaveat: false,
   });
   const quality = createQualityController(window.devicePixelRatio || 1);
   renderer.setPixelRatio(quality.ratio);

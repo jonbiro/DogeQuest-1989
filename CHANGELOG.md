@@ -4,6 +4,10 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Added a WebGL-free canvas presentation fallback for Chrome and embedded browsers
+  with disabled GPU contexts. The same runner physics, authored puppy artwork,
+  controls, and saved progress remain playable at the normal runner URL, while
+  explicit graphics retries now bypass stale module caches.
 - Normalized the alternate puppy paintings against each dog's canonical watercolor
   artwork. Removed generated matte halos and cutout gaps, restored the correct
   coat/collar palette for every action and sailor frame, and re-measured visible

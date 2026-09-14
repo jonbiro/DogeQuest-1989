@@ -6,6 +6,7 @@ import {RESUME_DURATION,resumeStep} from './resume.js';
 import {installBackupControls} from './backup-ui.js';
 import {installOfflineSupport} from './offline.js';
 import { createView } from "./render.js";
+import { createFallbackView } from "./fallback-render.js";
 import {prepareFirstFrame} from './shader-preparation.js';
 import { UPGRADES, levels, price, purchase, refundUpgrade } from "./progression.js";
 import { missionFor, missionProgress, missionTip, missionPackFor } from "./missions.js";
@@ -822,7 +823,15 @@ function graphicsError() {
         : 'The trail was interrupted. Earned rewards were counted for this visit, but saving is unavailable. Reloading may lose this progress.'
       : 'Graphics are unavailable or were interrupted. Reload to try again. Previously saved puppies, outfits and points stay in this browser; practice never changes your progress.';
   $("overlay-primary").textContent = "Reload trail";
-  $("overlay-primary").onclick = () => window.location.reload();
+  $("overlay-primary").onclick = () => {
+    // A normal reload can keep an interrupted module graph in a service
+    // worker cache. Change only a disposable retry parameter so the browser
+    // asks for a fresh document while preserving any shared-trail query.
+    const url = new window.URL(window.location.href);
+    url.searchParams.set('retry', String(Date.now()));
+    if (typeof window.location.assign === 'function') window.location.assign(url.href);
+    else window.location.reload();
+  };
 }
 let view;
 try {
@@ -839,7 +848,29 @@ try {
       $("play").focus({preventScroll:true});
   });
 } catch {
-  graphicsError();
+  // WebGL is optional presentation, not a requirement for the runner. Chrome
+  // can disable GPU contexts at the profile or sandbox level while still
+  // supporting a fast, crisp 2D canvas and the same authored puppy paintings.
+  // Keep the player on this URL with the real simulation instead of showing a
+  // reload button that can only fail again in the same browser session.
+  try {
+    view = createFallbackView($("scene"));
+    $("game").dataset.renderer = 'canvas-2d-fallback';
+    $("scene").setAttribute('aria-label', 'Lightweight running trail. Left and right arrows change lanes. Up or Space jumps. Down slides. Escape pauses.');
+    $("play").textContent = 'Preparing the lightweight trail…';
+    $("overlay-primary").disabled = true;
+    void prepareFirstFrame(() => view.prepareShaders()).then(() => {
+      if (state === 'graphics-error') return;
+      graphicsReady = true;
+      $("play").disabled = false;
+      $("overlay-primary").disabled = false;
+      $("play").textContent = playLabel();
+      if (state === 'menu' && (!document.activeElement || document.activeElement === document.body))
+        $("play").focus({preventScroll:true});
+    });
+  } catch {
+    graphicsError();
+  }
 }
 let currentMission = missionFor(saved.challenges),
   missionAnnounced = false;
