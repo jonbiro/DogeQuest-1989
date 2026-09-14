@@ -1229,6 +1229,13 @@ $("scene").addEventListener("pointerup", (event) => {
     const action = swipeAction(dx, dy, true);
     if (action) {
       commitPointerAction(action, event);
+      // A sparse browser release can contain the whole thumb path without
+      // intermediate pointermove samples. It still resolves to one safe move,
+      // but keep the same over-drag coaching used by sampled paths so the next
+      // segment is not mistaken for an extra lane change.
+      if (event.pointerType === 'touch' &&
+        Math.max(Math.abs(dx), Math.abs(dy)) > LANE_DRAG_MAX_AUTO_DISTANCE)
+        run.touchOverdrag = true;
     } else if (event.pointerType === 'touch') {
       const heldTooLong = event.timeStamp - touchPointer.started > 350;
       run.touchFeedback = heldTooLong && touchPointer.travel < 24
@@ -1253,6 +1260,7 @@ for (const button of document.querySelectorAll("[data-action]")) {
       if (typeof hideTouchGhost === 'function') hideTouchGhost();
       pointer = null; // A button supersedes an unfinished trail tap, not a second move on release.
       if (event.pointerType === 'touch') run.touchFeedback = '';
+      if (event.pointerType === 'touch') run.touchOverdrag = false;
       performTouchAction(button.dataset.action, event);
     }
   };

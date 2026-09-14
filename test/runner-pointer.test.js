@@ -181,6 +181,22 @@ test('a coalesced giant first swipe remains one bounded snap',()=>{
   assert.equal(run.touchOverdrag,true,'a giant first sample receives held-drag guidance');
 });
 
+test('a sparse giant release keeps the held-drag recovery cue',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf('let pointer = null;');
+  const end=source.indexOf('for (const button of document.querySelectorAll("[data-action]")',start);
+  const handlers={},actions=[],run={};
+  const scene={clientWidth:390,addEventListener:(name,fn)=>{handlers[name]=fn;},setPointerCapture(){}};
+  runInNewContext(source.slice(start,end),{$:()=>scene,state:'playing',run,
+    act:(_,action)=>actions.push(action),canStartSwipe,ownsSwipe,isJumpTap,swipeAction,tapAction});
+  const touch={pointerType:'touch',pointerId:1,button:0,isPrimary:true,clientX:50,clientY:120,timeStamp:100};
+  handlers.pointerdown(touch);
+  // Some browsers deliver only the terminal release for a fast long swipe.
+  handlers.pointerup({...touch,clientX:260,timeStamp:180});
+  assert.deepEqual(actions,['right'],'a sparse release still commits one bounded move');
+  assert.equal(run.touchOverdrag,true,'the release receives held-drag recovery guidance');
+});
+
 test('a clear reverse segment re-arms a held swipe without requiring a lift',()=>{
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const start=source.indexOf('let pointer = null;');
@@ -597,8 +613,10 @@ test('action buttons support a second thumb while rejecting alternate mouse butt
   press({isPrimary:false});
   assert.deepEqual(actions,[]);
   context.pointer={id:7};
+  context.run.touchOverdrag=true;
   press({isPrimary:false,pointerType:'touch'});
   assert.equal(context.pointer,null,'explicit controls cancel an unfinished trail tap');
+  assert.equal(context.run.touchOverdrag,false,'a button clears stale over-drag guidance');
   button.onclick({detail:1});
   assert.deepEqual(actions,['jump'],'pointer click does not double-trigger');
   button.onclick({detail:0});
