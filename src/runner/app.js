@@ -1036,6 +1036,10 @@ function processPointerMove(event) {
       pointer.anchorY = event.clientY;
       pointer.lastActionAt = event.timeStamp;
       const verticalAction = verticalPathDirection || (deltaY > 0 ? 'slide' : 'jump');
+      // Keep the live touch coach in sync with the action that won the
+      // cross-axis handoff. Without this, a jump/slide after an over-drag
+      // continued to announce the previous left/right lane direction.
+      pointer.laneDirection = verticalAction;
       pointer.crossAxisDirection = null;
       pointer.crossAxisStartY = null;
       pointer.reverseDirection = null;

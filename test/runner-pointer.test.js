@@ -239,6 +239,8 @@ test('a gradual cross-axis correction accumulates after a horizontal overdrag',(
   handlers.pointermove({...touch,clientX:180,clientY:96,timeStamp:220});
   handlers.pointermove({...touch,clientX:180,clientY:88,timeStamp:240});
   assert.deepEqual(actions,['right','jump'],'sampled vertical intent wins after a horizontal overdrag');
+  assert.match(source.slice(start,end), /pointer\.laneDirection = verticalAction;/,
+    'cross-axis handoff updates the live touch coach direction');
 });
 
 test('a sparse release can finish a reverse segment without a final move event',()=>{
