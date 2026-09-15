@@ -1700,6 +1700,7 @@ canvas:focus-visible {
   grid-template-columns: none;
   column-gap: 0;
   width: 100%;
+  padding-bottom: 92px;
 }
 #overlay[data-kind="kennel"] .modal-content #collection[data-category="prizes"] {
   display: grid;
@@ -1707,7 +1708,9 @@ canvas:focus-visible {
   gap: 12px;
   column-gap: 0;
   width: 100%;
-  padding-bottom: 28px;
+  /* The action shelf is a fixed sibling of the scroll region. Reserve its
+     footprint so the final reward card can always scroll fully above it. */
+  padding-bottom: 92px;
 }
 #overlay[data-kind="kennel"] .modal-content #collection[data-category="passport"] > #trail-passport {
   width: 100%;
@@ -1890,7 +1893,7 @@ canvas:focus-visible {
 #collection[data-category="prizes"] {
   display: grid;
   gap: 12px;
-  padding-bottom: 28px;
+  padding-bottom: 92px;
 }
 #collection[data-category="prizes"] > h3 { margin: 4px 0 0; }
 .prize-card {
@@ -1984,6 +1987,8 @@ canvas:focus-visible {
 @media (max-width: 700px) {
   .modal { width: min(100%, calc(100% - 8px)); padding: 20px; }
   .modal-actions { margin: 12px -20px -20px; padding: 12px 20px 20px; }
+  #collection[data-category="passport"],
+  #collection[data-category="prizes"] { padding-bottom: 108px; }
   #collection .collection-card { grid-template-columns: 92px minmax(0,1fr); min-height: 116px; gap: 8px 11px; padding: 13px 0; }
   #collection .collection-card img { width: 88px; height: 88px; border-radius: 16px; }
   #collection .collection-card p { font-size: 12px; line-height: 1.45; }
