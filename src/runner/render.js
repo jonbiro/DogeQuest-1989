@@ -1539,6 +1539,7 @@ export function createView(canvas) {
       visibleIds.clear();
       boneBatch.begin();
       let boneGlintCount = 0;
+      let hazardCueCount = 0;
       if (!menu)
         for (const object of run.objects) {
           if (!objectVisible(object, distance)) continue;
@@ -1629,6 +1630,30 @@ export function createView(canvas) {
               flashes.setColorAt(sparkCount, flashColor);
               flashes.setMatrixAt(sparkCount++, flashMatrix);
               boneGlintCount++;
+            }
+          } else if (!object.used && !object.passed && hazardCueCount < 3) {
+            // A tiny marker above the next solid hazard gives the eye a
+            // grounded target before the HUD cue arrives. It is deliberately
+            // local to the object, distance-faded and capped so a full-width
+            // row never turns into a second overlay. The existing flash batch
+            // keeps this at zero extra geometry or texture uploads.
+            const approach = object.at - distance;
+            const solidHazard = ['rock', 'log', 'arch', 'branch', 'gate'].includes(object.type);
+            if (solidHazard && approach > 5 && approach < 32 && sparkCount < 192) {
+              const urgency = 1 - THREE.MathUtils.clamp((approach - 5) / 27, 0, 1);
+              const pulse = .5 + .5 * Math.sin(time * 3.1 + (Number(object.id) || 0) * .67);
+              const cueScale = (.018 + urgency * .036) * (.78 + pulse * .22);
+              const overhead = ['arch', 'branch', 'gate'].includes(object.type);
+              flashColor.set(overhead ? '#8ff2d2' : '#ffd38b');
+              flashMatrix.makeScale(cueScale * 1.7, cueScale * .42, cueScale * .56);
+              flashMatrix.setPosition(
+                item.position.x,
+                item.position.y + (overhead ? 2.55 : object.type === 'rock' ? 1.42 : 1.05),
+                item.position.z + .055,
+              );
+              flashes.setColorAt(sparkCount, flashColor);
+              flashes.setMatrixAt(sparkCount++, flashMatrix);
+              hazardCueCount++;
             }
           }
         }

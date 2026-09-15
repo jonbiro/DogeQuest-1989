@@ -13,6 +13,13 @@ turns, stable repeat laps, and peaks of 238 draw calls, 32 geometries, eight
 textures and 107 objects. No browser errors were reported. This is desktop
 portrait emulation and resource regression evidence, not a phone FPS benchmark.
 
+Solid hazards also receive a small approach accent from the existing transient
+effect batch. It is limited to three upcoming objects, fades in over the final
+32 m, uses warm gold for jump hazards and mint for overhead hazards, and is
+absent in reduced-motion mode. Because it is object-local rather than a HUD
+banner, the cue improves reaction-time readability without covering the lane or
+adding another render resource.
+
 ## Weathered boulder silhouette
 
 The shared boulder mesh now has clipped, irregular faces rather than a spherical
