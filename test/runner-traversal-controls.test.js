@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {updateTraversalControls,updateTurnControls,traversalDescription} from '../src/runner/traversal-controls.js';
+import {updateTraversalControls,updateActionCueControls,updateTurnControls,traversalDescription} from '../src/runner/traversal-controls.js';
 import {createRun,act,step} from '../src/runner/world.js';
 function button(action) {
   const label={textContent:action.toUpperCase()};
-  return {dataset:{action},disabled:false,attributes:{},querySelector:()=>label,
+  return {dataset:{action},disabled:false,attributes:{},classList:{toggle(name,value){this[name]=value;}},querySelector:()=>label,
     setAttribute(key,value){this.attributes[key]=value;},removeAttribute(key){delete this.attributes[key];}};
 }
 function legacyTurnButton(action) {
@@ -98,4 +98,19 @@ test('traversal labels repair a stale shell even when its cached state is unchan
   assert.doesNotThrow(()=>updateTraversalControls([button],{jumpBuffer:0,slideNext:0,y:0,vy:0}));
   assert.equal(button.repairedLabel.textContent,'JUMP');
   assert.equal(button.disabled,false);
+});
+
+test('imminent action cues resolve to one matching thumb button',()=>{
+  const buttons=['jump','slide'].map(button);
+  updateActionCueControls(buttons,'↑ JUMP GAP');
+  assert.equal(buttons[0].dataset.actionCue,'active');
+  assert.equal(buttons[1].dataset.actionCue,undefined);
+  assert.equal(buttons[0].classList['action-cue'],true);
+  assert.equal(buttons[1].classList['action-cue'],false);
+  updateActionCueControls(buttons,'↓ DIVE · SLIDE');
+  assert.equal(buttons[0].dataset.actionCue,undefined);
+  assert.equal(buttons[1].dataset.actionCue,'active');
+  updateActionCueControls(buttons,'');
+  assert.equal(buttons[0].classList['action-cue'],false);
+  assert.equal(buttons[1].classList['action-cue'],false);
 });

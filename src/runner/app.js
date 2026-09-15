@@ -17,7 +17,7 @@ import {createPowerHud} from './power-hud.js';
 import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLink} from './trail-link.js';
 import {dailyTrail,restoredTrailSelection} from './daily-trail.js';
 import {trailRecordsFrom,trailBest} from './trail-records.js';
-import {updateTraversalControls,updateTurnControls,traversalDescription} from './traversal-controls.js';
+import {updateTraversalControls,updateActionCueControls,updateTurnControls,traversalDescription} from './traversal-controls.js';
 import {supportsMobileTilt,supportsTouchControls,noTiltController} from './tilt-platform.js';
 import {scoreBreakdown} from './score-breakdown.js';
 import {rematchFor} from './rematch.js';
@@ -1870,6 +1870,10 @@ function frame(now) {
     // Decision cues remain unthrottled so a last-moment warning is never held
     // behind the ten-hertz statistics refresh.
     setText('cue', run.practice ? practiceCue(run) : actionCue(run));
+    // Keep this small visual affordance optional so a cached shell that has
+    // not shipped the movement buttons yet can still refresh its cue safely.
+    if (typeof updateActionCueControls === 'function' && typeof traversalButtons !== 'undefined')
+      optionalFrameUi('action-cue-controls', () => updateActionCueControls(traversalButtons, textOf('cue')));
     if (Math.floor(run.time * 10) !== lastHud || run.ended) {
       lastHud = Math.floor(run.time * 10);
       setHTML('distance', `${Math.floor(run.distance-(run.practice?.start || 0))}<small> m</small>`);

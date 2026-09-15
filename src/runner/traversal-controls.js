@@ -58,6 +58,27 @@ export function updateTraversalControls(buttons, run) {
   }
 }
 
+// Resolve the quiet action cue onto the matching movement button. This is a
+// visual affordance only: the simulation still decides whether an input is
+// accepted, buffered, or unavailable. Keeping the state on the button means a
+// player can glance at the lower thumb shelf instead of translating a short
+// message in the play corridor into a control.
+export function updateActionCueControls(buttons, cue = '') {
+  const text = String(cue || '').toUpperCase();
+  const action = /SLIDE|DIVE|OVERHEAD/.test(text)
+    ? 'slide'
+    : /JUMP|GAP/.test(text) ? 'jump' : '';
+  for (const button of buttons || []) {
+    const type = button?.dataset?.action;
+    if (!['jump', 'slide'].includes(type)) continue;
+    const active = type === action;
+    button?.classList?.toggle?.('action-cue', active);
+    if (!button?.dataset) continue;
+    if (active) button.dataset.actionCue = 'active';
+    else delete button.dataset.actionCue;
+  }
+}
+
 // The runner can briefly pair a newer game bundle with an older cached shell.
 // Early shells rendered LEFT/RIGHT as a bare arrow without the nested <small>
 // label that the turn prompt later updates. Repair that small bit of markup in
