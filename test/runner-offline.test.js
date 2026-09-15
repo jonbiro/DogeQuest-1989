@@ -11,11 +11,11 @@ function fixture({mismatch=false,quota=false}={}) {
   const files=new Map([['index.html','<html>game</html>'],['game.js?v=abc','game()'],['tilt-controls.js','tilt()']]);
   const assets=[...files].map(([url,body])=>({url,sha256:createHash('sha256').update(body).digest('hex')}));
   const handlers={},stores=new Map([['another-app',new Map()],['biscuit-runner-offline-old',new Map()]]);
-  const state={online:true,skipped:false,claimed:false,fetches:0,status:200,storageFailed:false};
+  const state={online:true,skipped:false,claimed:false,fetches:0,fetchOptions:[],status:200,storageFailed:false};
   const worker={URL,Response,Uint8Array,crypto:webcrypto,registration:{scope},
     addEventListener:(name,fn)=>{handlers[name]=fn;},
     skipWaiting:async()=>{state.skipped=true;},clients:{claim:async()=>{state.claimed=true;}},
-    fetch:async input=>{state.fetches++;if(!state.online)throw Error('offline');const url=typeof input==='string'?input:input.url;return new Response(mismatch?'wrong':files.get(url.replace(scope,''))??'network',{status:state.status});},
+    fetch:async (input,options)=>{state.fetches++;state.fetchOptions.push(options||{});if(!state.online)throw Error('offline');const url=typeof input==='string'?input:input.url;return new Response(mismatch?'wrong':files.get(url.replace(scope,''))??'network',{status:state.status});},
     caches:{keys:async()=>[...stores.keys()],delete:async key=>stores.delete(key),open:async key=>{
       if(state.storageFailed)throw Error('storage unavailable');
       if(!stores.has(key))stores.set(key,new Map());const data=stores.get(key);
@@ -44,6 +44,7 @@ test('mismatched deployments and full storage never activate an incomplete cache
 test('online navigation stays fresh and unknown requests are not intercepted',async()=>{
   const f=fixture();await f.lifecycle('install');
   assert.equal(await (await f.request('./')).text(),'network');
+  assert.equal(f.state.fetchOptions.at(-1).cache,'no-cache');
   for(const path of ['../','qa.js','game.js?v=new','https://other.test/']) assert.equal(f.request(path,'cors'),undefined);
   assert.equal(f.request('index.html','navigate','POST'),undefined);
 });

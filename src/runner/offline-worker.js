@@ -63,7 +63,11 @@ worker.addEventListener('fetch', event => {
   if (request.mode === 'navigate' && (url.pathname === scope.pathname || url.pathname === scope.pathname + 'index.html')) {
     event.respondWith((async () => {
       try {
-        const response = await worker.fetch(request);
+        // Navigation is network-first, but an HTTP-cached document can still
+        // point at an older game bundle after a worker update. Bypass that
+        // cache so controllerchange reloads actually pick up the verified
+        // shell and its matching hashed assets.
+        const response = await worker.fetch(request, {cache: 'no-cache'});
         // A temporary host failure is not a new version of the game.
         return response.status >= 500 ? (await cachedResponse(absolute('index.html'))) || response : response;
       }

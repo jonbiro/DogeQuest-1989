@@ -15,11 +15,45 @@ export function installOfflineSupport({isBusy = () => false} = {}) {
   const retryDelay = mobile ? 4000 : 1500;
   let started = false;
   let timer = null;
+  let updateTimer = null;
+  let updateReady = false;
+  // A first controller claim is expected on a new install and should not
+  // reload the page. A later claim means a newer worker has finished its
+  // verified install; refresh an idle page so it cannot keep an old bundle
+  // (and its stale DOM assumptions) indefinitely.
+  let hadController = Boolean(navigator.serviceWorker.controller);
+  const busyNow = () => {
+    try { return Boolean(isBusy()); } catch { return true; }
+  };
+  const reloadWhenIdle = () => {
+    updateTimer = null;
+    if (!updateReady) return;
+    if (document.visibilityState === 'hidden' || busyNow()) {
+      updateTimer = window.setTimeout(reloadWhenIdle, retryDelay);
+      return;
+    }
+    updateReady = false;
+    if (typeof window.location?.reload === 'function') {
+      window.location.reload();
+    } else if (typeof window.location?.assign === 'function' && typeof window.location.href === 'string') {
+      window.location.assign(window.location.href);
+    }
+  };
+  const controllerChanged = () => {
+    if (!hadController) {
+      hadController = true;
+      return;
+    }
+    updateReady = true;
+    if (status.dataset) status.dataset.updateReady = 'true';
+    status.textContent = 'A new Puppy Run update is ready. Finish this run, then the trail will refresh.';
+    if (updateTimer === null) reloadWhenIdle();
+  };
+  if (typeof navigator.serviceWorker.addEventListener === 'function')
+    navigator.serviceWorker.addEventListener('controllerchange', controllerChanged);
   const start = async () => {
     if (started) return;
-    const busy = (() => {
-      try { return Boolean(isBusy()); } catch { return true; }
-    })();
+    const busy = busyNow();
     if (document.visibilityState === 'hidden' || busy) {
       schedule(retryDelay);
       return;
@@ -27,6 +61,7 @@ export function installOfflineSupport({isBusy = () => false} = {}) {
     started = true;
     try {
       const registration = await navigator.serviceWorker.register('./offline-worker.js', {updateViaCache: 'none'});
+      if (navigator.serviceWorker.controller) hadController = true;
       const ready = () => { status.textContent = 'Offline play is ready in this browser. Reopen this runner address without internet. Visit online for updates. Your browser may clear offline files when storage is low.'; };
       if (registration.active) ready();
       const watch = () => {
@@ -38,7 +73,8 @@ export function installOfflineSupport({isBusy = () => false} = {}) {
       };
       watch();
       registration.addEventListener('updatefound', watch);
-      // Never reload on controllerchange: updates must not interrupt a run.
+      // A controllerchange listener above refreshes only when the page is idle;
+      // an active run remains uninterrupted and reloads after it returns to camp.
     } catch {
       status.textContent = 'Offline storage is unavailable. You can still play online.';
     }
