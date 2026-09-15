@@ -748,6 +748,42 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
   alternateSprite.visible = false;
   alternateSprite.renderOrder = 2.022;
   group.add(alternateSprite);
+
+  // The hanging paintings intentionally leave a small opening between the
+  // raised paws. On a pale sky it reads as air; over the dark gantry or trail
+  // it reads as a distracting black hole. A feathered, low-opacity backing
+  // keeps that opening light enough to read as space while preserving the
+  // painted silhouette and the cable hardware in front of it.
+  const hangOpeningCanvas = typeof document === 'undefined' ? null : document.createElement('canvas');
+  let hangOpening = null;
+  if (hangOpeningCanvas) {
+    hangOpeningCanvas.width = hangOpeningCanvas.height = 128;
+    const context = hangOpeningCanvas.getContext('2d');
+    if (context) {
+      const gradient = context.createRadialGradient(64, 57, 4, 64, 57, 58);
+      gradient.addColorStop(0, 'rgba(255,238,202,.78)');
+      gradient.addColorStop(.44, 'rgba(255,224,174,.42)');
+      gradient.addColorStop(.78, 'rgba(255,218,164,.12)');
+      gradient.addColorStop(1, 'rgba(255,218,164,0)');
+      context.fillStyle = gradient;
+      context.fillRect(0, 0, 128, 128);
+      hangOpening = new THREE.Sprite(new THREE.SpriteMaterial({
+        map: new THREE.CanvasTexture(hangOpeningCanvas),
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+        fog: true,
+        toneMapped: true,
+        opacity: .72,
+      }));
+      hangOpening.name = 'puppy-hang-opening-light';
+      hangOpening.frustumCulled = false;
+      hangOpening.visible = false;
+      hangOpening.renderOrder = 2.001;
+      group.add(hangOpening);
+    }
+  }
+
   const poseSprites = {
     idle: bodySprite,
     stride: strideSprite,
@@ -1600,6 +1636,30 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
       sprite.scale.set(output.scaleX, output.scaleY, 1);
       sprite.position.set(output.x, output.y, basePosition.z);
       lastPoseOutput = output;
+    }
+
+    if (hangOpening) {
+      const openingVisible = activeBasePose === 'hang';
+      hangOpening.visible = openingVisible;
+      if (openingVisible) {
+        // In the authored hang frame the opening sits just above the head.
+        // Follow the same eased transform as the active painting so the glow
+        // cannot detach when the two hang beats trade places.
+        hangOpening.position.set(
+          lastPoseOutput.x,
+          lastPoseOutput.y + lastPoseOutput.scaleY * .235,
+          0.001,
+        );
+        hangOpening.scale.set(
+          Math.abs(lastPoseOutput.scaleX) * .30,
+          lastPoseOutput.scaleY * .22,
+          1,
+        );
+        hangOpening.material.rotation = lastPoseOutput.rotation;
+        hangOpening.material.opacity = reducedMotion ? .58 : .72;
+      } else {
+        hangOpening.material.opacity = 0;
+      }
     }
 
     // Keep wardrobe plates aligned to the currently selected painting. They

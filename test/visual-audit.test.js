@@ -65,6 +65,15 @@ test('painted puppy poses inherit world atmosphere and ease frame transforms', (
   assert.match(artwork, /THREE\.MathUtils\.lerp\(poseTransitionFrom\.scaleX/);
 });
 
+test('hanging poses keep the raised-paw opening readable over dark scenery', () => {
+  assert.match(artwork, /puppy-hang-opening-light/);
+  assert.match(artwork, /hangOpening\.renderOrder = 2\.001/);
+  assert.match(artwork, /gradient\.addColorStop\(0, 'rgba\(255,238,202,\.78\)'\)/);
+  assert.match(artwork, /const openingVisible = activeBasePose === 'hang'/);
+  assert.match(artwork, /hangOpening\.position\.set\(\s*lastPoseOutput\.x,\s*lastPoseOutput\.y \+ lastPoseOutput\.scaleY \* \.235/);
+  assert.match(artwork, /hangOpening\.material\.opacity = reducedMotion \? \.58 : \.72/);
+});
+
 test('the live runner never layers Mochi’s legacy polygon rig under the paintings', () => {
   const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
   assert.match(render, /mochi\.group\.visible = false/);
