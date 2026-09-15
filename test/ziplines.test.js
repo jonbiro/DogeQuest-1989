@@ -74,6 +74,7 @@ test('zipline hardware gives the hanging pose a warm, visible handhold', () => {
   assert.match(renderSource, /toneMapped: false/);
   assert.match(renderSource, /ziplineSpine/);
   assert.match(renderSource, /child\.visible=ziplineSpineVisible\(object,distance/);
+  assert.match(renderSource, /child\.material\.opacity=ziplineSpineOpacity\(object,distance/);
 });
 
 test('following zipline cues collects all eighteen bones and the gift without a magnet',()=>{

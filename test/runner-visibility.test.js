@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {objectVisible,ziplineSignVisible,ziplineSpineVisible,OBJECT_HORIZON} from '../src/runner/visibility.js';
+import {objectVisible,ziplineSignVisible,ziplineSpineOpacity,ziplineSpineVisible,OBJECT_HORIZON} from '../src/runner/visibility.js';
 
 test('overhead structures leave the chase-camera corridor only after their collision plane', () => {
   for (const type of ['arch','branch','gate','choice-left','choice-right','zipline-start','zipline-end','minecart-start','minecart-end']) {
@@ -41,8 +41,9 @@ test('zipline instructions clear the rising dog while the actual station stays v
 
 test('zipline centre support clears before it can cut through the hanging pose',()=>{
   const station={type:'zipline-start',at:650};
-  assert.equal(ziplineSpineVisible(station,630),true,'distant gantry remains a landmark');
-  assert.equal(ziplineSpineVisible(station,635),true,'support stays visible outside the catch approach');
-  assert.equal(ziplineSpineVisible(station,636),false,'support clears before the dog reaches it');
-  assert.equal(ziplineSpineVisible(station,640,{ziplining:true}),false,'support stays hidden while riding');
+  assert.equal(ziplineSpineOpacity(station,630),1,'distant gantry remains a landmark');
+  assert.equal(ziplineSpineOpacity(station,635),7 / 12,'support fades through the final approach');
+  assert.equal(ziplineSpineVisible(station,641),true,'the fade keeps a soft landmark at eight metres');
+  assert.equal(ziplineSpineVisible(station,642),false,'support clears before the dog reaches it');
+  assert.equal(ziplineSpineOpacity(station,640,{ziplining:true}),0,'support stays hidden while riding');
 });

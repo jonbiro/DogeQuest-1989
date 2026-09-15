@@ -5,7 +5,7 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
 import { LANES, PICKUPS, seededRandom } from "./world.js";
 import { createRouteSampler } from "./route.js";
 import { upcomingCorner } from "./turns.js";
-import { objectVisible, ziplineSignVisible, ziplineSpineVisible } from "./visibility.js";
+import { objectVisible, ziplineSignVisible, ziplineSpineOpacity, ziplineSpineVisible } from "./visibility.js";
 import { createCornerRoad } from "./corner-road.js";
 import { PUPPIES, DEFAULT_PUPPY } from "./collection.js";
 import { puppyVisual } from "./puppy-visuals.js";
@@ -1137,7 +1137,10 @@ export function createView(canvas) {
     }
     box(station, "#cf9e61", 0, 6.5, 0, 9.5, .4, .6);
     if (type === "zipline-start") {
-      const ziplineSpine = box(station, "#25494d", 0, 4.75, 0, .08, 3.5, .08);
+      const ziplineSpine = box(station, "#a7794d", 0, 4.75, 0, .08, 3.5, .08);
+      ziplineSpine.material = ziplineSpine.material.clone();
+      ziplineSpine.material.transparent = true;
+      ziplineSpine.material.depthWrite = false;
       ziplineSpine.userData.ziplineSpine = true;
       box(station, "#185965", 0, 3, 0, 6.5, .24, .24);
       // Three visible grips show that jumping can catch from any lane.
@@ -1744,8 +1747,11 @@ export function createView(canvas) {
             // puppy. Once the handle is caught, leave only the actual cable
             // and handle in the silhouette gap; the support otherwise reads
             // as a black pole through the dog's raised arms.
-            if (child.userData.ziplineSpine)
-              child.visible=ziplineSpineVisible(object,distance,{ziplining:Boolean(run.zipline)});
+            if (child.userData.ziplineSpine) {
+              const spineState = {ziplining:Boolean(run.zipline)};
+              child.visible=ziplineSpineVisible(object,distance,spineState);
+              child.material.opacity=ziplineSpineOpacity(object,distance,spineState);
+            }
           }
           item.position.set(
             LANES[object.lane],

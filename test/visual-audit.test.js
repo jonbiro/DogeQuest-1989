@@ -102,7 +102,9 @@ test('corner landmarks make the turn direction clear without becoming giant sign
   assert.match(render, /child\.userData\.cornerArrowBaseScale/);
   assert.match(visibility, /'corner-left', 'corner-right'/);
   assert.match(visibility, /export function ziplineSpineVisible/);
+  assert.match(visibility, /export function ziplineSpineOpacity/);
   assert.match(render, /ziplineSpineVisible\(object,distance/);
+  assert.match(render, /ziplineSpineOpacity\(object,distance/);
 });
 
 test('trail collectibles get a visible authored scale and gentle pulse', () => {
