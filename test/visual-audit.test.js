@@ -99,6 +99,9 @@ test('trail collectibles get a visible authored scale and gentle pulse', () => {
   assert.match(render, /boneOutlineMatrix\.copy\(item\.matrix\)\.scale\(boneOutlineScale\)/);
   assert.match(render, /boneOutlineBatch\.begin\(\)/);
   assert.match(render, /boneOutlineBatch\.end\(\)/);
+  assert.match(render, /const PICKUP_GLOW_COLORS = Object\.freeze/);
+  assert.match(render, /pickupGlintCount < 3/);
+  assert.match(render, /PICKUP_GLOW_COLORS\[object\.type\]/);
   assert.match(render, /templates\.bone\.scale\.setScalar\(1\.88\)/);
   assert.match(render, /const bonePulse = reducedMotion/);
   assert.match(render, /Math\.sin\(time \* 2\.6 \+ \(Number\(object\.id\) \|\| 0\) \* \.61\)/);

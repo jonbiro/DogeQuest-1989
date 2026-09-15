@@ -48,6 +48,17 @@ import {createMinecartModel} from './minecart-model.js';
 import {createRiverBanks} from './river-banks.js';
 import {createPuppyArtwork,PUPPY_HANG_HANDLE_HEIGHT} from './puppy-artwork.js';
 
+const PICKUP_GLOW_COLORS = Object.freeze({
+  magnet: '#8ff2e7',
+  shield: '#b9edff',
+  gem: '#edb5ff',
+  double: '#ffe08c',
+  heart: '#ffb4c8',
+  gift: '#e8c5ff',
+  zoomies: '#d9f58c',
+  relic: '#e8c7ff',
+});
+
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
   // Resolve the device profile before asking the browser for a context. The
@@ -1585,6 +1596,7 @@ export function createView(canvas) {
       boneOutlineBatch.begin();
       boneBatch.begin();
       let boneGlintCount = 0;
+      let pickupGlintCount = 0;
       let hazardCueCount = 0;
       if (!menu)
         for (const object of run.objects) {
@@ -1648,6 +1660,30 @@ export function createView(canvas) {
           item.rotation.x = pickup ? 0 : frame.pitch;
           item.rotation.y += frame.yaw;
           item.rotation.order = 'YXZ';
+          if (pickup && !bone && !object.used && !object.passed &&
+              !reducedMotion && !run.ended && pickupGlintCount < 3 &&
+              sparkCount < 192) {
+            // A single color-matched sparkle gives the nearest special pickup
+            // a readable focal point without outlining every collectible or
+            // adding another scene object. The approach cap keeps the cue from
+            // turning into a flashing wall on dense rows.
+            const approach = object.at - distance;
+            if (approach > 4 && approach < 42) {
+              const depthFade = 1 - THREE.MathUtils.clamp((approach - 4) / 38, 0, 1);
+              const glintPulse = .5 + .5 * Math.sin(time * 3.6 + (Number(object.id) || 0) * .61);
+              const glintScale = (.024 + glintPulse * .026) * (.76 + depthFade * .24);
+              flashColor.set(PICKUP_GLOW_COLORS[object.type] || '#fff0b7');
+              flashMatrix.makeScale(glintScale, glintScale * 1.55, glintScale);
+              flashMatrix.setPosition(
+                item.position.x,
+                item.position.y + .58 + glintPulse * .05,
+                item.position.z + .055,
+              );
+              flashes.setColorAt(sparkCount, flashColor);
+              flashes.setMatrixAt(sparkCount++, flashMatrix);
+              pickupGlintCount++;
+            }
+          }
           if(bone) {
             // Give each bone a quiet, phase-shifted shimmer. Bones use one
             // instanced transform, so this is a scale-only beat that costs no
