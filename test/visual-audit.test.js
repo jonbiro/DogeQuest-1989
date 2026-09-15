@@ -41,6 +41,10 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(shell, /Tap LEFT or RIGHT for one lane\. One short swipe also works/);
   assert.match(shell, /Tap JUMP over logs and gaps\. Swipe up is optional/);
   assert.match(shell, /Tap SLIDE under overhead gates\. Swipe down is optional/);
+  assert.match(app, /fetchButton\.style\?\.setProperty\?\.\('--fetch-progress'/);
+  assert.match(app, /fetchButton\.dataset\.fetchState/);
+  assert.match(css, /#controls #fetch::before/);
+  assert.match(css, /conic-gradient\(from -90deg, #8fe7db var\(--fetch-progress\)/);
 });
 
 test('painted puppy poses inherit world atmosphere and ease frame transforms', () => {

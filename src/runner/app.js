@@ -1905,6 +1905,18 @@ function frame(now) {
       if (scene?.dataset) scene.dataset.fetchUses = String(run.fetchUses);
       if (fetchButton) {
         const ready = fetchReady(run);
+        // Keep the charge visible without adding another HUD panel. The ring
+        // is a glanceable progress cue for touch players and remains useful
+        // when the button text is shortened on a narrow phone.
+        const fetchCharge = Number.isFinite(run.fetchCharge)
+          ? Math.max(0, Math.min(100, run.fetchCharge))
+          : 0;
+        fetchButton.style?.setProperty?.('--fetch-progress', `${fetchCharge}%`);
+        if (fetchButton.dataset) fetchButton.dataset.fetchState = run.fetchTime > 0
+          ? 'active'
+          : run.magnet > 0
+            ? 'magnet'
+            : ready ? 'ready' : 'charging';
         if (fetchButton.disabled && ready) tone('ready');
         fetchButton.disabled = !ready;
         fetchButton.classList.toggle('ready', !fetchButton.disabled);
