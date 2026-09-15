@@ -1748,9 +1748,10 @@ export function createView(canvas) {
           const impact=effect.type==='hit'||effect.type==='shield-break';
           const landing=effect.type==='land';
           const takeoff=effect.type==='jump';
-          const size=(impact?.14:landing?.075:takeoff?.052:.07)*(1-age/.45);
-          const spread=landing?4.5:takeoff?2.2:impact?5:3;
-          const lift=landing?1.4:takeoff?1.0:2;
+          const nearMiss=effect.type==='near-miss';
+          const size=(impact?.14:landing?.075:takeoff?.052:nearMiss?.095:.07)*(1-age/.45);
+          const spread=landing?4.5:takeoff?2.2:impact?5:nearMiss?3.6:3;
+          const lift=landing?1.4:nearMiss?1.6:2;
           for (let i = 0; i < 6 && sparkCount < 192; i++) {
             const angle = (i * Math.PI) / 3;
             flashMatrix.makeScale(

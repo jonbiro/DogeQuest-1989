@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createRun,step} from '../src/runner/world.js';
+import {createRun,step,NEAR_MISS_REWARD} from '../src/runner/world.js';
 import {scoreBreakdown} from '../src/runner/score-breakdown.js';
 import {bankRun} from '../src/runner/rewards.js';
 import {collectionFrom} from '../src/runner/collection.js';
@@ -48,4 +48,21 @@ test('score details explain included bonuses without counting them twice',()=>{
     'Score sources: 100 distance + 250 bones + 150 trail bonuses = 500 points. Trail bonuses include 100 from bone streaks and 50 from clean-move streaks; these are already in your score.');
   assert.equal(scoreBreakdown({distance:0,bonePoints:0,bonusPoints:0,score:0}),
     'Score sources: 0 distance + 0 bones + 0 trail bonuses = 0 points.');
+});
+
+test('a last-second lane dodge earns one quiet near-miss reward',()=>{
+  const run=createRun(1);
+  Object.assign(run,{objects:[{id:1,type:'log',lane:0,at:.55,used:false}],nextRow:Infinity,nextChoice:Infinity,nextZipline:Infinity,nextMinecart:Infinity});
+  run.lane=1;
+  // Start inside the edge of the left lane, then let the spring carry the
+  // puppy back toward center as the log crosses its collision plane.
+  run.x=-1.25;
+  for(let i=0;i<20&&run.nearMisses===0;i++) step(run,1/120);
+  assert.equal(run.nearMisses,1);
+  assert.equal(run.nearMissPoints,NEAR_MISS_REWARD);
+  assert.equal(run.bonusPoints,NEAR_MISS_REWARD);
+  assert.match(scoreBreakdown(run),/15 from near misses/);
+  const points=run.nearMissPoints;
+  step(run,1/120);
+  assert.equal(run.nearMissPoints,points,'the passed hazard cannot pay twice');
 });

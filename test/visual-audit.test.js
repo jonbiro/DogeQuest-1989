@@ -61,6 +61,8 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(app, /updateLaneCueControls\(turnButtons, textOf\('cue'\)\)/);
   assert.match(app, /boneStreakLabel\(run\.combo\)/);
   assert.match(app, /setProperty\('streak-progress', 'value', streak\.progress\)/);
+  assert.match(app, /event === "near-miss"/);
+  assert.match(app, /run\.nearMisses\)/);
   assert.match(shell, /id="streak" class="streak" hidden/);
   assert.match(shell, /id="streak-progress" max="10" value="0"/);
   assert.match(css, /\.streak\.streak-hot/);

@@ -723,6 +723,7 @@ function finish() {
   const courses = run.regionalCourses.reduce((sum,count)=>sum+count,0);
   if (courses) $("run-highlights").textContent += ` · ${courses} clean regional ${courses === 1 ? 'course' : 'courses'}`;
   if (run.relics) $("run-highlights").textContent += ` · ${run.relics} area ${run.relics === 1 ? 'relic' : 'relics'} found`;
+  if (run.nearMisses) $("run-highlights").textContent += ` · ${run.nearMisses} near ${run.nearMisses === 1 ? 'miss' : 'misses'}`;
   const {missionPoints: reward, prizes} = receipt;
   $("overlay-copy").textContent +=
     ` +${run.score.toLocaleString()} upgrade points earned. Spend them at camp.`;
@@ -1823,6 +1824,7 @@ function frame(now) {
       if (event === "streak" || event === 'flow') {
         tone("reward");
       }
+      if (event === "near-miss") tone(610, 0.05);
       if (event === "clear" || event === 'weave') tone(540, 0.08);
       if (event === "turn-left" || event === "turn-right") tone(680, 0.1);
       if (event === "course-complete" || event === "course-recovery") tone('reward');

@@ -6,6 +6,7 @@ export function scoreBreakdown(run) {
   if(run.ziplines>0)included.push(`${format(run.ziplines*250)} from zipline rides`);
   if(run.minecarts>0)included.push(`${format(run.minecarts*250)} from mine-cart rides`);
   if(run.streakPoints>0)included.push(`${format(run.streakPoints)} from bone streaks`);
+  if(run.nearMissPoints>0)included.push(`${format(run.nearMissPoints)} from near misses`);
   if(run.flowPoints>0)included.push(`${format(run.flowPoints)} from clean-move streaks`);
   if(run.relicPoints>0)included.push(`${format(run.relicPoints)} from area relics`);
   if(run.pickupBonusPoints>0)included.push(`${format(run.pickupBonusPoints)} from gems, gifts and spare pickups`);

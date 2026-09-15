@@ -41,6 +41,7 @@ export const BASE_SLIDE_DURATION = .58;
 export const SLIDE_UPGRADE_DURATION = .07;
 export const HAZARDS = [...SOLID_HAZARDS,"gap"];
 export const AREA_RELIC_REWARD = 160;
+export const NEAR_MISS_REWARD = 15;
 export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart", 'gift', 'zoomies', 'relic'];
 export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = CURRENT_TRAIL_VERSION) {
   generatorVersion=supportsTrailVersion(generatorVersion)?generatorVersion:CURRENT_TRAIL_VERSION;
@@ -64,6 +65,8 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     fetchTime: 0,
     fetchUses: 0,
     smashes: 0,
+    nearMisses: 0,
+    nearMissPoints: 0,
     bonusPoints: 0,
     pickupBonusPoints: 0,
     bonePoints: 0,
@@ -596,6 +599,20 @@ export function step(run, dt) {
         if (run.zoomies === 0) { chargeFetch(run, 12); cleanMove(run); }
         run.bonusPoints += object.skillReward || 20;
         run.events.push("clear");
+      }
+      // A dodge is only a near miss when the puppy was still inside the
+      // hazard's lane envelope on the previous fixed step, then crossed out
+      // of it before the collision plane. Ordinary scenery in another lane
+      // never qualifies, and the passed flag keeps the reward one-shot.
+      const previousX = Number.isFinite(run.previous?.x) ? run.previous.x : run.x;
+      const previousNear = Math.abs(LANES[object.lane] - previousX) < 1.75;
+      const dodgedAtTheLine = !sameLane && previousNear;
+      if (dodgedAtTheLine) {
+        run.nearMisses++;
+        run.nearMissPoints += NEAR_MISS_REWARD;
+        run.bonusPoints += NEAR_MISS_REWARD;
+        run.events.push('near-miss');
+        run.effects.push({id:object.id,type:'near-miss',time:run.time,x:run.x,y:run.y+.72});
       }
       if (sameLane && !cleared && run.invulnerable === 0) {
         object.used = true;
