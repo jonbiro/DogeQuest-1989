@@ -1763,6 +1763,12 @@ canvas:focus-visible {
      footprint so the final reward card can always scroll fully above it. */
   padding-bottom: 92px;
 }
+/* The shop uses the same fixed action shelf as the clubhouse. Keep a quiet
+   landing zone after the final upgrade so its description and progress meter
+   can scroll fully above the shelf on short phone viewports. */
+#overlay[data-kind="shop"] .modal-content #upgrades {
+  padding-bottom: 92px;
+}
 #overlay[data-kind="kennel"] .modal-content #collection[data-category="passport"] > #trail-passport {
   width: 100%;
 }
