@@ -724,6 +724,32 @@ export function createView(canvas) {
   shadow.rotation.x = -Math.PI / 2;
   shadow.position.y = 0.13;
   scene.add(shadow);
+  // Give the menu's featured puppy a quiet pool of light so his painted fur
+  // stays readable against the moving landscape. This lives in the WebGL
+  // scene (rather than as a CSS overlay), which keeps the glow locked to the
+  // same camera parallax as Mochi and disappears entirely once a run starts.
+  const menuGlowCanvas = document.createElement("canvas");
+  menuGlowCanvas.width = menuGlowCanvas.height = 128;
+  const menuGlowContext = menuGlowCanvas.getContext("2d");
+  const menuGlowGradient = menuGlowContext.createRadialGradient(64, 58, 8, 64, 64, 64);
+  menuGlowGradient.addColorStop(0, "rgba(255,239,184,.52)");
+  menuGlowGradient.addColorStop(.42, "rgba(205,240,190,.22)");
+  menuGlowGradient.addColorStop(1, "rgba(205,240,190,0)");
+  menuGlowContext.fillStyle = menuGlowGradient;
+  menuGlowContext.fillRect(0, 0, 128, 128);
+  const menuGlow = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: new THREE.CanvasTexture(menuGlowCanvas),
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false,
+    opacity: .9,
+  }));
+  menuGlow.name = "menu-puppy-spotlight";
+  menuGlow.position.set(0, 1.08, -.08);
+  menuGlow.scale.set(3.9, 3.25, 1);
+  menuGlow.renderOrder = 1.9;
+  scene.add(menuGlow);
   const aura = new THREE.Mesh(
     new THREE.SphereGeometry(1.4, 20, 12),
     createShieldMaterial(),
@@ -1287,7 +1313,12 @@ export function createView(canvas) {
         dog.scale.z*=crouch.scaleZ;
         if(y<=.1&&!run.zipline)personality.legs=personality.legs.map((angle,i)=>THREE.MathUtils.lerp(angle,crouch.legs[i],crouch.amount));
       }
+      // The landing-page puppy is a featured character, not a gameplay hitbox.
+      // A small presentation boost keeps the painted silhouette legible on
+      // portrait phones without changing collision dimensions or run timing.
+      if (menu) dog.scale.multiplyScalar(camera.aspect < .85 ? 1.1 : 1.06);
       dog.visible = true;
+      menuGlow.visible = state === "menu";
       raftModel.visible=!menu&&(Boolean(run.raft)||Boolean(river&&distance<river.start));
       if(run.raft&&!menu){
         raftModel.position.set(x,0,0);
@@ -1554,7 +1585,7 @@ export function createView(canvas) {
         const mobile = camera.aspect < 0.85;
         camera.position.set(6, mobile ? 4 : 3.3, mobile ? 11 : 7.7);
         const compact = mobile && canvas.clientHeight<=700 && canvas.clientHeight>520;
-        camera.lookAt(mobile ? -1 : -3.5, mobile ? compact ? .5 : 2.2 : 1.25, 0);
+        camera.lookAt(mobile ? -1.2 : -3.5, mobile ? compact ? .5 : 2.08 : 1.25, 0);
       } else {
         if (state === "playing") {
           cameraX += (x - cameraX) * (1 - Math.exp(-5 * dt));

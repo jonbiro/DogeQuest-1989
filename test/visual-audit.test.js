@@ -64,6 +64,14 @@ test('the live runner never layers Mochi’s legacy polygon rig under the painti
   assert.match(render, /camera\.fov=48;camera\.aspect = 1; camera\.position\.set\(0,2\.0,3\.1\)/);
 });
 
+test('the mobile menu keeps the featured puppy visible without competing with the title', () => {
+  const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
+  assert.match(render, /menu-puppy-spotlight/);
+  assert.match(render, /menuGlow\.visible = state === "menu"/);
+  assert.match(render, /if \(menu\) dog\.scale\.multiplyScalar\(camera\.aspect < \.85 \? 1\.1 : 1\.06\)/);
+  assert.match(render, /camera\.lookAt\(mobile \? -1\.2 : -3\.5, mobile \? compact \? \.5 : 2\.08 : 1\.25, 0\)/);
+});
+
 test('trail collectibles get a visible authored scale and gentle pulse', () => {
   const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
   assert.match(render, /templates\.bone\.scale\.setScalar\(1\.72\)/);
