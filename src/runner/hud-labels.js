@@ -41,3 +41,33 @@ export function missionSummaryLabel(mission, progress, position = 1, total = 3) 
   const count = Number.isFinite(Number(total)) ? Math.max(place, Math.floor(Number(total))) : 3;
   return `${place}/${count} · ${title} · ${Math.min(current, target)}/${target}`;
 }
+
+// Keep the live reward loop compact enough for the portrait HUD. The runner
+// already tracks a bone combo in the simulation; this turns that value into a
+// small, deterministic display model without coupling the HUD to world state.
+export function boneStreakLabel(combo, target = 10) {
+  const count = Number.isFinite(Number(combo)) ? Math.max(0, Math.floor(Number(combo))) : 0;
+  const goal = Number.isFinite(Number(target)) ? Math.max(2, Math.floor(Number(target))) : 10;
+  if (count < 2) {
+    return {
+      count,
+      target: goal,
+      progress: 0,
+      remaining: goal,
+      visible: false,
+      label: '',
+      detail: '',
+    };
+  }
+  const progress = count % goal || goal;
+  const remaining = progress === goal ? 0 : goal - progress;
+  return {
+    count,
+    target: goal,
+    progress,
+    remaining,
+    visible: true,
+    label: `BONE STREAK ×${count}`,
+    detail: remaining === 0 ? '+100 BONUS EARNED' : `${remaining} to +100`,
+  };
+}

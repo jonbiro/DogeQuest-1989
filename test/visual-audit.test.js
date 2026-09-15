@@ -59,6 +59,12 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(css, /@keyframes lane-cue-pulse/);
   assert.match(app, /updateActionCueControls\(traversalButtons, textOf\('cue'\)\)/);
   assert.match(app, /updateLaneCueControls\(turnButtons, textOf\('cue'\)\)/);
+  assert.match(app, /boneStreakLabel\(run\.combo\)/);
+  assert.match(app, /setProperty\('streak-progress', 'value', streak\.progress\)/);
+  assert.match(shell, /id="streak" class="streak" hidden/);
+  assert.match(shell, /id="streak-progress" max="10" value="0"/);
+  assert.match(css, /\.streak\.streak-hot/);
+  assert.match(css, /@keyframes streak-pop/);
   assert.match(readFileSync(new URL('../src/runner/traversal-controls.js', import.meta.url), 'utf8'), /export function updateActionCueControls/);
   assert.match(readFileSync(new URL('../src/runner/traversal-controls.js', import.meta.url), 'utf8'), /export function updateLaneCueControls/);
 });

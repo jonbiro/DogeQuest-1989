@@ -1,6 +1,6 @@
 import { createRun, act, step } from "./world.js";
 import {createPracticeRun,createZiplinePracticeRun,createRaftPracticeRun,createTurnPracticeRun,createGapPracticeRun,createWeavePracticeRun,stepPractice,practiceCue,practiceResult,practiceOffer} from './practice.js';
-import {runHudLabels,missionSummaryLabel} from './hud-labels.js';
+import {runHudLabels,missionSummaryLabel,boneStreakLabel} from './hud-labels.js';
 import {courseProgress,activeCourse} from './courses.js';
 import {RESUME_DURATION,resumeStep} from './resume.js';
 import {installBackupControls} from './backup-ui.js';
@@ -587,6 +587,8 @@ function start() {
   currentMission = run.missions[0];
   missionAnnounced = false;
   lastHud = -1;
+  lastStreakCombo = -1;
+  streakFlashUntil = 0;
   toastUntil = 0;
   noticePriority = 0;
   for (const id of ['cue','route-choice','toast']) setText(id, '');
@@ -1799,6 +1801,8 @@ function drawScene(runState, now, screenState, motionReduced, delta, blend, coll
 let currentMission = missionFor(saved.challenges),
   missionAnnounced = false;
 let lastHud = -1;
+let lastStreakCombo = -1;
+let streakFlashUntil = 0;
 function frame(now) {
   try {
     const frameDt = (now - last) / 1000 || 0;
@@ -1887,6 +1891,24 @@ function frame(now) {
       setText('area-rhythm', labels.rhythm);
       setText('route-choice', routeChoiceCue(run));
       setText('bones', run.bones);
+      const streak = boneStreakLabel(run.combo);
+      const streakNode = $('streak');
+      if (streakNode) {
+        setHidden('streak', !streak.visible);
+        if (streak.visible) {
+          setText('streak-count', `×${streak.count}`);
+          setText('streak-detail', streak.detail);
+          setProperty('streak-progress', 'max', streak.target);
+          setProperty('streak-progress', 'value', streak.progress);
+          setAttribute('streak', 'aria-label', `${streak.label}. ${streak.detail}`);
+          setData('streak', 'level', Math.min(3, Math.ceil(streak.count / 5)));
+        } else {
+          setData('streak', 'level', '0');
+        }
+        if (run.combo > lastStreakCombo && run.combo >= 2) streakFlashUntil = run.time + .5;
+        if (run.combo !== lastStreakCombo) lastStreakCombo = run.combo;
+        toggleClass('streak', 'streak-hot', streak.visible && run.time < streakFlashUntil);
+      }
       setText('run-score', labels.score);
       const progress = missionProgress(run, currentMission);
       const courseStatus=courseProgress(run);

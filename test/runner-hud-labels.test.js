@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {runHudLabels,missionSummaryLabel} from '../src/runner/hud-labels.js';
+import {runHudLabels,missionSummaryLabel,boneStreakLabel} from '../src/runner/hud-labels.js';
 import {createRun} from '../src/runner/world.js';
 import {createPracticeRun} from '../src/runner/practice.js';
 
@@ -34,4 +34,12 @@ test('portrait mission summaries stay scannable while preserving progress',()=>{
   assert.equal(missionSummaryLabel({metric:'regionalCourses',title:'Course conqueror',target:1},0,1,3),'1/3 · Course · 0/1');
   assert.equal(missionSummaryLabel({metric:'bestCombo',title:'Snack streak',target:10},7,2,3),'2/3 · Streak · 7/10');
   assert.equal(missionSummaryLabel({metric:'unknown',title:'A very long custom goal',target:4},9,0,3),'1/3 · A very long custom goal · 4/4');
+});
+
+test('bone streak labels stay quiet until a combo is worth showing, then expose bonus progress',()=>{
+  assert.equal(boneStreakLabel(0).visible,false);
+  assert.equal(boneStreakLabel(1).label,'');
+  assert.deepEqual(boneStreakLabel(2),{count:2,target:10,progress:2,remaining:8,visible:true,label:'BONE STREAK ×2',detail:'8 to +100'});
+  assert.equal(boneStreakLabel(10).detail,'+100 BONUS EARNED');
+  assert.equal(boneStreakLabel(12).progress,2);
 });
