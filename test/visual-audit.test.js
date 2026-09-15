@@ -57,6 +57,13 @@ test('painted puppy poses inherit world atmosphere and ease frame transforms', (
   assert.match(artwork, /THREE\.MathUtils\.lerp\(poseTransitionFrom\.scaleX/);
 });
 
+test('the live runner never layers Mochi’s legacy polygon rig under the paintings', () => {
+  const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
+  assert.match(render, /mochi\.group\.visible = false/);
+  assert.doesNotMatch(render, /mochi\.group\.visible = isMochi/);
+  assert.match(render, /camera\.fov=48;camera\.aspect = 1; camera\.position\.set\(0,2\.0,3\.1\)/);
+});
+
 test('trail collectibles get a visible authored scale and gentle pulse', () => {
   const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
   assert.match(render, /templates\.bone\.scale\.setScalar\(1\.72\)/);

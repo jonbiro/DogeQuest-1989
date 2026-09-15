@@ -533,7 +533,15 @@ export function createView(canvas) {
   cone(outfits.party, "#d97cf1", 0, 1.97, -.55, .36, .72, .36);
   ball(outfits.party, "#fff0a0", 0, 2.34, -.55, .12, .12, .12);
   const outfitPositions = Object.fromEntries(Object.entries(outfits).map(([id, group]) => [id, group.children.map(part => part.position.clone())]));
-  const mochi = createMochiModel(); dog.add(mochi.group); mochi.group.visible = false;
+  const mochi = createMochiModel();
+  dog.add(mochi.group);
+  // Mochi's old procedural rig remains allocated for pose diagnostics and
+  // backwards-compatible helpers, but it must never enter the live render.
+  // Keeping it visible for the default puppy layered a low-poly second dog
+  // underneath the authored paintings: ears and paws could peek through the
+  // transparent gaps, and clubhouse outfit portraits picked up the same
+  // polygon silhouette. Every selectable puppy now has one visual source.
+  mochi.group.visible = false;
   // The shipped puppy look is hand-painted raster artwork. Keep the old rig
   // alive for compatibility with the pose/diagnostic helpers, but take every
   // procedural dog part out of the render path so no low-poly pieces can peek
@@ -562,7 +570,11 @@ export function createView(canvas) {
     const puppy = PUPPIES[puppyId];
     const isMochi = puppyId === "mochi";
     const visual = puppyVisual(puppyId);
-    mochi.group.visible = isMochi;
+    // The active rig still supplies inexpensive timing data for diagnostics,
+    // but the illustrated stack is the only anatomy rendered for Mochi too.
+    // Do not re-enable the legacy procedural mesh when the default puppy is
+    // selected; it creates a duplicate silhouette behind the painting.
+    mochi.group.visible = false;
     for (const part of originalParts) part.visible = !isMochi;
     classicFur.group.visible = !isMochi;
     activeRig = isMochi ? mochi : classicRig;
@@ -1115,7 +1127,12 @@ export function createView(canvas) {
         // view. Avoid the old procedural rig's near-sideways turn here: a
         // large Y rotation makes billboarded raster layers drift apart.
         dog.position.set(0,0,0); dog.rotation.set(0,rear ? .35 : 0,0);
-        camera.fov=52;camera.aspect = 1; camera.position.set(0,2.0,3.4); camera.lookAt(0,1.1,0);
+        // Outfit cards are rendered from the same full-body painting as the
+        // runner. A slightly tighter portrait lens gives the visible coat
+        // enough scale to match the puppy cards; the older wide lens left a
+        // large quiet margin around every outfit and made the art feel
+        // unrelated even though it was the same illustration.
+        camera.fov=48;camera.aspect = 1; camera.position.set(0,2.0,3.1); camera.lookAt(0,1.14,0);
         camera.updateProjectionMatrix(); renderer.setSize(192,192,false);
         renderer.render(scene,camera);
         return canvas.toDataURL('image/png');
