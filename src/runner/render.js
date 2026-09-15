@@ -1311,6 +1311,8 @@ export function createView(canvas) {
     },
     draw(run, time, state, reducedMotion, dt, alpha = 1, collection, frameDt = dt) {
       const menu = ["menu", "help", "shop", "kennel"].includes(state);
+      const hero = state === "menu";
+      const mobileHero = hero && camera.aspect < .85;
       // Action paintings are warmed when a trail actually starts, not while the
       // menu idles. Streaming them on the menu uploaded textures the player had
       // not asked for and pushed mobile GPUs toward a context loss; deferring
@@ -1492,9 +1494,18 @@ export function createView(canvas) {
       else raftWater.mesh.visible=false;
       riverBanks.update(distance,frameAt,river);
       const cartSection=!menu&&run.minecartPrototype?minecartIntersecting(distance-12,distance+170):null;
+      // Portrait camp needs a slightly different stage mark than desktop:
+      // the headline occupies the left two thirds, while a centered origin
+      // leaves the puppy low and half-hidden behind the route. Give Mochi a
+      // small hero-only lift and rightward drift so his full silhouette reads
+      // as the character being chosen, not a piece of scenery. Keep sheets
+      // and gameplay on their established origin so their interaction and
+      // hit-test framing stay unchanged.
+      const heroOffsetX = mobileHero ? .16 : 0;
+      const heroOffsetY = mobileHero ? .14 : 0;
       dog.position.set(
-        menu ? 0 : x,
-        (menu ? 0 : y) +
+        hero ? heroOffsetX : menu ? 0 : x,
+        (hero ? heroOffsetY : menu ? 0 : y) +
           Math.abs(Math.sin(time * 12)) *
             (reducedMotion || (!menu && (state !== "playing" || y>.05 || run.slide>0 || run.zipline || run.raft || run.minecart)) ? 0 : 0.045),
         0,
@@ -1521,11 +1532,18 @@ export function createView(canvas) {
       // phones without changing collision dimensions or run timing. The
       // gameplay lift is deliberately smaller than the menu treatment so the
       // dog never crowds the fixed thumb controls.
-      if (menu) dog.scale.multiplyScalar(camera.aspect < .85 ? 1.14 : 1.09);
+      if (hero) dog.scale.multiplyScalar(camera.aspect < .85 ? 1.22 : 1.09);
       else dog.scale.multiplyScalar(camera.aspect < .85 ? 1.05 : 1.02);
       dog.visible = true;
-      menuGlow.visible = state === "menu";
-      menuContrast.visible = state === "menu";
+      menuGlow.visible = hero;
+      menuContrast.visible = hero;
+      if (hero) {
+        // Follow the same offset as the puppy. A static spotlight was centered
+        // on the old origin, so the enlarged portrait dog could drift out of
+        // its contrast pool on narrow phones.
+        menuGlow.position.set(heroOffsetX, 1.08 + heroOffsetY, -.08);
+        menuContrast.position.set(heroOffsetX, 1.08 + heroOffsetY, .01);
+      }
       const focusVisible = !menu && (state === "playing" || state === "paused");
       puppyFocus.visible = focusVisible;
       if (focusVisible) {

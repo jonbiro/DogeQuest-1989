@@ -76,10 +76,14 @@ test('the mobile menu keeps the featured puppy visible without competing with th
   const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
   assert.match(render, /menu-puppy-spotlight/);
   assert.match(render, /menu-puppy-contrast/);
-  assert.match(render, /menuContrast.visible = state === "menu"/);
-  assert.match(render, /menuGlow\.visible = state === "menu"/);
+  assert.match(render, /menuContrast\.visible = hero/);
+  assert.match(render, /menuGlow\.visible = hero/);
   assert.match(render, /if \(entry\.gateway && menu\) instanceMatrix\.scale\(bendScale\.set\(0,0,0\)\)/);
-  assert.match(render, /if \(menu\) dog\.scale\.multiplyScalar\(camera\.aspect < \.85 \? 1\.14 : 1\.09\)/);
+  assert.match(render, /const mobileHero = hero && camera\.aspect < \.85/);
+  assert.match(render, /const heroOffsetX = mobileHero \? \.16 : 0/);
+  assert.match(render, /const heroOffsetY = mobileHero \? \.14 : 0/);
+  assert.match(render, /if \(hero\) dog\.scale\.multiplyScalar\(camera\.aspect < \.85 \? 1\.22 : 1\.09\)/);
+  assert.match(render, /menuGlow\.position\.set\(heroOffsetX, 1\.08 \+ heroOffsetY, -\.08\)/);
   assert.match(render, /camera\.lookAt\(mobile \? -1\.2 : -3\.5, mobile \? compact \? \.5 : 2\.08 : 1\.25, 0\)/);
 });
 
