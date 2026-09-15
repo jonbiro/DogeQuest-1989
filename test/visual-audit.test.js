@@ -35,6 +35,7 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(css, /#mission-hud\[data-dock="mission-summary"\] #mission-label-mobile/);
   assert.match(app, /setText\('mission-label-mobile', missionSummaryLabel/);
   assert.match(css, /#overlay\[data-kind="help"\] \.basic-moves img \{ grid-column: 1; grid-row: 1 \/ span 3; width: 84px; height: 70px;/);
+  assert.match(css, /@media \(max-width: 430px\) and \(orientation: portrait\)[\s\S]*?#overlay\[data-kind="help"\] \.basic-moves \{\s*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(app, /Tap LEFT or RIGHT to steer\. Tap JUMP over logs and gaps, or SLIDE under overhead gates\. Swipes are optional/);
   assert.match(shell, /Tap LEFT or RIGHT for one lane\. One short swipe also works/);
   assert.match(shell, /Tap JUMP over logs and gaps\. Swipe up is optional/);

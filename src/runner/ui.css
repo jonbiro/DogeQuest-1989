@@ -2036,6 +2036,39 @@ canvas:focus-visible {
   }
 }
 
+/* Very narrow portrait phones need the complete quick-start lesson above the
+   fixed action shelf. Keep the three essential moves side by side at this
+   width, with a generous illustrated header and short, readable copy. The
+   detailed gesture accordions remain below for players who want more context. */
+@media (max-width: 430px) and (orientation: portrait) {
+  #overlay[data-kind="help"] .basic-moves {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin: 10px 0 14px;
+  }
+  #overlay[data-kind="help"] .basic-moves p {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+    min-height: 0;
+    padding: 8px 6px;
+  }
+  #overlay[data-kind="help"] .basic-moves img {
+    width: 100%;
+    height: 52px;
+    flex: none;
+  }
+  #overlay[data-kind="help"] .basic-moves strong {
+    font-size: 12px;
+    line-height: 1.2;
+  }
+  #overlay[data-kind="help"] .basic-moves span {
+    font-size: 10.5px;
+    line-height: 1.32;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .prize-card,
   .collection-card,
