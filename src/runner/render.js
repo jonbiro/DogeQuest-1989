@@ -1696,7 +1696,8 @@ export function createView(canvas) {
         // and fully neutralize it for reduced-motion users and result sheets.
         const cameraActive = state === 'playing' || state === 'paused';
         const routeBank = THREE.MathUtils.clamp(look.yaw * .07, -.075, .075);
-        const laneBank = THREE.MathUtils.clamp(lean * .22 + run.vx * .0015, -.055, .055);
+        const lateralVelocity = Number.isFinite(run.vx) ? run.vx : 0;
+        const laneBank = THREE.MathUtils.clamp(lean * .22 + lateralVelocity * .0015, -.055, .055);
         const actionBank = run.zipline ? lean * .08 : run.raft ? lean * .06 : run.minecart ? lean * .04 : 0;
         const targetRoll = !reducedMotion && cameraActive
           ? THREE.MathUtils.clamp(routeBank + laneBank + actionBank, -.105, .105)
