@@ -384,6 +384,7 @@ test("event notices reserve the dock for relevant feedback", () => {
   assert.deepEqual(eventNotice("hit", run), { text: "2 hearts left", priority: 3 });
   assert.deepEqual(eventNotice("hit", { hearts: 1 }), { text: "1 heart left", priority: 3 });
   assert.deepEqual(eventNotice("shield-break", run), { text: "Shield used", priority: 2 });
+  assert.deepEqual(eventNotice("minecart-end", run), { text: "Cart reached · +250", priority: 1 });
 });
 
 test("swipes accept natural thumb diagonals without guessing equal diagonals", () => {

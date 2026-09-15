@@ -69,7 +69,10 @@ function pendingCorner(run) {
 }
 
 export function turnPrompt(run) {
-  if (!run || run.ended || run.zipline) return null;
+  // Traversal rides own the horizontal input. Do not let a nearby decorative
+  // corner steal a left/right swipe while the puppy is on a raft or cart (or
+  // hanging from a cable).
+  if (!run || run.ended || run.zipline || run.raft || run.minecart) return null;
   const corner = pendingCorner(run);
   if (!corner) return null;
   const speed = Math.max(1, Number.isFinite(run.speed) ? run.speed : 1);

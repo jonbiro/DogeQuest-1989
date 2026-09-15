@@ -43,6 +43,8 @@ import {createMushroomCapGeometry} from './mushroom-cap.js';
 import {createTerrainMaterial,terrainStation} from './terrain-material.js';
 import {raftAt,raftIntersecting} from './rafts.js';
 import {createRaftModel} from './raft-model.js';
+import {minecartIntersecting} from './minecart.js';
+import {createMinecartModel} from './minecart-model.js';
 import {createRiverBanks} from './river-banks.js';
 import {createPuppyArtwork,PUPPY_HANG_HANDLE_HEIGHT} from './puppy-artwork.js';
 
@@ -430,6 +432,7 @@ export function createView(canvas) {
   const water = createWaterSurface(scene);
   const raftWater=createWaterSurface(scene);
   const raftModel=createRaftModel(mesh,boxGeometry,trunkGeometry);scene.add(raftModel);
+  const minecartModel=createMinecartModel(mesh,boxGeometry,trunkGeometry);scene.add(minecartModel);
   // The classic dogs share mobile-friendly geometry, but each has a distinct
   // silhouette. Proportions and face details are applied by puppyVisual().
   const dog = new THREE.Group();
@@ -960,6 +963,26 @@ export function createView(canvas) {
       const label=routeLabel(3.5,1.7,2);label.userData.ziplineSign=true;label.position.set(0,5.4,.47);station.add(label);
     }
   }
+  // Mine-cart stations are deliberately lower than the zipline gantry. They
+  // read as a new traversal beat at speed without filling the phone viewport
+  // with another overhead wall.
+  for (const type of ["minecart-start", "minecart-end"]) {
+    const station = new THREE.Group();
+    templates[type] = station;
+    const accent = type === 'minecart-start' ? '#f2c56d' : '#a7e59e';
+    for (const x of [-3.8, 3.8]) {
+      box(station, '#5c493d', x, 1.4, 0, .22, 2.8, .24);
+      box(station, accent, x, 2.65, 0, .42, .16, .32);
+    }
+    box(station, '#6d4934', 0, 2.65, 0, 8.1, .22, .28);
+    box(station, accent, 0, 3.05, .05, 3.2, .64, .12);
+    for (const x of [-1.15, 0, 1.15])
+      box(station, '#f8e7ae', x, 3.05, .14, .16, .42, .05);
+    if (type === 'minecart-start') {
+      const lamp = ball(station, '#ffe18a', 0, 1.75, .32, .20, .20, .12);
+      lamp.userData.lantern = true;
+    }
+  }
   const zipHandle = new THREE.Group(); scene.add(zipHandle);
   box(zipHandle, "#185965", 0, 0, 0, 1.6, .22, .22);
   for(const side of [-1,1]) box(zipHandle, "#a2ffde", side*.65, 0, .03, .3, .24, .24);
@@ -1170,11 +1193,12 @@ export function createView(canvas) {
       if(river)raftWater.update(distance,frameAt,false,dt,state==='playing'&&!reducedMotion,river,run.raft?x:null);
       else raftWater.mesh.visible=false;
       riverBanks.update(distance,frameAt,river);
+      const cartSection=!menu&&run.minecartPrototype?minecartIntersecting(distance-12,distance+170):null;
       dog.position.set(
         menu ? 0 : x,
         (menu ? 0 : y) +
           Math.abs(Math.sin(time * 12)) *
-            (reducedMotion || (!menu && (state !== "playing" || y>.05 || run.slide>0 || run.zipline || run.raft)) ? 0 : 0.045),
+            (reducedMotion || (!menu && (state !== "playing" || y>.05 || run.slide>0 || run.zipline || run.raft || run.minecart)) ? 0 : 0.045),
         0,
       );
       // Keep the illustrated artwork front-facing in camp. The source pose
@@ -1185,7 +1209,7 @@ export function createView(canvas) {
       dog.rotation.z = menu || reducedMotion ? 0 : lean * 0.3;
       dog.rotation.x = menu ? 0 : groundFrame.pitch + (reducedMotion ? 0 : pitch);
       dog.scale.setScalar(1);
-      const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:y>.1,sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline),rafting:!menu&&Boolean(run.raft)});
+      const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:y>.1&&!run.minecart,sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline),rafting:!menu&&Boolean(run.raft)});
       const crouch=activeRig===mochi?mochiCrouch((1-pose)/.54):null;
       dog.scale.y = ((crouch?.scaleY ?? pose) + personality.breathe) * (1-weight.compression);
       dog.scale.x = dog.scale.z = 1+weight.compression*.4;
@@ -1205,6 +1229,38 @@ export function createView(canvas) {
         raftModel.position.set(boarding.x+x*Math.cos(boarding.yaw),boarding.y,boarding.z-x*Math.sin(boarding.yaw));
         raftModel.rotation.set(boarding.pitch,boarding.yaw,0,'YXZ');
       }
+      minecartModel.visible=!menu&&!run.raft&&(
+        Boolean(run.minecart)||Boolean(cartSection&&distance<cartSection.start)
+      );
+      if(run.minecart&&!menu){
+        minecartModel.position.set(
+          groundFrame.x+x*Math.cos(groundFrame.yaw),
+          groundFrame.y,
+          groundFrame.z-x*Math.sin(groundFrame.yaw),
+        );
+        minecartModel.rotation.set(
+          groundFrame.pitch,
+          groundFrame.yaw+(reducedMotion?0:lean*.18),
+          0,
+          'YXZ',
+        );
+        // Give the puppy a little settling lift as the cart catches it. The
+        // authored cart body remains visible under the paws instead of making
+        // the ride look like a floating sprite.
+        dog.position.y+=.24+(run.minecart.boardingHeight||0)*Math.max(0,1-(run.time-run.minecart.boardedAt)/.22);
+      }else if(minecartModel.visible){
+        const boarding=frameAt(distance-cartSection.start);
+        minecartModel.position.set(boarding.x,boarding.y,boarding.z);
+        minecartModel.rotation.set(boarding.pitch,boarding.yaw,0,'YXZ');
+      }
+      const cartWheels=minecartModel.userData.wheels||[];
+      const cartAnimated=state==='playing'&&!reducedMotion&&minecartModel.visible;
+      cartWheels.forEach((wheel,index)=>{
+        const spin=cartAnimated?(time*7.5+(index%2)*Math.PI):0;
+        wheel.rotation.set(spin,0,wheel.userData.baseRotation||Math.PI/2);
+      });
+      const lantern=minecartModel.userData.lantern;
+      if(lantern)lantern.scale.setScalar(cartAnimated?1+.08*Math.sin(time*8):1);
       // Stroke the shared raft paddles as a paired, out-of-phase gesture. The
       // motion is cosmetic and frozen for reduced-motion users, while the
       // existing parent transform keeps the paddles aligned to bends and
@@ -1248,7 +1304,7 @@ export function createView(canvas) {
           -1,
           1,
         ),
-        airborne:y>.1 && !run.zipline && !run.raft,
+        airborne:y>.1 && !run.zipline && !run.raft && !run.minecart,
         sliding:run.slide>0,
         hanging:!menu && Boolean(run.zipline),
         rafting:!menu && Boolean(run.raft),
@@ -1280,7 +1336,7 @@ export function createView(canvas) {
       const contact=contactShadow(y,distance,gaps);
       shadow.scale.setScalar(contact.scale);
       shadow.material.opacity = contact.opacity;
-      shadow.visible = contact.opacity > 0 && !run.raft;
+      shadow.visible = contact.opacity > 0 && !run.raft && !run.minecart;
       aura.visible = !menu && run.shield > 0;
       magnetField.visible = !menu && run.magnet > 0;
       speedTrail.visible = !menu && run.zoomies > 0;

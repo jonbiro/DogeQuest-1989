@@ -100,3 +100,23 @@ test('a stale shell without dock message nodes cannot crash the frame', () => {
     `${source.slice(start, end)};syncDock();`, context,
   ));
 });
+
+test('optional HUD failures are recorded as UI causes without entering graphics rescue', () => {
+  const source = readFileSync(new URL('../src/runner/app.js', import.meta.url), 'utf8');
+  const start = source.indexOf('function setData(');
+  const end = source.indexOf('function toggleClass(', start);
+  assert.ok(start >= 0 && end > start);
+  const game = {dataset: {}};
+  const context = {
+    $: id => id === 'game' ? game : null,
+    graphicsDiagnostic: (reason, error) => `${reason}: ${error.message}`,
+    withLastInput: error => error,
+  };
+  const result = runInNewContext(
+    `${source.slice(start, end)};optionalFrameUi('turn-controls', () => { throw new TypeError('missing small label'); });`,
+    context,
+  );
+  assert.equal(result, undefined);
+  assert.equal(game.dataset.uiFailureScope, 'turn-controls');
+  assert.match(game.dataset.uiFailure, /ui-turn-controls: missing small label/);
+});

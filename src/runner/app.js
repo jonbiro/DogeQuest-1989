@@ -365,6 +365,23 @@ function setData(id, key, value) {
   const node = $(id);
   if (node?.dataset) node.dataset[key] = String(value);
 }
+// A cached shell can omit an optional HUD/control node for one navigation
+// frame. Keep those presentation-only updates from promoting a valid run to a
+// runtime rescue screen; the simulation and renderer remain guarded below.
+function optionalFrameUi(scope, callback) {
+  try {
+    return callback();
+  } catch (error) {
+    try {
+      setData('game', 'uiFailure', graphicsDiagnostic(`ui-${scope}`, withLastInput(error)));
+      setData('game', 'uiFailureScope', scope);
+    } catch {
+      // Diagnostic metadata is best effort and must never become a new frame
+      // failure when a test shell has no game root.
+    }
+    return undefined;
+  }
+}
 function toggleClass(id, name, force) {
   $(id)?.classList?.toggle?.(name, Boolean(force));
 }
@@ -598,7 +615,7 @@ function showOverlay(kind) {
                   ? "The browser interrupted that touch, so your run is paused. Try a shorter swipe or use the big buttons, then tap Keep running."
                   : "Keep running, or finish now to bank the points, bones and gifts you have earned."
           : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
-  if(kind==='paused'&&!run.practice&&(run.raft||run.zipline))
+  if(kind==='paused'&&!run.practice&&(run.raft||run.zipline||run.minecart))
     $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
   $("home").textContent = kind === 'paused' ? run.practice ? 'Leave practice' : 'Finish & bank points' : 'Back to camp';
   $("overlay-primary").textContent =
@@ -684,6 +701,7 @@ function finish() {
   if (run.gifts) $("overlay-copy").textContent += ` ${run.gifts} gift boxes banked.`;
   if (run.ziplines) $("overlay-copy").textContent += ` ${run.ziplines} zipline ${run.ziplines === 1 ? "ride" : "rides"} completed (+${run.ziplines * 250} points included in your score).`;
   if (run.rafts) $("overlay-copy").textContent += ` ${run.rafts} river ${run.rafts === 1 ? "crossing" : "crossings"} completed (+${run.rafts * 250} points included in your score).`;
+  if (run.minecarts) $("overlay-copy").textContent += ` ${run.minecarts} mine-cart ${run.minecarts === 1 ? "ride" : "rides"} completed (+${run.minecarts * 250} points included in your score).`;
   if (prizes.length) $("overlay-copy").textContent += ` Prizes earned: ${prizes.map(p => p.name).join(", ")}! Visit the clubhouse.`;
   const mastery=receipt.mastery;
   if(mastery.earned.length) $("overlay-copy").textContent += ` Passport rewards: ${mastery.earned.map(b=>b.name).join(', ')} (+${mastery.points} pts).`;
@@ -704,6 +722,15 @@ function finish() {
     $("run-breakdown-copy").textContent += ` Shared target: ${run.challengeTarget.toLocaleString()} points. ${difference>0?`${difference.toLocaleString()} ahead`:difference===0?'Target tied — one more point to beat it':`${(-difference).toLocaleString()} short`}. This is a friendly, unverified score, not a ranked result.`;
   }
   $("overlay-copy").textContent = `${resultChallenge(run)}${resultRecord(receipt,run)}${receipt.totalPoints.toLocaleString()} upgrade ${receipt.totalPoints===1?'point':'points'} banked. Retry the same trail, or head to camp ${sharedSeed === null ? 'for a fresh one' : 'to switch to random trails'}.`;
+  // Keep traversal rewards visible in the final copy. The concise result line
+  // above intentionally replaces the in-run narration, so append a compact
+  // receipt after it rather than letting completed rides disappear silently.
+  const rides=[];
+  if (run.ziplines) rides.push(`${run.ziplines} zipline ${run.ziplines === 1 ? 'ride' : 'rides'}`);
+  if (run.rafts) rides.push(`${run.rafts} river ${run.rafts === 1 ? 'crossing' : 'crossings'}`);
+  if (run.minecarts) rides.push(`${run.minecarts} mine-cart ${run.minecarts === 1 ? 'ride' : 'rides'}`);
+  const completedRides=(run.ziplines||0)+(run.rafts||0)+(run.minecarts||0);
+  if (rides.length) $("overlay-copy").textContent += ` ${rides.join(' and ')} completed (+${completedRides * 250} points included).`;
   if (run.relics) $("overlay-copy").textContent += ` ${run.relics} area ${run.relics === 1 ? 'relic' : 'relics'} found (+${run.relicPoints} points included).`;
   $("run-highlights").textContent = nextMasteryHint(saved.mastery,run.puppy);
   persist();
@@ -1796,10 +1823,11 @@ function frame(now) {
       }
     }
     run.events = [];
-    updateTraversalControls(traversalButtons,run);
-    const sceneDescription=traversalDescription(run);
+    optionalFrameUi('traversal-controls', () => updateTraversalControls(traversalButtons,run));
+    const sceneDescription=optionalFrameUi('scene-description', () => traversalDescription(run)) || '';
     const scene = $('scene');
-    if (scene) {
+    optionalFrameUi('scene-state', () => {
+      if (!scene) return;
       if(scene.getAttribute('aria-label')!==sceneDescription)scene.setAttribute('aria-label',sceneDescription);
       scene.dataset.lane = String(run.lane + 1);
       scene.dataset.turns = String(run.turns);
@@ -1807,9 +1835,11 @@ function frame(now) {
       scene.dataset.courses = run.regionalCourses.join(',');
       scene.dataset.course = run.course?.name || '';
       scene.dataset.posture =
-      run.raft ? "raft" : run.zipline ? "zipline" : run.y > 0.05 ? "jump" : run.slide > 0 ? "slide" : "run";
-    }
+      run.raft ? "raft" : run.minecart ? "minecart" : run.zipline ? "zipline" : run.y > 0.05 ? "jump" : run.slide > 0 ? "slide" : "run";
+    });
     // Decision cues follow each rendered frame; counters can wait for the HUD tick.
+    // Decision cues remain unthrottled so a last-moment warning is never held
+    // behind the ten-hertz statistics refresh.
     setText('cue', run.practice ? practiceCue(run) : actionCue(run));
     if (Math.floor(run.time * 10) !== lastHud || run.ended) {
       lastHud = Math.floor(run.time * 10);
@@ -1858,8 +1888,10 @@ function frame(now) {
           : 'Collect bones and clear obstacles to charge Fetch');
       }
       const turn = turnPrompt(run);
-      if (scene?.dataset) scene.dataset.turn = turn ? `${turn.direction}-${turn.status}` : '';
-      updateTurnControls(turnButtons, turn);
+      optionalFrameUi('turn-controls', () => {
+        if (scene?.dataset) scene.dataset.turn = turn ? `${turn.direction}-${turn.status}` : '';
+        updateTurnControls(turnButtons, turn);
+      });
       setText('hearts',
         "♥ ".repeat(Math.max(0, run.hearts)) + "♡ ".repeat(3 - run.hearts));
       setAttribute('hearts', 'aria-label', `${run.hearts} hearts remaining`);
@@ -1874,9 +1906,9 @@ function frame(now) {
     if (time > toastUntil) setText('toast', '');
     try{
       soundscape.update(audio,{enabled:sound&&saved.preferences.ambience&&state==='playing'&&!run.ended&&!document.hidden&&!tilt.isRequesting(),
-        time:run.time,distance:run.distance,quiet:!$('cue').textContent&&!routeChoiceCue(run)&&!run.practice});
+        time:run.time,distance:run.distance,quiet:!textOf('cue')&&!routeChoiceCue(run)&&!run.practice});
     }catch{soundscape.stop();} // Optional audio must never interrupt animation.
-    syncDock();
+    optionalFrameUi('dock', syncDock);
     drawScene(run, time, state, reducedMotion, dt, accumulator / (1 / 120), saved.collection, frameDt);
   } catch (error) {
     // A mobile driver can reject a non-draw update (for example while its

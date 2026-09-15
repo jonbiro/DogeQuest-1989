@@ -15,6 +15,8 @@ export function traversalCue(event) {
   switch(event){
     case 'raft-start':return 'board';
     case 'raft-end':return 'shore';
+    case 'minecart-start':return 'board';
+    case 'minecart-end':return 'shore';
     case 'zipline-start':return 'zoomies';
     case 'zipline-end':return 'reward';
     default:return null;

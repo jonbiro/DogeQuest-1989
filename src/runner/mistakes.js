@@ -2,7 +2,9 @@
 export function mistakeDetail(run, mistake) {
   let reason = 'missed';
   const overhead = ['arch', 'branch', 'gate'].includes(mistake.type);
-  if(mistake.raftHazard){
+  if(mistake.minecartHazard){
+    reason=run.lane===mistake.safeLane?'late-minecart-steer':'minecart-lane';
+  } else if(mistake.raftHazard){
     reason=run.lane===mistake.safeLane?'late-raft-steer':'raft-lane';
   } else if(mistake.type==='rock'&&mistake.courseWeave) {
     if([0,1,2].includes(mistake.safeLane)&&run.lane===mistake.safeLane)reason='late-weave';
@@ -37,6 +39,8 @@ export function timingLesson(detail, obstacleType) {
     'late-dive': 'You were still landing when the overhead obstacle arrived. Slide earlier, or approach it on the ground.',
     'early-slide': 'Your slide ended before the overhead obstacle passed. Swipe down a little later on the retry.',
     'wrong-turn': 'The turn was locked in the wrong direction. Match the arrow with one left or right swipe.',
+    'late-minecart-steer': 'The cart was still drifting toward the open lane. Start steering earlier; one swipe moves one lane.',
+    'minecart-lane': 'The mine-cart rocks leave one open lane. Steer toward the glowing lane cue; jump and slide are unavailable until the exit.',
   };
   return detail && lessons[detail.reason] || '';
 }

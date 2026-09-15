@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {objectVisible,ziplineSignVisible,OBJECT_HORIZON} from '../src/runner/visibility.js';
 
 test('overhead structures leave the chase-camera corridor only after their collision plane', () => {
-  for (const type of ['arch','branch','gate','choice-left','choice-right','zipline-start','zipline-end']) {
+  for (const type of ['arch','branch','gate','choice-left','choice-right','zipline-start','zipline-end','minecart-start','minecart-end']) {
     const object = {type,at:100};
     assert.equal(objectVisible(object,99), true);
     assert.equal(objectVisible(object,100.4), true, 'collision remains visible');

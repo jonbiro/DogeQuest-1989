@@ -21,6 +21,11 @@ export function actionCue(run) {
     return obstacle?laneCue(run.lane,obstacle.raftSafeLane,'RAFT'):
       run.raft.end-run.distance<run.speed*.8?'SHORE AHEAD':'RAFT · STEER LEFT / RIGHT';
   }
+  if(run.minecart){
+    const obstacle=run.objects.find(object=>object.minecartHazard&&!object.used&&object.at>run.distance&&object.at-run.distance<run.speed*1.35);
+    return obstacle?laneCue(run.lane,obstacle.minecartSafeLane,'CART'):
+      run.minecart.end-run.distance<run.speed*.8?'CART EXIT AHEAD':'CART · STEER LEFT / RIGHT';
+  }
   const weave = courseCue(run);
   if (weave) return weave;
   if (run.zipline) {
@@ -30,6 +35,11 @@ export function actionCue(run) {
       object.at-run.distance < run.speed*.8).sort((a,b)=>a.at-b.at)[0];
     return !bone ? '' : laneCue(run.lane,bone.lane,bone.type==='gift'?'GIFT':'BONES');
   }
+  const cart = run.objects.find(object => object.type === 'minecart-start' && !object.used &&
+    object.at > run.distance && object.at - run.distance < run.speed * 1.6);
+  if (cart) return cart.at - run.distance >= run.speed * .35
+    ? 'MINE-CART AHEAD · AUTO-BOARD'
+    : 'MINE-CART AHEAD · GET READY';
   const cable = run.objects.find(object => object.type === 'zipline-start' && !object.caught &&
     object.at > run.distance && object.at - run.distance < run.speed * 1.6);
   if (cable) {
@@ -146,6 +156,7 @@ export function eventNotice(event, run) {
     'route-challenge': {text: 'Challenge trail · +60 per clear', priority: 1},
     'zipline-end': {text: 'Zipline complete · +250', priority: 1},
     'raft-end': {text: 'Shore reached · +250', priority: 1},
+    'minecart-end': {text: 'Cart reached · +250', priority: 1},
     'course-complete': {text: 'Clean regional course · +180', priority: 1},
     'course-recovery': {text: 'Strong finish · 2/3 clean · +60', priority: 1},
     relic: {text: 'Area relic · +160 points', priority: 0},
@@ -155,6 +166,9 @@ export function eventNotice(event, run) {
 
 export function runLesson(run) {
   if (run.retired) return 'Good dogs deserve a break. Only completed challenges and traversal rewards count; your next adventure is ready whenever you are.';
+  if(run.lastMistake?.minecartHazard)return run.lastMistakeDetail?.reason==='late-minecart-steer'
+    ? 'The cart was still drifting toward the open lane. Start steering earlier; one swipe moves one lane and jump/slide return after the cart.'
+    : 'Steer the cart into the open lane between the rocks. The cart boards automatically; one swipe moves one lane and jump/slide return after the cart.';
   if(run.lastMistake?.raftHazard)return run.lastMistakeDetail?.reason==='late-raft-steer'
     ? 'The raft was still drifting toward the open lane. Follow the arrow earlier; ×2 means two drag segments. Jump and slide return at the shore.'
     : 'Steer the raft into the open lane between the river rocks. Each drag segment moves one lane; ×2 means drag twice. Jump and slide return at the shore.';

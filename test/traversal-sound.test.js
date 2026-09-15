@@ -5,6 +5,8 @@ import {CUES,traversalCue} from '../src/runner/sound.js';
 test('river boarding and landing are distinct from boosts and cable rewards',()=>{
   assert.equal(traversalCue('raft-start'),'board');
   assert.equal(traversalCue('raft-end'),'shore');
+  assert.equal(traversalCue('minecart-start'),'board');
+  assert.equal(traversalCue('minecart-end'),'shore');
   assert.equal(traversalCue('zipline-start'),'zoomies');
   assert.equal(traversalCue('zipline-end'),'reward');
   for(const event of ['hit','bone','raft',null,undefined,'constructor'])assert.equal(traversalCue(event),null);

@@ -13,9 +13,15 @@ function legacyTurnButton(action) {
     append(node){this.repairedLabel=node;},
     setAttribute(key,value){this.attributes[key]=value;}};
 }
+function legacyTraversalButton(action) {
+  return {dataset:{action,controlState:'ready'},disabled:false,
+    ownerDocument:{createElement(tag){assert.equal(tag,'small');return {textContent:''};}},
+    append(node){this.repairedLabel=node;}};
+}
 test('scene instructions match the available traversal actions',()=>{
   assert.match(traversalDescription({raft:{}}),/Jump and slide return at the shore/);
   assert.match(traversalDescription({zipline:{}}),/return after the cable/);
+  assert.match(traversalDescription({minecart:{}}),/return after the cart/);
   assert.match(traversalDescription({}),/The buttons are easiest: tap LEFT or RIGHT for one lane/);
   assert.match(traversalDescription({}),/One swipe equals one move\. To keep your finger down, stop your thumb briefly, then drag again/);
   assert.match(traversalDescription({}),/tap a left or right edge to steer/);
@@ -85,4 +91,11 @@ test('turn labels repair the legacy bare-arrow markup without crashing the frame
   assert.equal(buttons[1].repairedLabel.textContent,'RIGHT');
   assert.equal(buttons[0].attributes['aria-label'],'Turn left');
   assert.equal(buttons[1].attributes['aria-label'],'Turn right');
+});
+
+test('traversal labels repair a stale shell even when its cached state is unchanged',()=>{
+  const button=legacyTraversalButton('jump');
+  assert.doesNotThrow(()=>updateTraversalControls([button],{jumpBuffer:0,slideNext:0,y:0,vy:0}));
+  assert.equal(button.repairedLabel.textContent,'JUMP');
+  assert.equal(button.disabled,false);
 });

@@ -21,6 +21,15 @@ import {REGION_LENGTH,regionAt} from './regions.js';
 import {AREA_LENGTH,areaAt,areaGameplayAt} from './areas.js';
 import {raftIntersecting,raftEncounter,advanceRaft,moveRaft} from './rafts.js';
 import {
+  MINECART_FIRST,
+  MINECART_PERIOD,
+  minecartByIndex,
+  minecartIntersecting,
+  minecartEncounter,
+  advanceMinecart,
+  moveMinecart,
+} from './minecart.js';
+import {
   TURN_SKILL_REWARD,
   applyTurnInput,
   cornerByIndex,
@@ -39,6 +48,9 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     seed,
     generatorVersion,
     raftPrototype:generatorVersion>=4,
+    // Current prototype trails add a short mine-cart beat after the established
+    // river/sky chapters. Versions 1–3 retain their exact object streams.
+    minecartPrototype:generatorVersion>=4,
     random: seededRandom(seed),
     distance: 0,
     time: 0,
@@ -97,6 +109,9 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     nextZipline: ZIPLINE_FIRST,
     zipline: null,
     ziplines: 0,
+    nextMinecart: generatorVersion>=4 ? MINECART_FIRST : Infinity,
+    minecart: null,
+    minecarts: 0,
     course: null,
     lastCourseVisit: -1,
     regionalCourses: [0,0,0],
@@ -151,6 +166,10 @@ function areaActionHazard(run, at, row) {
 export function fillTrack(run) {
   if (run.practice) return;
   if(run.choicePending!==null)return;
+  // Restored fixtures from before the cart rollout may not carry the new
+  // scheduler field. Keep those runs deterministic and opt them in only when
+  // their generator version explicitly supports carts.
+  if (run.minecartPrototype && !Number.isFinite(run.nextMinecart)) run.nextMinecart = MINECART_FIRST;
   // Mark upcoming turns independently from obstacle rows so the renderer can
   // telegraph them early even when generation resumes after a route choice.
   for (const corner of cornersBetween(run.distance - 8, run.distance + 170)) {
@@ -175,6 +194,26 @@ export function fillTrack(run) {
       const challenge=run.route?.kind==='challenge'&&river.start<run.route.until;
       for(const spec of raftEncounter(river,challenge))Object.assign(add(run,spec.type,spec.lane,spec.at),spec);
       run.nextRow=river.recovery+5;
+      continue;
+    }
+    const minecart = run.minecartPrototype && Number.isFinite(run.nextMinecart)
+      ? minecartByIndex(Math.round((run.nextMinecart - MINECART_FIRST) / MINECART_PERIOD))
+      : null;
+    // A restored/shared run can resume after a cart's recovery window. Advance
+    // its scheduler rather than re-inserting an already-passed ride in front
+    // of the next authored cable or course.
+    if (minecart && run.nextRow > minecart.recovery) {
+      run.nextMinecart = minecart.start + MINECART_PERIOD;
+      continue;
+    }
+    if (minecart && run.nextRow >= minecart.approach) {
+      add(run, 'minecart-start', 1, minecart.start);
+      add(run, 'minecart-end', 1, minecart.end);
+      const challenge = run.route?.kind === 'challenge' && minecart.start < run.route.until;
+      for (const spec of minecartEncounter(minecart, challenge))
+        Object.assign(add(run, spec.type, spec.lane, spec.at), spec);
+      run.nextRow = minecart.recovery + 5;
+      run.nextMinecart = minecart.start + MINECART_PERIOD;
       continue;
     }
     if (run.nextRow >= run.nextZipline - 45) {
@@ -205,12 +244,17 @@ export function fillTrack(run) {
     const sequenceEnd = start + COURSE_LENGTH;
     const visit = Math.floor(start/REGION_LENGTH);
     if (start >= 195 && !run.course && visit !== run.lastCourseVisit && (route !== "scenic" || run.generatorVersion>=3) &&
-        sequenceEnd < Math.min(run.nextChoice, run.nextZipline) - 45 &&
+        sequenceEnd < Math.min(
+          run.nextChoice,
+          run.nextZipline,
+          Number.isFinite(run.nextMinecart) ? run.nextMinecart : Infinity,
+        ) - 45 &&
         // A landscape transition is not a gameplay hazard. Prototype courses
         // may finish across it; actual encounter reservations still take priority.
         (run.raftPrototype || sequenceEnd <= (visit+1)*REGION_LENGTH) &&
         !cornerIntersecting(start, sequenceEnd) &&
         (!run.raftPrototype||!raftIntersecting(start,sequenceEnd)) &&
+        (!run.minecartPrototype||!minecartIntersecting(start,sequenceEnd)) &&
         (!run.route || start >= run.route.until || sequenceEnd - COURSE_RECOVERY <= run.route.until)) {
       const region=regionAt(start);
       const ordinal=run.raftPrototype?(run.courseOrdinals?.[region]??0):null;
@@ -297,7 +341,7 @@ export function act(run, action) {
   if (action === 'fetch') { activateFetch(run); return; }
   if (action === "left" && !applyTurnInput(run, action)) run.lane = Math.max(0, run.lane - 1);
   if (action === "right" && !applyTurnInput(run, action)) run.lane = Math.min(2, run.lane + 1);
-  if (run.zipline || run.raft) return;
+  if (run.zipline || run.raft || run.minecart) return;
   if (action === "jump") {
     if (run.y === 0 && run.vy === 0) jump(run);
     else run.jumpBuffer = JUMP_BUFFER;
@@ -405,7 +449,9 @@ export function step(run, dt) {
   }
   if(run.zoomies>0 && run.y===0 && run.objects.some(object=>object.type==="gap" && object.at-run.distance>0 && object.at-run.distance<run.speed*.45)) act(run,"jump");
   if(run.raftPrototype)advanceRaft(run,run.previous.distance,run.distance);
-  if(!moveRaft(run,LANES[run.lane],dt))steer(run, LANES[run.lane], dt);
+  if(run.minecartPrototype)advanceMinecart(run,run.previous.distance,run.distance);
+  if(!moveRaft(run,LANES[run.lane],dt) && !moveMinecart(run,LANES[run.lane],dt))
+    steer(run, LANES[run.lane], dt);
   if(run.choicePending!==null && run.distance>=run.choicePending) {
     const kind=run.x>1.2?"challenge":"scenic";
     run.route={kind,until:run.choicePending+220};
@@ -428,7 +474,7 @@ export function step(run, dt) {
       run.invulnerable = Math.max(run.invulnerable, 1.2);
       run.events.push("zipline-end");
     }
-  } else if(!run.raft) {
+  } else if(!run.raft && !run.minecart) {
     moveVertical(run, dt);
   }
   run.invulnerable = Math.max(0, run.invulnerable - dt);
@@ -553,7 +599,7 @@ export function step(run, dt) {
       }
       if (sameLane && !cleared && run.invulnerable === 0) {
         object.used = true;
-        harm(run, object.raftHazard ? {type:'rock',raftHazard:true,safeLane:object.raftSafeLane} : object.type==='rock' && [0,1,2].includes(object.courseRegion)
+        harm(run, object.raftHazard ? {type:'rock',raftHazard:true,safeLane:object.raftSafeLane} : object.minecartHazard ? {type:'rock',minecartHazard:true,safeLane:object.minecartSafeLane} : object.type==='rock' && [0,1,2].includes(object.courseRegion)
           ? {type:'rock',courseWeave:true,safeLane:run.course?.beats.find(beat=>beat.at===object.at)?.safeLane} : {type: object.type});
         if (run.ended) break;
       }
