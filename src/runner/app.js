@@ -626,7 +626,7 @@ function showOverlay(kind) {
         ? "New personal best. Very good dog!"
         : "The next great run is one tap away."
       : kind === "help"
-        ? "The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. One swipe equals one move. To keep your finger down, stop your thumb briefly, then drag again; lifting is always okay. On a phone, tap an edge to steer or the center to jump. A clear cross-direction swipe can switch between steering and jump or slide without lifting. The buttons always work."
+        ? "Tap LEFT or RIGHT to steer. Tap JUMP over logs and gaps, or SLIDE under overhead gates. Swipes are optional; one short swipe equals one move."
         : kind === "paused"
           ? run.practice
             ? pauseReason === 'background'

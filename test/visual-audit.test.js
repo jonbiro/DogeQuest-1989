@@ -6,6 +6,7 @@ import {URL} from 'node:url';
 const app = readFileSync(new URL('../src/runner/app.js', import.meta.url), 'utf8');
 const css = readFileSync(new URL('../src/runner/ui.css', import.meta.url), 'utf8');
 const artwork = readFileSync(new URL('../src/runner/puppy-artwork.js', import.meta.url), 'utf8');
+const shell = readFileSync(new URL('../runner/index.html', import.meta.url), 'utf8');
 
 test('clubhouse surfaces expose stable hooks for their intentional layouts', () => {
   assert.match(app, /content\.dataset\.category = clubhouseCategory/);
@@ -34,6 +35,10 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(css, /#mission-hud\[data-dock="mission-summary"\] #mission-label-mobile/);
   assert.match(app, /setText\('mission-label-mobile', missionSummaryLabel/);
   assert.match(css, /#overlay\[data-kind="help"\] \.basic-moves img \{ grid-column: 1; grid-row: 1 \/ span 3; width: 84px; height: 70px;/);
+  assert.match(app, /Tap LEFT or RIGHT to steer\. Tap JUMP over logs and gaps, or SLIDE under overhead gates\. Swipes are optional/);
+  assert.match(shell, /Tap LEFT or RIGHT for one lane\. One short swipe also works/);
+  assert.match(shell, /Tap JUMP over logs and gaps\. Swipe up is optional/);
+  assert.match(shell, /Tap SLIDE under overhead gates\. Swipe down is optional/);
 });
 
 test('painted puppy poses inherit world atmosphere and ease frame transforms', () => {
