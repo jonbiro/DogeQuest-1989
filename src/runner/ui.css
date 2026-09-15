@@ -2002,8 +2002,8 @@ canvas:focus-visible {
   #trail-passport .mastery-card > .mastery-badges { margin-top: 10px; }
   .mastery-badge { min-height: 82px; }
   #overlay[data-kind="help"] .basic-moves { grid-template-columns: 1fr; gap: 8px; }
-  #overlay[data-kind="help"] .basic-moves p { grid-template-columns: 82px minmax(0,1fr); min-height: 0; padding: 10px; }
-  #overlay[data-kind="help"] .basic-moves img { grid-column: 1; grid-row: 1 / span 3; width: 74px; height: 64px; }
+  #overlay[data-kind="help"] .basic-moves p { grid-template-columns: 90px minmax(0,1fr); min-height: 0; padding: 9px; }
+  #overlay[data-kind="help"] .basic-moves img { grid-column: 1; grid-row: 1 / span 3; width: 84px; height: 70px; }
   #overlay[data-kind="help"] .basic-moves strong,
   #overlay[data-kind="help"] .basic-moves span { grid-column: 2; }
   .prize-card { grid-template-columns: 1fr; grid-template-areas: "heading" "status" "progress"; gap: 8px; }

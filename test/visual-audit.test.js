@@ -33,6 +33,7 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(css, /#mission-label-mobile \{ display: none; \}/);
   assert.match(css, /#mission-hud\[data-dock="mission-summary"\] #mission-label-mobile/);
   assert.match(app, /setText\('mission-label-mobile', missionSummaryLabel/);
+  assert.match(css, /#overlay\[data-kind="help"\] \.basic-moves img \{ grid-column: 1; grid-row: 1 \/ span 3; width: 84px; height: 70px;/);
 });
 
 test('painted puppy poses inherit world atmosphere and ease frame transforms', () => {
@@ -43,4 +44,10 @@ test('painted puppy poses inherit world atmosphere and ease frame transforms', (
   assert.match(artwork, /customProgramCacheKey = \(\) => 'puppy-ink-grade-v1'/);
   assert.match(artwork, /transitionDuration = reducedMotion \? 0 : \.11/);
   assert.match(artwork, /THREE\.MathUtils\.lerp\(poseTransitionFrom\.scaleX/);
+});
+
+test('trail collectibles get a visible authored scale and gentle pulse', () => {
+  const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
+  assert.match(render, /templates\.bone\.scale\.setScalar\(1\.72\)/);
+  assert.match(render, /pickupPulse\(object\.type, time, object\.id, reducedMotion\)/);
 });

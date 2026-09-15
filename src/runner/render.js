@@ -34,7 +34,7 @@ import {BANK_SURFACE_Y} from './terrain.js';
 import {trailColors,sampleTrailColor} from './trail-palette.js';
 import {createShieldMaterial} from './shield-material.js';
 import {magnetPulse} from './magnet-field.js';
-import {pickupYaw} from './pickup-motion.js';
+import {pickupYaw, pickupPulse} from './pickup-motion.js';
 import {themeHazard} from './hazard-palette.js';
 import {createBoulderGeometry} from './boulder-model.js';
 import {createPalmFrondGeometry,createFeatheredPalmGeometry} from './palm-frond.js';
@@ -760,7 +760,10 @@ export function createView(canvas) {
       emissive:'#fff0b8',
       emissiveIntensity:.18,
     }));
-  templates.bone.scale.setScalar(1.55);
+  // Bones are the game's primary collectible. A slightly larger authored
+  // scale keeps the ivory face and dark rim readable through the perspective
+  // falloff on a phone without changing the shared geometry contract.
+  templates.bone.scale.setScalar(1.72);
   const boneTransform=templates.bone.clone();
   const boneBatch=createInstanceBatch(scene,boneGeometry,templates.bone.material);
   templates.rock = new THREE.Group();
@@ -1087,7 +1090,11 @@ export function createView(canvas) {
       try {
         for(const item of scene.children)item.visible=item===subject||item.isLight===true;
         scene.background=new THREE.Color('#24483f');scene.fog=null;
-        camera.fov=52;camera.aspect=192/112;camera.position.set(0,2.6,5.2);camera.lookAt(0,1.1,0);
+        // Pull the guide camera in so the rock/log/arch silhouette fills its
+        // thumbnail instead of becoming two tiny marks on a dark rectangle.
+        // The same compact canvas keeps the help overlay inexpensive on
+        // mobile while giving each essential move a useful visual cue.
+        camera.fov=48;camera.aspect=192/112;camera.position.set(0,2.25,3.8);camera.lookAt(0,1.05,0);
         camera.updateProjectionMatrix();renderer.setSize(192,112,false);renderer.render(scene,camera);
         return canvas.toDataURL('image/png');
       } finally {
@@ -1480,6 +1487,16 @@ export function createView(canvas) {
           item.rotation.y = pickup
             ? pickupYaw(object.type,time,reducedMotion)
             : 0;
+          if (pickup && !bone) {
+            // Reuse the clone's authored root scale so the gentle pulse also
+            // enlarges its halo and never accumulates scale across pooled
+            // objects. This makes powerups feel collectible at a glance
+            // while remaining quiet in reduced-motion mode.
+            item.userData.pickupBaseScale ??= item.scale.clone();
+            item.scale.copy(item.userData.pickupBaseScale).multiplyScalar(
+              pickupPulse(object.type, time, object.id, reducedMotion),
+            );
+          }
           const frame = frameAt(item.position.z), across = item.position.x;
           item.position.set(frame.x + across * Math.cos(frame.yaw), item.position.y + frame.y,
             frame.z - across * Math.sin(frame.yaw));
