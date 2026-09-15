@@ -17,9 +17,10 @@ export const PUPPY_ARTWORK = Object.freeze({
 // Every dog gets authored forward, airborne, crouched, three-quarter turn, and
 // zipline-hanging paintings so the action silhouette changes with the physics
 // rather than asking one portrait to pretend it is jumping or sliding. Mochi
-// also has a rear chase-camera painting: his default run can finally show the
+// also has rear chase-camera paintings: his default run can finally show the
 // dog moving away from the owner instead of making a front portrait face the
-// wrong way down the trail.
+// wrong way down the trail. The two rear beats trade the back paws and tail
+// sweep so the chase view has a readable gait rather than a frozen cutout.
 export const PUPPY_ARTWORK_VARIANTS = Object.freeze({
   biscuit: Object.freeze({
     idle: PUPPY_ARTWORK.biscuit,
@@ -64,7 +65,8 @@ export const PUPPY_ARTWORK_VARIANTS = Object.freeze({
 // action) so the richer roster still fits the mobile texture budget.  Mochi's
 // supplied side-gallop painting remains a dedicated slot because it is also
 // the bend-specific chase silhouette; his other alternates, including the
-// sailor rafting outfit, stream through the shared slot below.
+// rear chase beat and sailor rafting outfit, stream through the shared slot
+// below.
 export const PUPPY_ARTWORK_ALTERNATES = Object.freeze({
   biscuit: Object.freeze({
     stride: './puppies/biscuit-run-alt.webp',
@@ -75,6 +77,7 @@ export const PUPPY_ARTWORK_ALTERNATES = Object.freeze({
     raft: './puppies/biscuit-raft.webp',
   }),
   mochi: Object.freeze({
+    away: './puppies/mochi-away-alt.webp',
     jump: './puppies/mochi-jump-alt.webp',
     slide: './puppies/mochi-slide-alt.webp',
     turn: './puppies/mochi-turn-alt.webp',
@@ -138,10 +141,11 @@ export const PUPPY_ARTWORK_BOUNDS = Object.freeze({
     slideAlt: Object.freeze({width: 1254, height: 1254, x: 15, y: 197, boxWidth: 1225, boxHeight: 879}),
     turnAlt: Object.freeze({width: 1254, height: 1254, x: 100, y: 45, boxWidth: 1103, boxHeight: 1165}),
     hangAlt: Object.freeze({width: 1024, height: 1536, x: 132, y: 14, boxWidth: 821, boxHeight: 1398}),
-    // Measured from the generated rear chase-camera painting. The high tail
-    // and lifted paw are intentionally included in the visible bounds so the
-    // frame stays centered when it swaps with the forward stride painting.
+    // Measured from the generated rear chase-camera paintings. The high tail
+    // and lifted paws are intentionally included in the visible bounds so the
+    // frame stays centered while the two rear beats trade places.
     away: Object.freeze({width: 1254, height: 1254, x: 236, y: 30, boxWidth: 822, boxHeight: 1190}),
+    awayAlt: Object.freeze({width: 1254, height: 1254, x: 208, y: 56, boxWidth: 1046, boxHeight: 1168}),
     raftAlt: Object.freeze({width: 1214, height: 1295, x: 79, y: 17, boxWidth: 1054, boxHeight: 1255}),
   }),
   pepper: Object.freeze({
@@ -897,6 +901,7 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     hang: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
     hangAlt: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
     away: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
+    awayAlt: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
     raftAlt: new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1),
   };
   const poseBasePositions = {
@@ -912,6 +917,7 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     hang: new THREE.Vector3(),
     hangAlt: new THREE.Vector3(),
     away: new THREE.Vector3(),
+    awayAlt: new THREE.Vector3(),
     raftAlt: new THREE.Vector3(),
   };
   const poseHandleDrops = {hang: 0, hangAlt: 0};
@@ -1030,7 +1036,7 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
 
   function configurePoseSprite(sprite, pose, texture, key = currentKey) {
     if (!texture) {
-      // Optional poses (Mochi's rear chase frame is the only `away` one) do
+      // Optional poses (Mochi's rear chase frames are the only `away` ones) do
       // not exist for every dog. Clear the previous dog's map as well as its
       // visibility so a rapid clubhouse swap can never show stale artwork.
       setSpriteMap(sprite, null);
@@ -1348,7 +1354,7 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
   // left/right swipe had to download a 1254px painting, downscale it on the
   // main thread and upload it to the GPU *while the scene was running* -- and
   // on iOS that mid-run upload is exactly what loses the WebGL context, so
-  // every first swipe ended on the recovery screen. Hang, the rear-chase frame
+  // every first swipe ended on the recovery screen. Hang, the rear-chase frames
   // and every authored second beat are reached later in a run and still stream
   // on demand.
   //
@@ -1473,7 +1479,7 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     // requested even during the first/base half of the cadence so it is warm
     // by the time the phase flips, but it is only shown after the load and
     // alpha-bounds normalization are complete.
-    const alternateBasePose = !raftRequested && activePose && !['idle', 'away', 'strideAlt'].includes(activePose)
+    const alternateBasePose = !raftRequested && activePose && !['idle', 'strideAlt'].includes(activePose)
       ? basePoseFor(activePose)
       : null;
     if (alternateBasePose && alternateUrlFor(currentKey, alternateBasePose)) {

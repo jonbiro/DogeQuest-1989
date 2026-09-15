@@ -165,6 +165,30 @@ test('the rear chase painting still carries the gait as rotation and sway', () =
   assert.ok(offsets.size > 5, 'the rear painting keeps a live gait sway');
 });
 
+test('the rear chase gait swaps between two authored Mochi beats', () => {
+  const loader = decodingLoader();
+  const artwork = createPuppyArtwork({loader});
+  artwork.apply(DEFAULT_PUPPY);
+  const awayUrl = puppyPoseArtworkUrl(DEFAULT_PUPPY, 'away');
+  const awayAltUrl = puppyPoseArtworkUrl(DEFAULT_PUPPY, 'awayAlt');
+  artwork.setPose({time: 0, away: true});
+  loader.decode(awayUrl);
+  // The first active frame starts the shared alternate slot. Decode it before
+  // sampling the cadence so this test proves actual authored-frame changes,
+  // not merely the procedural sway applied to one painting.
+  artwork.setPose({time: 0, away: true});
+  loader.decode(awayAltUrl);
+  const activePoses = new Set();
+  for (let time = 0; time < 2; time += 1 / 60) {
+    artwork.setPose({time, away: true});
+    activePoses.add(artwork.group.userData.activePose);
+  }
+  assert.ok(activePoses.has('away'), `the base rear beat should be visible: ${[...activePoses]}`);
+  assert.ok(activePoses.has('awayAlt'), `the alternate rear beat should be visible: ${[...activePoses]}`);
+  assert.equal(loader.requested.filter(url => url === awayAltUrl).length, 1,
+    'the alternate rear beat is streamed once and reused');
+});
+
 test('a starting run warms every silhouette reachable in its first seconds', () => {
   const loader = recordingLoader();
   const artwork = createPuppyArtwork({mobile: true, loader});
