@@ -71,3 +71,40 @@ export function boneStreakLabel(combo, target = 10) {
     detail: remaining === 0 ? '+100 BONUS EARNED' : `${remaining} to +100`,
   };
 }
+
+// Clean movement earns a bonus every five deliberate moves. Keep that reward
+// loop visible in the same compact chip as the bone streak so players can
+// understand why a turn, jump, or slide was worth extra points without a
+// center-screen toast taking over the trail.
+export function cleanFlowLabel(streak, target = 5) {
+  const count = Number.isFinite(Number(streak)) ? Math.max(0, Math.floor(Number(streak))) : 0;
+  const goal = Number.isFinite(Number(target)) ? Math.max(2, Math.floor(Number(target))) : 5;
+  if (count < 2) {
+    return {
+      count,
+      target: goal,
+      progress: 0,
+      remaining: goal,
+      nextTarget: goal,
+      nextBonus: goal * 10,
+      visible: false,
+      label: '',
+      detail: '',
+    };
+  }
+  const progress = count % goal || goal;
+  const nextTarget = Math.ceil(count / goal) * goal;
+  const remaining = Math.max(0, nextTarget - count);
+  const nextBonus = Math.min(200, nextTarget * 10);
+  return {
+    count,
+    target: goal,
+    progress,
+    remaining,
+    nextTarget,
+    nextBonus,
+    visible: true,
+    label: `CLEAN FLOW ×${count}`,
+    detail: remaining === 0 ? `+${nextBonus} BONUS EARNED` : `${remaining} to +${nextBonus}`,
+  };
+}

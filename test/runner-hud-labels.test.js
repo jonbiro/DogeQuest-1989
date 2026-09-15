@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {runHudLabels,missionSummaryLabel,boneStreakLabel} from '../src/runner/hud-labels.js';
+import {runHudLabels,missionSummaryLabel,boneStreakLabel,cleanFlowLabel} from '../src/runner/hud-labels.js';
 import {createRun} from '../src/runner/world.js';
 import {createPracticeRun} from '../src/runner/practice.js';
 
@@ -42,4 +42,21 @@ test('bone streak labels stay quiet until a combo is worth showing, then expose 
   assert.deepEqual(boneStreakLabel(2),{count:2,target:10,progress:2,remaining:8,visible:true,label:'BONE STREAK ×2',detail:'8 to +100'});
   assert.equal(boneStreakLabel(10).detail,'+100 BONUS EARNED');
   assert.equal(boneStreakLabel(12).progress,2);
+});
+
+test('clean flow labels expose the next movement bonus without noisy copy',()=>{
+  assert.equal(cleanFlowLabel(0).visible,false);
+  assert.equal(cleanFlowLabel(1).label,'');
+  assert.deepEqual(cleanFlowLabel(2),{
+    count:2,target:5,progress:2,remaining:3,nextTarget:5,nextBonus:50,
+    visible:true,label:'CLEAN FLOW ×2',detail:'3 to +50',
+  });
+  assert.equal(cleanFlowLabel(5).detail,'+50 BONUS EARNED');
+  assert.deepEqual(cleanFlowLabel(6),{
+    count:6,target:5,progress:1,remaining:4,nextTarget:10,nextBonus:100,
+    visible:true,label:'CLEAN FLOW ×6',detail:'4 to +100',
+  });
+  assert.equal(cleanFlowLabel(20).detail,'+200 BONUS EARNED');
+  assert.equal(cleanFlowLabel(25).nextBonus,200);
+  assert.equal(cleanFlowLabel('not-a-number').visible,false);
 });

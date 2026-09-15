@@ -108,8 +108,9 @@
         <div class="run-stats">
           <span class="bones">🦴 <b id="bones">0</b></span
           ><span id="streak" class="streak" hidden aria-label="Bone streak">
-            <span class="streak-head"><i aria-hidden="true">✦</i><b id="streak-count">×0</b><small>streak</small></span>
+            <span class="streak-head"><i aria-hidden="true">✦</i><b id="streak-count">×0</b><small id="streak-kind">streak</small></span>
             <small id="streak-detail"></small>
+            <small id="flow-detail" hidden></small>
             <progress id="streak-progress" max="10" value="0" aria-label="Bone streak progress"></progress>
           </span
           ><span id="hearts" role="img" aria-label="3 hearts remaining">♥ ♥ ♥</span>
@@ -240,7 +241,8 @@
               Every five clean jumps, slides, course weaves or marked turns earns a clean-move
               bonus: +50, +100, +150, then +200 at each milestone. A collision
               or shield save breaks this streak; missing a bone does not.
-              Automatic Zoomies obstacle clears do not count.
+              Automatic Zoomies obstacle clears do not count. The compact flow
+              meter in the run HUD shows how close you are to the next bonus.
             </p>
             <p>
               <strong>Obstacles and pickups</strong><br>

@@ -60,11 +60,18 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(app, /updateActionCueControls\(traversalButtons, textOf\('cue'\)\)/);
   assert.match(app, /updateLaneCueControls\(turnButtons, textOf\('cue'\)\)/);
   assert.match(app, /boneStreakLabel\(run\.combo\)/);
+  assert.match(app, /cleanFlowLabel\(run\.cleanStreak\)/);
   assert.match(app, /setProperty\('streak-progress', 'value', streak\.progress\)/);
+  assert.match(app, /setHidden\('flow-detail', !showFlow\)/);
+  assert.match(app, /setText\('flow-detail', showFlow \? flow\.detail : ''\)/);
   assert.match(app, /event === "near-miss"/);
   assert.match(app, /run\.nearMisses\)/);
   assert.match(shell, /id="streak" class="streak" hidden/);
   assert.match(shell, /id="streak-progress" max="10" value="0"/);
+  assert.match(shell, /id="flow-detail" hidden/);
+  assert.match(shell, /id="streak-kind">streak<\/small>/);
+  assert.match(css, /#flow-detail \{/);
+  assert.match(css, /#streak\[data-flow-only="true"\]/);
   assert.match(css, /\.streak\.streak-hot/);
   assert.match(css, /@keyframes streak-pop/);
   assert.match(readFileSync(new URL('../src/runner/traversal-controls.js', import.meta.url), 'utf8'), /export function updateActionCueControls/);

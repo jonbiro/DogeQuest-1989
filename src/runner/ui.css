@@ -660,17 +660,33 @@ footer .text-button {
   font-variant-numeric: tabular-nums;
 }
 .streak-head small,
-#streak-detail {
+#streak-detail,
+#flow-detail {
   color: #b9e9df;
   font-size: 9px;
   font-weight: 800;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
-#streak-detail {
+#streak-detail,
+#flow-detail {
   display: block;
   letter-spacing: .03em;
   text-transform: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#flow-detail {
+  color: #ffe0a0;
+  font-weight: 850;
+}
+#streak[data-flow-only="true"] {
+  border-color: #f4cf846b;
+  background: linear-gradient(145deg, #1b4650f5, #102d39f2);
+}
+#streak[data-flow-only="true"] .streak-head i {
+  color: #8fe7db;
 }
 #streak-progress {
   display: block;
@@ -1425,7 +1441,7 @@ kbd {
   .bones { padding: 6px 10px; font-size: 14px; }
   .streak { min-width: 108px; padding: 5px 8px; }
   .streak-head b { font-size: 11px; }
-  .streak-head small, #streak-detail { font-size: 8px; }
+  .streak-head small, #streak-detail, #flow-detail { font-size: 8px; }
   #hearts { font-size: 15px; }
   #mission-hud {
     left: auto;

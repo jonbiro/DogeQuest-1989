@@ -1,6 +1,6 @@
 import { createRun, act, step } from "./world.js";
 import {createPracticeRun,createZiplinePracticeRun,createRaftPracticeRun,createTurnPracticeRun,createGapPracticeRun,createWeavePracticeRun,stepPractice,practiceCue,practiceResult,practiceOffer} from './practice.js';
-import {runHudLabels,missionSummaryLabel,boneStreakLabel} from './hud-labels.js';
+import {runHudLabels,missionSummaryLabel,boneStreakLabel,cleanFlowLabel} from './hud-labels.js';
 import {courseProgress,activeCourse} from './courses.js';
 import {RESUME_DURATION,resumeStep} from './resume.js';
 import {installBackupControls} from './backup-ui.js';
@@ -588,6 +588,7 @@ function start() {
   missionAnnounced = false;
   lastHud = -1;
   lastStreakCombo = -1;
+  lastFlowStreak = -1;
   streakFlashUntil = 0;
   toastUntil = 0;
   noticePriority = 0;
@@ -1803,6 +1804,7 @@ let currentMission = missionFor(saved.challenges),
   missionAnnounced = false;
 let lastHud = -1;
 let lastStreakCombo = -1;
+let lastFlowStreak = -1;
 let streakFlashUntil = 0;
 function frame(now) {
   try {
@@ -1894,22 +1896,48 @@ function frame(now) {
       setText('route-choice', routeChoiceCue(run));
       setText('bones', run.bones);
       const streak = boneStreakLabel(run.combo);
+      const flow = cleanFlowLabel(run.cleanStreak);
       const streakNode = $('streak');
       if (streakNode) {
-        setHidden('streak', !streak.visible);
-        if (streak.visible) {
+        const showBoneStreak = streak.visible;
+        const showFlow = flow.visible;
+        setHidden('streak', !showBoneStreak && !showFlow);
+        setHidden('streak-detail', !showBoneStreak);
+        setHidden('flow-detail', !showFlow);
+        setData('streak', 'flowOnly', showFlow && !showBoneStreak);
+        if (showBoneStreak) {
           setText('streak-count', `×${streak.count}`);
+          setText('streak-kind', 'streak');
           setText('streak-detail', streak.detail);
           setProperty('streak-progress', 'max', streak.target);
           setProperty('streak-progress', 'value', streak.progress);
-          setAttribute('streak', 'aria-label', `${streak.label}. ${streak.detail}`);
-          setData('streak', 'level', Math.min(3, Math.ceil(streak.count / 5)));
+          setData('streak', 'level', Math.min(3, Math.ceil(Math.max(streak.count, flow.count) / 5)));
+        } else if (showFlow) {
+          // Once the bone combo fades, reuse the same chip for clean-move
+          // flow rather than leaving a confusing empty "streak" label.
+          setText('streak-count', `×${flow.count}`);
+          setText('streak-kind', 'flow');
+          setText('streak-detail', '');
+          setProperty('streak-progress', 'max', flow.target);
+          setProperty('streak-progress', 'value', flow.progress);
+          setData('streak', 'level', Math.min(3, Math.ceil(flow.count / 5)));
         } else {
           setData('streak', 'level', '0');
         }
+        setText('flow-detail', showFlow ? flow.detail : '');
+        if (showBoneStreak && showFlow) {
+          setAttribute('streak', 'aria-label', `${streak.label}. ${streak.detail}. ${flow.label}. ${flow.detail}`);
+        } else if (showBoneStreak) {
+          setAttribute('streak', 'aria-label', `${streak.label}. ${streak.detail}`);
+        } else if (showFlow) {
+          setAttribute('streak', 'aria-label', `${flow.label}. ${flow.detail}`);
+        }
         if (run.combo > lastStreakCombo && run.combo >= 2) streakFlashUntil = run.time + .5;
         if (run.combo !== lastStreakCombo) lastStreakCombo = run.combo;
-        toggleClass('streak', 'streak-hot', streak.visible && run.time < streakFlashUntil);
+        if (run.cleanStreak > lastFlowStreak && run.cleanStreak >= 5 && run.cleanStreak % 5 === 0)
+          streakFlashUntil = run.time + .65;
+        if (run.cleanStreak !== lastFlowStreak) lastFlowStreak = run.cleanStreak;
+        toggleClass('streak', 'streak-hot', (showBoneStreak || showFlow) && run.time < streakFlashUntil);
       }
       setText('run-score', labels.score);
       const progress = missionProgress(run, currentMission);
