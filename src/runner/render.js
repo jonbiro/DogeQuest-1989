@@ -1325,6 +1325,11 @@ export function createView(canvas) {
       const menu = ["menu", "help", "shop", "kennel"].includes(state);
       const hero = state === "menu";
       const mobileHero = hero && camera.aspect < .85;
+      // Very short portrait phones compress the menu into a narrow, scrollable
+      // column. Keep Mochi in a separate hero pocket on those screens so the
+      // oversized headline never paints over his face and ears. The wider
+      // portrait composition keeps the gentler offset used on normal phones.
+      const compactHero = mobileHero && canvas.clientHeight <= 600;
       // Action paintings are warmed when a trail actually starts, not while the
       // menu idles. Streaming them on the menu uploaded textures the player had
       // not asked for and pushed mobile GPUs toward a context loss; deferring
@@ -1519,14 +1524,14 @@ export function createView(canvas) {
       // as the character being chosen, not a piece of scenery. Keep sheets
       // and gameplay on their established origin so their interaction and
       // hit-test framing stay unchanged.
-      const heroOffsetX = mobileHero ? .16 : 0;
-      const heroOffsetY = mobileHero ? .14 : 0;
+      const heroOffsetX = mobileHero ? (compactHero ? .46 : .16) : 0;
+      const heroOffsetY = mobileHero ? (compactHero ? .08 : .14) : 0;
       // Nudge the featured puppy toward the open trail shoulder on portrait
       // screens. The title owns the left side; lifting Mochi a little keeps
       // his face out of the bottom control shelf and gives the contrast pool
       // a clean, scene-locked backdrop instead of tree foliage.
-      const heroVisualX = heroOffsetX + (mobileHero ? .11 : 0);
-      const heroVisualY = heroOffsetY + (mobileHero ? .13 : 0);
+      const heroVisualX = heroOffsetX + (mobileHero ? (compactHero ? .24 : .11) : 0);
+      const heroVisualY = heroOffsetY + (mobileHero ? (compactHero ? .08 : .13) : 0);
       dog.position.set(
         hero ? heroVisualX : menu ? 0 : x,
         (hero ? heroVisualY : menu ? 0 : y) +
