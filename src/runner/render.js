@@ -750,6 +750,22 @@ export function createView(canvas) {
   menuGlow.scale.set(3.9, 3.25, 1);
   menuGlow.renderOrder = 1.9;
   scene.add(menuGlow);
+  // Keep the running puppy legible when the trail and the coat share a pale
+  // value. This is a soft, scene-locked wash behind the dog rather than a CSS
+  // badge or an outline: it follows jumps and rides, stays below the painted
+  // silhouette, and reuses the menu gradient so it adds no texture upload.
+  const puppyFocus = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: menuGlow.material.map,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false,
+    opacity: 0,
+  }));
+  puppyFocus.name = "runner-puppy-focus";
+  puppyFocus.renderOrder = 1.92;
+  puppyFocus.scale.set(2.35, 2.55, 1);
+  scene.add(puppyFocus);
   const aura = new THREE.Mesh(
     new THREE.SphereGeometry(1.4, 20, 12),
     createShieldMaterial(),
@@ -1313,12 +1329,31 @@ export function createView(canvas) {
         dog.scale.z*=crouch.scaleZ;
         if(y<=.1&&!run.zipline)personality.legs=personality.legs.map((angle,i)=>THREE.MathUtils.lerp(angle,crouch.legs[i],crouch.amount));
       }
-      // The landing-page puppy is a featured character, not a gameplay hitbox.
-      // A small presentation boost keeps the painted silhouette legible on
-      // portrait phones without changing collision dimensions or run timing.
+      // The puppy is a featured character, not a gameplay hitbox. A modest
+      // presentation boost keeps the painted silhouette legible on portrait
+      // phones without changing collision dimensions or run timing. The
+      // gameplay lift is deliberately smaller than the menu treatment so the
+      // dog never crowds the fixed thumb controls.
       if (menu) dog.scale.multiplyScalar(camera.aspect < .85 ? 1.1 : 1.06);
+      else dog.scale.multiplyScalar(camera.aspect < .85 ? 1.05 : 1.02);
       dog.visible = true;
       menuGlow.visible = state === "menu";
+      const focusVisible = !menu && (state === "playing" || state === "paused");
+      puppyFocus.visible = focusVisible;
+      if (focusVisible) {
+        const actionScale = run.slide > 0 ? .86
+          : run.zipline ? .78
+            : run.raft ? .88
+              : run.minecart ? .84
+                : y > .1 ? 1.04 : 1;
+        const focusPulse = reducedMotion ? 1 : 1 + Math.sin(time * 3.1) * .035;
+        const focusScale = Math.abs(dog.scale.x) * actionScale * focusPulse;
+        puppyFocus.position.set(dog.position.x, dog.position.y + (run.slide > 0 ? .72 : .94), .07);
+        puppyFocus.scale.set(2.35 * focusScale, 2.55 * focusScale, 1);
+        puppyFocus.material.opacity = reducedMotion ? .10 : y > .1 ? .15 : .13;
+      } else {
+        puppyFocus.material.opacity = 0;
+      }
       raftModel.visible=!menu&&(Boolean(run.raft)||Boolean(river&&distance<river.start));
       if(run.raft&&!menu){
         raftModel.position.set(x,0,0);

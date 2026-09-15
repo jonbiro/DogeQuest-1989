@@ -72,6 +72,15 @@ test('the mobile menu keeps the featured puppy visible without competing with th
   assert.match(render, /camera\.lookAt\(mobile \? -1\.2 : -3\.5, mobile \? compact \? \.5 : 2\.08 : 1\.25, 0\)/);
 });
 
+test('gameplay keeps the painted puppy readable with a quiet scene-locked focus', () => {
+  const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
+  assert.match(render, /runner-puppy-focus/);
+  assert.match(render, /map: menuGlow\.material\.map/);
+  assert.match(render, /const focusVisible = !menu && \(state === "playing" \|\| state === "paused"\)/);
+  assert.match(render, /else dog\.scale\.multiplyScalar\(camera\.aspect < \.85 \? 1\.05 : 1\.02\)/);
+  assert.match(render, /puppyFocus\.material\.opacity = reducedMotion \? \.10 : y > \.1 \? \.15 : \.13/);
+});
+
 test('trail collectibles get a visible authored scale and gentle pulse', () => {
   const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
   assert.match(render, /templates\.bone\.scale\.setScalar\(1\.72\)/);
