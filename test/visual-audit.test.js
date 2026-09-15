@@ -61,4 +61,12 @@ test('trail collectibles get a visible authored scale and gentle pulse', () => {
   const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
   assert.match(render, /templates\.bone\.scale\.setScalar\(1\.72\)/);
   assert.match(render, /pickupPulse\(object\.type, time, object\.id, reducedMotion\)/);
+  assert.match(render, /pawDust\(time\)/);
+  assert.match(render, /flashColor\.set\('#b98a5e'\)/);
+});
+
+test('ended mobile sheets keep the details affordance above the fixed action shelf', () => {
+  assert.match(css, /#overlay\[data-kind="ended"\] \.modal-content \{\s*padding-bottom: 42px;/);
+  assert.match(css, /#overlay\[data-kind="ended"\] \.modal h2 \{\s*font-size: 30px;/);
+  assert.match(css, /#overlay\[data-kind="ended"\] #run-breakdown summary \{\s*min-height: 40px;/);
 });

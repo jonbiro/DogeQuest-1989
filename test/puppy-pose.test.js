@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {puppyPose,smoothLegAngles,bodyMotion,mochiCrouch} from "../src/runner/puppy-pose.js";
+import {puppyPose,smoothLegAngles,bodyMotion,mochiCrouch,pawDust} from "../src/runner/puppy-pose.js";
 
 test('Mochi crouches with folded paired legs and preserves body volume',()=>{
   const standing=mochiCrouch(0),sliding=mochiCrouch(1);
@@ -75,4 +75,21 @@ test("body weight follows velocity and landing impact without unbounded or reduc
     const pose=bodyMotion({vx,vy,...options});
     assert.ok(Math.abs(pose.lean)<=.23 && Math.abs(pose.pitch)<=.16);
   }
+});
+
+test('paw dust stays a small grounded cue and disappears for action or reduced motion',()=>{
+  const puffs=pawDust(1.25);
+  assert.equal(puffs.length,4);
+  for(const puff of puffs){
+    for(const value of Object.values(puff))assert.ok(Number.isFinite(value));
+    assert.ok(Math.abs(puff.x)<=.24);
+    assert.ok(puff.y>=.035&&puff.y<=.047);
+    assert.ok(puff.z>=.18&&puff.z<=.40);
+    assert.ok(puff.scale>=.018&&puff.scale<=.044);
+  }
+  assert.deepEqual(pawDust(1.25,{reducedMotion:true}),[]);
+  assert.deepEqual(pawDust(1.25,{airborne:true}),[]);
+  assert.deepEqual(pawDust(1.25,{sliding:true}),[]);
+  assert.deepEqual(pawDust(1.25,{ride:true}),[]);
+  assert.deepEqual(pawDust(Number.NaN),[]);
 });

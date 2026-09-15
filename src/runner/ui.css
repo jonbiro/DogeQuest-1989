@@ -1709,6 +1709,18 @@ canvas:focus-visible {
   box-shadow: 0 0 0 1px #102d39, 0 0 0 4px #ffe0a04d;
 }
 
+/* Results are a quick hand-off back to play, not a second long-form page.
+   On a phone the fixed action shelf used to leave the collapsed details row
+   touching its top edge. Tighten only the ended sheet so the score, lesson,
+   next milestone and details affordance all sit clearly above that shelf;
+   the content still retains a scroll fallback for unusually long receipts. */
+#overlay[data-kind="ended"] .modal-content {
+  padding-bottom: 42px;
+}
+#overlay[data-kind="ended"] #run-breakdown summary {
+  min-height: 40px;
+}
+
 /* Clubhouse cards: larger artwork and a stable two-row action layout keep the
    coat detail visible while preventing descriptions and buttons from drifting
    into neighboring cards. */
@@ -2061,6 +2073,42 @@ canvas:focus-visible {
     font-weight: 800;
     line-height: 1.35;
     letter-spacing: .015em;
+  }
+
+  /* Keep a normal 390 × 844 result glanceable without making the player
+     scroll before the retry action. The long rewards receipt remains
+     available inside the contained details disclosure below. */
+  #overlay[data-kind="ended"] .modal {
+    padding: 16px;
+  }
+  #overlay[data-kind="ended"] .modal-actions {
+    margin: 10px -16px -16px;
+    padding: 10px 16px 16px;
+  }
+  #overlay[data-kind="ended"] .modal h2 {
+    font-size: 30px;
+    margin: 8px 0 6px;
+  }
+  #overlay[data-kind="ended"] #overlay-copy {
+    margin: 6px 0;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  #overlay[data-kind="ended"] #results {
+    margin: 12px 0;
+    gap: 8px;
+  }
+  #overlay[data-kind="ended"] #results strong {
+    margin-top: 6px;
+    font-size: 24px;
+  }
+  #overlay[data-kind="ended"] #run-lesson,
+  #overlay[data-kind="ended"] #run-highlights {
+    margin: 8px 0;
+    line-height: 1.4;
+  }
+  #overlay[data-kind="ended"] #run-lesson {
+    padding: 9px;
   }
 }
 

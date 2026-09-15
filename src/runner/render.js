@@ -15,7 +15,7 @@ import {createBoneGeometry} from './bone-model.js';
 import {createCapeGeometry} from './cape-model.js';
 import {createSky} from './sky.js';
 import {createMountainGeometry,blendMountainArea} from './mountain.js';
-import { puppyPose, smoothLegAngles, bodyMotion, mochiCrouch } from "./puppy-pose.js";
+import { puppyPose, smoothLegAngles, bodyMotion, mochiCrouch, pawDust } from "./puppy-pose.js";
 import { createMochiModel } from "./mochi-model.js";
 import { createClassicEarGeometries } from "./ear-model.js";
 import { createClassicFur } from "./classic-fur.js";
@@ -1436,6 +1436,23 @@ export function createView(canvas) {
             flashes.setMatrixAt(sparkCount++, flashMatrix);
           }
         }
+      // A few warm, grounded puffs make the painted puppy's footfalls read
+      // against the pale paving. Reuse the existing flash batch so a running
+      // dog gets motion punctuation without another material, draw call or
+      // persistent overlay. Rides, jumps and slides keep their own silhouettes
+      // and effects; only a calm ground stride receives this trace.
+      if (!menu && !reducedMotion && !run.ended
+        && y < .12 && run.slide <= 0 && !run.zipline && !run.raft && !run.minecart) {
+        flashColor.set('#b98a5e');
+        for (const puff of pawDust(time)) {
+          if (sparkCount >= 192) break;
+          const puffScale = puff.scale * (0.75 + Math.abs(Math.sin(time * 8.4 + puff.z)) * .25);
+          flashMatrix.makeScale(puffScale, puffScale * .42, puffScale * 1.15);
+          flashMatrix.setPosition(x + puff.x, puff.y, puff.z);
+          flashes.setColorAt(sparkCount, flashColor);
+          flashes.setMatrixAt(sparkCount++, flashMatrix);
+        }
+      }
       flashes.count = sparkCount;
       flashes.instanceMatrix.needsUpdate = true;
       if(flashes.instanceColor)flashes.instanceColor.needsUpdate = true;

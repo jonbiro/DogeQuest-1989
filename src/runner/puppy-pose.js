@@ -35,3 +35,26 @@ export function bodyMotion({vx=0,vy=0,y=0,time=0,landing=null,ziplining=false,re
     ? Math.sin(Math.PI*age/.28)*Math.exp(-10*age)*clamp(landing.speed/22,0,1)*.22 : 0;
   return {lean:clamp(-vx*.012,-.23,.23),pitch:ziplining?0:clamp(vy*.011,-.16,.14),compression};
 }
+
+// Tiny, low-contrast puffs sell paw contact without turning the trail into a
+// particle storm. They are cosmetic positions consumed by the renderer's
+// existing recycled flash batch; the simulation never sees them. Returning
+// four bounded puffs instead of allocating sprites per footfall keeps this
+// readable on phones while giving the full-body paintings a little life.
+export function pawDust(time,{reducedMotion=false,airborne=false,sliding=false,ride=false}={}) {
+  if(reducedMotion||airborne||sliding||ride||!Number.isFinite(time))return [];
+  const phase=time*8.4;
+  return [0,1,2,3].map(index=>{
+    const side=index%2===0?-1:1;
+    const footPhase=phase+(index<2?0:Math.PI)+index*.42;
+    const contact=(Math.sin(footPhase)+1)/2;
+    return {
+      x:side*(.17+contact*.045),
+      y:.035+contact*.012,
+      z:.18+index*.07,
+      // Small puffs expand as the foot leaves the ground, then settle back
+      // into the next step. The minimum keeps a quiet trace between beats.
+      scale:.018+.026*contact,
+    };
+  });
+}
