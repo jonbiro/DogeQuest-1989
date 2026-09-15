@@ -37,6 +37,9 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(css, /padding: 0 3px 24px/);
   assert.match(css, /#mission-label-mobile \{ display: none; \}/);
   assert.match(css, /#mission-hud\[data-dock="mission-summary"\] #mission-label-mobile/);
+  assert.match(css, /#mission-hud\[data-dock="mission-summary"\]\[data-posture="jump"\],/);
+  assert.match(css, /translateY\(clamp\(170px, 27vh, 240px\)\)/);
+  assert.match(app, /setData\('mission-hud', 'posture', posture\)/);
   assert.match(css, /@media \(min-width: 701px\) \{\s*\.trail-tag \{ margin-top: 18px; \}/);
   assert.match(css, /#game\[data-state="menu"\] footer > span \{ display: none; \}/);
   assert.match(css, /#game\[data-state="menu"\] footer \{ justify-content: flex-end; pointer-events: none; \}/);

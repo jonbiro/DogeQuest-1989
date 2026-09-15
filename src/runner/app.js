@@ -425,10 +425,16 @@ function syncDock() {
   // bundle with a shell from before one of the optional message nodes existed;
   // read and write those nodes defensively so a missing label never becomes a
   // second frame-error after an otherwise valid move.
+  const posture = $('scene')?.dataset?.posture || 'run';
   const mode = dockMode({cue:textOf('cue'),route:textOf('route-choice'),
     notice:textOf('toast'),missionComplete:missionAnnounced && !activeCourse(run)});
   for (const id of ['cue','route-choice','toast','mission-summary']) setHidden(id, mode !== id);
   setData('mission-hud', 'dock', mode || 'none');
+  // Mission progress is useful between decisions, but it should not cover the
+  // puppy when an authored jump or ride pose takes over the centre of the
+  // trail. CSS uses this posture marker to move the quiet chip below the dog;
+  // urgent cues still own the dock and are not moved.
+  setData('mission-hud', 'posture', posture);
   setHidden('mission-hud', state !== 'playing' || !mode);
   const coach = $('gesture-coach');
   if (coach) {
