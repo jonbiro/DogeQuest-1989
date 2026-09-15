@@ -5,7 +5,7 @@ import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.j
 import { LANES, PICKUPS, seededRandom } from "./world.js";
 import { createRouteSampler } from "./route.js";
 import { upcomingCorner } from "./turns.js";
-import { objectVisible, ziplineSignVisible } from "./visibility.js";
+import { objectVisible, ziplineSignVisible, ziplineSpineVisible } from "./visibility.js";
 import { createCornerRoad } from "./corner-road.js";
 import { PUPPIES, DEFAULT_PUPPY } from "./collection.js";
 import { puppyVisual } from "./puppy-visuals.js";
@@ -1745,7 +1745,7 @@ export function createView(canvas) {
             // and handle in the silhouette gap; the support otherwise reads
             // as a black pole through the dog's raised arms.
             if (child.userData.ziplineSpine)
-              child.visible=!run.zipline;
+              child.visible=ziplineSpineVisible(object,distance,{ziplining:Boolean(run.zipline)});
           }
           item.position.set(
             LANES[object.lane],

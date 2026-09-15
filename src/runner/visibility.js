@@ -15,3 +15,12 @@ export function objectVisible(object, distance) {
 export function ziplineSignVisible(object, distance) {
   return !object.caught && object.at-distance >= 3;
 }
+
+// The start gantry's centre support is useful as a distant landmark, but it
+// sits exactly in the transparent opening of the hanging painting at the
+// catch point. Retire it before the dog reaches the final approach so the
+// action silhouette stays clean without changing the station or cable.
+export function ziplineSpineVisible(object, distance, {ziplining = false} = {}) {
+  const approach = object.at - distance;
+  return !ziplining && approach > 14;
+}
