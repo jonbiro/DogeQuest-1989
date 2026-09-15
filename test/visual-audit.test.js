@@ -67,8 +67,10 @@ test('the live runner never layers Mochi’s legacy polygon rig under the painti
 test('the mobile menu keeps the featured puppy visible without competing with the title', () => {
   const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
   assert.match(render, /menu-puppy-spotlight/);
+  assert.match(render, /menu-puppy-contrast/);
+  assert.match(render, /menuContrast.visible = state === "menu"/);
   assert.match(render, /menuGlow\.visible = state === "menu"/);
-  assert.match(render, /if \(menu\) dog\.scale\.multiplyScalar\(camera\.aspect < \.85 \? 1\.1 : 1\.06\)/);
+  assert.match(render, /if \(menu\) dog\.scale\.multiplyScalar\(camera\.aspect < \.85 \? 1\.14 : 1\.09\)/);
   assert.match(render, /camera\.lookAt\(mobile \? -1\.2 : -3\.5, mobile \? compact \? \.5 : 2\.08 : 1\.25, 0\)/);
 });
 

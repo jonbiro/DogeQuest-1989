@@ -750,6 +750,32 @@ export function createView(canvas) {
   menuGlow.scale.set(3.9, 3.25, 1);
   menuGlow.renderOrder = 1.9;
   scene.add(menuGlow);
+  // A soft dark falloff gives Mochi a clear figure/ground break when the camp
+  // road carries the same cream and sage values as his coat. Keep this behind
+  // the painted puppy and separate from the warm spotlight so it reads as a
+  // natural pool of shade, not a sticker or a new HUD panel.
+  const menuContrastCanvas = document.createElement("canvas");
+  menuContrastCanvas.width = menuContrastCanvas.height = 128;
+  const menuContrastContext = menuContrastCanvas.getContext("2d");
+  const menuContrastGradient = menuContrastContext.createRadialGradient(64, 64, 10, 64, 64, 64);
+  menuContrastGradient.addColorStop(0, "rgba(12,43,48,.34)");
+  menuContrastGradient.addColorStop(.52, "rgba(12,43,48,.20)");
+  menuContrastGradient.addColorStop(1, "rgba(12,43,48,0)");
+  menuContrastContext.fillStyle = menuContrastGradient;
+  menuContrastContext.fillRect(0, 0, 128, 128);
+  const menuContrast = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: new THREE.CanvasTexture(menuContrastCanvas),
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false,
+    opacity: .9,
+  }));
+  menuContrast.name = "menu-puppy-contrast";
+  menuContrast.position.set(0, 1.08, .01);
+  menuContrast.scale.set(3.05, 3.15, 1);
+  menuContrast.renderOrder = 1.88;
+  scene.add(menuContrast);
   // Keep the running puppy legible when the trail and the coat share a pale
   // value. This is a soft, scene-locked wash behind the dog rather than a CSS
   // badge or an outline: it follows jumps and rides, stays below the painted
@@ -1336,10 +1362,11 @@ export function createView(canvas) {
       // phones without changing collision dimensions or run timing. The
       // gameplay lift is deliberately smaller than the menu treatment so the
       // dog never crowds the fixed thumb controls.
-      if (menu) dog.scale.multiplyScalar(camera.aspect < .85 ? 1.1 : 1.06);
+      if (menu) dog.scale.multiplyScalar(camera.aspect < .85 ? 1.14 : 1.09);
       else dog.scale.multiplyScalar(camera.aspect < .85 ? 1.05 : 1.02);
       dog.visible = true;
       menuGlow.visible = state === "menu";
+      menuContrast.visible = state === "menu";
       const focusVisible = !menu && (state === "playing" || state === "paused");
       puppyFocus.visible = focusVisible;
       if (focusVisible) {
