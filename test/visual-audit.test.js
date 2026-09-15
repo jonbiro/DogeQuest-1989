@@ -30,6 +30,9 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(css, /outline: 2px solid #ffe0a0/);
   assert.match(css, /canvas:focus-visible \{[\s\S]*?outline: none;/);
   assert.match(css, /padding: 0 3px 24px/);
+  assert.match(css, /#mission-label-mobile \{ display: none; \}/);
+  assert.match(css, /#mission-hud\[data-dock="mission-summary"\] #mission-label-mobile/);
+  assert.match(app, /setText\('mission-label-mobile', missionSummaryLabel/);
 });
 
 test('painted puppy poses inherit world atmosphere and ease frame transforms', () => {

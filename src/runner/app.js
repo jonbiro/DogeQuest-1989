@@ -1,6 +1,6 @@
 import { createRun, act, step } from "./world.js";
 import {createPracticeRun,createZiplinePracticeRun,createRaftPracticeRun,createTurnPracticeRun,createGapPracticeRun,createWeavePracticeRun,stepPractice,practiceCue,practiceResult,practiceOffer} from './practice.js';
-import {runHudLabels} from './hud-labels.js';
+import {runHudLabels,missionSummaryLabel} from './hud-labels.js';
 import {courseProgress,activeCourse} from './courses.js';
 import {RESUME_DURATION,resumeStep} from './resume.js';
 import {installBackupControls} from './backup-ui.js';
@@ -1881,8 +1881,12 @@ function frame(now) {
       setText('run-score', labels.score);
       const progress = missionProgress(run, currentMission);
       const courseStatus=courseProgress(run);
-      setText('mission-label', courseStatus?.label ??
-        `${run.missions.indexOf(currentMission)+1}/3 · ${currentMission.title} · ${progress}/${currentMission.target} ${currentMission.unit}`);
+      const missionPosition = run.missions.indexOf(currentMission) + 1;
+      const missionLabel = courseStatus?.label ??
+        `${missionPosition}/3 · ${currentMission.title} · ${progress}/${currentMission.target} ${currentMission.unit}`;
+      setText('mission-label', missionLabel);
+      setText('mission-label-mobile', missionSummaryLabel(currentMission, progress, missionPosition, run.missions.length));
+      setAttribute('mission-label', 'aria-label', missionLabel);
       setProperty('mission-progress', 'max', courseStatus?.max ?? currentMission.target);
       setProperty('mission-progress', 'value', courseStatus?.value ?? progress);
       setAttribute('mission-progress', 'aria-label', courseStatus?.ariaLabel ?? (courseStatus?'Clean course moves':'Challenge progress'));

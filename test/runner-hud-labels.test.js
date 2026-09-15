@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {runHudLabels} from '../src/runner/hud-labels.js';
+import {runHudLabels,missionSummaryLabel} from '../src/runner/hud-labels.js';
 import {createRun} from '../src/runner/world.js';
 import {createPracticeRun} from '../src/runner/practice.js';
 
@@ -28,4 +28,10 @@ test('route labels end at the exact boundary and practice remains explicitly uns
   const practice=createPracticeRun();
   practice.route={kind:'challenge',until:1000};practice.challengeTarget=100;
   assert.deepEqual(runHudLabels(practice,100),{region:'Practice · no penalties',rhythm:'',score:'0/3 moves cleared'});
+});
+
+test('portrait mission summaries stay scannable while preserving progress',()=>{
+  assert.equal(missionSummaryLabel({metric:'regionalCourses',title:'Course conqueror',target:1},0,1,3),'1/3 · Course · 0/1');
+  assert.equal(missionSummaryLabel({metric:'bestCombo',title:'Snack streak',target:10},7,2,3),'2/3 · Streak · 7/10');
+  assert.equal(missionSummaryLabel({metric:'unknown',title:'A very long custom goal',target:4},9,0,3),'1/3 · A very long custom goal · 4/4');
 });

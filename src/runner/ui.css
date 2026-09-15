@@ -1606,6 +1606,7 @@ canvas:focus-visible {
   line-height: 1.35;
   letter-spacing: .015em;
 }
+#mission-label-mobile { display: none; }
 #mission-progress {
   height: 6px;
   margin-top: 7px;
@@ -2008,6 +2009,31 @@ canvas:focus-visible {
   .prize-card { grid-template-columns: 1fr; grid-template-areas: "heading" "status" "progress"; gap: 8px; }
   .prize-status { max-width: none; padding: 0; text-align: left; }
   #mission-hud[data-dock="mission-summary"] { width: min(250px, 62vw); max-width: 250px; }
+  /* On a phone, the quiet goal is a progress cue, not a sentence that gets
+     chopped after the title. Keep the complete label available to VoiceOver
+     while the short visual label stays on one clean line. */
+  #mission-hud[data-dock="mission-summary"] #mission-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  #mission-hud[data-dock="mission-summary"] #mission-label-mobile {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #fff1c6;
+    font-size: 12px;
+    font-weight: 800;
+    line-height: 1.35;
+    letter-spacing: .015em;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
