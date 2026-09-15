@@ -451,14 +451,47 @@ function maskedHeadTexture(texture, key) {
 }
 
 function makeMaterial() {
-  return new THREE.SpriteMaterial({
-    color: '#ffffff',
+  const material = new THREE.SpriteMaterial({
+    // A very slight warm paper tint makes the supplied Mochi paintings sit in
+    // the sunlit trail palette instead of looking like a stark sticker pasted
+    // over the low-poly world. Keeping it near-white preserves the coat's
+    // original greys and cream highlights.
+    color: '#fff8ec',
     transparent: true,
-    alphaTest: 0.03,
+    // Trim semi-transparent matte pixels at the edge of older exports. This
+    // removes the dark/grey fringe between paws and keeps every pose silhouette
+    // clean when it swaps at speed.
+    alphaTest: 0.06,
     depthTest: true,
     depthWrite: false,
+    // Let the painted silhouette participate in the same atmospheric fade and
+    // tone mapping as the low-poly trail. Without these flags the sprite stays
+    // perfectly flat and crisp at the horizon, which is what made it read as a
+    // sticker sitting on top of the world.
+    fog: true,
+    toneMapped: true,
     sizeAttenuation: true,
   });
+  // The supplied paintings use a near-black ink contour.  A straight
+  // SpriteMaterial leaves that contour harsher than the softly lit low-poly
+  // scene, which is why the puppy can still read as a sticker even after fog
+  // and contact shadows are applied.  Grade only the deepest ink values in
+  // the fragment shader toward a warm brown; the coat highlights and grey
+  // patches stay authored and intact while the silhouette shares the world's
+  // warm, illustrated palette.  This is deliberately a material treatment,
+  // not a second copy of the artwork, so it remains cheap on mobile.
+  material.onBeforeCompile = shader => {
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <map_fragment>',
+      `#include <map_fragment>
+      float puppyInkLuma = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
+      float puppyInkAmount = (1.0 - smoothstep(0.025, 0.18, puppyInkLuma)) * 0.52;
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.20, 0.145, 0.12), puppyInkAmount);
+      `,
+    );
+  };
+  material.customProgramCacheKey = () => 'puppy-ink-grade-v1';
+  return material;
 }
 
 // Costumes are intentionally painted as small, transparent accessory plates
@@ -862,6 +895,20 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
   let headBaseScale = new THREE.Vector3(WORLD_HEIGHT, WORLD_HEIGHT, 1);
   const bodyBasePosition = new THREE.Vector3(0, WORLD_HEIGHT / 2, 0);
   const headBasePosition = new THREE.Vector3();
+  // Pose paintings are normalized to the same visible bounds, but an authored
+  // silhouette can still have a different shoulder or tail contour. Ease the
+  // *transform* for a tenth of a second when the active painting changes so a
+  // stride-to-jump or turn-to-slide swap never produces a scale/pivot pop.
+  let visiblePose = 'idle';
+  let poseTransitionStart = 0;
+  let poseTransitionFrom = {
+    scaleX: WORLD_HEIGHT,
+    scaleY: WORLD_HEIGHT,
+    x: bodyBasePosition.x,
+    y: bodyBasePosition.y,
+    rotation: 0,
+  };
+  let lastPoseOutput = {...poseTransitionFrom};
 
   function accessoryFor(key, costume, layer) {
     const cacheKey = `${key}:${costume}:${layer}`;
@@ -1073,6 +1120,10 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
   function configurePoseStack(key, texture) {
     const map = poseMapFor(key);
     map.set('idle', texture);
+    visiblePose = 'idle';
+    poseTransitionStart = 0;
+    poseTransitionFrom = {...lastPoseOutput, scaleX: WORLD_HEIGHT, scaleY: WORLD_HEIGHT, x: 0, y: WORLD_HEIGHT / 2, rotation: 0};
+    lastPoseOutput = {...poseTransitionFrom};
     // Keep the first paint small. Idle and the next ground stride are enough
     // to make the camp and opening run feel alive; jumps, slides, turns,
     // hangs, and Mochi's rear view stream only when the physics requests them.
@@ -1412,6 +1463,16 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     };
 
     const activeBasePose = basePoseFor(activePose);
+    if (activePose !== visiblePose) {
+      visiblePose = activePose;
+      poseTransitionStart = time;
+      poseTransitionFrom = {...lastPoseOutput};
+    }
+    const transitionDuration = reducedMotion ? 0 : .11;
+    const transitionProgress = transitionDuration === 0
+      ? 1
+      : THREE.MathUtils.clamp((time - poseTransitionStart) / transitionDuration, 0, 1);
+    const transitionEase = transitionProgress * transitionProgress * (3 - 2 * transitionProgress);
     const cadence = Math.sin(time * gaitRate);
     const raftBob = motion && activeBasePose === 'raft' ? Math.sin(time * 2.25 + look * .35) : 0;
     const raftPaddle = motion && activeBasePose === 'raft' ? Math.sin(time * 4.5 + .55) : 0;
@@ -1483,18 +1544,22 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
             : basePose === 'away' ? awayMotion * .012
               : basePose === 'raft' ? raftBob * .018 : 0;
       const impactRoll = basePose === 'hang' ? 0 : landingPulse ? Math.sin(time * 28) * landingPulse * .12 : 0;
-      sprite.material.rotation = lean * (basePose === 'turn' ? .45 : .2) + actionRotation;
-      sprite.material.rotation += impactRoll;
-      sprite.scale.set(
-        scale.x * flip * actionScaleX * (1 - stretch) * (1 + landingPulse * .06),
-        scale.y * actionScaleY * (1 + stretch) * (1 - landingPulse * .1),
-        1,
-      );
-      sprite.position.set(
-        basePosition.x + sway + (basePose === 'turn' ? look * .032 : 0) + (basePose === 'hang' ? hangSwing * .018 : 0) + (basePose === 'away' ? awayMotion * .012 : 0) + (basePose === 'raft' ? raftBob * .012 : 0),
-        basePosition.y + bounce + actionDrop - landingPulse * .04,
-        basePosition.z,
-      );
+      const targetRotation = lean * (basePose === 'turn' ? .45 : .2) + actionRotation + impactRoll;
+      const targetScaleX = scale.x * flip * actionScaleX * (1 - stretch) * (1 + landingPulse * .06);
+      const targetScaleY = scale.y * actionScaleY * (1 + stretch) * (1 - landingPulse * .1);
+      const targetX = basePosition.x + sway + (basePose === 'turn' ? look * .032 : 0) + (basePose === 'hang' ? hangSwing * .018 : 0) + (basePose === 'away' ? awayMotion * .012 : 0) + (basePose === 'raft' ? raftBob * .012 : 0);
+      const targetY = basePosition.y + bounce + actionDrop - landingPulse * .04;
+      const output = {
+        scaleX: THREE.MathUtils.lerp(poseTransitionFrom.scaleX, targetScaleX, transitionEase),
+        scaleY: THREE.MathUtils.lerp(poseTransitionFrom.scaleY, targetScaleY, transitionEase),
+        x: THREE.MathUtils.lerp(poseTransitionFrom.x, targetX, transitionEase),
+        y: THREE.MathUtils.lerp(poseTransitionFrom.y, targetY, transitionEase),
+        rotation: THREE.MathUtils.lerp(poseTransitionFrom.rotation, targetRotation, transitionEase),
+      };
+      sprite.material.rotation = output.rotation;
+      sprite.scale.set(output.scaleX, output.scaleY, 1);
+      sprite.position.set(output.x, output.y, basePosition.z);
+      lastPoseOutput = output;
     }
 
     // Keep wardrobe plates aligned to the currently selected painting. They
@@ -1509,16 +1574,22 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     const accessoryScaleX = activeBasePose === 'slide' ? 1.055 : activeBasePose === 'jump' ? .985 - vertical * .012 : 1;
     const accessoryScaleY = activeBasePose === 'slide' ? .91 : activeBasePose === 'jump' ? 1.018 + vertical * .025 : 1;
     const accessoryImpactDrop = -landingPulse * .04;
-    accessorySprites.back.position.set(bodyBasePosition.x + sway + (activeBasePose === 'hang' ? hangSwing * .018 : 0), bodyBasePosition.y + bounce + accessoryDrop + accessoryImpactDrop, -.018);
-    accessorySprites.mid.position.set(bodyBasePosition.x + sway + (activeBasePose === 'hang' ? hangSwing * .018 : 0), bodyBasePosition.y + bounce + accessoryDrop + accessoryImpactDrop, .022);
-    accessorySprites.top.position.set(bodyBasePosition.x + sway + look * .02 + (activeBasePose === 'hang' ? hangSwing * .018 : 0), bodyBasePosition.y + bounce + accessoryDrop + accessoryImpactDrop, .055);
+    const accessoryBaseX = bodyBasePosition.x + sway;
+    const accessoryBaseY = bodyBasePosition.y + bounce + accessoryDrop + accessoryImpactDrop;
+    const accessoryX = THREE.MathUtils.lerp(poseTransitionFrom.x, accessoryBaseX, transitionEase);
+    const accessoryY = THREE.MathUtils.lerp(poseTransitionFrom.y, accessoryBaseY, transitionEase);
+    accessorySprites.back.position.set(accessoryX + (activeBasePose === 'hang' ? hangSwing * .018 : 0), accessoryY, -.018);
+    accessorySprites.mid.position.set(accessoryX + (activeBasePose === 'hang' ? hangSwing * .018 : 0), accessoryY, .022);
+    accessorySprites.top.position.set(accessoryX + look * .02 + (activeBasePose === 'hang' ? hangSwing * .018 : 0), accessoryY, .055);
+    const accessoryXScale = THREE.MathUtils.lerp(Math.abs(poseTransitionFrom.scaleX), activeScale.x * accessoryScaleX * (1 - stretch) * (1 + landingPulse * .06), transitionEase);
+    const accessoryYScale = THREE.MathUtils.lerp(Math.abs(poseTransitionFrom.scaleY), activeScale.y * accessoryScaleY * (1 - landingPulse * .1), transitionEase);
     for (const sprite of Object.values(accessorySprites)) {
       sprite.scale.set(
-        activeScale.x * accessoryScaleX * (1 - stretch) * (1 + landingPulse * .06),
-        activeScale.y * accessoryScaleY * (1 - landingPulse * .1),
+        accessoryXScale,
+        accessoryYScale,
         1,
       );
-      sprite.material.rotation = landingPulse ? Math.sin(time * 28) * landingPulse * .12 : 0;
+      sprite.material.rotation = THREE.MathUtils.lerp(poseTransitionFrom.rotation, landingPulse ? Math.sin(time * 28) * landingPulse * .12 : 0, transitionEase);
       sprite.material.opacity = accessoryAlpha;
     }
   }

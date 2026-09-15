@@ -1560,3 +1560,486 @@ h1 { letter-spacing: -.055em; word-spacing: .07em; }
     max-width: 250px;
   }
 }
+
+/* -------------------------------------------------------------------------
+   Visual audit pass
+
+   The runner has grown several generations of UI rules. Keep this final,
+   intentionally scoped layer as the single source of truth for the surfaces
+   players see in a run: it prevents old compact-card rules from winning at a
+   breakpoint and keeps the scrollable modal from hiding its action bar.
+   ------------------------------------------------------------------------- */
+
+button:focus-visible,
+a:focus-visible,
+canvas:focus-visible {
+  outline: 2px solid #ffe0a0;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 1px #102d39, 0 0 0 4px #ffe0a04d;
+}
+canvas:focus-visible {
+  /* The scene canvas receives programmatic focus when a run starts. A ring
+     around the entire viewport then becomes a permanent border competing
+     with the trail. Action buttons and links retain the visible keyboard
+     indicator; the canvas itself is an interaction surface, not a separate
+     destination, so keep its focus treatment visually quiet. */
+  outline: none;
+  outline-offset: 0;
+  box-shadow: none;
+}
+
+/* Keep the live readouts legible over every area palette without enlarging
+   them into a second control layer. */
+#mission-hud {
+  padding: 9px 12px;
+  max-width: 460px;
+  font-size: 12px;
+  color: #f7f5df;
+  background: #102b3eee;
+  border-color: #f3d38c66;
+  box-shadow: 0 7px 22px #061a2440;
+}
+#mission-label {
+  color: #fff1c6;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: .015em;
+}
+#mission-progress {
+  height: 6px;
+  margin-top: 7px;
+  border-radius: 999px;
+  background: #071b265c;
+}
+#mission-progress::-webkit-progress-bar { background: #071b265c; border-radius: 999px; }
+#mission-progress::-webkit-progress-value { background: linear-gradient(90deg,#9be7d7,#ffe0a0); border-radius: 999px; }
+#mission-progress::-moz-progress-bar { background: linear-gradient(90deg,#9be7d7,#ffe0a0); border-radius: 999px; }
+#mission-hud[data-dock="mission-summary"] {
+  width: min(300px, 44vw);
+  max-width: 300px;
+  padding: 8px 11px;
+  opacity: 1;
+  background: #102b3eea;
+  border-color: #f3d38c59;
+}
+#mission-hud[data-dock="mission-summary"] #mission-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#mission-hud[data-dock="mission-summary"] #mission-progress { opacity: .92; }
+
+.power-chip {
+  min-height: 38px;
+  padding: 7px 10px;
+  background: #143746f5;
+  border-color: #b9e9df80;
+  box-shadow: inset 0 1px 0 #ffffff16, 0 4px 12px #061a2428;
+  font-size: 12px;
+  font-weight: 750;
+}
+.bones {
+  min-height: 40px;
+  padding: 7px 11px;
+  box-shadow: inset 0 1px 0 #ffffff16, 0 4px 12px #061a2428;
+}
+
+/* Modal content is now a proper scroll region with a visible, contained
+   action shelf. The extra width gives the passport and prize cabinet room to
+   breathe instead of forcing labels into narrow columns. */
+.modal {
+  width: min(760px, calc(100% - 8px));
+  max-width: 760px;
+  padding: 28px;
+}
+.modal-content {
+  padding: 0 3px 24px;
+}
+.modal-actions {
+  margin: 14px -28px -28px;
+  padding: 14px 28px 28px;
+  border-top: 1px solid #d9ecdf2e;
+  background: linear-gradient(180deg, #122832e6, #10232cf8);
+}
+#overlay[data-kind="kennel"] .modal,
+#overlay[data-kind="help"] .modal {
+  max-width: 760px;
+}
+#overlay[data-kind="kennel"] .modal-content,
+#overlay[data-kind="help"] .modal-content {
+  text-align: left;
+}
+#overlay[data-kind="kennel"] .modal h2,
+#overlay[data-kind="help"] .modal h2 {
+  text-align: center;
+}
+#overlay .backup-actions button:focus-visible {
+  outline: 2px solid #ffe0a0;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 1px #102d39, 0 0 0 4px #ffe0a04d;
+}
+
+/* Clubhouse cards: larger artwork and a stable two-row action layout keep the
+   coat detail visible while preventing descriptions and buttons from drifting
+   into neighboring cards. */
+#collection {
+  text-align: left;
+}
+#collection[data-category="passport"],
+#collection[data-category="prizes"] {
+  display: block;
+}
+/* The original desktop catalogue selector carries the modal, overlay and
+   collection IDs, so a plain #collection rule cannot undo its two-column
+   layout. Give the passport and prize cabinet an explicit full-width track;
+   otherwise the right half of the modal becomes dead space and every badge or
+   prize card is squeezed into the left column. */
+#overlay[data-kind="kennel"] .modal-content #collection[data-category="passport"] {
+  display: block;
+  grid-template-columns: none;
+  column-gap: 0;
+  width: 100%;
+}
+#overlay[data-kind="kennel"] .modal-content #collection[data-category="prizes"] {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  column-gap: 0;
+  width: 100%;
+  padding-bottom: 28px;
+}
+#overlay[data-kind="kennel"] .modal-content #collection[data-category="passport"] > #trail-passport {
+  width: 100%;
+}
+#collection .collection-card {
+  display: grid;
+  grid-template-columns: minmax(96px, 112px) minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 14px;
+  min-height: 132px;
+  padding: 16px 0;
+  border-bottom: 1px solid #d7ece22e;
+}
+#collection .collection-card img {
+  width: 108px;
+  height: 108px;
+  grid-row: 1 / span 2;
+  border-radius: 20px;
+  background: radial-gradient(circle at 50% 35%, #fff7dc 0 42%, #caa972 100%);
+  box-shadow: inset 0 0 0 1px #26382d33, 0 8px 18px #071b2638;
+}
+#collection .collection-card p {
+  min-width: 0;
+  margin: 0;
+  color: #edf4e9;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+#collection .collection-card > button {
+  grid-column: 2;
+  justify-self: start;
+  min-width: 116px;
+  min-height: 42px;
+}
+#collection .preview-angle {
+  min-height: 44px;
+  margin: 4px 0 4px;
+  border-color: #b9e9df5c;
+}
+#collection .clubhouse-categories {
+  position: sticky;
+  top: -1px;
+  z-index: 3;
+  margin: 0 0 12px;
+  padding: 5px;
+  border: 1px solid #b8d0d340;
+  border-radius: 15px;
+  background: #102b3ef2;
+  box-shadow: 0 6px 16px #061a2430;
+}
+#collection .clubhouse-categories button {
+  min-height: 40px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+@media (min-width: 700px) {
+  #overlay[data-kind="kennel"] .modal-content #collection:not([data-category="passport"]):not([data-category="prizes"]) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 22px;
+    align-items: start;
+  }
+  #collection .collection-card {
+    grid-template-columns: 104px minmax(0, 1fr);
+    min-height: 130px;
+  }
+  #collection .collection-card img { width: 100px; height: 100px; }
+  #collection .collection-card p { font-size: 13px; }
+  /* Match the specificity of the legacy desktop catalogue rule so the
+     enlarged thumbnails really win in the built stylesheet (the old 64px
+     value otherwise remains active despite appearing earlier in the file). */
+  #overlay[data-kind="kennel"] .modal-content #collection:not([data-category="passport"]):not([data-category="prizes"]) .collection-card {
+    grid-template-columns: minmax(104px, 108px) minmax(0, 1fr);
+    gap: 10px 14px;
+    min-height: 124px;
+    padding: 10px 0;
+  }
+  #overlay[data-kind="kennel"] .modal-content #collection:not([data-category="passport"]):not([data-category="prizes"]) .collection-card img {
+    width: 104px;
+    height: 104px;
+    border-radius: 18px;
+  }
+  #overlay[data-kind="kennel"] .modal-content #collection:not([data-category="passport"]):not([data-category="prizes"]) .collection-card p {
+    font-size: 13px;
+    line-height: 1.5;
+  }
+}
+
+/* Passport cards use a deliberate summary column and a badge rail. Labels
+   remain whole words at desktop widths; on a phone they collapse cleanly to a
+   single column instead of becoming one-letter stacks. */
+#trail-passport {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+#trail-passport .mastery-intro {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #f3d38c52;
+  border-radius: 13px;
+  background: #173746d9;
+  color: #fff1c6;
+  font-size: 13px;
+  line-height: 1.5;
+}
+#trail-passport > .mastery-card,
+#trail-passport .other-passport-cards .mastery-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 1.1fr);
+  gap: 10px 18px;
+  align-items: center;
+  margin: 0;
+  padding: 18px;
+  border-color: #d5edb64d;
+  background: linear-gradient(145deg,#ffffff12,#ffffff03);
+}
+#trail-passport .mastery-card h3 {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 17px;
+}
+#trail-passport .mastery-card > p:not(.mastery-badges) {
+  grid-column: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+#trail-passport .mastery-card > progress {
+  grid-column: 1;
+  width: 100%;
+  height: 7px;
+}
+#trail-passport .mastery-card > .mastery-badges {
+  grid-column: 2;
+  grid-row: 2 / span 3;
+  min-width: 0;
+  margin: 0;
+}
+#trail-passport .mastery-card > p:not(.mastery-badges):last-child {
+  grid-column: 1 / -1;
+  color: #bfd8d2;
+}
+.mastery-badges {
+  grid-template-columns: repeat(3, minmax(74px, 1fr));
+  gap: 8px;
+}
+.mastery-badge {
+  min-width: 0;
+  min-height: 88px;
+  padding: 10px 6px;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: none;
+  font-size: 11px;
+  line-height: 1.25;
+}
+.mastery-badge span,
+.mastery-badge small {
+  white-space: normal;
+  overflow-wrap: normal;
+}
+.mastery-badge small { font-size: 10px; }
+#trail-passport .other-passport-cards {
+  margin: 0;
+  border-top: 1px solid #d5edb633;
+}
+#trail-passport .other-passport-cards > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+/* Prize cabinet: every prize owns one card, so its title, description, meter
+   and status can no longer land in separate grid rows. */
+#collection[data-category="prizes"] {
+  display: grid;
+  gap: 12px;
+  padding-bottom: 28px;
+}
+#collection[data-category="prizes"] > h3 { margin: 4px 0 0; }
+.prize-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "heading status"
+    "progress progress";
+  gap: 10px 16px;
+  min-width: 0;
+  padding: 15px 16px;
+  border: 1px solid #d5edb64d;
+  border-radius: 15px;
+  background: linear-gradient(145deg,#ffffff12,#ffffff03);
+}
+.prize-card[data-earned="true"] { border-color: #f3d38c99; background: linear-gradient(145deg,#ffe0a018,#ffffff04); }
+.prize-card-heading { grid-area: heading; display: flex; align-items: flex-start; gap: 11px; min-width: 0; }
+.prize-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #f3d38c99;
+  border-radius: 11px;
+  background: #1a4652;
+  color: #ffe0a0;
+  font-size: 19px;
+  font-weight: 900;
+}
+.prize-copy { min-width: 0; }
+.prize-copy h4 { margin: 0; color: #fff1c6; font-size: 15px; line-height: 1.3; }
+.prize-copy p { margin: 4px 0 0; color: #d4e5df; font-size: 12px; line-height: 1.45; }
+.prize-reward { display: block; margin-top: 7px; color: #ffe0a0; font-size: 11px; font-weight: 800; letter-spacing: .04em; }
+.prize-progress { grid-area: progress; width: 100%; height: 7px; accent-color: #f3c76f; }
+.prize-status { grid-area: status; align-self: start; max-width: 170px; padding-top: 3px; color: #c5ddd5; font-size: 11px; line-height: 1.35; text-align: right; }
+.prize-card[data-earned="true"] .prize-status { color: #ffe0a0; font-weight: 800; }
+
+/* The cabinet is a progress shelf, not a second page. On a normal desktop
+   viewport all four prizes should get an initial glimpse before the fixed
+   action shelf; keep the same readable type while trimming only the card's
+   internal air. Phones retain the roomier stacked treatment below. */
+@media (min-width: 701px) {
+  #collection[data-category="prizes"] .prize-card {
+    padding: 9px 14px;
+    gap: 6px 14px;
+  }
+  #collection[data-category="prizes"] .prize-card-heading { gap: 10px; }
+  #collection[data-category="prizes"] .prize-copy p { max-width: 38ch; }
+  #collection[data-category="prizes"] { gap: 8px; }
+}
+
+/* Help: the three essential moves are an illustrated quick-start row, not a
+   dense text accordion. Secondary details remain below it for players who
+   want the longer explanations. */
+#overlay[data-kind="help"] #instructions { font-size: 14px; line-height: 1.55; }
+#overlay[data-kind="help"] .basic-moves {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0 18px;
+}
+#overlay[data-kind="help"] .basic-moves p {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+  min-height: 212px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #b8d0d34d;
+  border-radius: 14px;
+  background: #102b3ec9;
+}
+#overlay[data-kind="help"] .basic-moves img {
+  float: none;
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 84px;
+  margin: 0;
+  object-fit: contain;
+  border-radius: 10px;
+  background: linear-gradient(145deg,#214d55,#17313d);
+}
+#overlay[data-kind="help"] .basic-moves strong { grid-column: 1 / -1; font-size: 15px; color: #fff1c6; }
+#overlay[data-kind="help"] .basic-moves span { grid-column: 1 / -1; margin: 0; color: #c9ddd8; font-size: 12px; line-height: 1.45; }
+#overlay[data-kind="help"] #instructions > details { border-top: 1px solid #d5edb633; }
+#overlay[data-kind="help"] #instructions > details summary { min-height: 46px; display: flex; align-items: center; }
+
+@media (max-width: 700px) {
+  .modal { width: min(100%, calc(100% - 8px)); padding: 20px; }
+  .modal-actions { margin: 12px -20px -20px; padding: 12px 20px 20px; }
+  #collection .collection-card { grid-template-columns: 92px minmax(0,1fr); min-height: 116px; gap: 8px 11px; padding: 13px 0; }
+  #collection .collection-card img { width: 88px; height: 88px; border-radius: 16px; }
+  #collection .collection-card p { font-size: 12px; line-height: 1.45; }
+  #collection .collection-card > button { min-width: 102px; min-height: 40px; font-size: 11px; }
+  #trail-passport > .mastery-card,
+  #trail-passport .other-passport-cards .mastery-card { display: block; padding: 15px; }
+  #trail-passport .mastery-card h3 { margin-bottom: 9px; }
+  #trail-passport .mastery-card > p:not(.mastery-badges) { margin: 8px 0; }
+  #trail-passport .mastery-card > progress { display: block; margin: 10px 0 12px; }
+  #trail-passport .mastery-card > .mastery-badges { margin-top: 10px; }
+  .mastery-badge { min-height: 82px; }
+  #overlay[data-kind="help"] .basic-moves { grid-template-columns: 1fr; gap: 8px; }
+  #overlay[data-kind="help"] .basic-moves p { grid-template-columns: 82px minmax(0,1fr); min-height: 0; padding: 10px; }
+  #overlay[data-kind="help"] .basic-moves img { grid-column: 1; grid-row: 1 / span 3; width: 74px; height: 64px; }
+  #overlay[data-kind="help"] .basic-moves strong,
+  #overlay[data-kind="help"] .basic-moves span { grid-column: 2; }
+  .prize-card { grid-template-columns: 1fr; grid-template-areas: "heading" "status" "progress"; gap: 8px; }
+  .prize-status { max-width: none; padding: 0; text-align: left; }
+  #mission-hud[data-dock="mission-summary"] { width: min(250px, 62vw); max-width: 250px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prize-card,
+  .collection-card,
+  .mastery-card { transition: none !important; }
+}
+
+/* Desktop has enough width for the modal actions to share one calm row. This
+   returns the saved vertical space to the scroll region so the prize cabinet
+   can introduce all of its progress cards before the action shelf, while the
+   portrait layout keeps the generous stacked buttons and thumb order. */
+@media (min-width: 701px) and (min-height: 521px) {
+  #overlay .modal-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 28px 14px;
+  }
+  #overlay .modal-actions > .primary {
+    margin-top: 0;
+  }
+  #overlay .modal-actions > .text-button {
+    min-width: 108px;
+    min-height: 44px;
+    margin: 0;
+  }
+}
+
+@media (min-width: 600px) and (max-height: 420px) {
+  /* Horizontal phones use the modal's two-column action layout. The portrait
+     shelf would waste the only vertical space those screens have. */
+  #overlay .modal-actions {
+    margin: 0;
+    padding: 0;
+    border-top: 0;
+    background: none;
+  }
+}

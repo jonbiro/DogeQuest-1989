@@ -139,6 +139,11 @@ function kennel() {
   $("overlay-primary").textContent = "Run with your puppy ↗︎";
   const content = $("collection");
   content.replaceChildren();
+  // Expose the active tab to the layout layer so each clubhouse surface can
+  // choose an intentional rhythm without guessing from child order. This is
+  // especially useful for the passport and prize cabinet, which are composed
+  // from different kinds of content below.
+  content.dataset.category = clubhouseCategory;
   const categories=document.createElement('nav');
   categories.className='clubhouse-categories';categories.setAttribute('aria-label','Clubhouse categories');
   for(const [id,label] of [['puppy','Puppies'],['costume','Outfits'],['passport','Passport'],['prizes','Prizes']]) {
@@ -153,9 +158,11 @@ function kennel() {
   const cards=orderedMasteryCards(saved.mastery,saved.collection.puppy);
   const collected=cards.reduce((sum,card)=>sum+card.tiers.filter(tier=>card.current>=tier.target).length,0);
   const masteryIntro=document.createElement('p');
+  masteryIntro.className='mastery-intro';
   masteryIntro.textContent='Your next milestone comes first. Finish runs to bank progress and earn permanent stamps and upgrade points.';
   const otherCards=document.createElement('details');otherCards.className='other-passport-cards';
   const otherHeading=document.createElement('summary');otherHeading.textContent='More passport milestones';otherCards.append(otherHeading);
+  passport.append(masteryIntro);
   if(clubhouseCategory==='passport'){
     $("overlay-title").textContent='Trail passport.';
     $("overlay-copy").textContent=`${collected}/${cards.reduce((sum,card)=>sum+card.tiers.length,0)} stamps collected`;
@@ -166,6 +173,7 @@ function kennel() {
     section.className='mastery-card';
     const isCurrent=card.id===`dog-${saved.collection.puppy}`;
     section.dataset.current=String(isCurrent);
+    section.dataset.complete=String(!card.tiers.some(tier=>card.current<tier.target));
     const title=document.createElement('h3');title.textContent=`${card.name}${isCurrent?' · Your puppy':''}`;
     const badges=document.createElement('p');badges.className='mastery-badges';
     for(const [index,tier] of card.tiers.entries()) {
@@ -190,7 +198,7 @@ function kennel() {
     if(card.tip){const tip=document.createElement('p');tip.textContent=card.tip;section.append(tip);}
     (card===cards[0]?passport:otherCards).append(section);
   }
-  passport.append(otherCards,masteryIntro);
+  passport.append(otherCards);
   for (const [kind, catalog, title] of [["puppy", PUPPIES, "Meet the puppies"], ["costume", COSTUMES, "Dress for adventure"]]) {
     if(clubhouseCategory!==kind)continue;
     const heading = document.createElement("h3");
@@ -203,6 +211,7 @@ function kennel() {
       const row = document.createElement("div"), copy = document.createElement("p"), button = document.createElement("button");
       const owned = saved.collection[kind === "puppy" ? "puppies" : "costumes"].includes(id);
       row.className='collection-card';
+      row.dataset.kind = kind;
       const appearance={puppy:kind==='puppy'?id:saved.collection.puppy,costume:kind==='costume'?id:saved.collection.costume};
       const image=document.createElement('img');
       // Puppy cards use the lightweight source illustration; outfit cards use
@@ -233,15 +242,35 @@ function kennel() {
   const heading = document.createElement("h3"); heading.textContent = "Your prize cabinet"; content.append(heading);
   for (const prize of PRIZES) {
     const progress = prizeProgress(saved, prize);
-    const copy = document.createElement("p");
-    copy.textContent = `${saved.collection.prizes.includes(prize.id) ? "✓ Earned" : "◇ To discover"} · ${prize.name} — ${prize.description}${prize.points ? ` +${prize.points} pts.` : " Unlocks an outfit."}`;
+    const card = document.createElement("article");
+    card.className = "prize-card";
+    card.dataset.earned = String(progress.earned);
+    const cardHeading = document.createElement("div");
+    cardHeading.className = "prize-card-heading";
+    const icon = document.createElement("span");
+    icon.className = "prize-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = progress.earned ? "✓" : "◇";
+    const copy = document.createElement("div");
+    copy.className = "prize-copy";
+    const title = document.createElement("h4");
+    title.textContent = prize.name;
+    const description = document.createElement("p");
+    description.textContent = prize.description;
+    const reward = document.createElement("small");
+    reward.className = "prize-reward";
+    reward.textContent = prize.points ? `+${prize.points} pts` : "Unlocks an outfit";
+    copy.append(title, description, reward);
+    cardHeading.append(icon, copy);
     const meter = document.createElement("progress");
     meter.max = progress.target; meter.value = progress.current;
     meter.setAttribute("aria-label", `${prize.name}: ${progress.current} of ${progress.target}`);
-    meter.style.cssText = "width:100%;accent-color:#d8a641";
+    meter.className = "prize-progress";
     const status = document.createElement("small");
+    status.className = "prize-status";
     status.textContent = progress.earned ? "Collected — yours to keep" : `${progress.current} / ${progress.target} ${prize.metric === 'gifts' ? 'banked gifts' : prize.metric === 'bones' ? 'bones in your best run' : 'meters in your best run'}`;
-    content.append(copy, meter, status);
+    card.append(cardHeading, meter, status);
+    content.append(card);
   }
 }
 function persist() {

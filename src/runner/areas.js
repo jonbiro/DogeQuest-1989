@@ -2,12 +2,14 @@
 // passport keys still use the original three regions.
 export const AREA_LENGTH=225;
 export const AREAS=[
-  {name:'Sunleaf Woods',short:'Sunleaf',sky:'#b3ded4',ground:'#28664d'},
-  {name:'Bamboo Sanctuary',short:'Bamboo',sky:'#d0e8c1',ground:'#405e3a'},
-  {name:'Redrock Pass',short:'Redrock',sky:'#f1c39f',ground:'#a45e3d'},
-  {name:'Palm Oasis',short:'Oasis',sky:'#bce3df',ground:'#ad8c58'},
-  {name:'Crystal Reach',short:'Crystal',sky:'#929fc9',ground:'#48556e'},
-  {name:'Mooncap Grove',short:'Mooncap',sky:'#b5a9d1',ground:'#575277'},
+  // Clearer value separation keeps the warm road, dark hazards and pale
+  // pickups readable as each destination fades into the next one.
+  {name:'Sunleaf Woods',short:'Sunleaf',sky:'#c5eee3',ground:'#1f5642'},
+  {name:'Bamboo Sanctuary',short:'Bamboo',sky:'#e3f2ce',ground:'#34502f'},
+  {name:'Redrock Pass',short:'Redrock',sky:'#f7c18f',ground:'#8f4c32'},
+  {name:'Palm Oasis',short:'Oasis',sky:'#d8f1e8',ground:'#8d6b39'},
+  {name:'Crystal Reach',short:'Crystal',sky:'#899bd0',ground:'#354460'},
+  {name:'Mooncap Grove',short:'Mooncap',sky:'#aaa1d4',ground:'#403a5d'},
 ];
 
 // Version 4 gives each visual destination a small mechanical accent. These

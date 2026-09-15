@@ -1,8 +1,8 @@
 export const REGION_LENGTH = 450;
 export const REGIONS = [
-  {name:"Whispering Jungle",sky:"#b5dcd3",ground:"#286b59",stone:"#c8c194"},
-  {name:"Biscuit Canyon",sky:"#f0c5a0",ground:"#a56546",stone:"#dbb188"},
-  {name:"Moonpaw Glade",sky:"#879cbd",ground:"#354d70",stone:"#a5becb"},
+  {name:"Whispering Jungle",sky:"#c4ebe0",ground:"#205a4a",stone:"#d7cc95"},
+  {name:"Biscuit Canyon",sky:"#f6bf96",ground:"#8f4e35",stone:"#e3b885"},
+  {name:"Moonpaw Glade",sky:"#879bd0",ground:"#354666",stone:"#b4d3dc"},
 ];
 export function regionAt(distance) {
   return Math.floor(Math.max(0,distance)/REGION_LENGTH)%REGIONS.length;

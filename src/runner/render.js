@@ -99,13 +99,13 @@ export function createView(canvas) {
   renderer.shadowMap.enabled = !mobile;
   renderer.shadowMap.type = THREE.PCFShadowMap;
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color("#8ec5aa");
-  scene.fog = new THREE.Fog("#8ec5aa", 35, 145);
+  scene.background = new THREE.Color("#a9d9cb");
+  scene.fog = new THREE.Fog("#a9d9cb", 35, 145);
   const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 190);
   const sky=createSky();
   scene.add(sky);
-  scene.add(new THREE.HemisphereLight("#c8e9ff", "#28493f", 1.65));
-  const sun = new THREE.DirectionalLight("#fff0ce", 3.2);
+  scene.add(new THREE.HemisphereLight("#dcf7ff", "#1f403a", 1.8));
+  const sun = new THREE.DirectionalLight("#fff0ce", 3.5);
   sun.position.set(-12, 24, 4);
   sun.target.position.set(0, 0, -12);
   sun.castShadow = true;
@@ -161,7 +161,7 @@ export function createView(canvas) {
     mesh(parent, sphereGeometry, color, x, y, z, sx, sy, sz);
   const cone = (parent, color, x, y, z, sx, sy, sz) =>
     mesh(parent, coneGeometry, color, x, y, z, sx, sy, sz);
-  const ground = box(scene, "#397d6e", 0, -1.4, -60, 200, 0.3, 220);
+  const ground = box(scene, "#285f57", 0, -1.4, -60, 200, 0.3, 220);
   ground.material = ground.material.clone();
   const regionColors = REGIONS.map(region => ({sky:new THREE.Color(region.sky),ground:new THREE.Color(region.ground),stone:new THREE.Color(region.stone)}));
   const areaColors=AREAS.map(area=>({sky:new THREE.Color(area.sky),ground:new THREE.Color(area.ground)}));
@@ -174,9 +174,9 @@ export function createView(canvas) {
     const tile = new THREE.Group();
     // A thick, height-following bank anchors trees and paving on hills. It uses
     // the existing box batch and gives way to water at river crossings.
-    box(tile, '#397d6e', 0, BANK_SURFACE_Y - 6, 0, 60, 12, 5.4).userData.terrain = true;
-    box(tile, "#526d49", 0, -0.55, 0, 9.2, 1, 5.4);
-    box(tile, "#c1ba88", 0, -0.04, 0, 7.8, 0.15, 5.4);
+    box(tile, '#285f57', 0, BANK_SURFACE_Y - 6, 0, 60, 12, 5.4).userData.terrain = true;
+    box(tile, "#304b45", 0, -0.55, 0, 9.2, 1, 5.4);
+    box(tile, "#d6c993", 0, -0.04, 0, 7.8, 0.15, 5.4);
     for (const x of [-4.25, 4.25])
       box(tile, "#526453", x, 0.08, 0, 0.45, 0.3, 5.4).userData.edge = true;
     for (let lane = 0; lane < 3; lane++) {
@@ -702,9 +702,9 @@ export function createView(canvas) {
   const shadow = new THREE.Mesh(
     new THREE.PlaneGeometry(1.8, 2.5),
     new THREE.MeshBasicMaterial({
-      color: "#172925",
+      color: "#102b2d",
       transparent: true,
-      opacity: 0.25,
+      opacity: 0.32,
       depthWrite: false,
       map: new THREE.CanvasTexture(shadowCanvas),
     }),
@@ -720,14 +720,14 @@ export function createView(canvas) {
   dog.add(aura);
   const magnetField = new THREE.Group();
   scene.add(magnetField);
-  const ringGeometry = new THREE.TorusGeometry(1, 0.045, 6, 48);
-  for (let i = 0; i < 3; i++) {
+  const ringGeometry = new THREE.TorusGeometry(0.94, 0.028, 6, 48);
+  for (let i = 0; i < 2; i++) {
     const ring = new THREE.Mesh(
       ringGeometry,
       new THREE.MeshBasicMaterial({
         color: "#136a66",
         transparent: true,
-        opacity: 0.5,
+        opacity: 0.28,
         depthWrite: false,
       }),
     );
@@ -753,8 +753,14 @@ export function createView(canvas) {
   const templates = {};
   const boneGeometry=createBoneGeometry();
   templates.bone = new THREE.Mesh(boneGeometry,
-    new THREE.MeshStandardMaterial({vertexColors:true,roughness:.32,metalness:.05}));
-  templates.bone.scale.setScalar(1.3);
+    new THREE.MeshStandardMaterial({
+      vertexColors:true,
+      roughness:.28,
+      metalness:.05,
+      emissive:'#fff0b8',
+      emissiveIntensity:.18,
+    }));
+  templates.bone.scale.setScalar(1.55);
   const boneTransform=templates.bone.clone();
   const boneBatch=createInstanceBatch(scene,boneGeometry,templates.bone.material);
   templates.rock = new THREE.Group();
@@ -855,7 +861,7 @@ export function createView(canvas) {
   box(templates.gift, "#fff0a1", 0, 0, 0, .16, .83, .78);
   box(templates.gift, "#fff0a1", 0, .08, 0, .88, .15, .78);
   for (const side of [-1,1]) ball(templates.gift, "#ffe89b", side * .19, .48, 0, .23, .14, .13);
-  const haloGeometry = new THREE.TorusGeometry(0.86, 0.022, 6, 40);
+  const haloGeometry = new THREE.TorusGeometry(0.96, 0.026, 6, 40);
   templates.zoomies = new THREE.Group();
   ball(templates.zoomies, "#a4d329", 0, 0, 0, .55, .55, .55);
   const tennisSeam = new THREE.TorusGeometry(.55,.045,6,32);
@@ -889,12 +895,12 @@ export function createView(canvas) {
       new THREE.MeshBasicMaterial({
         color: type === "magnet" ? "#85f8ed" : "#fff1bb",
         transparent: true,
-        opacity: 0.7,
+        opacity: 0.58,
         depthWrite: false,
       }),
     );
     templates[type].add(halo);
-    templates[type].scale.multiplyScalar(1.2);
+    templates[type].scale.multiplyScalar(1.38);
   }
   templates.gap = new THREE.Group();
   templates['crystal-rock'] = new THREE.Group();
@@ -936,12 +942,12 @@ export function createView(canvas) {
     const marker = new THREE.Group();
     templates[`corner-${direction}`] = marker;
     const sign = direction === 'right' ? 1 : -1;
-    for (const x of [-4.8, 4.8]) {
-      box(marker, '#65543c', x, 1.15, 0, .18, 2.3, .2);
-      box(marker, '#edc36d', x, 2.15, 0, 1.7, 1.1, .22);
-      box(marker, '#173b3e', x, 2.15, .13, 1.53, .91, .08);
+    for (const x of [-5.1, 5.1]) {
+      box(marker, '#65543c', x, 1.05, 0, .14, 2.1, .16);
+      box(marker, '#edc36d', x, 1.95, 0, 1.28, .82, .18);
+      box(marker, '#173b3e', x, 1.95, .13, 1.14, .65, .07);
       for (const offset of [-.38, .38]) for (const side of [-1, 1]) {
-        const stripe = box(marker, '#fff0b7', x + offset + sign * .08, 2.15 + side * .17, .20, .52, .14, .06);
+        const stripe = box(marker, '#fff0b7', x + offset * .7 + sign * .06, 1.95 + side * .13, .20, .38, .10, .05);
         stripe.rotation.z = -sign * side * Math.PI / 4;
       }
     }
@@ -1350,8 +1356,11 @@ export function createView(canvas) {
       magnetField.rotation.set(groundFrame.pitch,groundFrame.yaw,0,'YXZ');
       magnetField.children.forEach((ring, i) => {
         const pulse=magnetPulse(time,i,reducedMotion);
-        ring.scale.setScalar(pulse.scale);
-        ring.material.opacity = pulse.opacity;
+        // Keep the attraction cue close to the puppy. The old full-size
+        // rings spread across the lane and hid the next obstacle on phones;
+        // two compact pulses communicate the same active state at a glance.
+        ring.scale.setScalar(pulse.scale * .42);
+        ring.material.opacity = pulse.opacity * .42;
       });
       let sparkCount = 0;
       if (!menu && !reducedMotion && !run.ended)
