@@ -2047,25 +2047,38 @@ canvas:focus-visible {
     margin: 10px 0 14px;
   }
   #overlay[data-kind="help"] .basic-moves p {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
     gap: 5px;
     min-height: 0;
     padding: 8px 6px;
   }
   #overlay[data-kind="help"] .basic-moves img {
+    grid-column: 1 / -1;
     width: 100%;
     height: 52px;
-    flex: none;
   }
   #overlay[data-kind="help"] .basic-moves strong {
+    grid-column: 1 / -1;
     font-size: 12px;
     line-height: 1.2;
   }
   #overlay[data-kind="help"] .basic-moves span {
+    grid-column: 1 / -1;
     font-size: 10.5px;
     line-height: 1.32;
+  }
+  #overlay[data-kind="help"] .basic-moves kbd {
+    width: 100%;
+    min-width: 0;
+    min-height: 22px;
+    margin: 0;
+    padding: 2px 3px;
+  }
+  #overlay[data-kind="help"] .basic-moves p:nth-child(2) kbd,
+  #overlay[data-kind="help"] .basic-moves p:nth-child(3) kbd {
+    grid-column: 1 / -1;
   }
 }
 
