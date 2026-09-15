@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {updateTraversalControls,updateActionCueControls,updateTurnControls,traversalDescription} from '../src/runner/traversal-controls.js';
+import {updateTraversalControls,updateActionCueControls,updateLaneCueControls,updateTurnControls,traversalDescription} from '../src/runner/traversal-controls.js';
 import {createRun,act,step} from '../src/runner/world.js';
 function button(action) {
   const label={textContent:action.toUpperCase()};
@@ -113,4 +113,18 @@ test('imminent action cues resolve to one matching thumb button',()=>{
   updateActionCueControls(buttons,'');
   assert.equal(buttons[0].classList['action-cue'],false);
   assert.equal(buttons[1].classList['action-cue'],false);
+});
+
+test('specific lane cues resolve to one horizontal thumb without stealing corner prompts',()=>{
+  const buttons=['left','right'].map(button);
+  updateLaneCueControls(buttons,'← BONES LEFT ×2');
+  assert.equal(buttons[0].dataset.laneCue,'active');
+  assert.equal(buttons[1].dataset.laneCue,undefined);
+  assert.equal(buttons[0].classList['lane-cue'],true);
+  assert.equal(buttons[1].classList['lane-cue'],false);
+  updateLaneCueControls(buttons,'→ TURN RIGHT');
+  assert.equal(buttons[0].classList['lane-cue'],false);
+  assert.equal(buttons[1].classList['lane-cue'],false);
+  updateLaneCueControls(buttons,'RAFT · STEER LEFT / RIGHT');
+  assert.equal(buttons[0].classList['lane-cue'],false);
 });

@@ -55,8 +55,12 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(css, /conic-gradient\(from -90deg, #8fe7db var\(--fetch-progress\)/);
   assert.match(css, /#controls button\[data-action\]\.action-cue:not\(:disabled\)/);
   assert.match(css, /@keyframes action-cue-pulse/);
+  assert.match(css, /#controls button\[data-action\]\.lane-cue:not\(:disabled\)/);
+  assert.match(css, /@keyframes lane-cue-pulse/);
   assert.match(app, /updateActionCueControls\(traversalButtons, textOf\('cue'\)\)/);
+  assert.match(app, /updateLaneCueControls\(turnButtons, textOf\('cue'\)\)/);
   assert.match(readFileSync(new URL('../src/runner/traversal-controls.js', import.meta.url), 'utf8'), /export function updateActionCueControls/);
+  assert.match(readFileSync(new URL('../src/runner/traversal-controls.js', import.meta.url), 'utf8'), /export function updateLaneCueControls/);
 });
 
 test('painted puppy poses inherit world atmosphere and ease frame transforms', () => {

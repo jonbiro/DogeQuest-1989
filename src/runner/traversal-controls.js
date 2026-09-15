@@ -79,6 +79,26 @@ export function updateActionCueControls(buttons, cue = '') {
   }
 }
 
+// Route cues use the same short message slot as jump/slide warnings, but the
+// answer belongs on a horizontal thumb button. Highlight only authored lane
+// decisions; a corner prompt already owns the turn-ready treatment and a
+// generic "steer left / right" status does not name a lane to choose.
+export function updateLaneCueControls(buttons, cue = '') {
+  const text = String(cue || '').toUpperCase().trim();
+  const direction = text.startsWith('←') ? 'left' : text.startsWith('→') ? 'right' : '';
+  const specificLaneCue = Boolean(direction && !/\bTURN\b/.test(text) &&
+    /\b(?:WEAVE|RAFT|CART|BONES|GIFT|RELIC)\b/.test(text));
+  for (const button of buttons || []) {
+    const type = button?.dataset?.action;
+    if (!['left', 'right'].includes(type)) continue;
+    const active = specificLaneCue && type === direction;
+    button?.classList?.toggle?.('lane-cue', active);
+    if (!button?.dataset) continue;
+    if (active) button.dataset.laneCue = 'active';
+    else delete button.dataset.laneCue;
+  }
+}
+
 // The runner can briefly pair a newer game bundle with an older cached shell.
 // Early shells rendered LEFT/RIGHT as a bare arrow without the nested <small>
 // label that the turn prompt later updates. Repair that small bit of markup in

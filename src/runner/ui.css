@@ -1471,6 +1471,25 @@ h1 { letter-spacing: -.055em; word-spacing: .07em; }
     animation: none;
   }
 }
+#controls button[data-action].lane-cue:not(:disabled) {
+  border-color: #b9fff3;
+  color: #173c42;
+  background: linear-gradient(155deg, #bff8eb, #62cfc4);
+  box-shadow: 0 0 0 3px #a2f2e64a, 0 0 20px #86e8db4f, inset 0 1px 0 #fff9;
+  transform: translateY(-2px) scale(1.02);
+  animation: lane-cue-pulse 1.15s ease-in-out infinite;
+  z-index: 1;
+}
+@keyframes lane-cue-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.10); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #controls button[data-action].lane-cue:not(:disabled) {
+    transform: none;
+    animation: none;
+  }
+}
 #controls small { letter-spacing:.08em; font-size:9px; font-weight:800; }
 #controls #fetch { border-radius:50%; font-size:10px; line-height:1.2; }
 #controls #fetch.ready { background:#94e6d8; border-color:#d8fff0; color:#183d3a; }
