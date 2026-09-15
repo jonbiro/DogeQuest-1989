@@ -1114,6 +1114,7 @@ export function createView(canvas) {
     pitch = 0,
     cameraX = 0,
     cameraLift = 0,
+    cameraRoll = 0,
     animationTime = 0;
   const bendMatrix = new THREE.Matrix4(),
     instanceMatrix = new THREE.Matrix4();
@@ -1148,7 +1149,7 @@ export function createView(canvas) {
         // thumbnail instead of becoming two tiny marks on a dark rectangle.
         // The same compact canvas keeps the help overlay inexpensive on
         // mobile while giving each essential move a useful visual cue.
-        camera.fov=48;camera.aspect=192/112;camera.position.set(0,2.25,3.8);camera.lookAt(0,1.05,0);
+        camera.fov=48;camera.aspect=192/112;camera.position.set(0,2.25,3.8);camera.lookAt(0,1.05,0);camera.rotation.z=0;
         camera.updateProjectionMatrix();renderer.setSize(192,112,false);renderer.render(scene,camera);
         return canvas.toDataURL('image/png');
       } finally {
@@ -1174,7 +1175,7 @@ export function createView(canvas) {
         // enough scale to match the puppy cards; the older wide lens left a
         // large quiet margin around every outfit and made the art feel
         // unrelated even though it was the same illustration.
-        camera.fov=48;camera.aspect = 1; camera.position.set(0,2.0,3.1); camera.lookAt(0,1.14,0);
+        camera.fov=48;camera.aspect = 1; camera.position.set(0,2.0,3.1); camera.lookAt(0,1.14,0); camera.rotation.z=0;
         camera.updateProjectionMatrix(); renderer.setSize(192,192,false);
         renderer.render(scene,camera);
         return canvas.toDataURL('image/png');
@@ -1207,6 +1208,7 @@ export function createView(canvas) {
         pitch = 0;
         cameraX = run.x;
         cameraLift = 0;
+        cameraRoll = 0;
         for (const leg of [...legs, ...mochi.legs]) leg.rotation.x = 0;
       }
       if (state === "playing" || menu) animationTime += dt;
@@ -1670,9 +1672,11 @@ export function createView(canvas) {
       if (menu) {
         puppyFrame=null;
         const mobile = camera.aspect < 0.85;
+        cameraRoll += (0 - cameraRoll) * (1 - Math.exp(-10 * Math.max(0, dt)));
         camera.position.set(6, mobile ? 4 : 3.3, mobile ? 11 : 7.7);
         const compact = mobile && canvas.clientHeight<=700 && canvas.clientHeight>520;
         camera.lookAt(mobile ? -1.2 : -3.5, mobile ? compact ? .5 : 2.08 : 1.25, 0);
+        camera.rotation.z = cameraRoll;
       } else {
         if (state === "playing") {
           cameraX += (x - cameraX) * (1 - Math.exp(-5 * dt));
@@ -1685,6 +1689,20 @@ export function createView(canvas) {
         );
         const look = frameAt(-13);
         camera.lookAt(cameraX * (camera.aspect < 0.85 ? 0.4 : 0.12) + look.x * detourCameraWeight(distance,run.route), 0.75 + cameraLift + look.y * .65, -13);
+        // Let the chase camera breathe with the route. A small bank from the
+        // upcoming tangent and the puppy's lane velocity makes corners and
+        // steering feel physical without moving the collision frame or
+        // rotating the HUD. Clamp the effect tightly, ease it while paused,
+        // and fully neutralize it for reduced-motion users and result sheets.
+        const cameraActive = state === 'playing' || state === 'paused';
+        const routeBank = THREE.MathUtils.clamp(look.yaw * .07, -.075, .075);
+        const laneBank = THREE.MathUtils.clamp(lean * .22 + run.vx * .0015, -.055, .055);
+        const actionBank = run.zipline ? lean * .08 : run.raft ? lean * .06 : run.minecart ? lean * .04 : 0;
+        const targetRoll = !reducedMotion && cameraActive
+          ? THREE.MathUtils.clamp(routeBank + laneBank + actionBank, -.105, .105)
+          : 0;
+        cameraRoll += (targetRoll - cameraRoll) * (1 - Math.exp(-(cameraActive ? 7 : 10) * Math.max(0, dt)));
+        camera.rotation.z = cameraRoll;
         puppyFrame=framePuppy(camera,dog.position);
       }
       const nextRatio = quality.sample(frameDt, state === 'playing');
@@ -1704,7 +1722,7 @@ export function createView(canvas) {
       catch { return false; }
     },
     diagnostics() {
-      return {shaderPreparation:shaderPreparation.status,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,activeObjects:active.size+boneBatch.count,boneInstances:boneBatch.count,boneCapacity:boneBatch.capacity,pooledObjects:Object.values(pools).reduce((sum,items)=>sum+items.length,0),puppyFrame:puppyFrame?{...puppyFrame}:null,legAngles:activeRig.legs.map(leg=>leg.rotation.x),bodyTransform:[...dog.position.toArray(),dog.rotation.x,dog.rotation.y,dog.rotation.z,...dog.scale.toArray()]};
+      return {shaderPreparation:shaderPreparation.status,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures,drawCalls:renderer.info.render.calls,activeObjects:active.size+boneBatch.count,boneInstances:boneBatch.count,boneCapacity:boneBatch.capacity,pooledObjects:Object.values(pools).reduce((sum,items)=>sum+items.length,0),puppyFrame:puppyFrame?{...puppyFrame}:null,cameraRoll,legAngles:activeRig.legs.map(leg=>leg.rotation.x),bodyTransform:[...dog.position.toArray(),dog.rotation.x,dog.rotation.y,dog.rotation.z,...dog.scale.toArray()]};
     },
   };
 }

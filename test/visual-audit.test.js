@@ -81,6 +81,15 @@ test('gameplay keeps the painted puppy readable with a quiet scene-locked focus'
   assert.match(render, /puppyFocus\.material\.opacity = reducedMotion \? \.10 : y > \.1 \? \.15 : \.13/);
 });
 
+test('the chase camera banks gently with turns without moving the playfield', () => {
+  const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
+  assert.match(render, /cameraRoll = 0/);
+  assert.match(render, /const routeBank = THREE\.MathUtils\.clamp\(look\.yaw \* \.07/);
+  assert.match(render, /const targetRoll = !reducedMotion && cameraActive/);
+  assert.match(render, /camera\.rotation\.z = cameraRoll/);
+  assert.match(render, /cameraRoll,legAngles/);
+});
+
 test('trail collectibles get a visible authored scale and gentle pulse', () => {
   const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
   assert.match(render, /templates\.bone\.scale\.setScalar\(1\.88\)/);
