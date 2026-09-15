@@ -101,3 +101,28 @@ test('land corner curbs retain luminance separation across region palettes',()=>
   }
   road.dispose();
 });
+
+test("the outside curb carries the corner direction without adding another sign",()=>{
+  const road=createCornerRoad(new THREE.Scene());
+  const accent=new THREE.Color('#e7b866');
+  const stride=60*6*3;
+  const accentCount=(distance,stripIndex)=>{
+    road.update(distance,z=>routeFrame(distance,z));
+    const colors=road.geometry.getAttribute('color').array;
+    let count=0;
+    for(let segment=0;segment<60;segment++){
+      const offset=stripIndex*stride+segment*18;
+      if(Math.abs(colors[offset]-accent.r)<1e-6 &&
+         Math.abs(colors[offset+1]-accent.g)<1e-6 &&
+         Math.abs(colors[offset+2]-accent.b)<1e-6) count++;
+    }
+    return count;
+  };
+  // The first corner turns left, so its right curb is the outside edge.
+  assert.ok(accentCount(140,3)>0);
+  assert.equal(accentCount(140,2),0);
+  // The second corner turns right, so the outside accent changes sides.
+  assert.ok(accentCount(940,2)>0);
+  assert.equal(accentCount(940,3),0);
+  road.dispose();
+});

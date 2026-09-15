@@ -16,6 +16,10 @@ const STRIPS = [
 const VERTICES_PER_QUAD = 6;
 const VERTEX_COUNT = SEGMENTS * STRIPS.length * VERTICES_PER_QUAD;
 const turnEdge=new THREE.Color('#725026');
+// The outside edge of a bend gets a restrained warm accent. It is part of the
+// recycled corner ribbon rather than a second sign, so the direction remains
+// readable even when the roadside marker is outside the phone's crop.
+const turnEdgeAccent=new THREE.Color('#e7b866');
 
 const baseColors = {
   base: new THREE.Color("#526d49"),
@@ -120,9 +124,13 @@ export function createCornerRoad(scene) {
         const station = (stationA + stationB) / 2;
         const palette = isBridge(station) ? bridgeColors : landColors;
         if(palette===landColors)sampleTrailColor(areaColors[strip.color],station,palette[strip.color]);
-        const color = strip.color==='curb' && Math.floor(station/2)%2===0 ? turnEdge
-          : palette===bridgeColors && strip.color==='paving' && Math.floor(station)%2
-          ? bridgeColors.pavingAlternate : palette[strip.color];
+        const outsideSign = corner.direction === 'left' ? 1 : -1;
+        const outsideCurb = strip.color === 'curb' && Math.sign(strip.center) === outsideSign;
+        const accentBlock = Math.floor((station - corner.at + EDGE_EXTENSION) / 3) % 2 === 0;
+        const color = outsideCurb && accentBlock ? turnEdgeAccent
+          : strip.color==='curb' && Math.floor(station/2)%2===0 ? turnEdge
+            : palette===bridgeColors && strip.color==='paving' && Math.floor(station)%2
+            ? bridgeColors.pavingAlternate : palette[strip.color];
 
         offset = writeVertex(positions, normals, colors, offset, frameA, left, strip.height, color);
         offset = writeVertex(positions, normals, colors, offset, frameA, right, strip.height, color);
