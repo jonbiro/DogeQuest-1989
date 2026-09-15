@@ -91,8 +91,12 @@ test('the mobile menu keeps the featured puppy visible without competing with th
   assert.match(render, /const mobileHero = hero && camera\.aspect < \.85/);
   assert.match(render, /const heroOffsetX = mobileHero \? \.16 : 0/);
   assert.match(render, /const heroOffsetY = mobileHero \? \.14 : 0/);
+  assert.match(render, /const heroVisualX = heroOffsetX \+ \(mobileHero \? \.11 : 0\)/);
+  assert.match(render, /const heroVisualY = heroOffsetY \+ \(mobileHero \? \.13 : 0\)/);
   assert.match(render, /if \(hero\) dog\.scale\.multiplyScalar\(camera\.aspect < \.85 \? 1\.22 : 1\.09\)/);
-  assert.match(render, /menuGlow\.position\.set\(heroOffsetX, 1\.08 \+ heroOffsetY, -\.08\)/);
+  assert.match(render, /menuGlow\.position\.set\(heroVisualX, 1\.08 \+ heroVisualY, -\.08\)/);
+  assert.match(render, /if \(entry\.gateway && camera\.aspect < \.85\)/);
+  assert.match(render, /instanceMatrix\.scale\(bendScale\.set\(\.78, \.78, \.78\)\)/);
   assert.match(render, /camera\.lookAt\(mobile \? -1\.2 : -3\.5, mobile \? compact \? \.5 : 2\.08 : 1\.25, 0\)/);
 });
 

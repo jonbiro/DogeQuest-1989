@@ -782,8 +782,8 @@ export function createView(canvas) {
   menuGlowCanvas.width = menuGlowCanvas.height = 128;
   const menuGlowContext = menuGlowCanvas.getContext("2d");
   const menuGlowGradient = menuGlowContext.createRadialGradient(64, 58, 8, 64, 64, 64);
-  menuGlowGradient.addColorStop(0, "rgba(255,239,184,.52)");
-  menuGlowGradient.addColorStop(.42, "rgba(205,240,190,.22)");
+  menuGlowGradient.addColorStop(0, "rgba(255,239,184,.68)");
+  menuGlowGradient.addColorStop(.42, "rgba(205,240,190,.28)");
   menuGlowGradient.addColorStop(1, "rgba(205,240,190,0)");
   menuGlowContext.fillStyle = menuGlowGradient;
   menuGlowContext.fillRect(0, 0, 128, 128);
@@ -808,8 +808,8 @@ export function createView(canvas) {
   menuContrastCanvas.width = menuContrastCanvas.height = 128;
   const menuContrastContext = menuContrastCanvas.getContext("2d");
   const menuContrastGradient = menuContrastContext.createRadialGradient(64, 64, 10, 64, 64, 64);
-  menuContrastGradient.addColorStop(0, "rgba(12,43,48,.34)");
-  menuContrastGradient.addColorStop(.52, "rgba(12,43,48,.20)");
+  menuContrastGradient.addColorStop(0, "rgba(12,43,48,.46)");
+  menuContrastGradient.addColorStop(.52, "rgba(12,43,48,.28)");
   menuContrastGradient.addColorStop(1, "rgba(12,43,48,0)");
   menuContrastContext.fillStyle = menuContrastGradient;
   menuContrastContext.fillRect(0, 0, 128, 128);
@@ -1469,6 +1469,12 @@ export function createView(canvas) {
           // visual anchor. Gameplay structures are still governed by their
           // normal visibility and collision rules below.
           if (entry.gateway && menu) instanceMatrix.scale(bendScale.set(0,0,0));
+          // Portrait phones compress the chase perspective, so the decorative
+          // camp gateways can become a single dark bar across the horizon.
+          // Keep their landmark shape and route placement, but give the mobile
+          // camera a little more breathing room around the playable lanes.
+          if (entry.gateway && camera.aspect < .85)
+            instanceMatrix.scale(bendScale.set(.78, .78, .78));
           if (!menu && entry.road && !entry.terrain && !entry.cable &&
               corner && distance-z >= corner.at && distance-z <= corner.end)
             instanceMatrix.scale(bendScale.set(0,0,0));
@@ -1503,9 +1509,15 @@ export function createView(canvas) {
       // hit-test framing stay unchanged.
       const heroOffsetX = mobileHero ? .16 : 0;
       const heroOffsetY = mobileHero ? .14 : 0;
+      // Nudge the featured puppy toward the open trail shoulder on portrait
+      // screens. The title owns the left side; lifting Mochi a little keeps
+      // his face out of the bottom control shelf and gives the contrast pool
+      // a clean, scene-locked backdrop instead of tree foliage.
+      const heroVisualX = heroOffsetX + (mobileHero ? .11 : 0);
+      const heroVisualY = heroOffsetY + (mobileHero ? .13 : 0);
       dog.position.set(
-        hero ? heroOffsetX : menu ? 0 : x,
-        (hero ? heroOffsetY : menu ? 0 : y) +
+        hero ? heroVisualX : menu ? 0 : x,
+        (hero ? heroVisualY : menu ? 0 : y) +
           Math.abs(Math.sin(time * 12)) *
             (reducedMotion || (!menu && (state !== "playing" || y>.05 || run.slide>0 || run.zipline || run.raft || run.minecart)) ? 0 : 0.045),
         0,
@@ -1541,8 +1553,8 @@ export function createView(canvas) {
         // Follow the same offset as the puppy. A static spotlight was centered
         // on the old origin, so the enlarged portrait dog could drift out of
         // its contrast pool on narrow phones.
-        menuGlow.position.set(heroOffsetX, 1.08 + heroOffsetY, -.08);
-        menuContrast.position.set(heroOffsetX, 1.08 + heroOffsetY, .01);
+        menuGlow.position.set(heroVisualX, 1.08 + heroVisualY, -.08);
+        menuContrast.position.set(heroVisualX, 1.08 + heroVisualY, .01);
       }
       const focusVisible = !menu && (state === "playing" || state === "paused");
       puppyFocus.visible = focusVisible;
