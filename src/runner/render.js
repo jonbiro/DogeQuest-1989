@@ -1457,11 +1457,16 @@ export function createView(canvas) {
           const cableSection = !menu && ziplineAt(distance-z);
           const raftSection=!menu&&run.raftPrototype&&raftAt(distance-z);
           const corner = upcomingCorner(distance-z-70);
-          const cornerSection = !menu && corner && distance-z > corner.at-45 && distance-z < corner.end+20;
           if (entry.cable ? !cableSection : (entry.road && entry.bridge !== bridge) || (!entry.road && (bridge || cableSection))) instanceMatrix.scale(bendScale.set(0,0,0));
           if(raftSection&&(!entry.road||!entry.terrain))instanceMatrix.scale(bendScale.set(0,0,0));
-          // Decorative gateways must not masquerade as playable slide gates.
-          if (entry.gateway && (!menu || cornerSection || z > 0)) instanceMatrix.scale(bendScale.set(0,0,0));
+          // Decorative gateways belong to the trail, not the camp hero shot.
+          // The old menu exception let a near gateway sweep diagonally across
+          // the title and Mochi on portrait and desktop cameras. Keep these
+          // pooled meshes available for future route framing, but hide them
+          // while the player is choosing a run so the character remains the
+          // visual anchor. Gameplay structures are still governed by their
+          // normal visibility and collision rules below.
+          if (entry.gateway && menu) instanceMatrix.scale(bendScale.set(0,0,0));
           if (!menu && entry.road && !entry.terrain && !entry.cable &&
               corner && distance-z >= corner.at && distance-z <= corner.end)
             instanceMatrix.scale(bendScale.set(0,0,0));

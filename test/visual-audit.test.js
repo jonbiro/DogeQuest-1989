@@ -34,6 +34,10 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(css, /padding: 0 3px 24px/);
   assert.match(css, /#mission-label-mobile \{ display: none; \}/);
   assert.match(css, /#mission-hud\[data-dock="mission-summary"\] #mission-label-mobile/);
+  assert.match(css, /@media \(min-width: 701px\) \{\s*\.trail-tag \{ margin-top: 18px; \}/);
+  assert.match(css, /#game\[data-state="menu"\] footer > span \{ display: none; \}/);
+  assert.match(css, /#game\[data-state="menu"\] footer \{ justify-content: flex-end; pointer-events: none; \}/);
+  assert.match(css, /#game\[data-state="menu"\] footer \.text-button \{ pointer-events: auto; \}/);
   assert.match(app, /setText\('mission-label-mobile', missionSummaryLabel/);
   assert.match(css, /#overlay\[data-kind="help"\] \.basic-moves img \{ grid-column: 1; grid-row: 1 \/ span 3; width: 84px; height: 70px;/);
   assert.match(css, /@media \(max-width: 430px\) and \(orientation: portrait\)[\s\S]*?#overlay\[data-kind="help"\] \.basic-moves \{\s*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
@@ -71,6 +75,7 @@ test('the mobile menu keeps the featured puppy visible without competing with th
   assert.match(render, /menu-puppy-contrast/);
   assert.match(render, /menuContrast.visible = state === "menu"/);
   assert.match(render, /menuGlow\.visible = state === "menu"/);
+  assert.match(render, /if \(entry\.gateway && menu\) instanceMatrix\.scale\(bendScale\.set\(0,0,0\)\)/);
   assert.match(render, /if \(menu\) dog\.scale\.multiplyScalar\(camera\.aspect < \.85 \? 1\.14 : 1\.09\)/);
   assert.match(render, /camera\.lookAt\(mobile \? -1\.2 : -3\.5, mobile \? compact \? \.5 : 2\.08 : 1\.25, 0\)/);
 });

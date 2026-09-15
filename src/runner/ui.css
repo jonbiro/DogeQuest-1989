@@ -503,6 +503,16 @@ h1 em {
   font-size:11px;
   line-height:1.3;
 }
+/* On a desktop-height camp, the challenge strip follows the stats while the
+   footer owns the bottom safe area. Keep a deliberate breathing lane between
+   them and reserve the footer copy for the playable scene, so the two small
+   type systems never print on top of one another. */
+@media (min-width: 701px) {
+  .trail-tag { margin-top: 18px; }
+  #game[data-state="menu"] footer > span { display: none; }
+  #game[data-state="menu"] footer { justify-content: flex-end; pointer-events: none; }
+  #game[data-state="menu"] footer .text-button { pointer-events: auto; }
+}
 #buddy {
   position: absolute;
   z-index: 2;
