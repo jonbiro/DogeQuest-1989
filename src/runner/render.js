@@ -1085,6 +1085,18 @@ export function createView(canvas) {
     const label=routeLabel(2.05,1,index);label.position.set(0,3.3,.105);gate.add(label);
   }
   // Roadside chevrons identify a deliberate corner without covering the trail.
+  // The arrow is a single readable silhouette at speed; the surrounding sign
+  // stays deliberately small so it does not become a second HUD panel.
+  const cornerArrowShape = new THREE.Shape();
+  cornerArrowShape.moveTo(-.42, -.2);
+  cornerArrowShape.lineTo(.02, -.2);
+  cornerArrowShape.lineTo(.02, -.38);
+  cornerArrowShape.lineTo(.44, 0);
+  cornerArrowShape.lineTo(.02, .38);
+  cornerArrowShape.lineTo(.02, .2);
+  cornerArrowShape.lineTo(-.42, .2);
+  cornerArrowShape.closePath();
+  const cornerArrowGeometry = new THREE.ShapeGeometry(cornerArrowShape);
   for (const direction of ['left', 'right']) {
     const marker = new THREE.Group();
     templates[`corner-${direction}`] = marker;
@@ -1093,11 +1105,28 @@ export function createView(canvas) {
       box(marker, '#65543c', x, 1.05, 0, .14, 2.1, .16);
       box(marker, '#edc36d', x, 1.95, 0, 1.28, .82, .18);
       box(marker, '#173b3e', x, 1.95, .13, 1.14, .65, .07);
+      const arrow = new THREE.Mesh(
+        cornerArrowGeometry,
+        new THREE.MeshBasicMaterial({
+          color: '#fff0b7',
+          depthWrite: false,
+          toneMapped: false,
+          side: THREE.DoubleSide,
+        }),
+      );
+      arrow.name = 'corner-arrow';
+      arrow.position.set(x, 1.95, .235);
+      arrow.rotation.z = direction === 'left' ? Math.PI : 0;
+      arrow.scale.setScalar(.72);
+      arrow.userData.cornerArrow = true;
+      arrow.userData.shadowDetail = true;
+      marker.add(arrow);
       for (const offset of [-.38, .38]) for (const side of [-1, 1]) {
         const stripe = box(marker, '#fff0b7', x + offset * .7 + sign * .06, 1.95 + side * .13, .20, .38, .10, .05);
         stripe.rotation.z = -sign * side * Math.PI / 4;
       }
     }
+    marker.scale.setScalar(.86);
   }
   for (const type of ["zipline-start", "zipline-end"]) {
     const station = new THREE.Group();
@@ -1755,6 +1784,26 @@ export function createView(canvas) {
           item.rotation.x = pickup ? 0 : frame.pitch;
           item.rotation.y += frame.yaw;
           item.rotation.order = 'YXZ';
+          if (object.type === 'corner-left' || object.type === 'corner-right') {
+            // Corner markers are roadside landmarks, not another HUD layer.
+            // A small arrow pulse begins on approach and becomes decisive in
+            // the one-second input window, then settles as soon as the turn is
+            // accepted. Reduced-motion users keep the authored sign still.
+            const approach = object.at - distance;
+            const cornerReady = !menu && !run.ended &&
+              object.turnIndex === run.nextCorner && approach >= 0 &&
+              approach <= Math.max(1, Number.isFinite(run.speed) ? run.speed : 1);
+            const nearCorner = !menu && approach > 0 && approach < 64;
+            const phase = time * 8 + (Number(object.id) || 0) * .43;
+            const pulseWave = .5 + .5 * Math.sin(phase);
+            const intensity = cornerReady ? .18 : nearCorner ? .06 : 0;
+            for (const child of item.children) {
+              if (!child.userData.cornerArrow) continue;
+              const baseScale = child.userData.cornerArrowBaseScale ??
+                (child.userData.cornerArrowBaseScale = child.scale.x);
+              child.scale.setScalar(baseScale * (reducedMotion ? 1 : 1 + pulseWave * intensity));
+            }
+          }
           if (pickup && !bone && !object.used && !object.passed &&
               !reducedMotion && !run.ended && pickupGlintCount < 3 &&
               sparkCount < 192) {

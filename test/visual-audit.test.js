@@ -7,6 +7,7 @@ const app = readFileSync(new URL('../src/runner/app.js', import.meta.url), 'utf8
 const css = readFileSync(new URL('../src/runner/ui.css', import.meta.url), 'utf8');
 const artwork = readFileSync(new URL('../src/runner/puppy-artwork.js', import.meta.url), 'utf8');
 const shell = readFileSync(new URL('../runner/index.html', import.meta.url), 'utf8');
+const visibility = readFileSync(new URL('../src/runner/visibility.js', import.meta.url), 'utf8');
 
 test('clubhouse surfaces expose stable hooks for their intentional layouts', () => {
   assert.match(app, /content\.dataset\.category = clubhouseCategory/);
@@ -90,6 +91,16 @@ test('the chase camera banks gently with turns without moving the playfield', ()
   assert.match(render, /const targetRoll = !reducedMotion && cameraActive/);
   assert.match(render, /camera\.rotation\.z = cameraRoll/);
   assert.match(render, /cameraRoll,legAngles/);
+});
+
+test('corner landmarks make the turn direction clear without becoming giant signs', () => {
+  const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
+  assert.match(render, /cornerArrowGeometry/);
+  assert.match(render, /arrow\.name = 'corner-arrow'/);
+  assert.match(render, /marker\.scale\.setScalar\(\.86\)/);
+  assert.match(render, /const cornerReady = !menu && !run\.ended/);
+  assert.match(render, /child\.userData\.cornerArrowBaseScale/);
+  assert.match(visibility, /'corner-left', 'corner-right'/);
 });
 
 test('trail collectibles get a visible authored scale and gentle pulse', () => {
