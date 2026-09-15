@@ -83,7 +83,9 @@ test('gameplay keeps the painted puppy readable with a quiet scene-locked focus'
 
 test('trail collectibles get a visible authored scale and gentle pulse', () => {
   const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
-  assert.match(render, /templates\.bone\.scale\.setScalar\(1\.72\)/);
+  assert.match(render, /templates\.bone\.scale\.setScalar\(1\.88\)/);
+  assert.match(render, /const bonePulse = reducedMotion/);
+  assert.match(render, /Math\.sin\(time \* 2\.6 \+ \(Number\(object\.id\) \|\| 0\) \* \.61\)/);
   assert.match(render, /pickupPulse\(object\.type, time, object\.id, reducedMotion\)/);
   assert.match(render, /pawDust\(time\)/);
   assert.match(render, /flashColor\.set\('#b98a5e'\)/);

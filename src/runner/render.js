@@ -812,12 +812,12 @@ export function createView(canvas) {
       roughness:.28,
       metalness:.05,
       emissive:'#fff0b8',
-      emissiveIntensity:.18,
+      emissiveIntensity:.22,
     }));
   // Bones are the game's primary collectible. A slightly larger authored
   // scale keeps the ivory face and dark rim readable through the perspective
   // falloff on a phone without changing the shared geometry contract.
-  templates.bone.scale.setScalar(1.72);
+  templates.bone.scale.setScalar(1.88);
   const boneTransform=templates.bone.clone();
   const boneBatch=createInstanceBatch(scene,boneGeometry,templates.bone.material);
   templates.rock = new THREE.Group();
@@ -1604,6 +1604,15 @@ export function createView(canvas) {
           item.rotation.y += frame.yaw;
           item.rotation.order = 'YXZ';
           if(bone) {
+            // Give each bone a quiet, phase-shifted shimmer. Bones use one
+            // instanced transform, so this is a scale-only beat that costs no
+            // extra draw call while making the nearest pickup line easier to
+            // read against bright paving. Reduced motion keeps the authored
+            // silhouette still and the attraction path remains unchanged.
+            const bonePulse = reducedMotion
+              ? 1
+              : 1 + Math.sin(time * 2.6 + (Number(object.id) || 0) * .61) * .055;
+            item.scale.copy(templates.bone.scale).multiplyScalar(bonePulse);
             item.updateMatrix();
             boneBatch.add(item.matrix);
           }
