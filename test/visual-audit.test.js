@@ -98,6 +98,8 @@ test('the mobile menu keeps the featured puppy visible without competing with th
   assert.match(render, /if \(entry\.gateway && camera\.aspect < \.85\)/);
   assert.match(render, /instanceMatrix\.scale\(bendScale\.set\(\.78, \.78, \.78\)\)/);
   assert.match(render, /camera\.lookAt\(mobile \? -1\.2 : -3\.5, mobile \? compact \? \.5 : 2\.08 : 1\.25, 0\)/);
+  assert.match(render, /else dog\.scale\.multiplyScalar\(camera\.aspect < \.85 \? 1\.10 : 1\.04\)/);
+  assert.match(render, /puppyFocus\.material\.opacity = reducedMotion \? \.10 : y > \.1 \? \.17 : \.15/);
 });
 
 test('gameplay keeps the painted puppy readable with a quiet scene-locked focus', () => {
@@ -105,8 +107,8 @@ test('gameplay keeps the painted puppy readable with a quiet scene-locked focus'
   assert.match(render, /runner-puppy-focus/);
   assert.match(render, /map: menuGlow\.material\.map/);
   assert.match(render, /const focusVisible = !menu && \(state === "playing" \|\| state === "paused"\)/);
-  assert.match(render, /else dog\.scale\.multiplyScalar\(camera\.aspect < \.85 \? 1\.05 : 1\.02\)/);
-  assert.match(render, /puppyFocus\.material\.opacity = reducedMotion \? \.10 : y > \.1 \? \.15 : \.13/);
+  assert.match(render, /else dog\.scale\.multiplyScalar\(camera\.aspect < \.85 \? 1\.10 : 1\.04\)/);
+  assert.match(render, /puppyFocus\.material\.opacity = reducedMotion \? \.10 : y > \.1 \? \.17 : \.15/);
 });
 
 test('the chase camera banks gently with turns without moving the playfield', () => {
@@ -130,6 +132,14 @@ test('corner landmarks make the turn direction clear without becoming giant sign
   assert.match(visibility, /export function ziplineSpineOpacity/);
   assert.match(render, /ziplineSpineVisible\(object,distance/);
   assert.match(render, /ziplineSpineOpacity\(object,distance/);
+});
+
+test('zipline hardware keeps the hang opening warm and readable', () => {
+  const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
+  assert.match(render, /const cable = box\(tile, "#3b7774"/);
+  assert.match(render, /const ziplineSpine = box\(station, "#d2aa70"/);
+  assert.match(render, /ziplineSpine\.material\.color\?\.set\?\.\('#d2aa70'\)/);
+  assert.match(render, /ziplineSpine\.material\.emissiveIntensity = \.18/);
 });
 
 test('trail collectibles get a visible authored scale and gentle pulse', () => {

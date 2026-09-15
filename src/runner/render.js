@@ -220,7 +220,10 @@ export function createView(canvas) {
       bridgeBox("#64472e", x, -.45, 0, .22, .22, 5.4);
     }
     tile.add(bridge);
-    const cable = box(tile, "#25494d", 0, 6.5, 0, .075, .075, CABLE_SEGMENT_LENGTH);
+    // Keep the overhead cable in the same readable teal family as the catch
+    // handle. The old blue-black value disappeared into the gateway shadow on
+    // portrait phones and made the hang opening look like a dark cut-out.
+    const cable = box(tile, "#3b7774", 0, 6.5, 0, .075, .075, CABLE_SEGMENT_LENGTH);
     cable.userData.cable = true;
     scenery.add(tile);
     tiles.push(tile);
@@ -1137,8 +1140,17 @@ export function createView(canvas) {
     }
     box(station, "#cf9e61", 0, 6.5, 0, 9.5, .4, .6);
     if (type === "zipline-start") {
-      const ziplineSpine = box(station, "#a7794d", 0, 4.75, 0, .08, 3.5, .08);
+      // The support sits behind the raised paws during the catch approach.
+      // Use a sunlit rope colour so it remains a landmark without becoming a
+      // black vertical seam through the puppy's silhouette on high-contrast
+      // displays.
+      const ziplineSpine = box(station, "#d2aa70", 0, 4.75, 0, .08, 3.5, .08);
       ziplineSpine.material = ziplineSpine.material.clone();
+      ziplineSpine.material.color?.set?.('#d2aa70');
+      if (ziplineSpine.material.emissive?.set) {
+        ziplineSpine.material.emissive.set('#6f5536');
+        ziplineSpine.material.emissiveIntensity = .18;
+      }
       ziplineSpine.material.transparent = true;
       ziplineSpine.material.depthWrite = false;
       ziplineSpine.userData.ziplineSpine = true;
@@ -1545,7 +1557,11 @@ export function createView(canvas) {
       // gameplay lift is deliberately smaller than the menu treatment so the
       // dog never crowds the fixed thumb controls.
       if (hero) dog.scale.multiplyScalar(camera.aspect < .85 ? 1.22 : 1.09);
-      else dog.scale.multiplyScalar(camera.aspect < .85 ? 1.05 : 1.02);
+      // The rear chase frame carries a lot of transparent breathing room so
+      // its tail and paw line stay natural. Give the complete puppy a modest
+      // presentation lift on phones; this improves action recognition without
+      // changing the physics hitbox or crowding the thumb shelf.
+      else dog.scale.multiplyScalar(camera.aspect < .85 ? 1.10 : 1.04);
       dog.visible = true;
       menuGlow.visible = hero;
       menuContrast.visible = hero;
@@ -1568,7 +1584,7 @@ export function createView(canvas) {
         const focusScale = Math.abs(dog.scale.x) * actionScale * focusPulse;
         puppyFocus.position.set(dog.position.x, dog.position.y + (run.slide > 0 ? .72 : .94), .07);
         puppyFocus.scale.set(2.35 * focusScale, 2.55 * focusScale, 1);
-        puppyFocus.material.opacity = reducedMotion ? .10 : y > .1 ? .15 : .13;
+        puppyFocus.material.opacity = reducedMotion ? .10 : y > .1 ? .17 : .15;
       } else {
         puppyFocus.material.opacity = 0;
       }
