@@ -1536,11 +1536,9 @@ export function createView(canvas) {
           flashes.setMatrixAt(sparkCount++, flashMatrix);
         }
       }
-      flashes.count = sparkCount;
-      flashes.instanceMatrix.needsUpdate = true;
-      if(flashes.instanceColor)flashes.instanceColor.needsUpdate = true;
       visibleIds.clear();
       boneBatch.begin();
+      let boneGlintCount = 0;
       if (!menu)
         for (const object of run.objects) {
           if (!objectVisible(object, distance)) continue;
@@ -1615,9 +1613,29 @@ export function createView(canvas) {
             item.scale.copy(templates.bone.scale).multiplyScalar(bonePulse);
             item.updateMatrix();
             boneBatch.add(item.matrix);
+            // Keep the next few bones discoverable without outlining every
+            // pickup or adding a second overlay. A single warm, phase-shifted
+            // glint rides just above the authored silhouette and fades with
+            // approach distance; the existing flash batch keeps this at zero
+            // extra geometry and leaves reduced-motion trails completely still.
+            const approach = object.at - distance;
+            if (!reducedMotion && !run.ended && approach > 2 && approach < 42 && boneGlintCount < 6 && sparkCount < 192) {
+              const depthFade = 1 - THREE.MathUtils.clamp((approach - 2) / 40, 0, 1);
+              const glintPulse = .5 + .5 * Math.sin(time * 3.4 + (Number(object.id) || 0) * .73);
+              const glintScale = (.026 + glintPulse * .034) * (.72 + depthFade * .28);
+              flashColor.set('#fff0b7');
+              flashMatrix.makeScale(glintScale, glintScale * 1.7, glintScale);
+              flashMatrix.setPosition(item.position.x, item.position.y + .28 + glintPulse * .04, item.position.z + .015);
+              flashes.setColorAt(sparkCount, flashColor);
+              flashes.setMatrixAt(sparkCount++, flashMatrix);
+              boneGlintCount++;
+            }
           }
         }
       boneBatch.end();
+      flashes.count = sparkCount;
+      flashes.instanceMatrix.needsUpdate = true;
+      if(flashes.instanceColor)flashes.instanceColor.needsUpdate = true;
       for (const [id, item] of active)
         if (!visibleIds.has(id)) {
           scene.remove(item);
