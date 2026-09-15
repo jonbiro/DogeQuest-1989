@@ -1,7 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {URL} from 'node:url';
 import { DEFAULT_PUPPY } from '../src/runner/collection.js';
 import { createPuppyArtwork, PUPPY_ARTWORK, PUPPY_ARTWORK_ALTERNATES, PUPPY_ARTWORK_BOUNDS, PUPPY_ARTWORK_LAYOUTS, PUPPY_ARTWORK_VARIANTS, puppyArtworkUrl, puppyPoseArtworkUrl } from '../src/runner/puppy-artwork.js';
+
+const artworkSource = readFileSync(new URL('../src/runner/puppy-artwork.js', import.meta.url), 'utf8');
 
 test('every collection puppy points at a shipped raster illustration', () => {
   assert.deepEqual(Object.keys(PUPPY_ARTWORK).sort(), ['biscuit', 'luna', 'mochi', 'pepper']);
@@ -147,4 +151,10 @@ test('the visible runner stack uses complete idle, stride, jump, slide, turn and
   assert.equal(typeof artwork.setPose, 'function');
   assert.ok(artwork.group.children.some(part => part.name === 'puppy-painted-stride-alt-pose'));
   assert.ok(artwork.group.children.some(part => part.name === 'puppy-painted-action-alt-pose'));
+});
+
+test('hanging paintings normalize their transparent matte before upload', () => {
+  assert.match(artworkSource, /function normalizeTransparentMatte\(texture\)/);
+  assert.match(artworkSource, /if \(pose === 'hang'\) compact = normalizeTransparentMatte\(compact\)/);
+  assert.match(artworkSource, /if \(pose === 'hang'\) alternateTexture = normalizeTransparentMatte\(alternateTexture\)/);
 });

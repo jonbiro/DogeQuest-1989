@@ -317,6 +317,37 @@ function compactTexture(texture, maxDimension = 0) {
   }
 }
 
+// A few of the supplied hanging paintings were exported with a different
+// RGB matte under their transparent pixels.  WebGL correctly discards fully
+// transparent texels, but linear filtering can still sample that hidden matte
+// at the edge of a fluffy silhouette.  Re-drawing only the hanging frames
+// through a canvas lets the browser premultiply the alpha consistently and
+// removes the gray/black fringe without changing any visible fur or bounds.
+function normalizeTransparentMatte(texture) {
+  if (typeof document === 'undefined' || !texture?.image
+    || typeof texture.image.getContext === 'function') return texture;
+  const {width, height} = sourceSize(texture);
+  if (!width || !height) return texture;
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+    if (!context) return texture;
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+    context.clearRect(0, 0, width, height);
+    context.drawImage(texture.image, 0, 0, width, height);
+    const normalized = new THREE.CanvasTexture(canvas);
+    texture.dispose();
+    return normalized;
+  } catch {
+    // Managed browsers can deny 2D canvas allocation. Keeping the original
+    // texture is safer than making a hang pose disappear on those devices.
+    return texture;
+  }
+}
+
 function pixelRect(rect, width, height) {
   return {
     x: rect[0] * width,
@@ -959,7 +990,9 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
         return;
       }
       alternateSlot.loading = false;
-      alternateSlot.texture = prepareTexture(compactTexture(loaded, maxTextureDimension));
+      let alternateTexture = compactTexture(loaded, maxTextureDimension);
+      if (pose === 'hang') alternateTexture = normalizeTransparentMatte(alternateTexture);
+      alternateSlot.texture = prepareTexture(alternateTexture);
       configurePoseSprite(alternateSprite, `${pose}Alt`, alternateSlot.texture, key);
     });
     return null;
@@ -1097,7 +1130,8 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     if (!poseLoads.has(`${key}:${pose}`)) {
       poseLoads.add(`${key}:${pose}`);
       const texture = loader.load(url, loaded => {
-        const compact = compactTexture(loaded, maxTextureDimension);
+        let compact = compactTexture(loaded, maxTextureDimension);
+        if (pose === 'hang') compact = normalizeTransparentMatte(compact);
         // The player may have changed puppies while this network request was
         // in flight. Do not repopulate a pruned action cache on mobile; release
         // that texture and let a future selection request it again if needed.

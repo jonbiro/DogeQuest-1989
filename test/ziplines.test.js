@@ -1,8 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import {URL} from "node:url";
 import {createRun, fillTrack, step, act, LANES, HAZARDS} from "../src/runner/world.js";
 import {ziplineAt, ZIPLINE_HEIGHT, cableSegment, CABLE_SEGMENT_LENGTH} from "../src/runner/ziplines.js";
 import {actionCue} from '../src/runner/guidance.js';
+
+const renderSource = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
 
 test('unavailable cable bones preserve a ground streak, but reachable misses still break it',()=>{
   for(const airborne of [false,true]) for(const riding of [false,true]) {
@@ -54,6 +58,22 @@ test('cable clipping keeps an unbroken attachment while excluding the near-camer
   }
   assert.deepEqual(cableSegment(-20),{z:-20,scale:1,thicknessScale:1});
   assert.equal(cableSegment(10).scale,0);
+});
+
+test('zipline hardware gives the hanging pose a warm, visible handhold', () => {
+  assert.match(renderSource, /zipline-puppy-handle/);
+  assert.match(renderSource, /ZIP_HANDLE_ORDER = 2\.045/);
+  assert.match(renderSource, /ziplinePart\(box\(zipHandle, "#d5a85d"/);
+  assert.ok((renderSource.match(/ziplinePart\(ball\(zipHandle/g) || []).length >= 2,
+    'the handle needs bright end caps');
+  assert.match(renderSource, /#f4ffe3/);
+  assert.match(renderSource, /#d1ad70/);
+  assert.match(renderSource, /const zipTether = ziplinePart\(/);
+  assert.match(renderSource, /color: '#ffe0a1'/);
+  assert.match(renderSource, /fog: false/);
+  assert.match(renderSource, /toneMapped: false/);
+  assert.match(renderSource, /ziplineSpine/);
+  assert.match(renderSource, /child\.visible=!run\.zipline/);
 });
 
 test('following zipline cues collects all eighteen bones and the gift without a magnet',()=>{

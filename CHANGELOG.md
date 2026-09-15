@@ -4,6 +4,11 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Refined the zipline hang composition with a warm, rounded handhold and
+  high-contrast end caps that sit behind the puppy's raised paws. Hanging
+  paintings now normalize their transparent matte before upload, removing the
+  dark/gray fringe that could show through the gap between the arms on desktop
+  and mobile.
 - Guarded the render loop against mobile GPU or texture draw exceptions. A
   failed frame now opens the existing 3D recovery screen instead of silently
   stopping animation and leaving the runner looking stuck.

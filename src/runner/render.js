@@ -961,7 +961,8 @@ export function createView(canvas) {
     }
     box(station, "#cf9e61", 0, 6.5, 0, 9.5, .4, .6);
     if (type === "zipline-start") {
-      box(station, "#25494d", 0, 4.75, 0, .08, 3.5, .08);
+      const ziplineSpine = box(station, "#25494d", 0, 4.75, 0, .08, 3.5, .08);
+      ziplineSpine.userData.ziplineSpine = true;
       box(station, "#185965", 0, 3, 0, 6.5, .24, .24);
       // Three visible grips show that jumping can catch from any lane.
       for(const x of LANES)box(station,"#a2ffde",x,3,.03,.6,.3,.3);
@@ -989,10 +990,48 @@ export function createView(canvas) {
       lamp.userData.lantern = true;
     }
   }
-  const zipHandle = new THREE.Group(); scene.add(zipHandle);
-  box(zipHandle, "#185965", 0, 0, 0, 1.6, .22, .22);
-  for(const side of [-1,1]) box(zipHandle, "#a2ffde", side*.65, 0, .03, .3, .24, .24);
-  const zipTether = box(scene, "#25494d", 0, 0, 0, .065, 1, .065);
+  // The hang paintings leave a deliberate opening between the raised paws.
+  // Build the handle as a small piece of readable equipment behind that
+  // opening instead of a single dark bar: the warm grip gives the eye a clear
+  // handhold, the teal rail separates it from the sky, and the mint end caps
+  // line up with every puppy's paws.  Explicit render ordering keeps the
+  // hardware visible through transparent fur without ever painting over the
+  // dog or the upcoming obstacle.
+  const ZIP_HANDLE_ORDER = 2.045;
+  const ziplinePart = (part, order = ZIP_HANDLE_ORDER) => {
+    part.renderOrder = order;
+    part.castShadow = false;
+    part.receiveShadow = false;
+    part.userData.ziplineHandle = true;
+    return part;
+  };
+  const zipHandle = new THREE.Group();
+  zipHandle.name = 'zipline-puppy-handle';
+  scene.add(zipHandle);
+  ziplinePart(box(zipHandle, "#173f4b", 0, 0, -.055, 1.78, .27, .16));
+  ziplinePart(box(zipHandle, "#d5a85d", 0, 0, .015, 1.48, .16, .18));
+  ziplinePart(box(zipHandle, "#fff0b7", 0, .035, .11, 1.12, .045, .04), ZIP_HANDLE_ORDER + .001);
+  for(const side of [-1,1]) {
+    ziplinePart(box(zipHandle, "#e2b866", side*.53, 0, .035, .18, .28, .20));
+    ziplinePart(ball(zipHandle, "#a2ffde", side*.74, 0, .055, .19, .19, .17));
+    ziplinePart(ball(zipHandle, "#f4ffe3", side*.74, .045, .14, .075, .075, .055), ZIP_HANDLE_ORDER + .001);
+  }
+  // A sand-colored rope keeps the space between the raised arms from reading
+  // as a black cutout while still contrasting against the bright sky and
+  // matching the gantry's warm wood.
+  const zipTether = ziplinePart(box(scene, "#d1ad70", 0, 0, -.08, .065, 1, .065), ZIP_HANDLE_ORDER - .001);
+  // Keep the narrow connector bright even when the gantry is in shadow. A
+  // basic material prevents the rope from becoming a near-black line in the
+  // opening between the paws on high-contrast displays.
+  zipTether.material = new THREE.MeshBasicMaterial({
+    // Use an unlit rope so it cannot inherit the gantry's deep shadow and
+    // become the black stroke players were seeing through the raised paws.
+    color: '#ffe0a1',
+    depthTest: true,
+    depthWrite: false,
+    fog: false,
+    toneMapped: false,
+  });
   const active = new Map(),
     pools = Object.fromEntries(
       Object.keys(templates).map((type) => [type, []]),
@@ -1410,8 +1449,16 @@ export function createView(canvas) {
             scene.add(item);
           }
           const pickup = PICKUPS.includes(object.type);
-          for (const child of item.children) if (child.userData.ziplineSign)
-            child.visible=ziplineSignVisible(object,distance);
+          for (const child of item.children) {
+            if (child.userData.ziplineSign)
+              child.visible=ziplineSignVisible(object,distance);
+            // The gantry's center support sits directly behind the hanging
+            // puppy. Once the handle is caught, leave only the actual cable
+            // and handle in the silhouette gap; the support otherwise reads
+            // as a black pole through the dog's raised arms.
+            if (child.userData.ziplineSpine)
+              child.visible=!run.zipline;
+          }
           item.position.set(
             LANES[object.lane],
             pickup
