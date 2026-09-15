@@ -149,7 +149,6 @@ export function eventNotice(event, run) {
   const notices = {
     'full-heart': {text:'Full hearts · +100 points',priority:0},
     'spare-shield': {text:'Shield already active · +100 points',priority:0},
-    flow: {text: `${run.cleanStreak} clean moves · +${run.lastFlowBonus}`, priority: 0},
     hit: {text: `${run.hearts} ${run.hearts === 1 ? 'heart' : 'hearts'} left`, priority: 3},
     'shield-break': {text: 'Shield used', priority: 2},
     'route-scenic': {text: 'Scenic trail', priority: 1},

@@ -367,6 +367,7 @@ test("event notices reserve the dock for relevant feedback", () => {
   for (const event of [
     "bone",
     "streak",
+    "flow",
     "magnet",
     "shield",
     "gem",
