@@ -1775,6 +1775,12 @@ canvas:focus-visible {
 #overlay[data-kind="kennel"] .modal-content #collection:not([data-category="passport"]):not([data-category="prizes"]) {
   padding-bottom: 92px;
 }
+/* The illustrated quick-start cards can be taller than the compact phone
+   viewport. Let the final instruction line scroll above the fixed action
+   shelf instead of ending beneath it. */
+#overlay[data-kind="help"] .modal-content {
+  padding-bottom: 92px;
+}
 #overlay[data-kind="kennel"] .modal-content #collection[data-category="passport"] > #trail-passport {
   width: 100%;
 }
