@@ -158,6 +158,11 @@ test('trail collectibles get a visible authored scale and gentle pulse', () => {
   assert.match(render, /let boneGlintCount = 0/);
   assert.match(render, /approach > 2 && approach < 42 && boneGlintCount < 6 && sparkCount < 192/);
   assert.match(render, /flashColor\.set\('#fff0b7'\)/);
+  assert.match(render, /const cableUpcoming = !run\.zipline && !run\.ended && run\.objects\.some/);
+  assert.match(render, /object\.airborne && cableUpcoming/);
+  assert.match(render, /let aerialCueCount = 0/);
+  assert.match(render, /aerialCueCount < 3/);
+  assert.match(render, /flashColor\.set\('#a2ffde'\)/);
   assert.match(render, /let hazardCueCount = 0/);
   assert.match(render, /solidHazard = \['rock', 'log', 'arch', 'branch', 'gate'\]\.includes\(object\.type\)/);
   assert.match(render, /approach > 5 && approach < 32 && sparkCount < 192/);

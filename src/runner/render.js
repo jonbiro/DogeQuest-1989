@@ -1726,6 +1726,15 @@ export function createView(canvas) {
         ring.material.opacity = pulse.opacity * .42;
       });
       let sparkCount = 0;
+      // Airborne bones belong to the cable route rather than the ground jump
+      // path. Keep a small, local beacon available while the next handle is
+      // still ahead so a first-time player can read that relationship at a
+      // glance. It uses the existing flash batch, is capped to three bones,
+      // and disappears as soon as the cable is caught or the scene enters
+      // reduced-motion mode.
+      const cableUpcoming = !run.zipline && !run.ended && run.objects.some(object =>
+        object.type === 'zipline-start' && !object.caught && object.at > distance &&
+        object.at - distance < 108);
       if (!menu && !reducedMotion && !run.ended)
         for (const effect of run.effects) {
           const age = run.time - effect.time;
@@ -1774,6 +1783,7 @@ export function createView(canvas) {
       boneOutlineBatch.begin();
       boneBatch.begin();
       let boneGlintCount = 0;
+      let aerialCueCount = 0;
       let pickupGlintCount = 0;
       let hazardCueCount = 0;
       if (!menu)
@@ -1915,6 +1925,31 @@ export function createView(canvas) {
               flashes.setColorAt(sparkCount, flashColor);
               flashes.setMatrixAt(sparkCount++, flashMatrix);
               boneGlintCount++;
+            }
+            if (object.airborne && cableUpcoming && !reducedMotion && !run.ended &&
+                approach > 3 && approach < 44 && aerialCueCount < 3 && sparkCount < 192) {
+              const cueFade = 1 - THREE.MathUtils.clamp((approach - 3) / 41, 0, 1);
+              const cuePulse = .5 + .5 * Math.sin(time * 3.8 + (Number(object.id) || 0) * .47);
+              const roadY = frame.y + .18;
+              const topY = item.position.y - .34;
+              const span = Math.max(.5, topY - roadY);
+              // Two tiny beads make the vertical relationship legible without
+              // drawing a solid beam through the puppy or stealing attention
+              // from the actual turquoise handle at the gantry.
+              for (let bead = 1; bead <= 2 && sparkCount < 192; bead++) {
+                const beadPulse = .72 + .28 * Math.sin(time * 4.4 + bead * 1.7 + (Number(object.id) || 0));
+                const beadScale = (.014 + cuePulse * .01) * beadPulse * (.55 + cueFade * .45);
+                flashColor.set('#a2ffde');
+                flashMatrix.makeScale(beadScale, beadScale * 1.25, beadScale);
+                flashMatrix.setPosition(
+                  item.position.x,
+                  roadY + span * bead / 3,
+                  item.position.z + .035,
+                );
+                flashes.setColorAt(sparkCount, flashColor);
+                flashes.setMatrixAt(sparkCount++, flashMatrix);
+              }
+              aerialCueCount++;
             }
           } else if (!object.used && !object.passed && hazardCueCount < 3) {
             // A tiny marker above the next solid hazard gives the eye a
