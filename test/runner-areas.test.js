@@ -5,6 +5,7 @@ import {regionAt} from '../src/runner/regions.js';
 import {createBoneGeometry} from '../src/runner/bone-model.js';
 import {createCapeGeometry} from '../src/runner/cape-model.js';
 import {createRun,fillTrack,HAZARDS} from '../src/runner/world.js';
+import {ATMOSPHERE_PARTICLE_COUNT,sampleAtmosphereParticle} from '../src/runner/atmosphere.js';
 
 test('six visual areas cycle without changing mastery region identity',()=>{
   assert.equal(new Set(AREAS.map(area=>area.name)).size,6);
@@ -36,6 +37,25 @@ test('version four gives every destination a distinct readable encounter rhythm'
     assert.ok(hazards.length>0);
     assert.ok(hazards.some(object=>profile.hazards.includes(object.type)),profile.id);
   }
+});
+
+test('every destination has a restrained atmosphere outside the playable corridor',()=>{
+  assert.equal(ATMOSPHERE_PARTICLE_COUNT,24);
+  for(const area of AREAS){
+    assert.match(area.atmosphere.motif,/^(fireflies|leaves|dust|sparkles|crystals|spores)$/);
+    assert.match(area.atmosphere.color,/^#[0-9a-f]{6}$/i);
+    assert.match(area.atmosphere.accent,/^#[0-9a-f]{6}$/i);
+    assert.ok(area.atmosphere.speed>0&&area.atmosphere.speed<2);
+    assert.ok(area.atmosphere.opacity>0&&area.atmosphere.opacity<1);
+  }
+  const profile=AREAS[0].atmosphere;
+  const sample=sampleAtmosphereParticle(7,120,3,profile,false);
+  const still=sampleAtmosphereParticle(7,120,3,profile,true);
+  assert.ok(Number.isFinite(sample.x)&&Number.isFinite(sample.y)&&Number.isFinite(sample.z));
+  assert.ok(Math.abs(sample.x)>=5.4,'particles stay clear of the three playable lanes');
+  assert.ok(sample.z<=-8,'particles remain ahead of the puppy');
+  assert.equal(still.x, sampleAtmosphereParticle(7,120,0,profile,true).x);
+  assert.equal(still.y, sampleAtmosphereParticle(7,120,0,profile,true).y);
 });
 
 test('cape is a curved lightweight cloth surface rather than a solid slab',()=>{

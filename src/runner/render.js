@@ -47,6 +47,7 @@ import {minecartIntersecting} from './minecart.js';
 import {createMinecartModel} from './minecart-model.js';
 import {createRiverBanks} from './river-banks.js';
 import {createPuppyArtwork,PUPPY_HANG_HANDLE_HEIGHT} from './puppy-artwork.js';
+import {ATMOSPHERE_PARTICLE_COUNT,sampleAtmosphereParticle} from './atmosphere.js';
 
 const PICKUP_GLOW_COLORS = Object.freeze({
   magnet: '#8ff2e7',
@@ -363,6 +364,44 @@ export function createView(canvas) {
     mountain.userData.depthHaze = (-mountain.position.z - 115) / 25 * .18;
     mountains.push(mountain);
   }
+  // One recycled batch gives every destination a quiet visual signature:
+  // fireflies in the woods, drifting leaves in bamboo, warm dust in Redrock,
+  // glints in the oasis, crystal motes in the reach, and spores at Mooncap.
+  // The particles live beyond the road shoulders so they enrich the horizon
+  // without competing with bones, hazards, or the puppy's silhouette.
+  const atmosphereGeometry = new THREE.OctahedronGeometry(1, 0);
+  const atmosphereMaterial = new THREE.MeshBasicMaterial({
+    vertexColors: true,
+    transparent: true,
+    opacity: .46,
+    depthWrite: false,
+    depthTest: true,
+    fog: true,
+    toneMapped: false,
+  });
+  const atmosphereParticles = new THREE.InstancedMesh(
+    atmosphereGeometry,
+    atmosphereMaterial,
+    ATMOSPHERE_PARTICLE_COUNT,
+  );
+  atmosphereParticles.name = 'area-atmosphere-particles';
+  atmosphereParticles.frustumCulled = false;
+  atmosphereParticles.renderOrder = .12;
+  atmosphereParticles.setColorAt(0, new THREE.Color('#ffffff'));
+  scene.add(atmosphereParticles);
+  const atmospherePalettes = AREAS.map(area => ({
+    color: new THREE.Color(area.atmosphere.color),
+    accent: new THREE.Color(area.atmosphere.accent),
+  }));
+  const atmospherePrimary = new THREE.Color();
+  const atmosphereAccent = new THREE.Color();
+  const atmosphereParticleColor = new THREE.Color();
+  const atmosphereMatrix = new THREE.Matrix4();
+  const atmospherePosition = new THREE.Vector3();
+  const atmosphereScale = new THREE.Vector3();
+  const atmosphereEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+  const atmosphereQuaternion = new THREE.Quaternion();
+  const atmospherePoint = {};
   // Separate road receivers from scenery casters to avoid layered paving
   // shadowing itself. Each geometry remains one shared instanced scenery draw.
   const batches = [];
@@ -1286,6 +1325,62 @@ export function createView(canvas) {
       const weight = bodyMotion({vx:run.vx,vy:run.vy,y,time:run.time,landing:run.landing,
         ziplining:Boolean(run.zipline),reducedMotion:reducedMotion||menu});
       const atmosphere = areaBlend(menu ? 0 : distance);
+      const atmosphereEnabled = !reducedMotion &&
+        (menu || state === 'playing' || state === 'paused');
+      atmosphereParticles.visible = atmosphereEnabled;
+      atmosphereParticles.count = atmosphereEnabled ? ATMOSPHERE_PARTICLE_COUNT : 0;
+      if (atmosphereEnabled) {
+        const profile = AREAS[atmosphere.index].atmosphere;
+        const previousProfile = AREAS[atmosphere.previous].atmosphere;
+        atmosphereMaterial.opacity = THREE.MathUtils.lerp(
+          previousProfile.opacity,
+          profile.opacity,
+          atmosphere.blend,
+        );
+        atmospherePrimary.copy(atmospherePalettes[atmosphere.previous].color)
+          .lerp(atmospherePalettes[atmosphere.index].color, atmosphere.blend);
+        atmosphereAccent.copy(atmospherePalettes[atmosphere.previous].accent)
+          .lerp(atmospherePalettes[atmosphere.index].accent, atmosphere.blend);
+        for (let index = 0; index < ATMOSPHERE_PARTICLE_COUNT; index++) {
+          sampleAtmosphereParticle(index, distance, time, profile, false, atmospherePoint);
+          const frame = frameAt(atmospherePoint.z);
+          const across = atmospherePoint.x;
+          atmospherePosition.set(
+            frame.x + across * Math.cos(frame.yaw),
+            frame.y + atmospherePoint.y,
+            frame.z - across * Math.sin(frame.yaw),
+          );
+          atmosphereEuler.set(
+            frame.pitch * .18,
+            frame.yaw + atmospherePoint.rotation,
+            atmospherePoint.rotation * .55,
+          );
+          atmosphereQuaternion.setFromEuler(atmosphereEuler);
+          const flattened = profile.motif === 'leaves'
+            ? .42
+            : profile.motif === 'dust' ? .78
+              : profile.motif === 'crystals' ? .7
+                : 1;
+          atmosphereScale.set(
+            atmospherePoint.scale,
+            atmospherePoint.scale * flattened,
+            atmospherePoint.scale * (profile.motif === 'leaves' ? 1.35 : .92),
+          );
+          atmosphereMatrix.compose(
+            atmospherePosition,
+            atmosphereQuaternion,
+            atmosphereScale,
+          );
+          atmosphereParticles.setMatrixAt(index, atmosphereMatrix);
+          atmosphereParticleColor.copy(index % 3 === 0 ? atmosphereAccent : atmospherePrimary);
+          const twinkle = profile.motif === 'fireflies' || profile.motif === 'sparkles' || profile.motif === 'spores'
+            ? .78 + .22 * (.5 + .5 * Math.sin(time * 2.4 + index * 1.7))
+            : 1;
+          atmosphereParticles.setColorAt(index, atmosphereParticleColor.multiplyScalar(twinkle));
+        }
+        atmosphereParticles.instanceMatrix.needsUpdate = true;
+        if (atmosphereParticles.instanceColor) atmosphereParticles.instanceColor.needsUpdate = true;
+      }
       scene.background.copy(areaColors[atmosphere.previous].sky).lerp(areaColors[atmosphere.index].sky,atmosphere.blend);
       scene.fog.color.copy(scene.background);
       sky.material.color.copy(scene.background);

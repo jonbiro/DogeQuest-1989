@@ -117,6 +117,23 @@ test('trail collectibles get a visible authored scale and gentle pulse', () => {
   assert.match(render, /flashColor\.set\('#b98a5e'\)/);
 });
 
+test('destinations carry a low-cost atmospheric signature without lane clutter', () => {
+  const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
+  const areas = readFileSync(new URL('../src/runner/areas.js', import.meta.url), 'utf8');
+  assert.match(render, /area-atmosphere-particles/);
+  assert.match(render, /ATMOSPHERE_PARTICLE_COUNT/);
+  assert.match(render, /sampleAtmosphereParticle\(index, distance, time, profile/);
+  assert.match(render, /atmosphereParticles\.visible = atmosphereEnabled/);
+  assert.match(render, /atmosphereParticles\.count = atmosphereEnabled/);
+  assert.match(render, /const across = atmospherePoint\.x/);
+  assert.match(areas, /motif:'fireflies'/);
+  assert.match(areas, /motif:'leaves'/);
+  assert.match(areas, /motif:'dust'/);
+  assert.match(areas, /motif:'sparkles'/);
+  assert.match(areas, /motif:'crystals'/);
+  assert.match(areas, /motif:'spores'/);
+});
+
 test('ended mobile sheets keep the details affordance above the fixed action shelf', () => {
   assert.match(css, /#overlay\[data-kind="ended"\] \.modal-content \{\s*padding-bottom: 42px;/);
   assert.match(css, /#overlay\[data-kind="ended"\] \.modal h2 \{\s*font-size: 30px;/);
