@@ -1769,6 +1769,12 @@ canvas:focus-visible {
 #overlay[data-kind="shop"] .modal-content #upgrades {
   padding-bottom: 92px;
 }
+/* Puppy and outfit catalogues share that action shelf too. Reserve the same
+   landing space for their final card so its art, copy and action are never
+   tucked under the shelf on a short portrait viewport. */
+#overlay[data-kind="kennel"] .modal-content #collection:not([data-category="passport"]):not([data-category="prizes"]) {
+  padding-bottom: 92px;
+}
 #overlay[data-kind="kennel"] .modal-content #collection[data-category="passport"] > #trail-passport {
   width: 100%;
 }

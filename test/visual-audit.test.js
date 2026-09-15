@@ -27,6 +27,7 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(css, /#collection\[data-category="prizes"\] \.prize-card \{\s*padding: 9px 14px;/);
   assert.match(css, /#collection\[data-category="prizes"\]\s*\{[\s\S]*?padding-bottom: 92px;/);
   assert.match(css, /#overlay\[data-kind="shop"\] \.modal-content #upgrades \{[\s\S]*?padding-bottom: 92px;/);
+  assert.match(css, /#overlay\[data-kind="kennel"\] \.modal-content #collection:not\(\[data-category="passport"\]\):not\(\[data-category="prizes"\]\) \{[\s\S]*?padding-bottom: 92px;/);
   assert.match(css, /#collection\[data-category="passport"\],\s*#collection\[data-category="prizes"\]\s*\{\s*padding-bottom: 108px;/);
   assert.match(css, /#overlay \.modal-actions \{\s*display: grid;\s*grid-template-columns: minmax\(0, 1fr\) auto;/);
   assert.match(css, /#overlay\[data-kind="help"\] \.basic-moves/);
