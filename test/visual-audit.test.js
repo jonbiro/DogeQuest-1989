@@ -94,6 +94,11 @@ test('the chase camera banks gently with turns without moving the playfield', ()
 
 test('trail collectibles get a visible authored scale and gentle pulse', () => {
   const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
+  assert.match(render, /const boneOutlineMaterial = new THREE\.MeshBasicMaterial/);
+  assert.match(render, /const boneOutlineBatch=createInstanceBatch\(scene,boneGeometry,boneOutlineMaterial\)/);
+  assert.match(render, /boneOutlineMatrix\.copy\(item\.matrix\)\.scale\(boneOutlineScale\)/);
+  assert.match(render, /boneOutlineBatch\.begin\(\)/);
+  assert.match(render, /boneOutlineBatch\.end\(\)/);
   assert.match(render, /templates\.bone\.scale\.setScalar\(1\.88\)/);
   assert.match(render, /const bonePulse = reducedMotion/);
   assert.match(render, /Math\.sin\(time \* 2\.6 \+ \(Number\(object\.id\) \|\| 0\) \* \.61\)/);

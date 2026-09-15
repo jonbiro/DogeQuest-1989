@@ -845,6 +845,20 @@ export function createView(canvas) {
   // falloff on a phone without changing the shared geometry contract.
   templates.bone.scale.setScalar(1.88);
   const boneTransform=templates.bone.clone();
+  // A quiet warm silhouette keeps the ivory collectible legible against the
+  // cream trail. It is a second shared instanced pass rather than an outline
+  // baked into the painting, so every bone keeps the same readable edge while
+  // the mobile renderer still uploads one matrix per pickup.
+  const boneOutlineMaterial = new THREE.MeshBasicMaterial({
+    color: '#654832',
+    transparent: true,
+    opacity: .34,
+    depthWrite: false,
+    depthTest: true,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
+  const boneOutlineBatch=createInstanceBatch(scene,boneGeometry,boneOutlineMaterial);
   const boneBatch=createInstanceBatch(scene,boneGeometry,templates.bone.material);
   templates.rock = new THREE.Group();
   const boulder = mesh(templates.rock,createBoulderGeometry(),"#293e49",0,1.05,0,.94,1.1,.8);
@@ -1144,6 +1158,8 @@ export function createView(canvas) {
     animationTime = 0;
   const bendMatrix = new THREE.Matrix4(),
     instanceMatrix = new THREE.Matrix4();
+  const boneOutlineMatrix = new THREE.Matrix4();
+  const boneOutlineScale = new THREE.Vector3(1.18, 1.18, 1.18);
   const bendScale = new THREE.Vector3();
   const bendEuler = new THREE.Euler(0, 0, 0, 'YXZ');
   const routeRotation = new THREE.Quaternion();
@@ -1566,6 +1582,7 @@ export function createView(canvas) {
         }
       }
       visibleIds.clear();
+      boneOutlineBatch.begin();
       boneBatch.begin();
       let boneGlintCount = 0;
       let hazardCueCount = 0;
@@ -1642,6 +1659,8 @@ export function createView(canvas) {
               : 1 + Math.sin(time * 2.6 + (Number(object.id) || 0) * .61) * .055;
             item.scale.copy(templates.bone.scale).multiplyScalar(bonePulse);
             item.updateMatrix();
+            boneOutlineMatrix.copy(item.matrix).scale(boneOutlineScale);
+            boneOutlineBatch.add(boneOutlineMatrix);
             boneBatch.add(item.matrix);
             // Keep the next few bones discoverable without outlining every
             // pickup or adding a second overlay. A single warm, phase-shifted
@@ -1687,6 +1706,7 @@ export function createView(canvas) {
           }
         }
       boneBatch.end();
+      boneOutlineBatch.end();
       flashes.count = sparkCount;
       flashes.instanceMatrix.needsUpdate = true;
       if(flashes.instanceColor)flashes.instanceColor.needsUpdate = true;
