@@ -1,7 +1,7 @@
 {
   "name": "dogequest-1989",
   "version": "3.0.0",
-  "description": "A cozy puppy platformer with five handcrafted trails, double jumps, hidden bones, and unlimited second chances.",
+  "description": "A mobile-first 3D puppy endless runner through six illustrated landscapes with bones, powers, ziplines, rafts, upgrades, and replayable trails.",
   "type": "module",
   "private": true,
   "license": "MIT",
