@@ -25,11 +25,24 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(css, /\.collection-card img \{\s*width: 104px;/);
   assert.match(css, /\.prize-card\s*\{[\s\S]*?grid-template-areas:/);
   assert.match(css, /#collection\[data-category="prizes"\] \.prize-card \{\s*padding: 9px 14px;/);
-  assert.match(css, /#collection\[data-category="prizes"\]\s*\{[\s\S]*?padding-bottom: 92px;/);
-  assert.match(css, /#overlay\[data-kind="shop"\] \.modal-content #upgrades \{[\s\S]*?padding-bottom: 92px;/);
-  assert.match(css, /#overlay\[data-kind="kennel"\] \.modal-content #collection:not\(\[data-category="passport"\]\):not\(\[data-category="prizes"\]\) \{[\s\S]*?padding-bottom: 92px;/);
-  assert.match(css, /#overlay\[data-kind="help"\] \.modal-content \{[\s\S]*?padding-bottom: 92px;/);
-  assert.match(css, /#collection\[data-category="passport"\],\s*#collection\[data-category="prizes"\]\s*\{\s*padding-bottom: 108px;/);
+  // These five scroll regions used to reserve 92-108px for the action shelf.
+  // `.modal-actions` is never positioned in the stylesheet, so it is a
+  // normal-flow sibling *below* the scroll region and overlays nothing: the
+  // reservation only produced dead space (116px under the last clubhouse card
+  // at 390x844). They keep a plain breathing gap instead. See
+  // test/clubhouse-layout.test.js for the guard that keeps it that way.
+  for (const region of [
+    /#collection\[data-category="prizes"\]\s*\{[^}]*?padding-bottom: (\d+)px;/,
+    /#overlay\[data-kind="shop"\] \.modal-content #upgrades \{[^}]*?padding-bottom: (\d+)px;/,
+    /#overlay\[data-kind="kennel"\] \.modal-content #collection:not\(\[data-category="passport"\]\):not\(\[data-category="prizes"\]\) \{[^}]*?padding-bottom: (\d+)px;/,
+    /#overlay\[data-kind="help"\] \.modal-content \{[^}]*?padding-bottom: (\d+)px;/,
+    /#collection\[data-category="passport"\],\s*#collection\[data-category="prizes"\]\s*\{\s*padding-bottom: (\d+)px;/,
+  ]) {
+    const found = css.match(region);
+    assert.ok(found, `a scroll region lost its bottom gap: ${region}`);
+    assert.ok(Number(found[1]) > 0 && Number(found[1]) <= 32,
+      `expected a breathing gap, not a shelf reservation, got ${found[1]}px`);
+  }
   assert.match(css, /#overlay \.modal-actions \{\s*display: grid;\s*grid-template-columns: minmax\(0, 1fr\) auto;/);
   assert.match(css, /#overlay\[data-kind="help"\] \.basic-moves/);
   assert.match(css, /outline: 2px solid #ffe0a0/);

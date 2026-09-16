@@ -352,7 +352,12 @@ h1 em {
   #collection .clubhouse-categories { grid-template-columns: repeat(4,1fr); gap: 5px; }
   #collection .clubhouse-categories button { padding: 6px 3px; font-size: 11px; }
 }
-@media (min-width: 700px) {
+/* 701px, not 700px: every compact rule in this file is written as
+   `max-width: 700px`, so a `min-width: 700px` companion matches at exactly
+   700px too. Both layouts then applied at once and the phone card's 102px
+   button floor overflowed the roomy grid's narrower column, clipping every
+   Equip/price label in the right-hand column. */
+@media (min-width: 701px) {
   /* The clubhouse is a two-column catalogue on roomy screens. It keeps the
      action bar from covering the next puppy while retaining a single-column,
      thumb-friendly list on portrait phones. */
@@ -381,7 +386,7 @@ h1 em {
     line-height: 1.45;
   }
   #overlay[data-kind="kennel"] .modal-content #collection .collection-card > button {
-    min-height: 40px;
+    min-height: 44px;
     font-size: 11px;
   }
 }
@@ -1888,7 +1893,11 @@ canvas:focus-visible {
   grid-template-columns: none;
   column-gap: 0;
   width: 100%;
-  padding-bottom: 92px;
+  /* The action shelf is a normal-flow sibling *below* this scroll region --
+     `.modal-actions` is never positioned in this stylesheet -- so reserving
+     its footprint inside the scroll area only added dead space under the last
+     card (116px at 390x844). A plain breathing gap is all this needs. */
+  padding-bottom: 20px;
 }
 #overlay[data-kind="kennel"] .modal-content #collection[data-category="prizes"] {
   display: grid;
@@ -1896,27 +1905,16 @@ canvas:focus-visible {
   gap: 12px;
   column-gap: 0;
   width: 100%;
-  /* The action shelf is a fixed sibling of the scroll region. Reserve its
-     footprint so the final reward card can always scroll fully above it. */
-  padding-bottom: 92px;
+  padding-bottom: 20px;
 }
-/* The shop uses the same fixed action shelf as the clubhouse. Keep a quiet
-   landing zone after the final upgrade so its description and progress meter
-   can scroll fully above the shelf on short phone viewports. */
 #overlay[data-kind="shop"] .modal-content #upgrades {
-  padding-bottom: 92px;
+  padding-bottom: 20px;
 }
-/* Puppy and outfit catalogues share that action shelf too. Reserve the same
-   landing space for their final card so its art, copy and action are never
-   tucked under the shelf on a short portrait viewport. */
 #overlay[data-kind="kennel"] .modal-content #collection:not([data-category="passport"]):not([data-category="prizes"]) {
-  padding-bottom: 92px;
+  padding-bottom: 20px;
 }
-/* The illustrated quick-start cards can be taller than the compact phone
-   viewport. Let the final instruction line scroll above the fixed action
-   shelf instead of ending beneath it. */
 #overlay[data-kind="help"] .modal-content {
-  padding-bottom: 92px;
+  padding-bottom: 20px;
 }
 #overlay[data-kind="kennel"] .modal-content #collection[data-category="passport"] > #trail-passport {
   width: 100%;
@@ -1949,8 +1947,10 @@ canvas:focus-visible {
 #collection .collection-card > button {
   grid-column: 2;
   justify-self: start;
-  min-width: 116px;
-  min-height: 42px;
+  /* min() keeps the comfortable floor without letting the action push past a
+     narrower card; a bare pixel value clipped the label in the roomy grid. */
+  min-width: min(116px, 100%);
+  min-height: 44px;
 }
 #collection .preview-angle {
   min-height: 44px;
@@ -1969,13 +1969,16 @@ canvas:focus-visible {
   box-shadow: 0 6px 16px #061a2430;
 }
 #collection .clubhouse-categories button {
-  min-height: 40px;
+  /* 44px is the base rule for every shop and clubhouse button; the category
+     tabs are the primary phone control here and must not be smaller. */
+  min-height: 44px;
   border-radius: 10px;
   font-size: 12px;
   font-weight: 750;
 }
 
-@media (min-width: 700px) {
+/* Paired with the `max-width: 700px` compact rules -- see the note above. */
+@media (min-width: 701px) {
   #overlay[data-kind="kennel"] .modal-content #collection:not([data-category="passport"]):not([data-category="prizes"]) {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2099,7 +2102,7 @@ canvas:focus-visible {
 #collection[data-category="prizes"] {
   display: grid;
   gap: 12px;
-  padding-bottom: 92px;
+  padding-bottom: 20px;
 }
 #collection[data-category="prizes"] > h3 { margin: 4px 0 0; }
 .prize-card {
@@ -2194,13 +2197,30 @@ canvas:focus-visible {
   .modal { width: min(100%, calc(100% - 8px)); padding: 20px; }
   .modal-actions { margin: 12px -20px -20px; padding: 12px 20px 20px; }
   #collection[data-category="passport"],
-  #collection[data-category="prizes"] { padding-bottom: 108px; }
+  #collection[data-category="prizes"] { padding-bottom: 24px; }
   #collection .collection-card { grid-template-columns: 92px minmax(0,1fr); min-height: 116px; gap: 8px 11px; padding: 13px 0; }
   #collection .collection-card img { width: 88px; height: 88px; border-radius: 16px; }
   #collection .collection-card p { font-size: 12px; line-height: 1.45; }
-  #collection .collection-card > button { min-width: 102px; min-height: 40px; font-size: 11px; }
+  /* min() keeps the comfortable 102px floor without letting the button push
+     past a narrower card, which is what clipped the labels. */
+  #collection .collection-card > button { min-width: min(102px, 100%); min-height: 44px; font-size: 11px; }
+  /* A grid item defaults to min-width:auto, so the track is sized to the
+     card's min-content -- 270px here, driven by its badge row. On a 320px
+     phone that pushed the whole passport 50px past the modal and gave the
+     clubhouse a horizontal scrollbar. min-width:0 lets the card shrink to the
+     column it is actually given; the badges already wrap. */
   #trail-passport > .mastery-card,
-  #trail-passport .other-passport-cards .mastery-card { display: block; padding: 15px; }
+  #trail-passport .other-passport-cards .mastery-card { display: block; padding: 15px; min-width: 0; }
+  #trail-passport, #trail-passport .other-passport-cards { min-width: 0; }
+}
+/* The three stamp columns carry a comfortable 74px floor, but 3x74 plus two
+   8px gaps needs 238px and the card only offers ~190px on a 320px phone. Below
+   that the floor cannot be met, so the passport pushed past the modal. Let the
+   columns shrink there and allow the tier labels to wrap again. */
+@media (max-width: 380px) {
+  .mastery-badges { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .mastery-badge { padding: 9px 4px; overflow-wrap: anywhere; }
+  .mastery-badge span, .mastery-badge small { overflow-wrap: anywhere; }
   #trail-passport .mastery-card h3 { margin-bottom: 9px; }
   #trail-passport .mastery-card > p:not(.mastery-badges) { margin: 8px 0; }
   #trail-passport .mastery-card > progress { display: block; margin: 10px 0 12px; }
