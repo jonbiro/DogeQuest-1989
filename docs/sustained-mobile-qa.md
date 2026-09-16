@@ -78,17 +78,18 @@ Set and gap array on every portrait frame; the simulation and visual output are
 unchanged.
 
 The runner now defers mobile service-worker registration until the camp is quiet,
-then verifies and caches the 54-file artwork pack in four-response batches. The
+then verifies and caches the 55-file artwork pack in four-response batches. The
 previous all-at-once install retained roughly 16 MB of image bodies while WebGL
 was starting, which could evict an iPhone graphics context and send a healthy
 browser to the recovery screen. Desktop registration remains immediate, and
 the worker still deletes an incomplete cache rather than exposing a partial
 offline build.
 
-Mobile artwork now compacts each newly loaded painting to a 768px maximum
+Mobile artwork now compacts each newly loaded painting to a 640px maximum
 canvas before it reaches Three.js. The authored illustrations and measured
 alpha bounds stay the same, but idle, stride and streamed action frames no
-longer reserve desktop-sized texture memory on an iPhone. If a WebKit build
+longer reserve desktop-sized texture memory on an iPhone while retaining the
+detail visible at the largest supported phone viewport. If a WebKit build
 reports a lost context one frame before dispatching `webglcontextlost`, the
 render guard enters the same paused wake-up path; mobile recovery waits up to
 10 seconds for the browser to restore the context before banking the run and

@@ -1,8 +1,10 @@
 export const PUPPIES = {
   biscuit: { name:'Biscuit', breed:'Golden doodle pup', description:'Soft curls. Bigger courage.', cost:0, fur:'#d89043', head:'#f2c67b', muzzle:'#ffe0a1', paws:'#ffe3b1', ears:'floppy' },
   mochi: { name:'Mochi', breed:'Silver-curled pup', description:'Soft curls. A familiar little face.', cost:0, fur:'#555853', head:'#8d9187', muzzle:'#d2c09c', paws:'#c9b48d', ears:'floppy' },
-  pepper: { name:'Pepper', breed:'Spotted puppy', description:'A little chaos. A lot of spots.', cost:1500, fur:'#ecebe3', head:'#fffdf2', muzzle:'#e3dfcf', paws:'#f8f7ed', ears:'floppy', spots:true },
-  luna: { name:'Luna', breed:'Moonlight husky', description:'Born to chase the horizon.', cost:2500, fur:'#6b8190', head:'#8fa6b1', muzzle:'#eff1e6', paws:'#f4f2e5', ears:'pointy' },
+  pepper: { name:'Pepper', breed:'Spotted puppy', description:'A little chaos. A coat full of spots.', cost:1500, fur:'#ecebe3', head:'#fffdf2', muzzle:'#e3dfcf', paws:'#f8f7ed', ears:'floppy', spots:true },
+  // Luna's shipped paintings are also soft, floppy-eared curls; keep the
+  // clubhouse copy aligned with what players actually see in the roster.
+  luna: { name:'Luna', breed:'Moonlit doodle', description:'A cool silver curl with a moonlit stride.', cost:2500, fur:'#6b8190', head:'#8fa6b1', muzzle:'#eff1e6', paws:'#f4f2e5', ears:'floppy' },
 };
 // Mochi is the face of the runner and the most familiar starter. Keep both
 // starter puppies unlocked, but make a missing/invalid selection land on him

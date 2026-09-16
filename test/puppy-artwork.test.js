@@ -52,12 +52,12 @@ test('each puppy has complete raster stride, jump, slide, turn, and hang poses',
     assert.equal(puppyPoseArtworkUrl(id, 'turn'), variants.turn);
     assert.equal(puppyPoseArtworkUrl(id, 'hang'), variants.hang);
   }
-  assert.match(PUPPY_ARTWORK_VARIANTS.mochi.away, /^\.\/puppies\/mochi-away\.webp$/);
+  assert.match(PUPPY_ARTWORK_VARIANTS.mochi.away, /^\.\/puppies\/mochi-away-v2\.webp$/);
   assert.notEqual(PUPPY_ARTWORK_VARIANTS.mochi.away, PUPPY_ARTWORK_VARIANTS.mochi.idle);
   assert.equal(PUPPY_ARTWORK_VARIANTS.mochi.stride, './puppies/mochi-run-side.webp');
   assert.equal(PUPPY_ARTWORK_VARIANTS.mochi.strideAlt, './puppies/mochi-run-side-alt.webp');
   assert.equal(puppyPoseArtworkUrl('mochi', 'away'), PUPPY_ARTWORK_VARIANTS.mochi.away);
-  assert.equal(PUPPY_ARTWORK_ALTERNATES.mochi.away, './puppies/mochi-away-alt.webp');
+  assert.equal(PUPPY_ARTWORK_ALTERNATES.mochi.away, './puppies/mochi-away-v2-alt.webp');
   assert.equal(puppyPoseArtworkUrl('mochi', 'awayAlt'), PUPPY_ARTWORK_ALTERNATES.mochi.away);
 });
 
@@ -73,7 +73,7 @@ test('each action has a second authored beat with a stable URL resolver', () => 
       assert.notEqual(alternates[pose], PUPPY_ARTWORK_VARIANTS[id][pose]);
     }
   }
-  assert.match(PUPPY_ARTWORK_ALTERNATES.mochi.away, /^\.\/puppies\/mochi-away-alt\.webp$/);
+  assert.match(PUPPY_ARTWORK_ALTERNATES.mochi.away, /^\.\/puppies\/mochi-away-v2-alt\.webp$/);
   assert.equal(puppyPoseArtworkUrl('mochi', null), PUPPY_ARTWORK.mochi);
 });
 

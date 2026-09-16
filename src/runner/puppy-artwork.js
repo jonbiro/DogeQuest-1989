@@ -40,7 +40,9 @@ export const PUPPY_ARTWORK_VARIANTS = Object.freeze({
     slide: './puppies/mochi-slide.webp',
     turn: './puppies/mochi-turn.webp',
     hang: './puppies/mochi-hang.webp',
-    away: './puppies/mochi-away.webp',
+    // Rear chase-camera paintings keep Mochi's shoulders level and his paws
+    // readable instead of recycling the older tumbling-away illustration.
+    away: './puppies/mochi-away-v2.webp',
   }),
   pepper: Object.freeze({
     idle: PUPPY_ARTWORK.pepper,
@@ -77,7 +79,7 @@ export const PUPPY_ARTWORK_ALTERNATES = Object.freeze({
     raft: './puppies/biscuit-raft.webp',
   }),
   mochi: Object.freeze({
-    away: './puppies/mochi-away-alt.webp',
+    away: './puppies/mochi-away-v2-alt.webp',
     jump: './puppies/mochi-jump-alt.webp',
     slide: './puppies/mochi-slide-alt.webp',
     turn: './puppies/mochi-turn-alt.webp',
@@ -141,11 +143,11 @@ export const PUPPY_ARTWORK_BOUNDS = Object.freeze({
     slideAlt: Object.freeze({width: 1254, height: 1254, x: 15, y: 197, boxWidth: 1225, boxHeight: 879}),
     turnAlt: Object.freeze({width: 1254, height: 1254, x: 100, y: 45, boxWidth: 1103, boxHeight: 1165}),
     hangAlt: Object.freeze({width: 1024, height: 1536, x: 132, y: 14, boxWidth: 821, boxHeight: 1398}),
-    // Measured from the generated rear chase-camera paintings. The high tail
-    // and lifted paws are intentionally included in the visible bounds so the
-    // frame stays centered while the two rear beats trade places.
-    away: Object.freeze({width: 1254, height: 1254, x: 236, y: 30, boxWidth: 822, boxHeight: 1190}),
-    awayAlt: Object.freeze({width: 1254, height: 1254, x: 208, y: 56, boxWidth: 1046, boxHeight: 1168}),
+    // Measured from the matched 3D-cartoon rear chase paintings. The visible
+    // bounds intentionally include the raised tail and reaching paws so the
+    // two authored gait beats swap without a scale or pivot pop.
+    away: Object.freeze({width: 1254, height: 1254, x: 241, y: 131, boxWidth: 820, boxHeight: 1020}),
+    awayAlt: Object.freeze({width: 1254, height: 1254, x: 134, y: 60, boxWidth: 1037, boxHeight: 1123}),
     raftAlt: Object.freeze({width: 1214, height: 1295, x: 79, y: 17, boxWidth: 1054, boxHeight: 1255}),
   }),
   pepper: Object.freeze({
@@ -869,7 +871,11 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
   const poseTextures = new Map();
   const poseLoads = new Set();
   const sourceLoadTokens = new Map();
-  const maxTextureDimension = mobile ? 768 : 0;
+  // The largest authored painting is rendered below 600 device pixels on the
+  // target phone viewport. A 640px cap preserves that visible detail while
+  // keeping decoded action/costume textures roughly a third smaller than the
+  // old 768px mobile cap.
+  const maxTextureDimension = mobile ? 640 : 0;
   // A kennel preview can visit several puppies before the next run. Keep
   // their idle source images available for an instant swap, but release old
   // action/costume/crop textures on coarse-pointer devices. Without this
@@ -914,7 +920,7 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     }
     // Idle paintings are also GPU resources once the sprite has rendered.
     // Drop them with the rest of the inactive puppy so a long kennel session
-    // cannot accumulate one 768px texture per dog. A request token prevents
+    // cannot accumulate one 640px texture per dog. A request token prevents
     // a late image callback from resurrecting a discarded source.
     for (const [key, texture] of sourceTextures) {
       if (key === keepKey) continue;

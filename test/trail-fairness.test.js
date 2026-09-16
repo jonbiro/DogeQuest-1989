@@ -85,6 +85,54 @@ function perfectPolicy(run, done) {
   }
 }
 
+// The baseline probe intentionally disables optional rides so its obstacle
+// assertions stay focused. This companion policy exercises those sections too:
+// choose the readable centre route, jump into every cable, and follow its
+// airborne bone line while retaining the same hazard policy as above.
+function optionalPerfectPolicy(run, done) {
+  const turn = turnPrompt(run);
+  if (turn && turn.status !== 'accepted') {
+    const key = `turn:${turn.index}`;
+    if (!done.has(key)) {
+      done.add(key);
+      act(run, turn.direction);
+    }
+  }
+  if (run.choicePending !== null && run.choicePending - run.distance < 42) {
+    if (run.lane !== 1) act(run, run.lane < 1 ? 'right' : 'left');
+    return;
+  }
+  if (run.zipline) {
+    const bone = run.objects
+      .filter(object => object.type === 'bone' && object.airborne && !object.used && object.at > run.distance + .01)
+      .sort((a, b) => a.at - b.at)[0];
+    if (bone && Math.abs(bone.at - run.distance) < 18 && run.lane !== bone.lane)
+      act(run, bone.lane < run.lane ? 'left' : 'right');
+    return;
+  }
+  const cable = run.objects
+    .filter(object => object.type === 'zipline-start' && !object.caught && object.at > run.distance + .01)
+    .sort((a, b) => a.at - b.at)[0];
+  if (cable && cable.at - run.distance < Math.max(12, run.speed * .48)) {
+    if (run.y === 0) act(run, 'jump');
+    return;
+  }
+  perfectPolicy(run, done);
+}
+
+function playOptional(seed, {maxDistance = 8000} = {}) {
+  const run = createRun(seed);
+  const done = new Set();
+  let guard = 0;
+  while (!run.ended && run.distance < maxDistance && guard++ < 600000) {
+    fillTrack(run);
+    optionalPerfectPolicy(run, done);
+    step(run, 1 / 120);
+    run.objects = run.objects.filter(object => object.at > run.distance - 20);
+  }
+  return run;
+}
+
 // Steers correctly but never jumps or slides. Used only to prove the harness
 // above can actually detect a heart loss, so a green fairness run can never be
 // the result of a policy that silently stopped driving the game.
@@ -117,6 +165,16 @@ test('a player who always picks a clearable lane never loses a heart', () => {
       losses.push({seed, hearts: run.hearts, at: Math.round(run.distance), cause: run.lastMistake});
   }
   assert.deepEqual(losses, [], `unavoidable damage: ${JSON.stringify(losses)}`);
+});
+
+test('a perfect player can solve route gates and ziplines without skipping them', () => {
+  for (const seed of Array.from({length: 10}, (_, index) => index)) {
+    const run = playOptional(seed);
+    assert.ok(run.distance >= 7900, `seed ${seed} should reach the full probe, stopped at ${run.distance}`);
+    assert.equal(run.hearts, 3, `seed ${seed} lost a heart in an optional section at ${run.distance}`);
+    assert.ok(run.routeChoices >= 10, `seed ${seed} never exercised route gates`);
+    assert.ok(run.ziplines >= 5, `seed ${seed} never exercised ziplines`);
+  }
 });
 
 test('no generated row demands a slide while the player is still committed to a jump', () => {
