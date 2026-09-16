@@ -30,6 +30,22 @@ test('route labels end at the exact boundary and practice remains explicitly uns
   assert.deepEqual(runHudLabels(practice,100),{region:'Practice · no penalties',rhythm:'',score:'0/3 moves cleared'});
 });
 
+test('destination rhythm never leaks across an area boundary',()=>{
+  const run=createRun(1989);
+  run.distance=224;
+  run.objects=[
+    {at:229,encounter:'Lantern line',used:false,passed:false},
+    {at:223,encounter:'Root run',used:false,passed:false},
+  ];
+  const labels=runHudLabels(run,0);
+  assert.equal(labels.region,'Sunleaf Woods');
+  assert.equal(labels.rhythm,'Roots + canopy');
+
+  run.distance=210;
+  run.objects=[{at:218,encounter:'Root run',used:false,passed:false}];
+  assert.equal(runHudLabels(run,0).rhythm,'Root run');
+});
+
 test('portrait mission summaries stay scannable while preserving progress',()=>{
   assert.equal(missionSummaryLabel({metric:'regionalCourses',title:'Course conqueror',target:1},0,1,3),'1/3 · Course · 0/1');
   assert.equal(missionSummaryLabel({metric:'bestCombo',title:'Snack streak',target:10},7,2,3),'2/3 · Streak · 7/10');

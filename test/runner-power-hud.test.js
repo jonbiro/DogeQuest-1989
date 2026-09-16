@@ -23,13 +23,13 @@ test('raft distance reuses the traversal chip and restores cable semantics',()=>
   const f=fixture(),update=createPowerHud(f.container),run=createRun(1);
   const nodes=[...f.container.children],counts=f.counts();
   Object.assign(run,{raft:{start:1150,end:1290},distance:1200});update(run);
-  assert.equal(nodes[0].children[0].nodeValue,'RAFT 90m');
+  assert.equal(nodes[0].children[0].nodeValue,'RAFT · 90m');
   assert.equal(nodes[0].attributes['aria-label'],'Raft ride');
   assert.equal(nodes[0].children[1].attributes['aria-label'],'Distance to shore');
   assert.equal(nodes[0].children[1].value,90);
   Object.assign(run,{raft:null,zipline:{end:2190},distance:2100});update(run);
   assert.equal(nodes[0].attributes['aria-label'],'Zipline ride');
-  assert.equal(nodes[0].children[0].nodeValue,'🐾 90m');
+  assert.equal(nodes[0].children[0].nodeValue,'🐾 · 90m');
   run.zipline=null;update(run);assert.equal(nodes[0].hidden,true);
   assert.deepEqual(f.counts(),counts);assert.deepEqual(f.container.children,nodes);
 });
@@ -55,7 +55,7 @@ test('power HUD reuses all elements through updates, expiration and reactivation
   Object.assign(run,{zipline:{end:140},zoomies:6,shield:1,magnet:19,double:10});
   assert.equal(update(run),true);
   assert.deepEqual(nodes.map(n=>n.hidden),[false,false,false,false,false]);
-  assert.deepEqual(nodes.map(n=>n.children[0].nodeValue),['🐾 140m','🎾 6s','◇ SHIELD','🧲 19s','×2 10s']);
+  assert.deepEqual(nodes.map(n=>n.children[0].nodeValue),['🐾 · 140m','🎾 ZOOMIES · 6s','◇ SHIELD · ONE HIT','🧲 MAGNET · 19s','×2 BONE BONUS · 10s']);
   assert.equal(nodes[4].attributes['aria-label'],'Double bone points: gems and trail bonuses are unchanged');
   assert.equal(nodes[4].attributes.title,nodes[4].attributes['aria-label']);
   assert.equal(nodes[4].children[1].attributes['aria-label'],'Double bone points time remaining');

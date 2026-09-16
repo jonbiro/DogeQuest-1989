@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {puppyAssetParityError} from '../scripts/verify-dist.js';
 
-const exact = ['biscuit.webp', 'mochi.webp', 'mochi-away-v2.webp'];
+const exact = ['biscuit.webp', 'mochi.webp', 'mochi-away-v3.webp'];
 
 test('puppy parity accepts a source, dist and offline manifest with the same files', () => {
   assert.equal(puppyAssetParityError({
@@ -24,10 +24,10 @@ test('puppy parity rejects an orphan copied into dist or omitted from the manife
 
 test('puppy parity rejects a source painting missing from the generated release', () => {
   const error = puppyAssetParityError({
-    sourceAssets: new Set([...exact, 'mochi-away-v2-alt.webp']),
+    sourceAssets: new Set([...exact, 'mochi-away-v3-alt.webp']),
     distAssets: new Set(exact),
     manifestAssets: new Set(exact),
   });
-  assert.match(error, /dist .*missing \[mochi-away-v2-alt\.webp\]/);
-  assert.match(error, /offline manifest .*missing \[mochi-away-v2-alt\.webp\]/);
+  assert.match(error, /dist .*missing \[mochi-away-v3-alt\.webp\]/);
+  assert.match(error, /offline manifest .*missing \[mochi-away-v3-alt\.webp\]/);
 });

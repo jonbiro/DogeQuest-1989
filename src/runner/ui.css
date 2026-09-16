@@ -1118,10 +1118,13 @@ kbd {
 #game[data-state="ended"] .vignette {
   background: linear-gradient(
     0deg,
-    #102a2860,
-    transparent 25%,
-    transparent 70%,
-    #102a28ab
+    /* Keep the near-camera character out of a brown/green screen wash. The
+       fixed control shelf already carries its own opaque backing, so the
+       vignette only needs to protect the top HUD and horizon. */
+    transparent 0%,
+    transparent 24%,
+    #102a2824 72%,
+    #102a288c 100%
   );
 }
 #game[data-state="playing"] header {
@@ -1190,6 +1193,11 @@ kbd {
   }
   .intro {
     font-size: 12px;
+    /* The featured Mochi painting lives in the open right-hand pocket on
+       portrait phones. Keep the supporting copy in its own left column so
+       the authored silhouette never gets printed under a line of text. */
+    max-width: min(190px, 54vw);
+    text-wrap: balance;
   }
   .start-actions {
     margin-top: 23px;
@@ -1394,6 +1402,205 @@ kbd {
   #overlay .modal .eyebrow { display: none; }
   #overlay[data-kind="ended"] #results strong { margin-top: 4px; }
 }
+
+/* Special pickups explain themselves only while one is approaching. Keeping
+   this card under the HUD makes the answer easy to find without covering the
+   puppy, the next obstacle, or the single urgent movement cue. */
+#pickup-guide {
+  position: absolute;
+  top: 190px;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(224px, 46vw);
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 7px 10px 7px 8px;
+  border: 1px solid var(--pickup-color, #8fe7db);
+  border-radius: 13px;
+  background: #102b3ef2;
+  box-shadow: inset 0 1px 0 #ffffff18, 0 5px 15px #061a2433;
+  pointer-events: none;
+}
+#pickup-guide-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 27px;
+  height: 27px;
+  border-radius: 9px;
+  background: #071b268c;
+  color: var(--pickup-color, #8fe7db);
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+}
+.pickup-guide-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+#pickup-guide-title {
+  overflow: hidden;
+  color: #fff1c6;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: .04em;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+#pickup-guide-detail {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #c8e1df;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+#pickup-guide[data-state="recent"] {
+  background: #153844f5;
+  box-shadow: inset 0 1px 0 #ffffff22, 0 5px 18px #061a2450;
+}
+#pickup-guide[data-state="recent"] #pickup-guide-icon {
+  background: #214a50;
+  background: color-mix(in srgb, var(--pickup-color, #8fe7db) 22%, #071b26);
+  animation: pickup-confirm .72s ease-out both;
+}
+@keyframes pickup-confirm {
+  0% { transform: scale(.82); filter: brightness(1.35); }
+  55% { transform: scale(1.08); filter: brightness(1.12); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+/* Active powers keep the original glanceable timer, then add the one phrase
+   that tells a new player why it matters. */
+.power-chip small {
+  display: block;
+  margin-top: 2px;
+  color: #b9d8d4;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: .02em;
+  line-height: 1.1;
+}
+.power-chip[data-power="magnet"] small { color: #a9f2e7; }
+.power-chip[data-power="shield"] small { color: #c8efff; }
+.power-chip[data-power="double"] small { color: #ffe6a9; }
+.power-chip[data-power="zoomies"] small { color: #dbf5a0; }
+.power-chip[data-power="ride"] small { color: #b9e9df; }
+
+/* A compact, visual key turns the long help paragraph into a quick reference.
+   Four columns fit comfortably on desktop; phones switch to two larger cards. */
+.pickup-key {
+  margin: 16px 0 8px;
+  padding: 12px;
+  border: 1px solid #a6d7cf55;
+  border-radius: 16px;
+  background: #0d2a2be8;
+  text-align: left;
+}
+.pickup-key-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0 0 9px;
+}
+.pickup-key-heading strong {
+  color: #fff1c6;
+  font-size: 12px;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+.pickup-key-heading span {
+  color: #a9cbc6;
+  font-size: 10px;
+}
+.pickup-key-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+.pickup-key-item {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 6px;
+  padding: 7px 6px;
+  border: 1px solid #a6d7cf2f;
+  border-radius: 10px;
+  background: #173a40b8;
+}
+.pickup-key-item > b {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 21px;
+  height: 21px;
+  border-radius: 7px;
+  background: #071b268c;
+  color: #ffe0a0;
+  font-size: 12px;
+  line-height: 1;
+}
+.pickup-key-item[data-pickup="magnet"] > b { color: #8ff2e7; }
+.pickup-key-item[data-pickup="shield"] > b { color: #b9edff; }
+.pickup-key-item[data-pickup="gem"] > b { color: #edb5ff; }
+.pickup-key-item[data-pickup="double"] > b { color: #ffe08c; }
+.pickup-key-item[data-pickup="heart"] > b { color: #ffb4c8; }
+.pickup-key-item[data-pickup="gift"] > b { color: #e8c5ff; }
+.pickup-key-item[data-pickup="zoomies"] > b { color: #d9f58c; }
+.pickup-key-item[data-pickup="relic"] > b { color: #e8c7ff; }
+.pickup-key-item > span {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+.pickup-key-item strong {
+  overflow: hidden;
+  color: #e9f7ef;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pickup-key-item small {
+  overflow: hidden;
+  color: #a9cbc6;
+  font-size: 9px;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) and (orientation: portrait) {
+  #pickup-guide {
+    /* The quiet mission chip docks at 230px on portrait phones. Keep the
+       pickup explanation below it with a small breathing gap instead of
+       stacking two translucent cards over the same pixels. */
+    top: 202px;
+    width: min(212px, 52vw);
+    min-height: 40px;
+    padding: 6px 8px 6px 7px;
+  }
+  #pickup-guide-title { font-size: 10px; }
+  #pickup-guide-detail { font-size: 9px; }
+  .power-chip small { font-size: 8px; }
+  .pickup-key-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 380px) {
+  .pickup-key { padding: 9px; }
+  .pickup-key-heading { display: block; }
+  .pickup-key-heading span { display: block; margin-top: 3px; }
+  .pickup-key-item { padding: 6px 5px; }
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -1403,6 +1610,9 @@ kbd {
   }
   .primary:hover {
     transform: none;
+  }
+  #pickup-guide[data-state="recent"] #pickup-guide-icon {
+    animation: none;
   }
 }
 @media (max-width: 700px) and (orientation: portrait) {
@@ -1441,6 +1651,7 @@ kbd {
   }
   .power-chip { padding: 5px 6px; font-size: 11px; }
   .power-chip small { display: none; }
+  #pickup-guide { top: 112px; }
   .power-chip progress { margin-top: 3px; height: 2px; }
   .run-stats { flex-direction: row; align-items: center; gap: 8px; }
   .bones { padding: 6px 10px; font-size: 14px; }
@@ -1737,6 +1948,18 @@ h1 { letter-spacing: -.055em; word-spacing: .07em; }
    breakpoint and keeps the scrollable modal from hiding its action bar.
    ------------------------------------------------------------------------- */
 
+/* The menu vignette protects the headline on the left, but its old fade held
+   a dark wash over the featured puppy on portrait phones. Let that wash fall
+   away sooner on the open trail shoulder so the authored coat reads at a
+   glance without brightening the typography or changing the WebGL artwork. */
+#game[data-state="menu"] .vignette {
+  background:
+    linear-gradient(90deg, #102a28ed 0%, #102a28c9 24%, #102a2814 50%, transparent 70%),
+    /* Mochi sits in the lower-right hero pocket. Leave that pocket clear; the
+       headline and controls have their own contrast surfaces. */
+    linear-gradient(0deg, transparent 0%, transparent 30%, #102a2820 78%, #102a2860 100%);
+}
+
 button:focus-visible,
 a:focus-visible,
 canvas:focus-visible {
@@ -1801,13 +2024,19 @@ canvas:focus-visible {
 /* When a jump/ride lifts the puppy into the centre of a portrait phone, keep
    the quiet progress chip out of the character silhouette. It returns to its
    normal horizon dock as soon as the puppy lands; urgent action/turn cues use
-   a different dock and are intentionally unaffected. */
+   a different dock and are intentionally unaffected. Hiding the quiet chip
+   is deliberate: moving it down the trail makes it cover the very pose the
+   player is trying to read, while keeping it visible would add a second
+   message during a short action beat. */
 @media (max-width: 700px) and (orientation: portrait) {
   #mission-hud[data-dock="mission-summary"][data-posture="jump"],
   #mission-hud[data-dock="mission-summary"][data-posture="zipline"],
   #mission-hud[data-dock="mission-summary"][data-posture="raft"],
   #mission-hud[data-dock="mission-summary"][data-posture="minecart"] {
-    transform: translateY(clamp(170px, 27vh, 240px));
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transform: none;
   }
 }
 
@@ -1933,7 +2162,11 @@ canvas:focus-visible {
   height: 108px;
   grid-row: 1 / span 2;
   border-radius: 20px;
-  background: radial-gradient(circle at 50% 35%, #fff7dc 0 42%, #caa972 100%);
+  /* Keep the clubhouse swatches in the same cool, clean family as the
+     corrected in-run paintings. The former yellow paper backing made every
+     puppy look more beige before the player even reached the trail. */
+  background: radial-gradient(circle at 50% 35%, #f4fffb 0 42%, #a8cfc3 100%);
+  filter: saturate(1.06) contrast(1.04);
   box-shadow: inset 0 0 0 1px #26382d33, 0 8px 18px #071b2638;
 }
 #collection .collection-card p {
@@ -2302,6 +2535,29 @@ canvas:focus-visible {
    width, with a generous illustrated header and short, readable copy. The
    detailed gesture accordions remain below for players who want more context. */
 @media (max-width: 430px) and (orientation: portrait) {
+  /* The shop action shelf is part of the modal flow, so the mobile primary's
+     generic 24px top margin was stealing room from the list above it. Keep
+     both actions comfortably tappable while returning that margin to the
+     upgrade copy; this prevents the third row from looking clipped on first
+     open and still leaves the full list scrollable. */
+  #overlay[data-kind="shop"] .modal-actions {
+    padding-top: 8px;
+    padding-bottom: 14px;
+  }
+  #overlay[data-kind="shop"] .modal-actions > .primary,
+  #overlay[data-kind="shop"] .modal-actions > .text-button {
+    margin-top: 0;
+  }
+  #overlay[data-kind="shop"] .upgrade {
+    padding-block: 7px;
+  }
+  #overlay[data-kind="shop"] .upgrade-copy strong {
+    margin-bottom: 4px;
+  }
+  #overlay[data-kind="shop"] .upgrade-copy small {
+    margin-block: 5px 3px;
+  }
+
   #overlay[data-kind="help"] .basic-moves {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;

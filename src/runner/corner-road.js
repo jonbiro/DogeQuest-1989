@@ -123,7 +123,7 @@ export function createCornerRoad(scene) {
         const right = strip.center + halfWidth;
         const station = (stationA + stationB) / 2;
         const palette = isBridge(station) ? bridgeColors : landColors;
-        if(palette===landColors)sampleTrailColor(areaColors[strip.color],station,palette[strip.color]);
+        if(palette===landColors)sampleTrailColor(areaColors[strip.color],station,palette[strip.color],strip.color==='curb');
         const outsideSign = corner.direction === 'left' ? 1 : -1;
         const outsideCurb = strip.color === 'curb' && Math.sign(strip.center) === outsideSign;
         const accentBlock = Math.floor((station - corner.at + EDGE_EXTENSION) / 3) % 2 === 0;

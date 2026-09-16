@@ -10,7 +10,7 @@ import { createCornerRoad } from "./corner-road.js";
 import { PUPPIES, DEFAULT_PUPPY } from "./collection.js";
 import { puppyVisual } from "./puppy-visuals.js";
 import { REGIONS, regionAt, horizonProfile } from "./regions.js";
-import {AREAS,areaAt,areaBlend} from './areas.js';
+import {AREAS,areaAt,areaBlend,landmarkSway,landmarkVariation,LANDMARK_SHOULDER_MIN,LANDMARK_SHOULDER_SPREAD} from './areas.js';
 import {createBoneGeometry} from './bone-model.js';
 import {createCapeGeometry} from './cape-model.js';
 import {createSky} from './sky.js';
@@ -31,10 +31,10 @@ import {detourCameraWeight} from './route-detour.js';
 import {createSurfaceTexture} from './surface.js';
 import {createWaterSurface} from './water.js';
 import {BANK_SURFACE_Y} from './terrain.js';
-import {trailColors,sampleTrailColor} from './trail-palette.js';
+import {trailColors,sampleTrailColor,sampleTrailMarkColor} from './trail-palette.js';
 import {createShieldMaterial} from './shield-material.js';
 import {magnetPulse} from './magnet-field.js';
-import {pickupYaw, pickupPulse} from './pickup-motion.js';
+import {pickupYaw, pickupPulse, pickupBob} from './pickup-motion.js';
 import {themeHazard} from './hazard-palette.js';
 import {createBoulderGeometry} from './boulder-model.js';
 import {createPalmFrondGeometry,createFeatheredPalmGeometry} from './palm-frond.js';
@@ -48,6 +48,7 @@ import {createMinecartModel} from './minecart-model.js';
 import {createRiverBanks} from './river-banks.js';
 import {createPuppyArtwork,PUPPY_HANG_HANDLE_HEIGHT} from './puppy-artwork.js';
 import {ATMOSPHERE_PARTICLE_COUNT,sampleAtmosphereParticle} from './atmosphere.js';
+import {pickupBadgeFor} from './pickup-guide.js';
 
 const PICKUP_GLOW_COLORS = Object.freeze({
   magnet: '#8ff2e7',
@@ -205,6 +206,17 @@ export function createView(canvas) {
     }
     for (const x of [-1.2, 1.2])
       box(tile, "#667557", x, 0.11, 0, 0.065, 0.03, 2.8).userData.edge = true;
+    // Destination inlays live on the outer shoulder, outside the collision
+    // envelope of the three lanes. Their short, alternating dashes give a
+    // player peripheral route feedback without adding another sign or HUD
+    // layer. The recycled tile transform keeps them aligned through bends.
+    for (const side of [-1, 1]) for (let mark = 0; mark < 3; mark++) {
+      const inlay = box(tile, '#6d9d6c', side * 3.62, 0.145, -1.7 + mark * 1.7,
+        0.23, 0.045, 0.58);
+      inlay.rotation.y = side * (mark % 2 ? -0.18 : 0.18);
+      inlay.userData.areaMark = true;
+      inlay.userData.markSlot = mark;
+    }
     // Alternative deck shares the road's recycled instances and curve transform.
     const bridge = new THREE.Group();
     const bridgeBox = (...args) => {
@@ -318,6 +330,229 @@ export function createView(canvas) {
     }
     scenery.add(group);decorations.push(group);
   }
+  // Each 225m destination gets a small landmark family. These are deliberately
+  // low-count, pooled silhouettes rather than a second forest layer: the eye
+  // gets a memorable place cue while the playable corridor stays uncluttered.
+  for (let area = 0; area < AREAS.length; area++) for (let i = 0; i < 12; i++) {
+    const group = new THREE.Group();
+    const side = i % 2 ? 1 : -1;
+    // The previous 7–17 unit spread was mostly outside a portrait chase
+    // camera. Bring the signature into the shoulder zone so each destination
+    // reads as a place while remaining safely beyond the road edge.
+    group.position.x = side * (LANDMARK_SHOULDER_MIN + random() * LANDMARK_SHOULDER_SPREAD);
+    Object.assign(group.userData, {
+      area,
+      offset: i * 8.4 + area * 17,
+      variant: 2,
+    });
+    if (area === 0) {
+      // Sunleaf: a broad tree with two warm firefly beacons in its crown.
+      const height = 4.6 + random() * 2.8;
+      mesh(group, trunkGeometry, '#5d5c3e', 0, height / 2, 0, .42, height, .42);
+      ball(group, '#36775a', -.7, height, 0, 1.55, 1.18, 1.4);
+      ball(group, '#5a9860', .75, height + .3, .1, 1.45, 1.12, 1.3);
+      for (const x of [-.65, .62]) ball(group, '#ffe49a', x, height + .08, -.95, .12, .12, .12);
+    } else if (area === 1) {
+      // Bamboo: three slim stalks and a single lantern that reads at distance.
+      for (let stalk = 0; stalk < 3; stalk++) {
+        const x = (stalk - 1) * .62;
+        const height = 4.5 + random() * 2.4;
+        mesh(group, trunkGeometry, '#718f55', x, height / 2, 0, .16, height, .16);
+        for (let y = 1.1; y < height - .2; y += 1.35) box(group, '#a7b56a', x, y, 0, .27, .1, .27);
+        addBambooLeaves(group, palmFrondGeometry, mesh, x, height);
+      }
+      box(group, '#c49a59', 0, 2.55, -.78, .5, .72, .32);
+      ball(group, '#ffe09a', 0, 2.55, -1.02, .15, .18, .15);
+    } else if (area === 2) {
+      // Redrock: layered buttes replace the generic round trees at the edge.
+      for (let mesa = 0; mesa < 3; mesa++) {
+        const x = (mesa - 1) * 1.15;
+        const height = 2.2 + random() * 2.9;
+        cone(group, mesa === 1 ? '#c8734f' : '#a6533b', x, height / 2, 0, .75 + random() * .3, height, .82);
+        box(group, '#e1a36e', x, height + .12, 0, .75, .14, .8);
+      }
+      ball(group, '#eab27b', 0, .26, .1, 1.9, .28, 1.25);
+    } else if (area === 3) {
+      // Oasis: a readable fan palm and a low crescent of warm fruit.
+      const height = 4.8 + random() * 2.2;
+      mesh(group, trunkGeometry, '#8b6c43', 0, height / 2, 0, .28, height, .28);
+      for (let frond = 0; frond < 7; frond++) {
+        const angle = frond * Math.PI * 2 / 7;
+        const leaf = mesh(group, featheredPalmGeometry, frond % 2 ? '#4f8051' : '#6da05d',
+          Math.cos(angle) * 1.5, height, Math.sin(angle) * 1.5, 1.65, 1.08, 1.1);
+        leaf.rotation.y = -angle;
+      }
+      for (const x of [-.5, 0, .5]) ball(group, '#e7bd69', x, .32, -.55, .16, .16, .16);
+    } else if (area === 4) {
+      // Crystal Reach: three translucent-looking color families of shard.
+      for (let shard = 0; shard < 4; shard++) {
+        const height = 2.4 + random() * 3.2;
+        const x = (shard - 1.5) * .68;
+        const crystal = cone(group, ['#79c5d8', '#9b8de4', '#b9e5ee', '#777fc4'][shard],
+          x, height / 2, 0, .43, height, .48);
+        crystal.rotation.z = (shard - 1.5) * .16;
+      }
+      ball(group, '#a9d5e0', 0, .28, .12, 1.8, .3, 1.2);
+    } else {
+      // Mooncap: a crescent of mushroom caps gives the night area a clear
+      // silhouette without putting glowing geometry in the runner's lane.
+      for (let mushroom = 0; mushroom < 3; mushroom++) {
+        const x = (mushroom - 1) * 1.05;
+        const height = 1.7 + mushroom * .65;
+        mesh(group, trunkGeometry, '#8c7897', x, height / 2, 0, .22, height, .22);
+        mesh(group, mushroomCapGeometry, ['#9278b1', '#b89bc9', '#7775ad'][mushroom], x, height, 0, 1.12, .72, 1.02);
+        ball(group, '#e2d1e7', x, height - .17, -.72, .1, .1, .1);
+      }
+    }
+    scenery.add(group);
+    decorations.push(group);
+  }
+  // A handful of large, low-cost destination signatures make each area feel
+  // like a place to arrive at rather than another palette swap. They sit just
+  // beyond the lane shoulders, use the same shared geometry as the pooled
+  // foliage above, and are intentionally sparse so bones and hazards remain
+  // the visual priority. The four variants repeat at different depths, which
+  // gives a run a changing skyline without allocating per-frame objects.
+  for (let area = 0; area < AREAS.length; area++) for (let variant = 0; variant < 4; variant++) {
+    const group = new THREE.Group();
+    const side = variant % 2 ? 1 : -1;
+    group.position.x = side * (LANDMARK_SHOULDER_MIN + 1.05 + (variant % 3) * 1.25);
+    Object.assign(group.userData, {
+      area,
+      offset: area * 31 + variant * 47 + 13,
+      variant: 3,
+      signature: AREAS[area].landmark,
+    });
+    if (area === 0) {
+      // Sunleaf: a forked root arch with a pair of warm firefly lamps.
+      box(group, '#5a5036', -.82, 1.65, 0, .42, 3.3, .44).rotation.z = -.18;
+      box(group, '#5a5036', .82, 1.65, 0, .42, 3.3, .44).rotation.z = .18;
+      box(group, '#6f6340', 0, 3.15, 0, 1.82, .38, .46);
+      ball(group, variant % 2 ? '#4e9864' : '#3f855a', 0, 4.05, 0, 1.55, 1.05, 1.25);
+      ball(group, '#ffe49a', -.62, 3.35, -.52, .12, .12, .12);
+      ball(group, '#fff0b0', .62, 3.35, -.52, .12, .12, .12);
+    } else if (area === 1) {
+      // Bamboo: a compact lantern gate; the open centre keeps the road visible.
+      for (const x of [-.7, .7]) {
+        mesh(group, trunkGeometry, '#6f8f53', x, 2.25, 0, .2, 4.5, .2);
+        for (let y = 1; y < 4.3; y += 1.1) box(group, '#a8b86e', x, y, 0, .29, .08, .29);
+      }
+      box(group, '#7a5c3f', 0, 4.35, 0, 1.72, .22, .25);
+      box(group, '#c89154', 0, 2.65, -.36, .42, .62, .3);
+      ball(group, '#ffe49a', 0, 2.65, -.57, .12, .15, .12);
+    } else if (area === 2) {
+      // Redrock: a warm split butte with a bright cap that reads in silhouette.
+      cone(group, '#a9513b', -.82, 2.05, 0, 1.05, 4.1, .92);
+      cone(group, '#c16b4c', .78, 2.7, 0, 1.18, 5.4, 1.02);
+      box(group, '#e2a16b', .78, 5.42, 0, .78, .16, .8);
+      ball(group, '#e9b27b', 0, .3, .1, 1.55, .26, 1.05);
+    } else if (area === 3) {
+      // Oasis: fan palm, shallow pool and a few bright stepping stones.
+      const height = 4.5 + (variant % 2) * .55;
+      mesh(group, trunkGeometry, '#8a6741', 0, height / 2, 0, .3, height, .3);
+      for (let frond = 0; frond < 6; frond++) {
+        const angle = frond * Math.PI * 2 / 6;
+        const leaf = mesh(group, featheredPalmGeometry, frond % 2 ? '#4d8052' : '#6d9f5c',
+          Math.cos(angle) * 1.35, height, Math.sin(angle) * 1.35, 1.45, .95, 1.05);
+        leaf.rotation.y = -angle;
+      }
+      ball(group, '#9ed7c7', 0, .18, -.42, 1.8, .12, .88);
+      for (const x of [-.55, 0, .55]) ball(group, '#e9c477', x, .32, -.72, .14, .14, .14);
+    } else if (area === 4) {
+      // Crystal Reach: an unmistakable three-spire prism cluster.
+      for (let shard = 0; shard < 3; shard++) {
+        const height = 3 + shard * .85 + (variant % 2) * .35;
+        const crystal = cone(group, ['#66c6d8', '#9e91e6', '#b9e6ee'][shard],
+          (shard - 1) * .72, height / 2, 0, .54, height, .58);
+        crystal.rotation.z = (shard - 1) * .14;
+      }
+      ball(group, '#7ba5c0', 0, .3, .12, 1.65, .25, 1.08);
+    } else {
+      // Mooncap: a crescent of luminous caps gives the night run its own icon.
+      for (let mushroom = 0; mushroom < 3; mushroom++) {
+        const x = (mushroom - 1) * .92;
+        const height = 1.8 + mushroom * .7;
+        mesh(group, trunkGeometry, '#806d91', x, height / 2, 0, .2, height, .2);
+        mesh(group, mushroomCapGeometry, ['#846cab', '#b799ce', '#6c72a8'][mushroom], x, height, 0, 1.05, .68, .96);
+        ball(group, '#e8d8ee', x, height - .16, -.66, .11, .11, .11);
+      }
+      ball(group, '#595a82', 0, .22, .08, 1.7, .23, 1.15);
+    }
+    scenery.add(group);
+    decorations.push(group);
+  }
+  // Low, readable trail motifs give the player something to discover during
+  // the quiet approach to a turn. They are deliberately shoulder-only and
+  // much smaller than the destination signatures, so they add rhythm without
+  // stealing the silhouette of bones, hazards, or Mochi. Each motif reuses the
+  // pooled geometry above and is filtered by the active destination at runtime.
+  for (let area = 0; area < AREAS.length; area++) for (let i = 0; i < 8; i++) {
+    const group = new THREE.Group();
+    const side = i % 2 ? 1 : -1;
+    const shoulder = LANDMARK_SHOULDER_MIN + .18 + (i % 3) * .42;
+    group.position.x = side * shoulder;
+    Object.assign(group.userData, {
+      area,
+      offset: area * 29 + i * 13 + 9,
+      variant: 4,
+      trailMotif: true,
+    });
+    if (area === 0) {
+      // Sunleaf: a small fern fan and a warm seed-stone.
+      mesh(group, trunkGeometry, '#4e6f49', 0, .38, 0, .10, .76, .10);
+      for (let leaf = 0; leaf < 3; leaf++) {
+        const frond = mesh(group, palmFrondGeometry, leaf % 2 ? '#6e9b5b' : '#8ab56a',
+          (leaf - 1) * .24, .75 + leaf * .08, -.06, .52, .34, .45);
+        frond.rotation.z = (leaf - 1) * .24;
+      }
+      ball(group, '#e4c979', 0, .14, -.12, .38, .10, .28);
+    } else if (area === 1) {
+      // Bamboo: paired shoots with a tiny lantern stripe as a visual beat.
+      for (const x of [-.26, .26]) {
+        mesh(group, trunkGeometry, '#68884f', x, .66, 0, .09, 1.32, .09);
+        for (const y of [.38, .83, 1.25]) box(group, '#a4b56d', x, y, 0, .14, .045, .14);
+      }
+      box(group, '#c79152', 0, .62, -.16, .24, .32, .18);
+      ball(group, '#ffe49a', 0, .62, -.29, .07, .08, .07);
+    } else if (area === 2) {
+      // Redrock: three warm pebbles read as a cairn at the road edge.
+      for (let rock = 0; rock < 3; rock++) {
+        const pebble = cone(group, rock === 1 ? '#d28157' : '#a9573f',
+          (rock - 1) * .28, .18 + rock * .18, -.04, .32 - rock * .035,
+          .36 + rock * .13, .28);
+        pebble.rotation.z = (rock - 1) * .15;
+      }
+    } else if (area === 3) {
+      // Oasis: three stepping stones catch a pale highlight beside the road.
+      for (let stone = 0; stone < 3; stone++) {
+        ball(group, stone === 1 ? '#f0cf80' : '#c5ae6f', (stone - 1) * .34,
+          .12, -.10 - stone * .04, .25, .09, .18);
+      }
+      ball(group, '#8fcfc0', 0, .075, .22, .48, .035, .22);
+    } else if (area === 4) {
+      // Crystal Reach: two low shards make the cool palette legible even when
+      // the horizon is hazy.
+      for (let shard = 0; shard < 2; shard++) {
+        const crystal = cone(group, shard ? '#9d91e3' : '#6ec6d8',
+          (shard - .5) * .35, .52, 0, .20, .98 + shard * .18, .24);
+        crystal.rotation.z = shard ? .12 : -.12;
+      }
+      ball(group, '#c5efff', 0, .12, -.18, .27, .055, .20);
+    } else {
+      // Mooncap: a pair of tiny caps makes the night trail feel alive without
+      // adding a bright HUD-like glow to the playable corridor.
+      for (let mushroom = 0; mushroom < 2; mushroom++) {
+        const x = (mushroom - .5) * .46;
+        const height = .52 + mushroom * .20;
+        mesh(group, trunkGeometry, '#77678b', x, height / 2, 0, .10, height, .10);
+        mesh(group, mushroomCapGeometry, mushroom ? '#ae91c4' : '#7d78b0',
+          x, height, 0, .44, .25, .38);
+      }
+      ball(group, '#d8cae8', 0, .09, -.18, .22, .045, .16);
+    }
+    scenery.add(group);
+    decorations.push(group);
+  }
   for (let i = 0; i < 12; i++) {
     const group = new THREE.Group();
     for (const side of [-1, 1]) {
@@ -332,7 +567,11 @@ export function createView(canvas) {
       }
     }
     if (i % 3 === 0) {
-      box(group, "#9daa80", 0, 5.5, 0, 12, 0.8, 1.4);
+      // Keep the gateway as a landmark, not a ceiling across the camera. Two
+      // separated canopy pieces preserve the silhouette while opening a clear
+      // window over the road, bones, and puppy as the player runs underneath.
+      for (const side of [-1, 1])
+        box(group, "#9daa80", side * 3.1, 5.65, 0, 4.2, 0.30, 1.15);
       for (const side of [-1, 1])
         box(group, "#8b9875", side * 5.3, 4.3, 0, 1.15, 2.2, 1.1);
     }
@@ -439,6 +678,8 @@ export function createView(canvas) {
             cable: item.userData.cable === true,
             terrain: item.userData.terrain === true,
             edge: item.userData.edge === true,
+            areaMark: item.userData.areaMark === true,
+            markSlot: item.userData.markSlot || 0,
           });
       });
     for (const group of decorations.filter(
@@ -454,7 +695,12 @@ export function createView(canvas) {
             start: 14,
             region: group.userData.region,
             variant: group.userData.variant,
+            area: group.userData.area,
             gateway: group.userData.gateway === true,
+            motion: group.userData.area !== undefined &&
+              (geometry === palmFrondGeometry ||
+                geometry === featheredPalmGeometry ||
+                geometry === mushroomCapGeometry),
           });
       });
     for (const groupEntries of [entries.filter(entry=>entry.terrain),entries.filter(entry=>entry.road&&!entry.terrain),entries.filter(entry=>!entry.road)]) {
@@ -785,9 +1031,13 @@ export function createView(canvas) {
   menuGlowCanvas.width = menuGlowCanvas.height = 128;
   const menuGlowContext = menuGlowCanvas.getContext("2d");
   const menuGlowGradient = menuGlowContext.createRadialGradient(64, 58, 8, 64, 64, 64);
-  menuGlowGradient.addColorStop(0, "rgba(255,239,184,.68)");
-  menuGlowGradient.addColorStop(.42, "rgba(205,240,190,.28)");
-  menuGlowGradient.addColorStop(1, "rgba(205,240,190,0)");
+  // Use a neutral mint-white lift rather than a yellow spotlight. The puppy
+  // paintings already contain their cream highlights; warming the shared
+  // backdrop made those authored colors read beige in the menu and in the
+  // subtle runner focus wash that reuses this texture.
+  menuGlowGradient.addColorStop(0, "rgba(239,250,248,.68)");
+  menuGlowGradient.addColorStop(.42, "rgba(211,239,232,.28)");
+  menuGlowGradient.addColorStop(1, "rgba(211,239,232,0)");
   menuGlowContext.fillStyle = menuGlowGradient;
   menuGlowContext.fillRect(0, 0, 128, 128);
   const menuGlow = new THREE.Sprite(new THREE.SpriteMaterial({
@@ -805,8 +1055,8 @@ export function createView(canvas) {
   scene.add(menuGlow);
   // A soft dark falloff gives Mochi a clear figure/ground break when the camp
   // road carries the same cream and sage values as his coat. Keep this behind
-  // the painted puppy and separate from the warm spotlight so it reads as a
-  // natural pool of shade, not a sticker or a new HUD panel.
+  // the painted puppy and separate from the neutral spotlight so it reads as
+  // a natural pool of shade, not a sticker or a new HUD panel.
   const menuContrastCanvas = document.createElement("canvas");
   menuContrastCanvas.width = menuContrastCanvas.height = 128;
   const menuContrastContext = menuContrastCanvas.getContext("2d");
@@ -830,11 +1080,12 @@ export function createView(canvas) {
   menuContrast.renderOrder = 1.88;
   scene.add(menuContrast);
   // Keep the running puppy legible when the trail and the coat share a pale
-  // value. This is a soft, scene-locked wash behind the dog rather than a CSS
-  // badge or an outline: it follows jumps and rides, stays below the painted
-  // silhouette, and reuses the menu gradient so it adds no texture upload.
+  // value. This is a soft, scene-locked contrast pool behind the dog rather
+  // than a CSS badge or an outline: it follows jumps and rides, stays below
+  // the painted silhouette, and reuses the menu contrast texture so it adds
+  // no texture upload or warm cast to Mochi's coat.
   const puppyFocus = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: menuGlow.material.map,
+    map: menuContrast.material.map,
     transparent: true,
     depthTest: false,
     depthWrite: false,
@@ -883,6 +1134,93 @@ export function createView(canvas) {
   const flashColor = new THREE.Color();
   // Allocate instance colors before shader warmup, not on the first pickup/hit.
   flashes.setColorAt(0,flashColor);
+  // A single nearest-item badge gives special rewards a plain-language
+  // identity in the world. It is intentionally one shared billboard (rather
+  // than a label per pickup) so the trail stays calm and the mobile renderer
+  // pays no extra geometry cost as object density rises.
+  const pickupBadgeCanvas = document.createElement('canvas');
+  pickupBadgeCanvas.width = 1024;
+  pickupBadgeCanvas.height = 192;
+  const pickupBadgeContext = pickupBadgeCanvas.getContext('2d');
+  const pickupBadgeTexture = new THREE.CanvasTexture(pickupBadgeCanvas);
+  pickupBadgeTexture.colorSpace = THREE.SRGBColorSpace;
+  pickupBadgeTexture.magFilter = THREE.LinearFilter;
+  pickupBadgeTexture.minFilter = THREE.LinearFilter;
+  pickupBadgeTexture.generateMipmaps = false;
+  const pickupBadgeMaterial = new THREE.SpriteMaterial({
+    map: pickupBadgeTexture,
+    transparent: true,
+    depthTest: false,
+    depthWrite: false,
+    fog: false,
+    toneMapped: false,
+    opacity: 0,
+  });
+  const pickupBadgeSprite = new THREE.Sprite(pickupBadgeMaterial);
+  pickupBadgeSprite.name = 'nearest-pickup-badge';
+  pickupBadgeSprite.frustumCulled = false;
+  pickupBadgeSprite.renderOrder = 1.82;
+  pickupBadgeSprite.visible = false;
+  scene.add(pickupBadgeSprite);
+  let pickupBadgeKey = '';
+  function roundedBadgeRect(context, x, y, width, height, radius) {
+    context.beginPath();
+    context.moveTo(x + radius, y);
+    context.arcTo(x + width, y, x + width, y + height, radius);
+    context.arcTo(x + width, y + height, x, y + height, radius);
+    context.arcTo(x, y + height, x, y, radius);
+    context.arcTo(x, y, x + width, y, radius);
+    context.closePath();
+  }
+  function paintPickupBadge(definition, action) {
+    if (!pickupBadgeContext || !definition) return;
+    const context = pickupBadgeContext;
+    context.clearRect(0, 0, pickupBadgeCanvas.width, pickupBadgeCanvas.height);
+    const edge = definition.color || '#a2ffde';
+    roundedBadgeRect(context, 12, 12, 1000, 168, 54);
+    context.fillStyle = '#082633f2';
+    context.fill();
+    context.lineWidth = 8;
+    context.strokeStyle = edge;
+    context.stroke();
+    // A small pointer keeps the label visually attached to its pickup. This
+    // matters on a winding trail where the billboard can otherwise read like
+    // another floating HUD panel rather than an actionable object marker.
+    context.beginPath();
+    context.moveTo(476, 164);
+    context.lineTo(548, 164);
+    context.lineTo(512, 192);
+    context.closePath();
+    context.fillStyle = '#082633f2';
+    context.fill();
+    context.lineWidth = 6;
+    context.strokeStyle = `${edge}cc`;
+    context.stroke();
+    context.beginPath();
+    context.arc(106, 96, 55, 0, Math.PI * 2);
+    context.fillStyle = '#153f4be8';
+    context.fill();
+    context.lineWidth = 4;
+    context.strokeStyle = `${edge}cc`;
+    context.stroke();
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    context.font = 'bold 62px Arial, sans-serif';
+    context.fillStyle = edge;
+    context.fillText(definition.icon || '✦', 106, 98);
+    context.textAlign = 'left';
+    context.font = '850 47px Arial, sans-serif';
+    context.fillStyle = '#fff3ca';
+    context.fillText(String(definition.label || '').toUpperCase(), 190, 74);
+    context.font = '700 29px Arial, sans-serif';
+    context.fillStyle = '#c5e5df';
+    // Keep the effect and the actual lane decision in the same glanceable
+    // line. The object follows the road, so a player can act on this cue
+    // without translating a separate HUD arrow back into the world.
+    const lane = String(definition.lane || 'your lane').toUpperCase();
+    context.fillText(`${action} · ${definition.effect || ''} · ${lane}`, 190, 125);
+    pickupBadgeTexture.needsUpdate = true;
+  }
   const templates = {};
   const boneGeometry=createBoneGeometry();
   templates.bone = new THREE.Mesh(boneGeometry,
@@ -1043,14 +1381,17 @@ export function createView(canvas) {
     const halo = new THREE.Mesh(
       haloGeometry,
       new THREE.MeshBasicMaterial({
-        color: type === "magnet" ? "#85f8ed" : "#fff1bb",
+        color: PICKUP_GLOW_COLORS[type] || "#fff1bb",
         transparent: true,
-        opacity: 0.58,
+        opacity: type === 'zoomies' ? 0.66 : 0.58,
         depthWrite: false,
       }),
     );
     templates[type].add(halo);
-    templates[type].scale.multiplyScalar(1.38);
+    // Special rewards are intentionally larger than bones: their silhouettes
+    // should be readable before the guide card appears, especially on a
+    // portrait phone where perspective compresses the lane width.
+    templates[type].scale.multiplyScalar(1.52);
   }
   templates.gap = new THREE.Group();
   templates['crystal-rock'] = new THREE.Group();
@@ -1258,6 +1599,11 @@ export function createView(canvas) {
   const bendEuler = new THREE.Euler(0, 0, 0, 'YXZ');
   const routeRotation = new THREE.Quaternion();
   const routePosition = new THREE.Vector3();
+  const landmarkMotionMatrix = new THREE.Matrix4();
+  const landmarkMotionScale = new THREE.Vector3();
+  const landmarkVariationMatrix = new THREE.Matrix4();
+  const landmarkVariationEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+  const landmarkVariationScale = new THREE.Vector3();
   const framePuppy=createPuppyFramer();
   let puppyFrame=null;
   const templateScene=new THREE.Group();
@@ -1460,7 +1806,15 @@ export function createView(canvas) {
             ((entry.offset - (distance % entry.period) + entry.period) %
               entry.period);
           const region = regionAt(menu ? 0 : distance-z);
+          const destination = areaBlend(menu ? 0 : distance-z);
           if(entry.region!==undefined&&(entry.region!==region||entry.variant!==areaAt(menu?0:distance-z)%2)){
+            instanced.setMatrixAt(i,instanceMatrix.makeScale(0,0,0));return;
+          }
+          // Landmark families belong to one destination and stay visible for
+          // the first part of a blend so a new area arrives as a handoff,
+          // rather than a single-frame pop at the 225m boundary.
+          if (entry.area !== undefined && entry.area !== destination.index &&
+              !(entry.area === destination.previous && destination.blend < .78)) {
             instanced.setMatrixAt(i,instanceMatrix.makeScale(0,0,0));return;
           }
           const cableClip = entry.cable ? cableSegment(z) : null;
@@ -1471,6 +1825,35 @@ export function createView(canvas) {
           const overlap = entry.road && !entry.cable ? 1 + (entry.terrain ? 30 : 4.6) * Math.abs(frame.curvature) : 1;
           bendMatrix.compose(routePosition.set(frame.x, frame.y, frame.z), routeRotation, bendScale.set(1, 1, overlap*(entry.road?(frame.stretch||1):1)));
           instanceMatrix.multiplyMatrices(bendMatrix, entry.matrix);
+          // Let each destination's foliage breathe independently. This local
+          // transform is applied after route bending, so it never changes
+          // lane placement, collision timing, or the road silhouette.
+          if (entry.motion) {
+            const motion = landmarkSway(time, entry.offset, entry.area, reducedMotion);
+            landmarkMotionMatrix.makeRotationZ(motion.rotation);
+            instanceMatrix.multiply(landmarkMotionMatrix);
+            instanceMatrix.elements[13] += motion.lift;
+            landmarkMotionScale.set(motion.scale, motion.scale, motion.scale);
+            instanceMatrix.scale(landmarkMotionScale);
+          }
+          // Each recycled destination/region landmark gets a tiny pass-aware
+          // variation. Keep road, gateway and cable batches untouched: this is
+          // only for scenery, so the lane silhouette and all traversal cues
+          // remain exactly where the gameplay systems expect them.
+          if (!entry.road && !entry.gateway &&
+              (entry.area !== undefined || entry.region !== undefined)) {
+            const variation = landmarkVariation(
+              distance - z,
+              entry.offset,
+              entry.area ?? entry.region,
+              reducedMotion,
+            );
+            landmarkVariationEuler.set(0, variation.yaw, 0, 'YXZ');
+            landmarkVariationMatrix.makeRotationFromEuler(landmarkVariationEuler);
+            instanceMatrix.multiply(landmarkVariationMatrix);
+            landmarkVariationScale.setScalar(variation.scale);
+            instanceMatrix.scale(landmarkVariationScale);
+          }
           if(cableClip) instanceMatrix.scale(bendScale.set(cableClip.thicknessScale,cableClip.thicknessScale,cableClip.scale));
           const bridge = !menu && isBridge(distance-z);
           const cableSection = !menu && ziplineAt(distance-z);
@@ -1502,8 +1885,11 @@ export function createView(canvas) {
             areaGroundColor.copy(areaColors[blend.previous].ground).lerp(areaColors[blend.index].ground,blend.blend);
             instanced.setColorAt(i,areaGroundColor);
           }else if(entry.road && !entry.bridge && !entry.cable){
-            instanced.setColorAt(i,sampleTrailColor(entry.trailColors,menu?0:distance-z,areaGroundColor));
-          }else if(entry.road || entry.region === undefined) instanced.setColorAt(i,entry.bridge || entry.cable ? entry.color : entry.colors[region]);
+            if(entry.areaMark) instanced.setColorAt(i,sampleTrailMarkColor(menu?0:distance-z,areaGroundColor,entry.markSlot));
+            else
+            instanced.setColorAt(i,sampleTrailColor(entry.trailColors,menu?0:distance-z,areaGroundColor,entry.edge));
+          }else if(entry.area !== undefined) instanced.setColorAt(i, entry.color);
+          else if(entry.road || entry.region === undefined) instanced.setColorAt(i,entry.bridge || entry.cable ? entry.color : entry.colors[region]);
           instanced.setMatrixAt(i, instanceMatrix);
         });
         instanced.instanceMatrix.needsUpdate = true;
@@ -1524,14 +1910,14 @@ export function createView(canvas) {
       // as the character being chosen, not a piece of scenery. Keep sheets
       // and gameplay on their established origin so their interaction and
       // hit-test framing stay unchanged.
-      const heroOffsetX = mobileHero ? (compactHero ? .80 : .22) : 0;
-      const heroOffsetY = mobileHero ? (compactHero ? .44 : -.08) : 0;
+      const heroOffsetX = mobileHero ? (compactHero ? .58 : -.04) : 0;
+      const heroOffsetY = mobileHero ? (compactHero ? .44 : -.20) : 0;
       // Nudge the featured puppy toward the open trail shoulder on portrait
       // screens. The title owns the left side; lifting Mochi a little keeps
       // his face out of the bottom control shelf and gives the contrast pool
       // a clean, scene-locked backdrop instead of tree foliage.
-      const heroVisualX = heroOffsetX + (mobileHero ? (compactHero ? .28 : .15) : 0);
-      const heroVisualY = heroOffsetY + (mobileHero ? (compactHero ? .08 : -.03) : 0);
+      const heroVisualX = heroOffsetX + (mobileHero ? (compactHero ? .22 : .26) : 0);
+      const heroVisualY = heroOffsetY + (mobileHero ? (compactHero ? .08 : -.01) : 0);
       dog.position.set(
         hero ? heroVisualX : menu ? 0 : x,
         (hero ? heroVisualY : menu ? 0 : y) +
@@ -1561,12 +1947,12 @@ export function createView(canvas) {
       // phones without changing collision dimensions or run timing. The
       // gameplay lift is deliberately smaller than the menu treatment so the
       // dog never crowds the fixed thumb controls.
-      if (hero) dog.scale.multiplyScalar(compactHero ? 1.10 : camera.aspect < .85 ? 1.22 : 1.09);
+      if (hero) dog.scale.multiplyScalar(compactHero ? 1.08 : camera.aspect < .85 ? 1.16 : 1.09);
       // The rear chase frame carries a lot of transparent breathing room so
       // its tail and paw line stay natural. Give the complete puppy a modest
       // presentation lift on phones; this improves action recognition without
       // changing the physics hitbox or crowding the thumb shelf.
-      else dog.scale.multiplyScalar(camera.aspect < .85 ? 1.10 : 1.04);
+      else dog.scale.multiplyScalar(camera.aspect < .85 ? 1.16 : 1.04);
       dog.visible = true;
       menuGlow.visible = hero;
       menuContrast.visible = hero;
@@ -1589,7 +1975,7 @@ export function createView(canvas) {
         const focusScale = Math.abs(dog.scale.x) * actionScale * focusPulse;
         puppyFocus.position.set(dog.position.x, dog.position.y + (run.slide > 0 ? .72 : .94), .07);
         puppyFocus.scale.set(2.35 * focusScale, 2.55 * focusScale, 1);
-        puppyFocus.material.opacity = reducedMotion ? .10 : y > .1 ? .17 : .15;
+        puppyFocus.material.opacity = reducedMotion ? .14 : y > .1 ? .24 : .21;
       } else {
         puppyFocus.material.opacity = 0;
       }
@@ -1749,15 +2135,22 @@ export function createView(canvas) {
           const landing=effect.type==='land';
           const takeoff=effect.type==='jump';
           const nearMiss=effect.type==='near-miss';
-          const size=(impact?.14:landing?.075:takeoff?.052:nearMiss?.095:.07)*(1-age/.45);
-          const spread=landing?4.5:takeoff?2.2:impact?5:nearMiss?3.6:3;
-          const lift=landing?1.4:nearMiss?1.6:2;
-          for (let i = 0; i < 6 && sparkCount < 192; i++) {
-            const angle = (i * Math.PI) / 3;
+          const pickupEffect = ['magnet','shield','gem','double','heart','gift','zoomies','relic'].includes(effect.type);
+          // Collection feedback is a brighter, slightly wider burst than a
+          // normal footfall. The color is keyed to the same effect label shown
+          // in the pickup card, so a player can connect the animation to the
+          // power without reading a center-screen toast.
+          const size=(impact?.14:landing?.075:takeoff?.052:nearMiss?.095:pickupEffect?.10:.07)*(1-age/.45);
+          const spread=landing?4.5:takeoff?2.2:impact?5:nearMiss?3.6:pickupEffect?3.8:3;
+          const lift=landing?1.4:nearMiss?1.6:pickupEffect?2.25:2;
+          const sparkLimit = pickupEffect ? 8 : 6;
+          for (let i = 0; i < sparkLimit && sparkCount < 192; i++) {
+            const angle = (i * Math.PI * 2) / sparkLimit;
+            const pickupPhase = pickupEffect ? .72 + .28 * Math.sin(time * 5 + i * .9) : 1;
             flashMatrix.makeScale(
-              size,
-              size,
-              size,
+              size * pickupPhase,
+              size * pickupPhase,
+              size * pickupPhase,
             );
             flashMatrix.setPosition(
               effect.x + Math.cos(angle) * age * spread,
@@ -1792,6 +2185,8 @@ export function createView(canvas) {
       let aerialCueCount = 0;
       let pickupGlintCount = 0;
       let hazardCueCount = 0;
+      const scenePickupBadge = !menu ? pickupBadgeFor(run) : null;
+      let scenePickupBadgeItem = null;
       if (!menu)
         for (const object of run.objects) {
           if (!objectVisible(object, distance)) continue;
@@ -1824,7 +2219,8 @@ export function createView(canvas) {
             LANES[object.lane],
             pickup
               ? (object.airborne ? ZIPLINE_HEIGHT + 1.1 : 1.1) +
-                  (reducedMotion ? 0 : Math.sin(time * 3 + object.id) * 0.12)
+                  (reducedMotion ? 0 : Math.sin(time * 3 + object.id) * 0.12) +
+                  pickupBob(object.type, time, object.id, reducedMotion)
               : object.raftHazard?-.55:0,
             -(object.at - distance),
           );
@@ -1857,6 +2253,7 @@ export function createView(canvas) {
           item.rotation.x = pickup ? 0 : frame.pitch;
           item.rotation.y += frame.yaw;
           item.rotation.order = 'YXZ';
+          if (scenePickupBadge?.object === object) scenePickupBadgeItem = item;
           if (object.type === 'corner-left' || object.type === 'corner-right') {
             // Corner markers are roadside landmarks, not another HUD layer.
             // A small arrow pulse begins on approach and becomes decisive in
@@ -1983,6 +2380,52 @@ export function createView(canvas) {
             }
           }
         }
+      // Keep one badge attached to the actual transformed pickup so it follows
+      // route bends and lane changes like the model. Fade it toward the object
+      // instead of snapping it on at full size; the HUD remains the source of
+      // exact meter/lane guidance while this cue answers only “what is that?”.
+      if (scenePickupBadge && scenePickupBadgeItem) {
+        const approach = Math.max(7, scenePickupBadge.object.at - distance);
+        // Repaint when the runner changes lanes: the same pickup can move from
+        // “← LEFT” to “YOUR LANE” without allocating another canvas or badge.
+        const definitionKey = `${scenePickupBadge.type}:${scenePickupBadge.action}:${scenePickupBadge.lane || 'your lane'}`;
+        if (pickupBadgeKey !== definitionKey) {
+          paintPickupBadge(scenePickupBadge, scenePickupBadge.action);
+          pickupBadgeKey = definitionKey;
+        }
+        pickupBadgeSprite.visible = true;
+        pickupBadgeSprite.position.copy(scenePickupBadgeItem.position);
+        // Lift the label just above the pickup's glow so the action line does
+        // not disappear into a bone row or a paving seam on a portrait phone.
+        pickupBadgeSprite.position.y += scenePickupBadge.object.airborne ? 1.06 : .94;
+        // Keep the badge on the object, but nudge it toward the camera so a
+        // nearby pickup cannot z-fight with its halo or the paving.
+        pickupBadgeSprite.position.z += .16;
+        const near = THREE.MathUtils.clamp(1 - (approach - 7) / 27, 0, 1);
+        // A fixed world-size billboard shrinks to a few pixels at the
+        // approach horizon. Compensate for perspective while capping the
+        // near size, so the label remains readable without becoming a giant
+        // overlay when the reward reaches the puppy.
+        const cameraDistance = approach + 9;
+        const farDistance = 41;
+        const perspective = THREE.MathUtils.clamp(cameraDistance / farDistance, .42, 1);
+        // The previous world size was legible only after the player had
+        // already committed to a lane. A modest lift in both dimensions
+        // keeps the label readable across the full 7–34m decision window,
+        // while the perspective compensation still prevents a giant overlay
+        // when the reward reaches Mochi.
+        const badgeScale = camera.aspect < .85 ? 5.55 : 6.15;
+        const badgeHeight = camera.aspect < .85 ? 1.08 : 1.18;
+        pickupBadgeSprite.scale.set(
+          badgeScale * perspective * (0.96 + near * .04),
+          badgeHeight * perspective * (0.96 + near * .04),
+          1,
+        );
+        pickupBadgeSprite.material.opacity = .58 + near * .27;
+      } else {
+        pickupBadgeSprite.visible = false;
+        pickupBadgeSprite.material.opacity = 0;
+      }
       boneBatch.end();
       boneOutlineBatch.end();
       flashes.count = sparkCount;

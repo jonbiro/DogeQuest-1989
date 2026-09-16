@@ -116,6 +116,13 @@
           ><span id="hearts" role="img" aria-label="3 hearts remaining">♥ ♥ ♥</span>
         </div>
         <div id="power"></div>
+        <aside id="pickup-guide" hidden aria-label="Upcoming pickup">
+          <span id="pickup-guide-icon" aria-hidden="true"></span>
+          <span class="pickup-guide-copy">
+            <strong id="pickup-guide-title"></strong>
+            <small id="pickup-guide-detail"></small>
+          </span>
+        </aside>
       </section>
       <section id="mission-hud" aria-label="Trail guidance and goal">
         <div id="route-choice"></div>
@@ -247,7 +254,7 @@
             <p>
               <strong>Obstacles and pickups</strong><br>
               Jump logs and low stone blocks. Slide under arches, branches, and
-              hanging gates. Purple gems give 250 points; gold tokens double
+              hanging gates. Purple gems give 250 points; bone doublers give 2×
               bone points for 10 seconds; hearts heal, or earn 100 points at full health.
               Shields block one hit; collecting a spare shield earns 100 points.
               Gift boxes give 100 points. Area relics appear at the end of
@@ -259,6 +266,19 @@
               Mine-cart rides board automatically, reward +250 when completed, and
               ask you to steer between rocks while jump and slide are unavailable.
             </p>
+            <div id="pickup-key" class="pickup-key" aria-label="Trail pickup key">
+              <p class="pickup-key-heading"><strong>Trail pickup key</strong><span>Every item has one job.</span></p>
+              <div class="pickup-key-grid">
+                <div class="pickup-key-item" data-pickup="magnet"><b>🧲</b><span><strong>Magnet</strong><small>Pulls nearby bones</small></span></div>
+                <div class="pickup-key-item" data-pickup="shield"><b>🛡</b><span><strong>Shield</strong><small>Blocks one hit</small></span></div>
+                <div class="pickup-key-item" data-pickup="gem"><b>◆</b><span><strong>Gem</strong><small>+250 points</small></span></div>
+                <div class="pickup-key-item" data-pickup="double"><b>×2</b><span><strong>Bone doubler</strong><small>2× bone points · 10s</small></span></div>
+                <div class="pickup-key-item" data-pickup="heart"><b>♥</b><span><strong>Heart</strong><small>Restore one heart</small></span></div>
+                <div class="pickup-key-item" data-pickup="gift"><b>▣</b><span><strong>Gift box</strong><small>+100 points</small></span></div>
+                <div class="pickup-key-item" data-pickup="zoomies"><b>🎾</b><span><strong>Zoomies</strong><small>Speed + smash · 6s</small></span></div>
+                <div class="pickup-key-item" data-pickup="relic"><b>✦</b><span><strong>Area relic</strong><small>+160 points</small></span></div>
+              </div>
+            </div>
             <p>
               <strong>Regions and marked turns</strong><br>
               Explore six areas: Sunleaf Woods, Bamboo Sanctuary, Redrock Pass,

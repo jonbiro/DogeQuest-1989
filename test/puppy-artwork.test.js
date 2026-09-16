@@ -52,12 +52,12 @@ test('each puppy has complete raster stride, jump, slide, turn, and hang poses',
     assert.equal(puppyPoseArtworkUrl(id, 'turn'), variants.turn);
     assert.equal(puppyPoseArtworkUrl(id, 'hang'), variants.hang);
   }
-  assert.match(PUPPY_ARTWORK_VARIANTS.mochi.away, /^\.\/puppies\/mochi-away-v2\.webp$/);
+  assert.match(PUPPY_ARTWORK_VARIANTS.mochi.away, /^\.\/puppies\/mochi-away-v3\.webp$/);
   assert.notEqual(PUPPY_ARTWORK_VARIANTS.mochi.away, PUPPY_ARTWORK_VARIANTS.mochi.idle);
   assert.equal(PUPPY_ARTWORK_VARIANTS.mochi.stride, './puppies/mochi-run-side.webp');
   assert.equal(PUPPY_ARTWORK_VARIANTS.mochi.strideAlt, './puppies/mochi-run-side-alt.webp');
   assert.equal(puppyPoseArtworkUrl('mochi', 'away'), PUPPY_ARTWORK_VARIANTS.mochi.away);
-  assert.equal(PUPPY_ARTWORK_ALTERNATES.mochi.away, './puppies/mochi-away-v2-alt.webp');
+  assert.equal(PUPPY_ARTWORK_ALTERNATES.mochi.away, './puppies/mochi-away-v3-alt.webp');
   assert.equal(puppyPoseArtworkUrl('mochi', 'awayAlt'), PUPPY_ARTWORK_ALTERNATES.mochi.away);
 });
 
@@ -73,7 +73,7 @@ test('each action has a second authored beat with a stable URL resolver', () => 
       assert.notEqual(alternates[pose], PUPPY_ARTWORK_VARIANTS[id][pose]);
     }
   }
-  assert.match(PUPPY_ARTWORK_ALTERNATES.mochi.away, /^\.\/puppies\/mochi-away-v2-alt\.webp$/);
+  assert.match(PUPPY_ARTWORK_ALTERNATES.mochi.away, /^\.\/puppies\/mochi-away-v3-alt\.webp$/);
   assert.equal(puppyPoseArtworkUrl('mochi', null), PUPPY_ARTWORK.mochi);
 });
 
@@ -158,6 +158,21 @@ test('the visible runner stack uses complete idle, stride, jump, slide, turn and
 
 test('hanging paintings normalize their transparent matte before upload', () => {
   assert.match(artworkSource, /function normalizeTransparentMatte\(texture\)/);
+  // The mobile compact path also returns a CanvasTexture. It must not be
+  // treated as already-normalized, or the black RGB matte in mochi-hang-alt
+  // can bleed into the opening between the paws during linear filtering.
+  assert.doesNotMatch(artworkSource, /!texture\?\.image\s*\|\|\s*typeof texture\.image\.getContext/);
+  assert.match(artworkSource, /context\.getImageData\(0, 0, width, height\)/);
+  assert.match(artworkSource, /const neutral = \[239, 250, 248\]/);
+  assert.match(artworkSource, /if \(alpha === 0\)/);
+  assert.match(artworkSource, /context\.putImageData\(imageData, 0, 0\)/);
+  assert.match(artworkSource, /const normalized = prepareTexture\(new THREE\.CanvasTexture\(canvas\)\)/);
   assert.match(artworkSource, /if \(pose === 'hang'\) compact = normalizeTransparentMatte\(compact\)/);
   assert.match(artworkSource, /if \(pose === 'hang'\) alternateTexture = normalizeTransparentMatte\(alternateTexture\)/);
+});
+
+test('mobile downsampled paintings use the shared colour and sampler contract', () => {
+  assert.match(artworkSource, /const compact = prepareTexture\(new THREE\.CanvasTexture\(canvas\)\)/);
+  assert.match(artworkSource, /texture\.colorSpace = THREE\.SRGBColorSpace/);
+  assert.match(artworkSource, /texture\.minFilter = THREE\.LinearFilter/);
 });

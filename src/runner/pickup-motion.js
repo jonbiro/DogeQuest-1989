@@ -15,3 +15,19 @@ export function pickupPulse(type, time, id = 0, reducedMotion = false) {
   const amount = type === 'gem' ? .055 : .07;
   return 1 + Math.sin(time * cadence + Number(id || 0) * .61) * amount;
 }
+
+// A short vertical beat separates a special pickup from the bone line without
+// making it drift into another lane. Each effect gets a slightly different
+// cadence, so a row of mixed rewards reads as a set of intentional objects
+// instead of one synchronized, noisy animation. The motion is cosmetic only.
+export function pickupBob(type, time, id = 0, reducedMotion = false) {
+  if (reducedMotion) return 0;
+  const cadence = type === 'zoomies' ? 3.6
+    : type === 'gem' || type === 'relic' ? 2.4
+      : type === 'gift' ? 3.05
+        : 2.75;
+  const amount = type === 'gem' || type === 'relic' ? .105
+    : type === 'zoomies' ? .085
+      : .07;
+  return Math.sin(time * cadence + Number(id || 0) * .47) * amount;
+}

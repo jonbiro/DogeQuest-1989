@@ -40,9 +40,9 @@ export const PUPPY_ARTWORK_VARIANTS = Object.freeze({
     slide: './puppies/mochi-slide.webp',
     turn: './puppies/mochi-turn.webp',
     hang: './puppies/mochi-hang.webp',
-    // Rear chase-camera paintings keep Mochi's shoulders level and his paws
-    // readable instead of recycling the older tumbling-away illustration.
-    away: './puppies/mochi-away-v2.webp',
+    // Inked rear chase-camera paintings keep Mochi's shoulders level and his
+    // paws readable while matching the supplied front/action illustrations.
+    away: './puppies/mochi-away-v3.webp',
   }),
   pepper: Object.freeze({
     idle: PUPPY_ARTWORK.pepper,
@@ -79,7 +79,7 @@ export const PUPPY_ARTWORK_ALTERNATES = Object.freeze({
     raft: './puppies/biscuit-raft.webp',
   }),
   mochi: Object.freeze({
-    away: './puppies/mochi-away-v2-alt.webp',
+    away: './puppies/mochi-away-v3-alt.webp',
     jump: './puppies/mochi-jump-alt.webp',
     slide: './puppies/mochi-slide-alt.webp',
     turn: './puppies/mochi-turn-alt.webp',
@@ -143,11 +143,11 @@ export const PUPPY_ARTWORK_BOUNDS = Object.freeze({
     slideAlt: Object.freeze({width: 1254, height: 1254, x: 15, y: 197, boxWidth: 1225, boxHeight: 879}),
     turnAlt: Object.freeze({width: 1254, height: 1254, x: 100, y: 45, boxWidth: 1103, boxHeight: 1165}),
     hangAlt: Object.freeze({width: 1024, height: 1536, x: 132, y: 14, boxWidth: 821, boxHeight: 1398}),
-    // Measured from the matched 3D-cartoon rear chase paintings. The visible
-    // bounds intentionally include the raised tail and reaching paws so the
-    // two authored gait beats swap without a scale or pivot pop.
-    away: Object.freeze({width: 1254, height: 1254, x: 241, y: 131, boxWidth: 820, boxHeight: 1020}),
-    awayAlt: Object.freeze({width: 1254, height: 1254, x: 134, y: 60, boxWidth: 1037, boxHeight: 1123}),
+    // Measured from the inked rear chase paintings. The visible bounds
+    // intentionally include the raised tail and reaching paws so the two
+    // authored gait beats swap without a scale or pivot pop.
+    away: Object.freeze({width: 1254, height: 1254, x: 236, y: 31, boxWidth: 822, boxHeight: 1189}),
+    awayAlt: Object.freeze({width: 1254, height: 1254, x: 215, y: 63, boxWidth: 869, boxHeight: 1158}),
     raftAlt: Object.freeze({width: 1214, height: 1295, x: 79, y: 17, boxWidth: 1054, boxHeight: 1255}),
   }),
   pepper: Object.freeze({
@@ -313,7 +313,11 @@ function compactTexture(texture, maxDimension = 0) {
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = 'high';
     context.drawImage(texture.image, 0, 0, canvas.width, canvas.height);
-    const compact = new THREE.CanvasTexture(canvas);
+    // Apply the same colour-space and sampler contract as source textures
+    // before returning the replacement. Most callers prepare the texture again
+    // after pose loading, but doing it here too prevents a freshly downsampled
+    // frame from briefly rendering with browser-default gamma/filter settings.
+    const compact = prepareTexture(new THREE.CanvasTexture(canvas));
     texture.dispose();
     return compact;
   } catch {
@@ -324,14 +328,16 @@ function compactTexture(texture, maxDimension = 0) {
 }
 
 // A few of the supplied hanging paintings were exported with a different
-// RGB matte under their transparent pixels.  WebGL correctly discards fully
+// RGB matte under their transparent pixels. WebGL correctly discards fully
 // transparent texels, but linear filtering can still sample that hidden matte
-// at the edge of a fluffy silhouette.  Re-drawing only the hanging frames
-// through a canvas lets the browser premultiply the alpha consistently and
-// removes the gray/black fringe without changing any visible fur or bounds.
+// at the edge of a fluffy silhouette. Re-draw hanging frames through a canvas,
+// then replace hidden/near-transparent RGB with a cool neutral that matches
+// the trail sky. This prevents the dark wedge between raised paws without
+// changing any visible fur or the measured alpha bounds. The same pass must
+// also run after mobile downsampling: a CanvasTexture is still a texture that
+// can contain the original black matte.
 function normalizeTransparentMatte(texture) {
-  if (typeof document === 'undefined' || !texture?.image
-    || typeof texture.image.getContext === 'function') return texture;
+  if (typeof document === 'undefined' || !texture?.image) return texture;
   const {width, height} = sourceSize(texture);
   if (!width || !height) return texture;
   try {
@@ -344,7 +350,35 @@ function normalizeTransparentMatte(texture) {
     context.imageSmoothingQuality = 'high';
     context.clearRect(0, 0, width, height);
     context.drawImage(texture.image, 0, 0, width, height);
-    const normalized = new THREE.CanvasTexture(canvas);
+    // Do not leave the source export's RGB matte in transparent texels. The
+    // GPU linearly filters RGB and alpha independently; a black RGB value can
+    // therefore become a visible dark fringe even when the texel is mostly
+    // transparent. Pull the faintest fringe toward the same neutral mint used
+    // by the hang-opening readability light, while preserving opaque artwork.
+    if (typeof context.getImageData === 'function' && typeof context.putImageData === 'function') {
+      const imageData = context.getImageData(0, 0, width, height);
+      const {data} = imageData;
+      const neutral = [239, 250, 248];
+      const fringeAlpha = 96;
+      for (let index = 0; index < data.length; index += 4) {
+        const alpha = data[index + 3];
+        if (alpha === 0) {
+          data[index] = neutral[0];
+          data[index + 1] = neutral[1];
+          data[index + 2] = neutral[2];
+        } else if (alpha < fringeAlpha) {
+          const strength = alpha / fringeAlpha;
+          data[index] = Math.round(neutral[0] + (data[index] - neutral[0]) * strength);
+          data[index + 1] = Math.round(neutral[1] + (data[index + 1] - neutral[1]) * strength);
+          data[index + 2] = Math.round(neutral[2] + (data[index + 2] - neutral[2]) * strength);
+        }
+      }
+      context.putImageData(imageData, 0, 0);
+    }
+    // Hanging poses take this path before they enter the shared pose cache.
+    // Prepare at creation time so the normalized canvas cannot flash warmer or
+    // softer than the authored frame while WebGL uploads it.
+    const normalized = prepareTexture(new THREE.CanvasTexture(canvas));
     texture.dispose();
     return normalized;
   } catch {
@@ -489,45 +523,76 @@ function maskedHeadTexture(texture, key) {
 
 function makeMaterial() {
   const material = new THREE.SpriteMaterial({
-    // A very slight warm paper tint makes the supplied Mochi paintings sit in
-    // the sunlit trail palette instead of looking like a stark sticker pasted
-    // over the low-poly world. Keeping it near-white preserves the coat's
-    // original greys and cream highlights.
-    color: '#fff8ec',
+    // Keep the authored puppy colors neutral. The paintings already carry
+    // their cream highlights and grey coat; multiplying every frame by a warm
+    // paper tint made Mochi look beige on top of the trail's own warm palette.
+    color: '#ffffff',
     transparent: true,
-    // Trim semi-transparent matte pixels at the edge of older exports. This
-    // removes the dark/grey fringe between paws and keeps every pose silhouette
-    // clean when it swaps at speed.
-    alphaTest: 0.06,
+    // Trim only the faintest semi-transparent matte pixels at the edge of
+    // older exports. A 0.12 cutoff removes the dark/grey fringe between paws
+    // without biting into the opaque fur that makes each pose readable.
+    alphaTest: 0.12,
     depthTest: true,
     depthWrite: false,
-    // Let the painted silhouette participate in the same atmospheric fade and
-    // tone mapping as the low-poly trail. Without these flags the sprite stays
-    // perfectly flat and crisp at the horizon, which is what made it read as a
-    // sticker sitting on top of the world.
-    fog: true,
-    toneMapped: true,
+    // The runner keeps the puppy in the near-camera character plane. Letting
+    // the scene fog blend this already-lit painting toward the mint horizon
+    // is what made Mochi's cream fur look beige and low-contrast on phones.
+    // Depth testing still lets the dog sit correctly on bridges and rafts;
+    // only the distance wash is removed from the authored character art.
+    fog: false,
+    toneMapped: false,
     sizeAttenuation: true,
   });
-  // The supplied paintings use a near-black ink contour.  A straight
-  // SpriteMaterial leaves that contour harsher than the softly lit low-poly
-  // scene, which is why the puppy can still read as a sticker even after fog
-  // and contact shadows are applied.  Grade only the deepest ink values in
-  // the fragment shader toward a warm brown; the coat highlights and grey
-  // patches stay authored and intact while the silhouette shares the world's
-  // warm, illustrated palette.  This is deliberately a material treatment,
-  // not a second copy of the artwork, so it remains cheap on mobile.
+  // The supplied paintings use a near-black ink contour. Keep only a tiny
+  // neutral-warm lift on the deepest pixels so the outline stays friendly
+  // without washing out the contrast or recoloring the coat.
   material.onBeforeCompile = shader => {
     shader.fragmentShader = shader.fragmentShader.replace(
       '#include <map_fragment>',
       `#include <map_fragment>
+      // The authored paintings are already lit exports. A restrained
+      // contrast lift keeps cream fur from collapsing into the mint trail
+      // wash on small screens while leaving transparent pixels untouched.
+      diffuseColor.rgb = clamp((diffuseColor.rgb - 0.42) * 1.15 + 0.42, 0.0, 1.0);
       float puppyInkLuma = dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114));
-      float puppyInkAmount = (1.0 - smoothstep(0.025, 0.18, puppyInkLuma)) * 0.52;
-      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.20, 0.145, 0.12), puppyInkAmount);
+      // The supplied action paintings have the right Mochi markings, but
+      // compressed mid-tones can lose colour on a phone. Restore a little
+      // separation before the neutral lift: cream stays cream, the grey coat
+      // keeps its blue/charcoal detail, and the collar remains visibly blue
+      // instead of drifting toward beige.
+      diffuseColor.rgb = clamp(
+        mix(vec3(puppyInkLuma), diffuseColor.rgb, 1.18)
+          + vec3(-0.010, 0.004, 0.014),
+        0.0,
+        1.0
+      );
+      // Give the mid-tones a small neutral lift after contrast grading so
+      // cream fur stays separated from the trail on a phone. Lift green/blue
+      // a touch more than red so the coat stays bright without adding another
+      // warm cast.
+      float puppyMidtoneLift = smoothstep(0.08, 0.76, puppyInkLuma) * 0.085;
+      diffuseColor.rgb = clamp(
+        diffuseColor.rgb + vec3(puppyMidtoneLift * 0.94, puppyMidtoneLift, puppyMidtoneLift * 1.04),
+        0.0,
+        1.0
+      );
+      // Keep the cream highlights faithful while taking the edge off the
+      // red-heavy beige cast that becomes obvious after the trail wash is
+      // removed. This is intentionally tiny: Mochi should still look warm,
+      // just not sepia-tinted compared with his supplied reference art.
+      float puppyWarmth = max(diffuseColor.r - diffuseColor.b, 0.0)
+        * smoothstep(0.12, 0.86, puppyInkLuma) * 0.11;
+      diffuseColor.rgb = clamp(
+        diffuseColor.rgb + vec3(-puppyWarmth * 0.78, puppyWarmth * 0.025, puppyWarmth * 0.42),
+        0.0,
+        1.0
+      );
+      float puppyInkAmount = (1.0 - smoothstep(0.025, 0.18, puppyInkLuma)) * 0.16;
+      diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.08, 0.06, 0.05), puppyInkAmount);
       `,
     );
   };
-  material.customProgramCacheKey = () => 'puppy-ink-grade-v1';
+  material.customProgramCacheKey = () => 'puppy-ink-grade-v2';
   return material;
 }
 
@@ -753,9 +818,9 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
 
   // The hanging paintings intentionally leave a small opening between the
   // raised paws. On a pale sky it reads as air; over the dark gantry or trail
-  // it reads as a distracting black hole. A feathered, low-opacity backing
-  // keeps that opening light enough to read as space while preserving the
-  // painted silhouette and the cable hardware in front of it.
+  // it reads as a distracting black hole. A feathered, low-opacity neutral
+  // backing keeps that opening light enough to read as space without adding a
+  // second warm cast to the already-painted coat.
   const hangOpeningCanvas = typeof document === 'undefined' ? null : document.createElement('canvas');
   let hangOpening = null;
   if (hangOpeningCanvas) {
@@ -763,10 +828,10 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     const context = hangOpeningCanvas.getContext('2d');
     if (context) {
       const gradient = context.createRadialGradient(64, 57, 4, 64, 57, 58);
-      gradient.addColorStop(0, 'rgba(255,238,202,.78)');
-      gradient.addColorStop(.44, 'rgba(255,224,174,.42)');
-      gradient.addColorStop(.78, 'rgba(255,218,164,.12)');
-      gradient.addColorStop(1, 'rgba(255,218,164,0)');
+      gradient.addColorStop(0, 'rgba(239,250,248,.68)');
+      gradient.addColorStop(.44, 'rgba(224,243,242,.34)');
+      gradient.addColorStop(.78, 'rgba(214,237,236,.10)');
+      gradient.addColorStop(1, 'rgba(214,237,236,0)');
       context.fillStyle = gradient;
       context.fillRect(0, 0, 128, 128);
       hangOpening = new THREE.Sprite(new THREE.SpriteMaterial({
@@ -774,9 +839,13 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
         transparent: true,
         depthTest: false,
         depthWrite: false,
-        fog: true,
-        toneMapped: true,
-        opacity: .72,
+        // This is a near-camera readability aid, not distant scenery. Letting
+        // the area fog grade it made the opening muddy on dark bridge/zipline
+        // sections and brought back the same washed beige edge the painting
+        // cleanup is meant to remove.
+        fog: false,
+        toneMapped: false,
+        opacity: .62,
       }));
       hangOpening.name = 'puppy-hang-opening-light';
       hangOpening.frustumCulled = false;
@@ -1093,6 +1162,10 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     }
     const scale = poseBaseScales[pose] || new THREE.Vector3();
     const basePose = basePoseFor(pose);
+    // Every supplied Mochi frame is already colour-graded artwork. Keep the
+    // sprite multiplier neutral so the rear chase beats do not clip their
+    // cream highlights or drift cooler than the front/action poses.
+    sprite.material.color.setRGB(1, 1, 1);
     const idleSize = sourceSize(sourceTextures.get(key));
     const idle = frameBoundsFor(key, 'idle', idleSize.width || width, idleSize.height || height);
     const frame = frameBoundsFor(key, pose, width, height);
@@ -1668,7 +1741,7 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
           1,
         );
         hangOpening.material.rotation = lastPoseOutput.rotation;
-        hangOpening.material.opacity = reducedMotion ? .58 : .72;
+        hangOpening.material.opacity = reducedMotion ? .50 : .62;
       } else {
         hangOpening.material.opacity = 0;
       }

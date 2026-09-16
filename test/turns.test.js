@@ -192,6 +192,9 @@ test("generation reserves an uncluttered approach and recovery with one marker",
     );
     assert.deepEqual(clutter, []);
     assert.equal(run.objects.filter((object) => object.turnIndex === index).length, 1);
+    const warmup = run.objects.filter((object) => object.turnReward === index);
+    assert.equal(warmup.length, 3, 'the clear approach has a short reward lead-in');
+    assert.ok(warmup.every((object) => object.type === 'bone' && object.at < corner.approach));
     assert.equal(cornerIntersecting(corner.approach, corner.recovery).index, index);
     const count = run.objects.length;
     fillTrack(run);

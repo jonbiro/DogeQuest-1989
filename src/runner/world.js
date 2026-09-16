@@ -123,6 +123,10 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     id: 0,
     events: [],
     effects: [],
+    // Ephemeral HUD context for instant pickups. The next frame can explain
+    // what a reward did without turning a collection into a centre-screen
+    // toast or putting UI wording into the deterministic save data.
+    lastPickup: null,
     lastMistake: null,
     lastMistakeDetail: null,
     slideExpiredAt: null,
@@ -154,9 +158,22 @@ function add(run, type, lane, at) {
   run.objects.push(object);
   return object;
 }
+function areaPattern(at, row) {
+  const profile = areaGameplayAt(at);
+  const patterns = profile.patterns || [];
+  if (!patterns.length) return null;
+  const index = (Math.max(0, row) + Math.floor(Math.max(0, at) / AREA_LENGTH)) % patterns.length;
+  return patterns[index];
+}
 function areaHazard(run, at, row) {
   const profile=areaGameplayAt(at);
-  return profile.hazards[(row+Math.floor(at/AREA_LENGTH))%profile.hazards.length];
+  // Every named pattern now has its own hazard rhythm. The vocabulary stays
+  // familiar, but alternating low/high beats and turn-safe shapes stop a
+  // destination from feeling like the same four-row loop with a new backdrop.
+  // Legacy generators deliberately keep the original profile cadence.
+  const pattern = run?.generatorVersion >= 4 ? areaPattern(at, row) : null;
+  const sequence = pattern?.hazardOrder?.length ? pattern.hazardOrder : profile.hazards;
+  return sequence[(row+Math.floor(at/AREA_LENGTH))%sequence.length];
 }
 function areaActionHazard(run, at, row) {
   const type=areaHazard(run,at,row);
@@ -180,6 +197,21 @@ export function fillTrack(run) {
       const marker = add(run, `corner-${corner.direction}`, 1, corner.at);
       marker.direction = corner.direction;
       marker.turnIndex = corner.index;
+    }
+    // Turn approaches intentionally stay hazard-free, but a completely empty
+    // approach makes the next decision feel disconnected from the run. Give
+    // version-four trails one short, center-lane reward line just before the
+    // clear window. It ends before `corner.approach`, so it never competes with
+    // the turn cue or changes the established collision reservation.
+    if (run.generatorVersion >= 4 && Number.isFinite(run.nextRow) &&
+        corner.approach > run.distance + 3 &&
+        !run.objects.some((object) => object.turnReward === corner.index)) {
+      const rewardAt = corner.approach - 12;
+      for (let i = 0; i < 3; i++) {
+        const reward = add(run, 'bone', 1, rewardAt + i * 3);
+        reward.turnReward = corner.index;
+        reward.encounter = 'Turn warm-up';
+      }
     }
   }
   while (run.nextRow < run.distance + 170) {
@@ -286,12 +318,13 @@ export function fillTrack(run) {
     }
     const gapRow = run.row > 5 && run.row % 12 === 10;
     const at = gapRow ? Math.round(run.nextRow/5)*5 : run.nextRow;
+    const pattern = run.generatorVersion >= 4 ? areaPattern(at, run.row) : null;
     // Later rows force a lane decision instead of rewarding camping in one lane.
     let safe;
     if(run.generatorVersion>=4) {
       if(run.row>5&&route!=="scenic") {
         const profile=areaGameplayAt(at);
-        const preferred=profile.safeLanes[(run.row+Math.floor(at/AREA_LENGTH))%profile.safeLanes.length];
+        const preferred=profile.safeLanes[(run.row+Math.floor(at/AREA_LENGTH)+(pattern?.safeShift||0))%profile.safeLanes.length];
         const fallback=(run.lastSafeLane+1+Math.floor(run.random()*2))%3;
         safe=preferred!==run.lastSafeLane&&run.random()<.68?preferred:fallback;
       } else safe=Math.floor(run.random()*3);
@@ -309,27 +342,64 @@ export function fillTrack(run) {
       for (let lane = 0; lane < 3; lane++) {
         const obstacle=add(run, split ? lane === safe ? 'gate' : 'log' : type, lane, at);
         if(split) obstacle.splitChoice=true;
+        if (pattern?.label) obstacle.encounter = pattern.label;
       }
     } else if (run.row > 0) {
       const primary=run.generatorVersion>=4
         ? areaHazard(run,at,run.row)
         : SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)];
-      add(run, primary, blocked, at);
-      if (route!=="scenic" && run.row > 2 && (run.random() > 0.15 || at > 600))
-        add(run,
+      const first=add(run, primary, blocked, at);
+      if (pattern?.label) first.encounter = pattern.label;
+      if (route!=="scenic" && run.row > 2 && (run.random() > 0.15 || at > 600)) {
+        const second=add(run,
           run.generatorVersion>=4 ? areaHazard(run,at,run.row+1)
             : SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)],
           3-safe-blocked,at);
+        if (pattern?.label) second.encounter = pattern.label;
+      }
     }
+    const offsets = pattern?.boneOffsets || [0];
     const boneLane = run.row < 3 || run.random() < 0.4 ? safe : blocked;
-    for (let i = 0; i < 4; i++) add(run, "bone", boneLane, at + i * 3);
-    if (run.row > 0 && run.row % 3 === 0)
-      add(
-        run,
-        ["gem", "magnet", "double", "zoomies", "shield", "heart"][(run.row / 3 - 1 + (run.generatorVersion>=4?areaGameplayAt(at).pickupOffset:0)) % 6],
-        safe,
-        at + 15,
-      );
+    for (let i = 0; i < 4; i++) {
+      const laneOffset = pattern && run.row >= 3 ? offsets[i % offsets.length] : 0;
+      const lane = pattern && run.row >= 3 ? (safe + laneOffset) % 3 : boneLane;
+      const bone = add(run, "bone", lane, at + i * 3);
+      if (pattern?.label) bone.encounter = pattern.label;
+      if (pattern && laneOffset !== 0) bone.weave = true;
+    }
+    if (run.row > 0 && run.row % 3 === 0) {
+      const profile = areaGameplayAt(at);
+      const cyclic = ["gem", "magnet", "double", "zoomies", "shield", "heart"];
+      // Clustered beats deliberately repeat a recognizable effect family so
+      // the item card and the nearby bone line reinforce one another. Other
+      // rows keep the full six-item rotation for long-run variety.
+      const clustered = pattern?.cluster
+        ? ['magnet', 'double', 'zoomies'][(run.row / 3 + Math.floor(at / AREA_LENGTH)) % 3]
+        : null;
+      const pickupType = clustered || cyclic[(run.row / 3 - 1 + (run.generatorVersion>=4?profile.pickupOffset:0)) % cyclic.length];
+      const pickupAt = at + 15;
+      const pickup = add(run, pickupType, safe, pickupAt);
+      if (pattern?.label) pickup.encounter = pattern.label;
+      if (pattern?.cluster) {
+        // Four short bones frame the special item as a deliberate reward line,
+        // making its purpose readable before the player reaches the pickup.
+        for (const [index, offset] of [8, 11, 19, 22].entries()) {
+          const lane = (safe + (index > 1 ? 0 : (pattern.boneOffsets?.[index] || 0))) % 3;
+          const bone = add(run, 'bone', lane, at + offset);
+          bone.rewardLine = true;
+          bone.encounter = pattern.label;
+        }
+      }
+    }
+    // Give a first-time runner one low-pressure, explained powerup before the
+    // opening turn. It shares the starter bone lane, has no hazard beside it,
+    // and lets the contextual guide teach the magnet while there is still
+    // plenty of road to react.
+    if (run.generatorVersion >= 4 && run.row === 1) {
+      const tutorialPickup = add(run, 'magnet', safe, at + 15);
+      tutorialPickup.tutorial = true;
+      tutorialPickup.encounter = pattern?.label || 'First fetch';
+    }
     run.row++;
     if (run.row % 9 === 0) add(run,'gift',safe,at+19);
     // Keep full-width actions far enough apart for an unupgraded jump to land.
@@ -546,20 +616,49 @@ export function step(run, dt) {
       PICKUPS.includes(object.type)
     ) {
       object.used = true;
+      let pickupResult = null;
       if (object.type === "magnet") run.magnet = 10 + run.upgrades.magnet * 3;
       const bonusesBeforePickup=run.bonusPoints;
       if (object.type === "shield") {
-        if (run.shield) { run.bonusPoints += 100; run.events.push('spare-shield'); }
-        else run.shield = 1;
+        if (run.shield) {
+          run.bonusPoints += 100;
+          run.events.push('spare-shield');
+          pickupResult = 'Already protected · +100 points';
+        } else {
+          run.shield = 1;
+          pickupResult = 'Blocks one hit';
+        }
       }
-      if (object.type === "gem") run.bonusPoints += 250;
-      if (object.type === "double") run.double = 10;
-      if (object.type === "zoomies") run.zoomies = 6;
+      if (object.type === "gem") {
+        run.bonusPoints += 250;
+        pickupResult = '+250 points';
+      }
+      if (object.type === "double") {
+        run.double = 10;
+        pickupResult = '2× bone points · 10s';
+      }
+      if (object.type === "zoomies") {
+        run.zoomies = 6;
+        pickupResult = 'Speed + smash · 6s';
+      }
       if (object.type === "heart") {
-        if (run.hearts < 3) run.hearts++;
-        else { run.bonusPoints += 100; run.events.push('full-heart'); }
+        if (run.hearts < 3) {
+          run.hearts++;
+          pickupResult = 'Restored 1 heart';
+        } else {
+          run.bonusPoints += 100;
+          run.events.push('full-heart');
+          pickupResult = 'Full hearts · +100 points';
+        }
       }
-      if (object.type === 'gift') { run.gifts++;run.bonusPoints+=100; }
+      if (object.type === 'magnet') {
+        pickupResult = `Pulls nearby bones · ${Math.ceil(run.magnet)}s`;
+      }
+      if (object.type === 'gift') {
+        run.gifts++;
+        run.bonusPoints+=100;
+        pickupResult = '+100 points';
+      }
       if (object.type === 'relic') {
         const area=Number.isInteger(object.relicArea)?object.relicArea:areaAt(object.at);
         run.relics++;
@@ -567,8 +666,10 @@ export function step(run, dt) {
         run.bonusPoints+=AREA_RELIC_REWARD;
         run.relicsByArea??=Array(6).fill(0);
         run.relicsByArea[area]=(run.relicsByArea[area]||0)+1;
+        pickupResult = '+160 points · area complete';
       }
       run.pickupBonusPoints+=run.bonusPoints-bonusesBeforePickup;
+      run.lastPickup = {type: object.type, time: run.time, result: pickupResult};
       run.events.push(object.type);
       run.effects.push({
         id: object.id,

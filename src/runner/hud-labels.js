@@ -17,8 +17,16 @@ const COMPACT_MISSION_TITLES = Object.freeze({
 // Keep location/difficulty together so route sections never hide a score chase.
 export function runHudLabels(run, best) {
   if (run.practice) return {region:'Practice · no penalties',rhythm:'',score:practiceProgress(run)};
-  const area=AREAS[areaAt(run.distance)];
-  const rhythm=areaGameplayAt(run.distance).label;
+  const currentAreaIndex=areaAt(run.distance);
+  const area=AREAS[currentAreaIndex];
+  // Prototype rows carry an authored beat name. Surface the next one only
+  // when it is genuinely ahead; otherwise retain the stable destination label
+  // used by historical links and the camp preview.
+  const nextEncounter = (run.objects || [])
+    .filter(object => object.encounter && !object.used && !object.passed &&
+      object.at > run.distance + 2 && areaAt(object.at) === currentAreaIndex)
+    .sort((a,b) => a.at - b.at)[0];
+  const rhythm=nextEncounter?.encounter || areaGameplayAt(run.distance).label;
   const route=run.route && run.distance<run.route.until ? run.route.kind : null;
   return {
     region: route

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {PICKUPS} from '../src/runner/world.js';
-import {pickupYaw, pickupPulse} from '../src/runner/pickup-motion.js';
+import {pickupYaw, pickupPulse, pickupBob} from '../src/runner/pickup-motion.js';
 
 test('every collectible stops cosmetic sway in reduced-motion mode',()=>{
   for(const type of PICKUPS)for(const time of [0,.25,1,10,1000]){
@@ -19,4 +19,13 @@ test('pickup pulse makes powerups readable without affecting reduced motion',()=
   assert.equal(pickupPulse('magnet',1,4,true),1);
   assert.ok(pickupPulse('magnet',Math.PI / 2 / 3.8,0,false)>1);
   assert.notEqual(pickupPulse('gift',.7,1,false),pickupPulse('gift',.7,2,false));
+});
+
+test('special pickups get a bounded, phase-shifted bob while reduced motion stays still',()=>{
+  for(const type of PICKUPS.filter(type=>type!=='bone')) {
+    assert.equal(pickupBob(type,1,4,true),0,type);
+    for(const time of [0,.25,1,10,1000])
+      assert.ok(Math.abs(pickupBob(type,time,4,false))<=.106,type);
+  }
+  assert.notEqual(pickupBob('gem',.7,1,false),pickupBob('gem',.7,2,false));
 });

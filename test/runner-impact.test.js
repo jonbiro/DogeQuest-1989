@@ -26,6 +26,7 @@ test('impact colors distinguish damage, shield rescue and ordinary bone rewards'
   assert.equal(new Set(['hit','shield-break','bone'].map(effectColor)).size,3);
   assert.equal(effectColor('shield-break'),effectColor('shield'));
   assert.equal(effectColor('magnet'),effectColor('fetch'));
+  assert.equal(new Set(['gem','double','gift','heart','zoomies','relic'].map(effectColor)).size,6);
   assert.equal(effectColor('unknown'),effectColor('bone'));
 });
 

@@ -4,6 +4,9 @@ export function effectColor(type) {
   if(type==='near-miss')return '#ffe0a0';
   if(type==='shield-break'||type==='shield')return '#8edfff';
   if(type==='magnet'||type==='fetch')return '#71ead4';
+  if(type==='gem')return '#edb5ff';
+  if(type==='double')return '#ffe08c';
+  if(type==='gift')return '#e8c5ff';
   if(type==='heart')return '#ffa6b4';
   if(type==='zoomies')return '#ceef86';
   if(type==='relic')return '#d9b4ff';

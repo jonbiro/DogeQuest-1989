@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {AREAS,AREA_GAMEPLAY,areaAt,areaBlend,areaGameplayAt} from '../src/runner/areas.js';
+import {AREAS,AREA_GAMEPLAY,areaAt,areaBlend,areaGameplayAt,landmarkSway,landmarkVariation,LANDMARK_SHOULDER_MIN,LANDMARK_SHOULDER_SPREAD} from '../src/runner/areas.js';
 import {regionAt} from '../src/runner/regions.js';
 import {createBoneGeometry} from '../src/runner/bone-model.js';
 import {createCapeGeometry} from '../src/runner/cape-model.js';
@@ -9,6 +9,10 @@ import {ATMOSPHERE_PARTICLE_COUNT,sampleAtmosphereParticle} from '../src/runner/
 
 test('six visual areas cycle without changing mastery region identity',()=>{
   assert.equal(new Set(AREAS.map(area=>area.name)).size,6);
+  assert.deepEqual(AREAS.map(area=>area.landmark),[
+    'firefly-tree','bamboo-lantern','redrock-stack',
+    'oasis-palms','crystal-spires','mooncap-ring',
+  ]);
   for(let visit=0;visit<24;visit++){
     const d=visit*225;
     assert.equal(areaAt(d),visit%6);
@@ -39,6 +43,17 @@ test('version four gives every destination a distinct readable encounter rhythm'
   }
 });
 
+test('each authored pattern changes the hazard rhythm without inventing new moves',()=>{
+  for(const profile of AREA_GAMEPLAY){
+    const patterns=profile.patterns||[];
+    assert.equal(new Set(patterns.map(pattern=>pattern.hazardOrder.join(','))).size,patterns.length,profile.id);
+    for(const pattern of patterns){
+      assert.equal(pattern.hazardOrder.length,4,`${profile.id}:${pattern.id}`);
+      assert.ok(pattern.hazardOrder.every(type=>profile.hazards.includes(type)),`${profile.id}:${pattern.id}`);
+    }
+  }
+});
+
 test('every destination has a restrained atmosphere outside the playable corridor',()=>{
   assert.equal(ATMOSPHERE_PARTICLE_COUNT,24);
   for(const area of AREAS){
@@ -56,6 +71,34 @@ test('every destination has a restrained atmosphere outside the playable corrido
   assert.ok(sample.z<=-8,'particles remain ahead of the puppy');
   assert.equal(still.x, sampleAtmosphereParticle(7,120,0,profile,true).x);
   assert.equal(still.y, sampleAtmosphereParticle(7,120,0,profile,true).y);
+});
+
+test('destination landmarks sway within a calm bounded range and respect reduced motion',()=>{
+  for(const [time,offset,area] of [[0,0,0],[1.25,8.4,1],[-4,27,4],[90,112,5]]){
+    const sample=landmarkSway(time,offset,area,false);
+    assert.ok(Number.isFinite(sample.rotation)&&Number.isFinite(sample.lift)&&Number.isFinite(sample.scale));
+    assert.ok(Math.abs(sample.rotation)<.025,'landmark tilt stays subtle');
+    assert.ok(Math.abs(sample.lift)<=.035,'landmark lift stays bounded');
+    assert.ok(sample.scale>=.986&&sample.scale<=1.014,'landmark scale stays bounded');
+  }
+  assert.deepEqual(landmarkSway(3,2,4,true),{rotation:0,lift:0,scale:1});
+  assert.deepEqual(landmarkSway(9,80,1,true),landmarkSway(0,0,0,true));
+});
+
+test('destination batches vary between passes without drifting or animating in reduced motion',()=>{
+  const first=landmarkVariation(14,8,2,false);
+  const repeat=landmarkVariation(204,8,2,false);
+  assert.ok(Number.isFinite(first.yaw)&&Number.isFinite(first.scale));
+  assert.ok(Math.abs(first.yaw)<=.032,'landmark yaw stays nearly upright');
+  assert.ok(first.scale>=.982&&first.scale<=1.018,'landmark scale stays bounded');
+  assert.notDeepEqual(first,repeat,'recycled batches receive a new subtle variation');
+  assert.deepEqual(landmarkVariation(204,8,2,true),{yaw:0,scale:1});
+  assert.deepEqual(landmarkVariation(Number.NaN,Number.NaN,Number.NaN,false),landmarkVariation(0,0,0,false));
+});
+
+test('destination landmark placement stays visible but outside the playable road',()=>{
+  assert.ok(LANDMARK_SHOULDER_MIN>4.25,'landmarks clear the road edge');
+  assert.ok(LANDMARK_SHOULDER_MIN+LANDMARK_SHOULDER_SPREAD<20,'landmarks remain in the chase-camera corridor');
 });
 
 test('cape is a curved lightweight cloth surface rather than a solid slab',()=>{

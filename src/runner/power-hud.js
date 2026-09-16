@@ -2,6 +2,7 @@ import {FETCH_DURATION} from './ability.js';
 import {RAFT_LENGTH} from './rafts.js';
 import {ZIPLINE_LENGTH} from './ziplines.js';
 import {MINECART_LENGTH} from './minecart.js';
+import {pickupDefinition} from './pickup-guide.js';
 
 // Keep progress nodes alive between updates and activations, including their
 // accessibility identity. Only labels, values and visibility change at 10Hz.
@@ -14,21 +15,26 @@ export function createPowerHud(container) {
       typeof doc?.createElement !== 'function' ||
       typeof doc?.createTextNode !== 'function') return () => false;
   const specifications=[
-    ['shield','Zipline ride','Zipline distance remaining'],
-    ['double',null,'Zoomies time remaining'],
-    ['shield','Shield: one hit protected',null],
-    ['magnet',null,'Magnet time remaining'],
-    ['double','Double bone points: gems and trail bonuses are unchanged','Double bone points time remaining'],
+    ['ride','Zipline ride','Zipline distance remaining','ride'],
+    ['zoomies',null,'Zoomies time remaining','zoomies'],
+    ['shield','Shield: one hit protected',null,'shield'],
+    ['magnet',null,'Magnet time remaining','magnet'],
+    ['double','Double bone points: gems and trail bonuses are unchanged','Double bone points time remaining','double'],
   ];
-  const chips=specifications.map(([style,label,timer])=>{
+  const chips=specifications.map(([style,label,timer,type])=>{
     const node=doc.createElement('span'),text=doc.createTextNode('');
     node.className=`power-chip ${style}`;
+    node.setAttribute('data-power',type);
     if(label){node.setAttribute('aria-label',label);node.setAttribute('title',label);}
     node.append(text);node.hidden=true;
     const progress=timer?doc.createElement('progress'):null;
     if(progress){progress.setAttribute('aria-label',timer);node.append(progress);}
+    const description=doc.createElement('small');
+    description.textContent = type === 'ride' ? 'keep steering' : pickupDefinition(type)?.effect || '';
+    description.setAttribute('aria-hidden','true');
+    node.append(description);
     container.append(node);
-    return {node,text,progress};
+    return {node,text,progress,description};
   });
   container.hidden=true;
   return run=>{
@@ -42,11 +48,14 @@ export function createPowerHud(container) {
       chips[0].progress.setAttribute('aria-label',run.raft?'Distance to shore':run.minecart?'Distance to cart exit':'Zipline distance remaining');
     }
     const values=[
-      [Boolean(ride),`${run.raft?'RAFT':run.minecart?'CART':'🐾'} ${Math.ceil(cable)}m`,run.raft?RAFT_LENGTH:run.minecart?MINECART_LENGTH:ZIPLINE_LENGTH,cable],
-      [run.zoomies>0,`🎾 ${Math.ceil(run.zoomies)}s`,6,run.zoomies],
-      [Boolean(run.shield),'◇ SHIELD'],
-      [run.magnet>0,`🧲 ${Math.ceil(run.magnet)}s`,run.fetchTime>0&&run.magnet<=FETCH_DURATION?FETCH_DURATION:10+run.upgrades.magnet*3,run.magnet],
-      [run.double>0,`×2 ${Math.ceil(run.double)}s`,10,run.double],
+      [Boolean(ride),`${run.raft?'RAFT':run.minecart?'CART':'🐾'} · ${Math.ceil(cable)}m`,run.raft?RAFT_LENGTH:run.minecart?MINECART_LENGTH:ZIPLINE_LENGTH,cable],
+      // Keep the name in the visible value. Portrait CSS intentionally hides
+      // the longer description line to protect the trail, so a timer-only
+      // chip such as “🎾 6s” leaves a new player guessing what it does.
+      [run.zoomies>0,`🎾 ZOOMIES · ${Math.ceil(run.zoomies)}s`,6,run.zoomies],
+      [Boolean(run.shield),'◇ SHIELD · ONE HIT'],
+      [run.magnet>0,`🧲 MAGNET · ${Math.ceil(run.magnet)}s`,run.fetchTime>0&&run.magnet<=FETCH_DURATION?FETCH_DURATION:10+run.upgrades.magnet*3,run.magnet],
+      [run.double>0,`×2 BONE BONUS · ${Math.ceil(run.double)}s`,10,run.double],
     ];
     let active=false;
     chips.forEach(({node,text,progress},i)=>{

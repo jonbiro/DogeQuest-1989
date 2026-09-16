@@ -26,6 +26,7 @@ import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound,resumeSound,traversalCue,feedbackPriority} from "./sound.js";
 import {createAreaSoundscape} from './soundscape.js';
 import {actionCue,eventNotice,dockMode,runLesson,routeChoiceCue,touchCoach,touchGestureCoach,touchCoachVisible} from "./guidance.js";
+import {pickupGuideFor,pickupNoticeFor} from './pickup-guide.js';
 import {turnPrompt} from "./turns.js";
 import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,tapAction} from "./gestures.js";
 import {hudReserve,hudReserveApplies} from "./hud-layout.js";
@@ -394,6 +395,42 @@ function setData(id, key, value) {
   const node = $(id);
   if (node?.dataset) node.dataset[key] = String(value);
 }
+function updatePickupGuide(run) {
+  const node = $('pickup-guide');
+  if (!node) return;
+  // Keep the quiet item explainer out of the character's action space. The
+  // card sits in the upper trail on portrait phones, so leaving it visible
+  // during a jump/slide/ride can cover Mochi's face and the move cue. Urgent
+  // action guidance owns attention until the puppy is back on the ground.
+  const busy = Number(run?.y) > 0.1
+    || Number(run?.slide) > 0
+    || Boolean(run?.zipline || run?.raft || run?.minecart);
+  if (busy) {
+    node.hidden = true;
+    return;
+  }
+  // The action/turn/route dock owns attention when a decision is imminent.
+  // Leave the item card for calm stretches so two messages never compete.
+  const missionDock = $('mission-hud')?.dataset?.dock;
+  if (missionDock && missionDock !== 'mission-summary') {
+    node.hidden = true;
+    return;
+  }
+  const notice = pickupNoticeFor(run);
+  const guide = notice || pickupGuideFor(run);
+  if (!guide) {
+    node.hidden = true;
+    return;
+  }
+  node.hidden = false;
+  setText('pickup-guide-icon', guide.icon);
+  setText('pickup-guide-title', guide.title);
+  setText('pickup-guide-detail', guide.copy);
+  setAttribute('pickup-guide', 'aria-label', guide.ariaLabel);
+  setData('pickup-guide', 'pickup', guide.type);
+  setData('pickup-guide', 'state', notice ? 'recent' : 'upcoming');
+  node.style?.setProperty?.('--pickup-color', guide.color);
+}
 // A cached shell can omit an optional HUD/control node for one navigation
 // frame. Keep those presentation-only updates from promoting a valid run to a
 // runtime rescue screen; the simulation and renderer remain guarded below.
@@ -432,8 +469,8 @@ function syncDock() {
   setData('mission-hud', 'dock', mode || 'none');
   // Mission progress is useful between decisions, but it should not cover the
   // puppy when an authored jump or ride pose takes over the centre of the
-  // trail. CSS uses this posture marker to move the quiet chip below the dog;
-  // urgent cues still own the dock and are not moved.
+  // trail. CSS uses this posture marker to hide the quiet chip for that short
+  // action beat; urgent cues still own the dock and are never hidden here.
   setData('mission-hud', 'posture', posture);
   setHidden('mission-hud', state !== 'playing' || !mode);
   const coach = $('gesture-coach');
@@ -1946,6 +1983,7 @@ function frame(now) {
         toggleClass('streak', 'streak-hot', (showBoneStreak || showFlow) && run.time < streakFlashUntil);
       }
       setText('run-score', labels.score);
+      updatePickupGuide(run);
       const progress = missionProgress(run, currentMission);
       const courseStatus=courseProgress(run);
       const missionPosition = run.missions.indexOf(currentMission) + 1;
