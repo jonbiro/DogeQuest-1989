@@ -53,6 +53,9 @@ test('every authored puppy pose is a transparent, dimensioned WebP in the source
   const entries = manifestEntries();
   const actualFiles = new Set((await readdir(artworkDirectory)).filter(file => file.endsWith('.webp')));
   assert.ok(actualFiles.size > 0, 'puppy artwork directory is empty');
+  const expectedFiles = new Set(entries.map(entry => path.basename(entry.url)));
+  assert.deepEqual([...actualFiles].sort(), [...expectedFiles].sort(),
+    'puppy artwork directory must not ship orphaned paintings');
 
   for (const entry of entries) {
     const filename = path.basename(entry.url);

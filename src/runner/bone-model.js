@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-const IVORY=new THREE.Color('#fff2ca'),RIM=new THREE.Color('#70451e');
+export const BONE_IVORY='#fff2ca';
+export const BONE_RIM='#70451e';
+const IVORY=new THREE.Color(BONE_IVORY),RIM=new THREE.Color(BONE_RIM);
 export function boneSurfaceColor(normalZ,target=new THREE.Color()){
   const face=THREE.MathUtils.smoothstep(Math.abs(normalZ),.3,.9);
   return target.copy(RIM).lerp(IVORY,face);
