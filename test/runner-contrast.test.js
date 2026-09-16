@@ -63,12 +63,12 @@ test('critical runner labels keep measurable contrast in the final visual layer'
 
 test('canvas collectibles and obstacle silhouettes keep a measurable road edge', () => {
   const boneContrast = Math.min(...roadColors.map(background => contrast(BONE_RIM, background)));
-  assert.ok(boneContrast >= 2.25, `bone rim contrast fell to ${boneContrast.toFixed(2)} against a paving color`);
+  assert.ok(boneContrast >= 3, `bone rim contrast fell to ${boneContrast.toFixed(2)} against a paving color`);
 
   const hazardContrast = Math.min(
     ...HAZARD_PALETTES.flatMap(palette => roadColors.map(background => contrast(palette[0], background))),
   );
-  assert.ok(hazardContrast >= 2.25,
+  assert.ok(hazardContrast >= 3,
     `the darkest authored obstacle face must stay distinct from paving (min ${hazardContrast.toFixed(2)})`);
 
   // The supplied paintings all carry a near-black ink contour. Check that

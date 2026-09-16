@@ -7,7 +7,7 @@ import {trailColors,sampleTrailColor} from '../src/runner/trail-palette.js';
 test('bone rim separates from all six paving palettes without changing its ivory face',()=>{
   const rim=boneSurfaceColor(0),face=boneSurfaceColor(1);
   assert.equal(face.getHexString(),'fff2ca');
-  assert.equal(rim.getHexString(),'70451e');
+  assert.equal(rim.getHexString(),'5b341b');
   const lum=c=>c.r*.2126+c.g*.7152+c.b*.0722;
   const palettes=trailColors(new Color('#c1ba88'));
   for(let distance=0;distance<2700;distance++){
