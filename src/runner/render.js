@@ -2045,6 +2045,7 @@ export function createView(canvas) {
       // oversized headline never paints over his face and ears. The wider
       // portrait composition keeps the gentler offset used on normal phones.
       const compactHero = mobileHero && canvas.clientHeight <= 600;
+      const shortHero = mobileHero && !compactHero && canvas.clientHeight <= 700;
       // Action paintings are warmed when a trail actually starts, not while the
       // menu idles. Streaming them on the menu uploaded textures the player had
       // not asked for and pushed mobile GPUs toward a context loss; deferring
@@ -2389,13 +2390,13 @@ export function createView(canvas) {
       // as the character being chosen, not a piece of scenery. Keep sheets
       // and gameplay on their established origin so their interaction and
       // hit-test framing stay unchanged.
-      const heroOffsetX = mobileHero ? (compactHero ? .58 : .34) : 0;
-      const heroOffsetY = mobileHero ? (compactHero ? .44 : 1.65) : 0;
+      const heroOffsetX = mobileHero ? (compactHero ? .58 : .46) : 0;
+      const heroOffsetY = mobileHero ? (compactHero ? .44 : shortHero ? 3.25 : 2.35) : 0;
       // Nudge the featured puppy toward the open trail shoulder on portrait
       // screens. The title owns the left side; lifting Mochi a little keeps
       // his face out of the bottom control shelf and gives the contrast pool
       // a clean, scene-locked backdrop instead of tree foliage.
-      const heroVisualX = heroOffsetX + (mobileHero ? (compactHero ? .22 : .34) : 0);
+      const heroVisualX = heroOffsetX + (mobileHero ? (compactHero ? .22 : shortHero ? .55 : .24) : 0);
       const heroVisualY = heroOffsetY + (mobileHero ? (compactHero ? .08 : 0) : 0);
       dog.position.set(
         hero ? heroVisualX : menu ? 0 : x,
@@ -2413,7 +2414,7 @@ export function createView(canvas) {
       dog.rotation.x = menu ? 0 : groundFrame.pitch + (reducedMotion ? 0 : pitch);
       dog.scale.setScalar(1);
       const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:y>.1&&!run.minecart,sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline),rafting:!menu&&Boolean(run.raft),skiing:!menu&&Boolean(run.ski)});
-      const menuHeroScale = hero && mobileHero && !compactHero ? .76 : 1;
+      const menuHeroScale = hero && mobileHero && !compactHero ? .65 : 1;
       const crouch=activeRig===mochi?mochiCrouch((1-pose)/.54):null;
       dog.scale.y = ((crouch?.scaleY ?? pose) + personality.breathe) * (1-weight.compression);
       dog.scale.x = dog.scale.z = 1+weight.compression*.4;
@@ -3159,7 +3160,7 @@ export function createView(canvas) {
         const mobile = camera.aspect < 0.85;
         cameraRoll += (0 - cameraRoll) * (1 - Math.exp(-10 * Math.max(0, dt)));
         camera.position.set(6, mobile ? 4 : 3.3, mobile ? 11 : 7.7);
-        const compact = mobile && canvas.clientHeight<=700 && canvas.clientHeight>520;
+        const compact = mobile && canvas.clientHeight<=600 && canvas.clientHeight>520;
         camera.lookAt(mobile ? -1.2 : -3.5, mobile ? compact ? .5 : 2.08 : 1.25, 0);
         camera.rotation.z = cameraRoll;
       } else {

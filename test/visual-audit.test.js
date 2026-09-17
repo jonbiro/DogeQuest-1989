@@ -251,11 +251,12 @@ test('the mobile menu keeps the featured puppy visible without competing with th
   assert.match(render, /if \(entry\.gateway && menu\) instanceMatrix\.scale\(bendScale\.set\(0,0,0\)\)/);
   assert.match(render, /const mobileHero = hero && camera\.aspect < \.85/);
   assert.match(render, /const compactHero = mobileHero && canvas\.clientHeight <= 600/);
-  assert.match(render, /const heroOffsetX = mobileHero \? \(compactHero \? \.58 : \.34\) : 0/);
-  assert.match(render, /const heroOffsetY = mobileHero \? \(compactHero \? \.44 : 1\.65\) : 0/);
-  assert.match(render, /const heroVisualX = heroOffsetX \+ \(mobileHero \? \(compactHero \? \.22 : \.34\) : 0\)/);
+  assert.match(render, /const shortHero = mobileHero && !compactHero && canvas\.clientHeight <= 700/);
+  assert.match(render, /const heroOffsetX = mobileHero \? \(compactHero \? \.58 : \.46\) : 0/);
+  assert.match(render, /const heroOffsetY = mobileHero \? \(compactHero \? \.44 : shortHero \? 3\.25 : 2\.35\) : 0/);
+  assert.match(render, /const heroVisualX = heroOffsetX \+ \(mobileHero \? \(compactHero \? \.22 : shortHero \? \.55 : \.24\) : 0\)/);
   assert.match(render, /const heroVisualY = heroOffsetY \+ \(mobileHero \? \(compactHero \? \.08 : 0\) : 0\)/);
-  assert.match(render, /const menuHeroScale = hero && mobileHero && !compactHero \? \.76 : 1/);
+  assert.match(render, /const menuHeroScale = hero && mobileHero && !compactHero \? \.65 : 1/);
   assert.match(render, /if \(hero\) dog\.scale\.multiplyScalar\(menuHeroScale \* \(compactHero \? 1\.08 : camera\.aspect < \.85 \? 1\.10 : 1\.09\)\)/);
   assert.match(render, /menuGlow\.position\.set\(heroVisualX, 1\.08 \+ heroVisualY, -\.08\)/);
   assert.match(render, /if \(entry\.gateway && camera\.aspect < \.85\)/);

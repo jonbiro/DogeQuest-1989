@@ -8,7 +8,16 @@ async function main() {
 const [endpoint,session,orientation='portrait']=process.argv.slice(2);
 assert.match(endpoint||'',/^ws:\/\/127\.0\.0\.1:\d+\/devtools\/browser\//);
 assert.ok(['portrait','landscape'].includes(orientation));
-const insets=orientation==='portrait'?{top:44,bottom:34,left:0,right:0}:{top:0,bottom:21,left:44,right:44};
+// The default browser check mirrors the smallest supported iPhone layout.
+// Keeping this preset here means a fresh QA session exercises the tightest
+// portrait composition before a wider phone can hide wrapping or overlap.
+const viewport=orientation==='portrait'
+  ? {width:375,height:667,deviceScaleFactor:2,screenWidth:375,screenHeight:667}
+  : {width:667,height:375,deviceScaleFactor:2,screenWidth:667,screenHeight:375};
+// SE has a home button rather than a sensor notch or home-indicator area, so
+// its safe-area override is intentionally smaller than the old notched-phone
+// fixture. This catches real 375x667 wrapping without inventing extra space.
+const insets=orientation==='portrait'?{top:20,bottom:0,left:0,right:0}:{top:0,bottom:0,left:0,right:0};
 const ws=new WebSocket(endpoint),pending=new Map();let serial=0;
 ws.addEventListener('message',event=>{
   const message=JSON.parse(event.data),request=pending.get(message.id);
@@ -34,6 +43,7 @@ try {
     if(result.exceptionDetails)throw Error(JSON.stringify(result.exceptionDetails));
     return result.result.value;
   };
+  await call('Emulation.setDeviceMetricsOverride',viewport);
   await call('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
   await call('Emulation.setSafeAreaInsetsOverride',{insets});
   const device=await evaluate(`({width:innerWidth,height:innerHeight,coarse:matchMedia('(pointer:coarse)').matches,touch:navigator.maxTouchPoints,safeTop:getComputedStyle(document.documentElement).getPropertyValue('--safe-top')})`);
@@ -62,7 +72,7 @@ try {
   await gesture(0,70);assert.equal(await posture(),'slide');
   const hud=await evaluate('qa.hudStressCheck()');
   await tap('#pause-button');assert.equal(await evaluate(`document.querySelector('#game').dataset.state`),'paused');
-  console.log(JSON.stringify({orientation,insets,device,hud,trustedTouchActions:['right','left','jump','slide','pause']},null,2));
+  console.log(JSON.stringify({orientation,viewport,insets,device,hud,trustedTouchActions:['right','left','jump','slide','pause']},null,2));
 } finally {ws.close();}
 }
 main().catch(error=>{console.error(error);process.exitCode=1;});

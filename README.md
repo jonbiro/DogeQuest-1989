@@ -110,6 +110,6 @@ Both simulations advance at 120 Hz independently of display refresh rate. Audio 
 
 ## Deployment and verification
 
-`npm run check` builds, verifies the distribution, runs ESLint, and executes the simulation tests. GitHub Actions deploys `master` to GitHub Pages. Browser testing should cover startup, movement, double jump, death/retry, pause, completion, and a mobile viewport. Canvas gameplay remains a primarily visual experience; HTML menus support keyboard navigation and important events are announced through a live region.
+`npm run check` builds, verifies the distribution, runs ESLint, and executes the simulation tests. GitHub Actions deploys `master` to GitHub Pages. Browser testing should cover startup, movement, double jump, death/retry, pause, completion, and a mobile viewport. The local device QA harness defaults to the smallest supported iPhone SE portrait viewport (375×667 CSS pixels) so tight wrapping and control collisions are caught first. Canvas gameplay remains a primarily visual experience; HTML menus support keyboard navigation and important events are announced through a live region.
 
 MIT license. Copyright © 2026 Jonathan Biro. See LICENSE, CONTRIBUTING.md, and SECURITY.md.
