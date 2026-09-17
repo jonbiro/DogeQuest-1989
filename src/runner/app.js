@@ -909,6 +909,11 @@ function start() {
 }
 function showOverlay(kind) {
   $('practice-again').hidden = true;
+  // Continue is a result-only shortcut into a fresh adventure. Keep it
+  // optional so a briefly stale cached shell can still pause, practice, or
+  // retry while the new button arrives with the current document.
+  setHidden('continue-adventure', kind !== 'ended' || Boolean(run.practice));
+  setAttribute('continue-adventure', 'aria-label', 'Continue with a fresh adventure');
   $("overlay").dataset.kind = kind;
   $("graphics-recovery").hidden = kind !== "graphics-error";
   $("home").hidden = kind === "graphics-error";
@@ -1101,7 +1106,7 @@ function finish() {
     const difference=run.score-run.challengeTarget;
     $("run-breakdown-copy").textContent += ` Shared target: ${run.challengeTarget.toLocaleString()} points. ${difference>0?`${difference.toLocaleString()} ahead`:difference===0?'Target tied — one more point to beat it':`${(-difference).toLocaleString()} short`}. This is a friendly, unverified score, not a ranked result.`;
   }
-  $("overlay-copy").textContent = `${resultChallenge(run)}${resultRecord(receipt,run)}${receipt.totalPoints.toLocaleString()} upgrade ${receipt.totalPoints===1?'point':'points'} banked. Retry the same trail, or head to camp ${sharedSeed === null ? 'for a fresh one' : 'to switch to random trails'}.`;
+  $("overlay-copy").textContent = `${resultChallenge(run)}${resultRecord(receipt,run)}${receipt.totalPoints.toLocaleString()} upgrade ${receipt.totalPoints===1?'point':'points'} banked. Retry the same trail, or continue with a fresh adventure.`;
   if (run.modifier) {
     $("overlay-copy").textContent += ' Trail perk: ' + run.modifier.name + ' · ' + run.modifier.effect;
   }
@@ -1168,7 +1173,27 @@ function chooseDailyTrail() {
 }
 $('daily-trail').onclick = chooseDailyTrail;
 $('daily-camp').onclick = chooseDailyTrail;
+
+// Clear an explicit shared/daily selection before a player chooses Continue.
+// The next run should feel like a new adventure, not a hidden rematch of the
+// trail that just ended. Keep the URL in sync so a refresh cannot resurrect
+// the old challenge by accident.
+function clearSharedTrailSelection() {
+  localDailyTarget = false;
+  sharedSeed = null;
+  sharedVersion = null;
+  sharedTarget = 0;
+  const url = new window.URL(window.location.href);
+  url.searchParams.delete('trail');
+  url.searchParams.delete('target');
+  window.history.replaceState(null, '', url);
+  setHidden('shared-trail', true);
+}
+
 $('shared-random').onclick = () => {
+  // Keep this compact handler self-contained: an older cached/test shell can
+  // load this slice without the newer Continue helper and should still be
+  // able to leave a shared trail safely.
   localDailyTarget=false;
   sharedSeed=null;
   sharedVersion=null;
@@ -1231,6 +1256,19 @@ const runBreakdown = $("run-breakdown");
 runBreakdown?.addEventListener?.("toggle", () => {
   if (runBreakdown.open) runBreakdown.scrollIntoView?.({block:"start"});
 });
+const continueAdventureButton = $('continue-adventure');
+if (continueAdventureButton) {
+  continueAdventureButton.title = 'Start a fresh trail without returning to camp';
+  continueAdventureButton.onclick = () => {
+    if (state !== 'ended' || run.practice || !graphicsReady) return;
+    clearSharedTrailSelection();
+    // `start()` intentionally treats an ended state as a rematch. Move
+    // through the quiet camp state first so Continue can guarantee a fresh
+    // procedural trail while preserving the rewards already banked by finish.
+    setState('menu');
+    start();
+  };
+}
 for (const id of ['mission-help','practice-help']) {
   $(id).addEventListener('toggle', () => {
     if ($(id).open) $(id).scrollIntoView({block:'start'});
