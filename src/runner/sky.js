@@ -8,7 +8,11 @@ export function createSky() {
   for(let i=0;i<positions.count;i++){
     const height=Math.max(0,positions.getY(i));
     const rise=Math.sqrt(height);
-    colors.set([1-.44*rise,1-.22*rise,1-.06*rise],i*3);
+    // Give the upper sky a stronger blue lift while keeping the horizon nearly
+    // white. The old, almost-flat gradient made every destination inherit the
+    // same pale wash; this restrained separation lets each area's authored
+    // colour and landmark silhouette read without another texture or draw.
+    colors.set([1-.48*rise,1-.27*rise,1-.015*rise],i*3);
   }
   geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));
   const material=new THREE.MeshBasicMaterial({vertexColors:true,side:THREE.BackSide,

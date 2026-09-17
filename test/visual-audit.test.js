@@ -312,7 +312,9 @@ test('corner landmarks make the turn direction clear without becoming giant sign
 
 test('zipline hardware keeps the hang opening warm and readable', () => {
   const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
-  assert.match(render, /const cable = box\(tile, "#3b7774"/);
+  assert.match(render, /const cable = box\(tile, "#6fcfbd"/);
+  assert.match(render, /const cableMaterial = new THREE\.MeshBasicMaterial\([\s\S]*?vertexColors: true,[\s\S]*?toneMapped: false/);
+  assert.match(render, /entries\.filter\(entry=>entry\.road&&!entry\.terrain&&entry\.cable\)/);
   assert.match(render, /const ziplineSpine = box\(station, "#d2aa70"/);
   assert.match(render, /ziplineSpine\.material\.color\?\.set\?\.\('#d2aa70'\)/);
   assert.match(render, /ziplineSpine\.material\.emissiveIntensity = \.18/);

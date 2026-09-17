@@ -14,9 +14,9 @@ export function regionBlend(distance) {
 }
 
 const HORIZONS = [
-  {width:1.18,height:.78,haze:.32}, // broad jungle ridges
-  {width:.94,height:1.08,haze:.22}, // stronger canyon walls
-  {width:.72,height:1.32,haze:.42}, // slender glade peaks
+  {width:1.18,height:.78,haze:.24}, // broad jungle ridges
+  {width:.94,height:1.08,haze:.20}, // stronger canyon walls
+  {width:.72,height:1.32,haze:.30}, // slender glade peaks
 ];
 export function horizonProfile(distance, target = {}) {
   const {previous,index,blend}=regionBlend(distance);

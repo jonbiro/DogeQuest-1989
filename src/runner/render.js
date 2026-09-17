@@ -278,10 +278,10 @@ export function createView(canvas) {
       brace.userData.bridgePart = 'brace';
     }
     tile.add(bridge);
-    // Keep the overhead cable in the same readable teal family as the catch
-    // handle. The old blue-black value disappeared into the gateway shadow on
-    // portrait phones and made the hang opening look like a dark cut-out.
-    const cable = box(tile, "#3b7774", 0, 6.5, 0, .075, .075, CABLE_SEGMENT_LENGTH);
+    // Keep the overhead cable in the same readable mint family as the catch
+    // handle. It gets its own unlit batch below, so the line cannot inherit a
+    // gateway shadow and turn into a near-black stroke across the sky.
+    const cable = box(tile, "#6fcfbd", 0, 6.5, 0, .11, .11, CABLE_SEGMENT_LENGTH);
     cable.userData.cable = true;
     scenery.add(tile);
     tiles.push(tile);
@@ -698,6 +698,19 @@ export function createView(canvas) {
     flatShading: false,
     map: surface, bumpMap: surface, bumpScale: .04,
   });
+  // Cables are route guidance, not scenery. An unlit material keeps their
+  // silhouette consistent across bright and dark destinations, while the
+  // slight transparency lets the horizon remain visible behind the line.
+  const cableMaterial = new THREE.MeshBasicMaterial({
+    color: '#ffffff',
+    vertexColors: true,
+    transparent: true,
+    opacity: .9,
+    depthWrite: false,
+    depthTest: true,
+    fog: false,
+    toneMapped: false,
+  });
   const terrainMaterial=createTerrainMaterial(surface);
   // Keep a wider visual corridor around playable lanes without moving hazards.
   for (const group of decorations) {
@@ -751,14 +764,20 @@ export function createView(canvas) {
                 geometry === mushroomCapGeometry),
           });
       });
-    for (const groupEntries of [entries.filter(entry=>entry.terrain),entries.filter(entry=>entry.road&&!entry.terrain),entries.filter(entry=>!entry.road)]) {
+    for (const groupEntries of [
+      entries.filter(entry=>entry.terrain),
+      entries.filter(entry=>entry.road&&!entry.terrain&&!entry.cable),
+      entries.filter(entry=>entry.road&&!entry.terrain&&entry.cable),
+      entries.filter(entry=>!entry.road),
+    ]) {
     if (!groupEntries.length) continue;
     const isTerrain=groupEntries[0].terrain;
+    const isCable=groupEntries[0].cable === true;
     const batchGeometry=isTerrain?geometry.clone():geometry;
     if(isTerrain)batchGeometry.setAttribute('terrainStation',new THREE.InstancedBufferAttribute(new Float32Array(groupEntries.length),1).setUsage(THREE.DynamicDrawUsage));
     const instanced = new THREE.InstancedMesh(
       batchGeometry,
-      isTerrain?terrainMaterial:batchMaterial,
+      isTerrain ? terrainMaterial : isCable ? cableMaterial : batchMaterial,
       groupEntries.length,
     );
     instanced.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
@@ -769,7 +788,7 @@ export function createView(canvas) {
     });
     instanced.frustumCulled = false;
     instanced.castShadow = !groupEntries[0].road;
-    instanced.receiveShadow = true;
+    instanced.receiveShadow = !isCable;
     scene.add(instanced);
     batches.push({ instanced, entries:groupEntries });
     }
