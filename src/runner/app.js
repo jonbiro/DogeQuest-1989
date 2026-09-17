@@ -701,6 +701,10 @@ function toast(message, duration = 1.5, priority = 0) {
   if (time < toastUntil && priority < noticePriority) return;
   setText('toast', message);
   noticePriority = priority;
+  // Keep the priority available to the portrait HUD layer. Passive reward
+  // copy can remain in the live region for assistive technology, but it
+  // should not compete with an upcoming obstacle on a small screen.
+  setData('mission-hud', 'toastPriority', priority);
   toastUntil = time + duration;
 }
 function syncDock() {
@@ -713,6 +717,9 @@ function syncDock() {
     notice:textOf('toast'),missionComplete:missionAnnounced && !activeCourse(run)});
   for (const id of ['cue','route-choice','toast','mission-summary']) setHidden(id, mode !== id);
   setData('mission-hud', 'dock', mode || 'none');
+  // A cleared toast must not inherit the previous notice's visual priority
+  // when the next frame chooses another dock mode.
+  setData('mission-hud', 'toastPriority', mode === 'toast' ? noticePriority : 0);
   // Mission progress is useful between decisions, but it should not cover the
   // puppy when an authored jump or ride pose takes over the centre of the
   // trail. CSS uses this posture marker to hide the quiet chip for that short

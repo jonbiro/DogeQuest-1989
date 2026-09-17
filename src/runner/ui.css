@@ -3617,10 +3617,27 @@ canvas:focus-visible {
   }
 
   /* Quiet progress can be revisited in the pause/help/result surfaces. Hide
-     it during play; urgent cues, forks and short toasts get one compact rail
-     below the status row instead of competing with each other. */
+     it during play; urgent cues, forks and high-priority warnings get one
+     compact rail below the status row instead of competing with each other. */
   #game[data-state="playing"] #mission-hud[data-dock="mission-summary"] {
     display: none !important;
+  }
+
+  /* Passive notices (modifier ready, route complete, reward copy) are still
+     present in the live region and can be revisited by assistive technology,
+     but they do not deserve a card over the reaction lane. Priority 2/3
+     notices—shield use and collision warnings—continue to use the compact
+     rail below the status row. */
+  #game[data-state="playing"] #mission-hud[data-dock="toast"][data-toast-priority="0"],
+  #game[data-state="playing"] #mission-hud[data-dock="toast"][data-toast-priority="1"] {
+    min-height: 0;
+    max-height: 0;
+    height: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: none;
   }
   #game[data-state="playing"] #mission-hud[data-dock="cue"],
   #game[data-state="playing"] #mission-hud[data-dock="route-choice"],

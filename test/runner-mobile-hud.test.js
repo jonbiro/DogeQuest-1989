@@ -34,5 +34,6 @@ test('portrait gameplay keeps the road clear with one compact status rail', () =
   assert.match(rail, /#game\[data-state="playing"\] #power \.power-chip small,[\s\S]*?#game\[data-state="playing"\] #power \.power-chip progress\s*\{[\s\S]*?display:\s*none !important;/);
   assert.match(rail, /#game\[data-state="playing"\] #pickup-guide\s*\{[\s\S]*?height:\s*30px/);
   assert.match(rail, /#game\[data-state="playing"\] #mission-hud\[data-dock="mission-summary"\]\s*\{[\s\S]*?display:\s*none !important;/);
+  assert.match(rail, /#game\[data-state="playing"\] #mission-hud\[data-dock="toast"\]\[data-toast-priority="0"\],[\s\S]*?#mission-hud\[data-dock="toast"\]\[data-toast-priority="1"\][\s\S]*?height:\s*0/);
   assert.match(rail, /#game\[data-state="playing"\] #mission-hud\[data-dock="cue"\],[\s\S]*?#game\[data-state="playing"\] #mission-hud\[data-dock="toast"\]\s*\{[\s\S]*?max-height:\s*38px/);
 });
