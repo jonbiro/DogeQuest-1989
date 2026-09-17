@@ -2,7 +2,8 @@
 // steering keeps the same three-lane vocabulary, while jump and slide are
 // deliberately unavailable until the cart reaches the next track exit.
 // Current prototype trails (generator version 4) opt in; historical versions
-// 1–3 keep their original object streams.
+// 1–3 keep their original object streams. Version 5 adds an optional scenic
+// gem line; version 4 remains replayable without that extra reward lane.
 //
 // The first section sits after the second river crossing window and before the
 // next marked corner. A fixed period keeps generated trails deterministic and
@@ -17,6 +18,34 @@ export const MINECART_APPROACH = 28;
 export const MINECART_RECOVERY = 8;
 export const MINECART_REWARD = 250;
 export const MINECART_BANK_LIMIT = 3.15;
+export const MINECART_CHOICE_VERSION = 5;
+
+const SCENIC_SAFE_LANES = Object.freeze([1, 0, 2]);
+const SCENIC_BLOCKED_LANES = Object.freeze([0, 2, 1]);
+
+// A scenic cart always leaves one lane open for the steady bone line and one
+// lane open for an optional, higher-value gem line. Keeping the lane choices
+// authored and deterministic makes the reward readable and replay-safe.
+export function minecartChoiceFor(section, challenge = false) {
+  if (!section || challenge || !Number.isFinite(section.start)) return null;
+  const beats = SCENIC_SAFE_LANES.map((safeLane, index) => {
+    const blockedLane = SCENIC_BLOCKED_LANES[index];
+    return Object.freeze({
+      index,
+      safeLane,
+      rewardLane: 3 - safeLane - blockedLane,
+      at: section.start + 18 + index * 24 + 7,
+    });
+  });
+  return Object.freeze({
+    kind: 'gem-line',
+    title: 'Gem shortcut',
+    effect: '+250 points each',
+    safeTitle: 'Bone line',
+    rewardTitle: 'Gem line',
+    beats: Object.freeze(beats),
+  });
+}
 
 const FREQUENCY = 13;
 const DAMPING = 7.8;
@@ -108,6 +137,7 @@ export function advanceMinecart(run, from, to) {
     if (to < run.minecart.end) return 'riding';
     const completed = from < run.minecart.end;
     run.minecart = null;
+    run.minecartChoice = null;
     clearMinecartGroundActions(run);
     if (!completed) return 'aborted';
     run.minecarts = (run.minecarts || 0) + 1;
@@ -119,6 +149,11 @@ export function advanceMinecart(run, from, to) {
   const section = minecartAt(to);
   if (!section || from > section.start || section.index <= (run.lastMinecartIndex ?? -1) || run.zipline || run.raft) return null;
   run.lastMinecartIndex = section.index;
+  const choiceObjects = (run.objects || []).filter(object =>
+    object.minecartChoice === 'gem' && object.at >= section.start && object.at < section.end);
+  run.minecartChoice = choiceObjects.length
+    ? {kind: 'gem-line', title: 'Gem shortcut', effect: '+250 points each', gems: choiceObjects.length}
+    : null;
   run.minecart = { ...section, boardedAt: run.time, boardingHeight: run.y };
   clearMinecartGroundActions(run);
   run.events.push('minecart-start');
@@ -132,8 +167,9 @@ export function moveMinecart(run, target, dt) {
   return true;
 }
 
-export function minecartEncounter(section, challenge = false) {
+export function minecartEncounter(section, challenge = false, withChoices = false) {
   const objects = [];
+  const choice = withChoices ? minecartChoiceFor(section, challenge) : null;
   // Three beats trade the safe lane left, right, then center. Scenic cart
   // sections show one rock per beat; Challenge asks for two-lane steering.
   for (const [index, safeLane] of [1, 0, 2].entries()) {
@@ -149,8 +185,23 @@ export function minecartEncounter(section, challenge = false) {
         });
       }
     }
-    for (const offset of [-8, -3, 3, 8])
-      objects.push({ type: 'bone', lane: safeLane, at: at + offset, minecartPickup: true });
+    for (const offset of [-8, -3, 3, 8]) {
+      const bone = { type: 'bone', lane: safeLane, at: at + offset, minecartPickup: true };
+      if (choice) bone.minecartChoice = 'bone';
+      objects.push(bone);
+    }
+    if (choice) {
+      const beat = choice.beats[index];
+      objects.push({
+        type: 'gem',
+        lane: beat.rewardLane,
+        at: beat.at,
+        minecartPickup: true,
+        minecartChoice: 'gem',
+        minecartChoiceBeat: index,
+        encounter: 'Gem shortcut',
+      });
+    }
   }
   objects.push({ type: 'gift', lane: 2, at: section.end - 10, minecartPickup: true });
   return objects;

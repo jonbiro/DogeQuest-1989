@@ -24,6 +24,20 @@ test('HUD chimes once per usable Fetch transition, never on every frame',()=>{
   assert.equal(fetchButton.disabled,true);
 });
 
+test('the Fetch meter stays a Fetch meter while the separate magnet chip is active',()=>{
+  const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
+  const start=source.indexOf("setText('fetch',");
+  const end=source.indexOf("fetchButton.setAttribute('aria-label'",start);
+  assert.ok(start>=0 && end>start);
+  let label='';
+  runInNewContext(`{${source.slice(start,end)}}`,{
+    run:{fetchTime:0,magnet:6,fetchCharge:42},
+    setText:(id,value)=>{assert.equal(id,'fetch');label=value;},
+  });
+  assert.equal(label,'FETCH · 42%');
+  assert.doesNotMatch(label,/MAGNET/);
+});
+
 test('slide feedback plays on a new move, not repeated presses or suspended movement',()=>{
   const run=createRun(1989);
   act(run,'slide');act(run,'slide');

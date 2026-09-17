@@ -19,7 +19,7 @@ import { puppyPose, smoothLegAngles, bodyMotion, mochiCrouch, pawDust } from "./
 import { createMochiModel } from "./mochi-model.js";
 import { createClassicEarGeometries } from "./ear-model.js";
 import { createClassicFur } from "./classic-fur.js";
-import { isBridge } from "./bridges.js";
+import { isBridge, bridgeCollapseState } from "./bridges.js";
 import { ziplineAt, ZIPLINE_HEIGHT, cableSegment, CABLE_SEGMENT_LENGTH } from "./ziplines.js";
 import {createPuppyFramer,gameplayFov} from './framing.js';
 import {createQualityController} from './quality.js';
@@ -45,10 +45,14 @@ import {raftAt,raftIntersecting} from './rafts.js';
 import {createRaftModel} from './raft-model.js';
 import {minecartIntersecting} from './minecart.js';
 import {createMinecartModel} from './minecart-model.js';
+import {movingGateX} from './moving-gate.js';
 import {createRiverBanks} from './river-banks.js';
 import {createPuppyArtwork,PUPPY_HANG_HANDLE_HEIGHT} from './puppy-artwork.js';
 import {ATMOSPHERE_PARTICLE_COUNT,sampleAtmosphereParticle} from './atmosphere.js';
 import {pickupBadgeFor} from './pickup-guide.js';
+import {ghostAt} from './ghost.js';
+import {dogChaseProgress} from './dog-chase.js';
+import {laneTargetFor} from './lane-target.js';
 
 const PICKUP_GLOW_COLORS = Object.freeze({
   magnet: '#8ff2e7',
@@ -117,7 +121,11 @@ export function createView(canvas) {
   const camera = new THREE.PerspectiveCamera(52, 1, 0.1, 190);
   const sky=createSky();
   scene.add(sky);
-  scene.add(new THREE.HemisphereLight("#dcf7ff", "#1f403a", 1.8));
+  // Keep one pair of lights alive for the whole run. Their colors and energy
+  // are blended with the destination below, so each landscape gets a real
+  // lighting identity without allocating lights every frame.
+  const hemisphere = new THREE.HemisphereLight("#dcf7ff", "#1f403a", 1.8);
+  scene.add(hemisphere);
   const sun = new THREE.DirectionalLight("#fff0ce", 3.5);
   sun.position.set(-12, 24, 4);
   sun.target.position.set(0, 0, -12);
@@ -178,6 +186,16 @@ export function createView(canvas) {
   ground.material = ground.material.clone();
   const regionColors = REGIONS.map(region => ({sky:new THREE.Color(region.sky),ground:new THREE.Color(region.ground),stone:new THREE.Color(region.stone)}));
   const areaColors=AREAS.map(area=>({sky:new THREE.Color(area.sky),ground:new THREE.Color(area.ground)}));
+  const areaLighting=AREAS.map(area=>({
+    sky:new THREE.Color(area.lighting?.sky || area.sky),
+    ground:new THREE.Color(area.lighting?.ground || area.ground),
+    hemi:Number.isFinite(area.lighting?.hemi) ? area.lighting.hemi : 1.8,
+    sun:new THREE.Color(area.lighting?.sun || '#fff0ce'),
+    sunPower:Number.isFinite(area.lighting?.sunPower) ? area.lighting.sunPower : 3.5,
+  }));
+  const hemisphereSkyColor=new THREE.Color();
+  const hemisphereGroundColor=new THREE.Color();
+  const sunlightColor=new THREE.Color();
   const areaGroundColor=new THREE.Color();
   // Recycled slabs, lane inlays, and scenery are translated rather than rebuilt.
   const scenery = new THREE.Group();
@@ -224,12 +242,20 @@ export function createView(canvas) {
       part.userData.bridge = true;
       return part;
     };
-    for (let plank = 0; plank < 6; plank++)
-      bridgeBox(plank % 2 ? "#b77c4c" : "#c9915e", 0, .02, -2.08 + plank * .833, 7.8, .22, .79);
+    for (let plank = 0; plank < 6; plank++) {
+      const part = bridgeBox(plank % 2 ? "#b77c4c" : "#c9915e", 0, .02, -2.08 + plank * .833, 7.8, .22, .79);
+      part.userData.bridgePart = 'deck';
+      part.userData.bridgePlank = plank;
+    }
     for (const x of [-4.05, 4.05]) {
-      bridgeBox("#765036", x, .65, 0, .23, 1.6, .23);
-      for (const y of [.5, 1.3]) bridgeBox("#efd6a0", x, y, 0, .1, .1, 5.4);
-      bridgeBox("#64472e", x, -.45, 0, .22, .22, 5.4);
+      const post = bridgeBox("#765036", x, .65, 0, .23, 1.6, .23);
+      post.userData.bridgePart = 'post';
+      for (const y of [.5, 1.3]) {
+        const rail = bridgeBox("#efd6a0", x, y, 0, .1, .1, 5.4);
+        rail.userData.bridgePart = 'rail';
+      }
+      const brace = bridgeBox("#64472e", x, -.45, 0, .22, .22, 5.4);
+      brace.userData.bridgePart = 'brace';
     }
     tile.add(bridge);
     // Keep the overhead cable in the same readable teal family as the catch
@@ -675,6 +701,8 @@ export function createView(canvas) {
             start: 10,
             road: true,
             bridge: item.userData.bridge === true,
+            bridgePart: item.userData.bridgePart,
+            bridgePlank: item.userData.bridgePlank,
             cable: item.userData.cable === true,
             terrain: item.userData.terrain === true,
             edge: item.userData.edge === true,
@@ -1002,6 +1030,71 @@ export function createView(canvas) {
     for (const part of legacyDogParts) part.visible = false;
     rasterArtwork.group.visible = true;
   }
+  // A personal ghost reuses the already-resident authored puppy painting. The
+  // old box-and-sphere silhouette was cheap, but it made the replay look like
+  // one of the polygon dogs the runner had just replaced. Keep the companion
+  // in its own group so the trail frame, action pose and soft floor beacon can
+  // move together without allocating another texture catalog on mobile.
+  const ghostGroup = new THREE.Group();
+  ghostGroup.name = 'personal-ghost-pacer';
+  ghostGroup.visible = false;
+  ghostGroup.renderOrder = 1.1;
+  const ghostArtwork = new THREE.Sprite(new THREE.SpriteMaterial({
+    color: '#e9fff9',
+    transparent: true,
+    opacity: .5,
+    depthTest: true,
+    depthWrite: false,
+    fog: false,
+    toneMapped: false,
+  }));
+  ghostArtwork.name = 'painted-puppy-ghost';
+  ghostArtwork.visible = false;
+  ghostArtwork.frustumCulled = false;
+  ghostArtwork.renderOrder = 1.12;
+  const ghostRim = new THREE.Sprite(new THREE.SpriteMaterial({
+    color: '#71e1cd',
+    transparent: true,
+    opacity: .2,
+    depthTest: true,
+    depthWrite: false,
+    fog: false,
+    toneMapped: false,
+  }));
+  ghostRim.name = 'painted-puppy-ghost-rim';
+  ghostRim.visible = false;
+  ghostRim.frustumCulled = false;
+  ghostRim.renderOrder = 1.105;
+  ghostGroup.add(ghostRim, ghostArtwork);
+  const ghostShadow = new THREE.Mesh(
+    new THREE.CircleGeometry(1, 18),
+    new THREE.MeshBasicMaterial({color:'#5cd9c1',transparent:true,opacity:.16,depthTest:true,depthWrite:false,fog:false,toneMapped:false}),
+  );
+  ghostShadow.name = 'painted-puppy-ghost-shadow';
+  ghostShadow.position.set(0, .08, .12);
+  ghostShadow.scale.setScalar(.62);
+  ghostShadow.castShadow = false;
+  ghostShadow.receiveShadow = false;
+  ghostShadow.rotation.x = -Math.PI / 2;
+  ghostGroup.add(ghostShadow);
+  scene.add(ghostGroup);
+  // The chase guide reuses the currently selected puppy's loaded painting.
+  // Sharing that texture keeps the companion as cute and illustrated as the
+  // player dog without doubling the mobile artwork catalog or introducing a
+  // second polygonal puppy.
+  const chaseArtwork = new THREE.Sprite(new THREE.SpriteMaterial({
+    transparent: true,
+    opacity: .88,
+    depthTest: true,
+    depthWrite: false,
+    fog: false,
+    toneMapped: false,
+  }));
+  chaseArtwork.name = 'painted-puppy-chase-guide';
+  chaseArtwork.visible = false;
+  chaseArtwork.frustumCulled = false;
+  chaseArtwork.renderOrder = 1.2;
+  scene.add(chaseArtwork);
   const shadowCanvas = document.createElement("canvas");
   shadowCanvas.width = shadowCanvas.height = 64;
   const shadowContext = shadowCanvas.getContext("2d");
@@ -1105,6 +1198,72 @@ export function createView(canvas) {
   const magnetField = new THREE.Group();
   scene.add(magnetField);
   const ringGeometry = new THREE.TorusGeometry(0.94, 0.028, 6, 48);
+  // A quiet, scene-locked lane strip gives touch players a destination to
+  // aim at without adding another center-screen message. The three pads stay
+  // just ahead of the puppy; a warm arrow appears only when a real upcoming
+  // hazard or reward recommends a different lane.
+  const laneTargetGroup = new THREE.Group();
+  laneTargetGroup.name = 'runner-lane-targets';
+  laneTargetGroup.renderOrder = .62;
+  laneTargetGroup.frustumCulled = false;
+  scene.add(laneTargetGroup);
+  const lanePadMaterials = {
+    idle: new THREE.MeshBasicMaterial({
+      color: '#27545a', transparent: true, opacity: .16,
+      depthWrite: false, depthTest: true, fog: false, toneMapped: false,
+    }),
+    current: new THREE.MeshBasicMaterial({
+      color: '#9ff4d9', transparent: true, opacity: .30,
+      depthWrite: false, depthTest: true, fog: false, toneMapped: false,
+    }),
+    target: new THREE.MeshBasicMaterial({
+      color: '#ffd27a', transparent: true, opacity: .56,
+      depthWrite: false, depthTest: true, fog: false, toneMapped: false,
+    }),
+  };
+  const laneRingMaterials = {
+    idle: new THREE.MeshBasicMaterial({
+      color: '#4b7a7b', transparent: true, opacity: .18,
+      depthWrite: false, depthTest: true, fog: false, toneMapped: false,
+    }),
+    current: new THREE.MeshBasicMaterial({
+      color: '#baffea', transparent: true, opacity: .70,
+      depthWrite: false, depthTest: true, fog: false, toneMapped: false,
+    }),
+    target: new THREE.MeshBasicMaterial({
+      color: '#ffe5a4', transparent: true, opacity: .95,
+      depthWrite: false, depthTest: true, fog: false, toneMapped: false,
+    }),
+  };
+  const laneArrowMaterial = new THREE.MeshBasicMaterial({
+    color: '#ffe5a4', transparent: true, opacity: .95,
+    depthWrite: false, depthTest: true, fog: false, toneMapped: false,
+  });
+  const laneArrowGeometry = new THREE.ConeGeometry(.18, .34, 3);
+  const laneMarkers = [0, 1, 2].map(lane => {
+    const pad = new THREE.Mesh(boxGeometry, lanePadMaterials.idle);
+    pad.name = `lane-target-pad-${lane}`;
+    pad.position.set(LANES[lane], 0, 0);
+    pad.scale.set(.82, .035, .48);
+    pad.renderOrder = .62;
+    laneTargetGroup.add(pad);
+    const ring = new THREE.Mesh(ringGeometry, laneRingMaterials.idle);
+    ring.name = `lane-target-ring-${lane}`;
+    ring.rotation.x = -Math.PI / 2;
+    ring.scale.set(.64, .64, .36);
+    ring.position.set(LANES[lane], .024, 0);
+    ring.renderOrder = .63;
+    laneTargetGroup.add(ring);
+    const arrow = new THREE.Mesh(laneArrowGeometry, laneArrowMaterial);
+    arrow.name = `lane-target-arrow-${lane}`;
+    arrow.rotation.x = -Math.PI / 2;
+    arrow.position.set(LANES[lane], .06, -.14);
+    arrow.scale.set(.7, .32, .7);
+    arrow.visible = false;
+    arrow.renderOrder = .64;
+    laneTargetGroup.add(arrow);
+    return {lane, pad, ring, arrow};
+  });
   for (let i = 0; i < 2; i++) {
     const ring = new THREE.Mesh(
       ringGeometry,
@@ -1316,6 +1475,15 @@ export function createView(canvas) {
   box(templates.gate, "#102b36", 0, 1.33, 0, 2.1, 0.22, 0.4);
   for(const x of [-.8,.8])
     box(templates.gate, "#b3ffe7", x, 1.35, .23, .2, .15, .04);
+  // The moving gate reuses the proven low-profile gate silhouette, then adds
+  // one amber sweep beacon so its horizontal motion reads as intentional
+  // gameplay rather than a mesh that appears to slide by accident.
+  templates['moving-gate'] = templates.gate.clone(true);
+  const movingGateBeacon = box(templates['moving-gate'], '#ffd27a', 0, 2.78, .28, .28, .12, .06);
+  movingGateBeacon.userData.movingGateBeacon = true;
+  movingGateBeacon.material = movingGateBeacon.material.clone();
+  movingGateBeacon.material.emissive?.set?.('#c9773f');
+  movingGateBeacon.material.emissiveIntensity = .45;
   templates.gem = new THREE.Group();
   const gem = new THREE.Mesh(new THREE.OctahedronGeometry(.66),
     new THREE.MeshStandardMaterial({color:"#962ed4",roughness:.3,metalness:.15,flatShading:true}));
@@ -1404,6 +1572,9 @@ export function createView(canvas) {
     box(templates.gap,"#efae45",0,.12,z,2.4,.22,.22);
     for(const x of [-.8,0,.8]) box(templates.gap,"#5d422c",x,.25,z,.3,.04,.24);
   }
+  const bridgeCollapseMarker = box(templates.gap, '#ef6f59', 0, .46, 0, 1.2, .07, .12);
+  bridgeCollapseMarker.userData.bridgeCollapseMarker = true;
+  bridgeCollapseMarker.visible = false;
   const routeLabels=document.createElement('canvas');
   routeLabels.width=1024;routeLabels.height=512;
   const routeText=routeLabels.getContext('2d');
@@ -1604,6 +1775,8 @@ export function createView(canvas) {
   const landmarkVariationMatrix = new THREE.Matrix4();
   const landmarkVariationEuler = new THREE.Euler(0, 0, 0, 'YXZ');
   const landmarkVariationScale = new THREE.Vector3();
+  const bridgeCollapseMatrix = new THREE.Matrix4();
+  const bridgeCollapseEuler = new THREE.Euler(0, 0, 0, 'YXZ');
   const framePuppy=createPuppyFramer();
   let puppyFrame=null;
   const templateScene=new THREE.Group();
@@ -1782,6 +1955,21 @@ export function createView(canvas) {
       scene.fog.color.copy(scene.background);
       sky.material.color.copy(scene.background);
       ground.material.color.copy(areaColors[atmosphere.previous].ground).lerp(areaColors[atmosphere.index].ground,atmosphere.blend);
+      // Destination lighting follows the same eased handoff as the sky and
+      // ground. The color contrast is authored per area: warm Sunleaf/Oasis,
+      // ember Redrock, cool Crystal and moonlit Mooncap. Interpolating the
+      // persistent lights keeps the transition cinematic and avoids a visible
+      // brightness pop at the 225m boundary.
+      const previousLighting=areaLighting[atmosphere.previous];
+      const currentLighting=areaLighting[atmosphere.index];
+      hemisphereSkyColor.copy(previousLighting.sky).lerp(currentLighting.sky,atmosphere.blend);
+      hemisphereGroundColor.copy(previousLighting.ground).lerp(currentLighting.ground,atmosphere.blend);
+      sunlightColor.copy(previousLighting.sun).lerp(currentLighting.sun,atmosphere.blend);
+      hemisphere.color.copy(hemisphereSkyColor);
+      hemisphere.groundColor.copy(hemisphereGroundColor);
+      hemisphere.intensity=THREE.MathUtils.lerp(previousLighting.hemi,currentLighting.hemi,atmosphere.blend);
+      sun.color.copy(sunlightColor);
+      sun.intensity=THREE.MathUtils.lerp(previousLighting.sunPower,currentLighting.sunPower,atmosphere.blend);
       horizonProfile(menu ? 0 : distance, horizon);
       for(const mountain of mountains) {
         blendMountainArea(mountain,atmosphere);
@@ -1794,6 +1982,14 @@ export function createView(canvas) {
         for (const object of run.objects)
           if (object.type === "gap" && object.lane === 1) gapObjects.push(object);
       const gaps = gapObjects;
+      // Only generated bridge gaps collapse. This keeps skipped/reserved
+      // bridges intact and makes the visual set piece honest on restored or
+      // legacy trails.
+      const bridgeCollapseCenters = !menu
+        ? run.objects
+          .filter(object => object.bridgeCollapse && !object.used)
+          .map(object => object.at)
+        : [];
       if (state === "playing" || menu) {
         pose += ((menu || run.slide === 0 ? 1 : 0.46) - pose) * smooth;
         lean += (weight.lean - lean) * smooth;
@@ -1875,6 +2071,28 @@ export function createView(canvas) {
           // camera a little more breathing room around the playable lanes.
           if (entry.gateway && camera.aspect < .85)
             instanceMatrix.scale(bendScale.set(.78, .78, .78));
+          if (entry.bridge) {
+            const collapse = bridgeCollapseState(distance - z, bridgeCollapseCenters);
+            if (collapse) {
+              const plank = Number.isFinite(entry.bridgePlank) ? entry.bridgePlank : 0;
+              const wave = .82 + .18 * Math.sin(plank * .95 + collapse.center * .031);
+              const deck = entry.bridgePart === 'deck';
+              const rail = entry.bridgePart === 'rail' || entry.bridgePart === 'post';
+              const fall = deck
+                ? collapse.eased * (.18 + .42 * wave)
+                : rail ? collapse.railProgress * .16 : collapse.railProgress * .08;
+              bridgeCollapseEuler.set(
+                deck ? collapse.eased * (.34 + .12 * wave) + collapse.tremor :
+                  rail ? collapse.railProgress * .12 : collapse.railProgress * .06,
+                0,
+                deck ? (plank % 2 ? -1 : 1) * collapse.eased * .045 : 0,
+                'YXZ',
+              );
+              bridgeCollapseMatrix.makeRotationFromEuler(bridgeCollapseEuler);
+              instanceMatrix.multiply(bridgeCollapseMatrix);
+              instanceMatrix.elements[13] -= fall;
+            }
+          }
           if (!menu && entry.road && !entry.terrain && !entry.cable &&
               corner && distance-z >= corner.at && distance-z <= corner.end)
             instanceMatrix.scale(bendScale.set(0,0,0));
@@ -1911,7 +2129,7 @@ export function createView(canvas) {
       // and gameplay on their established origin so their interaction and
       // hit-test framing stay unchanged.
       const heroOffsetX = mobileHero ? (compactHero ? .58 : -.04) : 0;
-      const heroOffsetY = mobileHero ? (compactHero ? .44 : -.20) : 0;
+      const heroOffsetY = mobileHero ? (compactHero ? .44 : .56) : 0;
       // Nudge the featured puppy toward the open trail shoulder on portrait
       // screens. The title owns the left side; lifting Mochi a little keeps
       // his face out of the bottom control shelf and gives the contrast pool
@@ -1947,13 +2165,136 @@ export function createView(canvas) {
       // phones without changing collision dimensions or run timing. The
       // gameplay lift is deliberately smaller than the menu treatment so the
       // dog never crowds the fixed thumb controls.
-      if (hero) dog.scale.multiplyScalar(compactHero ? 1.08 : camera.aspect < .85 ? 1.16 : 1.09);
+      if (hero) dog.scale.multiplyScalar(compactHero ? 1.08 : camera.aspect < .85 ? 1.10 : 1.09);
       // The rear chase frame carries a lot of transparent breathing room so
       // its tail and paw line stay natural. Give the complete puppy a modest
       // presentation lift on phones; this improves action recognition without
       // changing the physics hitbox or crowding the thumb shelf.
       else dog.scale.multiplyScalar(camera.aspect < .85 ? 1.16 : 1.04);
       dog.visible = true;
+      const laneStripVisible = !menu && (state === 'playing' || state === 'paused') && !run.ended;
+      laneTargetGroup.visible = laneStripVisible;
+      if (laneStripVisible) {
+        const laneInfo = laneTargetFor(run);
+        // Keep the affordance close enough to read as the next footfall, but
+        // ahead of Mochi so it never paints over his paws or the contact
+        // shadow. The route sampler supplies the same bend and terrain frame
+        // used by slabs, pickups and hazards.
+        const markerFrame = frameAt(-1.7);
+        laneTargetGroup.position.set(markerFrame.x, markerFrame.y + .16, markerFrame.z);
+        laneTargetGroup.rotation.set(markerFrame.pitch, markerFrame.yaw, 0, 'YXZ');
+        const targetPulse = reducedMotion ? 1 : 1 + Math.sin(time * 4.4) * .06;
+        for (const marker of laneMarkers) {
+          const isCurrent = marker.lane === laneInfo.current;
+          const isTarget = laneInfo.recommended && marker.lane === laneInfo.target;
+          marker.pad.material = isTarget ? lanePadMaterials.target
+            : isCurrent ? lanePadMaterials.current : lanePadMaterials.idle;
+          marker.ring.material = isTarget ? laneRingMaterials.target
+            : isCurrent ? laneRingMaterials.current : laneRingMaterials.idle;
+          marker.arrow.visible = isTarget;
+          if (isTarget) {
+            const urgency = .72 + laneInfo.urgency * .28;
+            marker.pad.material.opacity = .44 + laneInfo.urgency * .16;
+            marker.ring.material.opacity = .76 + laneInfo.urgency * .18;
+            marker.arrow.material.opacity = urgency;
+            marker.arrow.scale.set(.7 * targetPulse, .32, .7 * targetPulse);
+          }
+        }
+      }
+      // Keep the best-run echo just far enough ahead to compare lane and move
+      // timing without hiding the live puppy. It follows the same curved road
+      // frame as every other object, so corners and detours remain legible.
+      const chaseProgress = !menu && !run.practice && run.dogChase
+        ? dogChaseProgress(distance, run.dogChase) : null;
+      const ghostRecord = !menu && !run.practice ? run.ghostPlayback : null;
+      const ghostLookahead = 24;
+      const ghostSample = chaseProgress ? null : ghostRecord ? ghostAt(ghostRecord, distance + ghostLookahead) : null;
+      if (chaseProgress) {
+        // The chase companion reuses the selected puppy's active painting. It
+        // is warm, bright and clearly ahead of the player, with the same lane
+        // frame as every trail object. Sharing the texture keeps this beat
+        // illustrated and avoids the old polygonal guide silhouette.
+        const lead = 22 + chaseProgress.eased * 7;
+        const chaseFrame = frameAt(-lead);
+        const chaseX = chaseFrame.x + chaseProgress.x * Math.cos(chaseFrame.yaw);
+        const chaseZ = chaseFrame.z - chaseProgress.x * Math.sin(chaseFrame.yaw);
+        ghostGroup.visible = false;
+        chaseArtwork.visible = false;
+        const source = rasterArtwork.activeSprite?.();
+        const map = source?.material?.map;
+        if (source && map) {
+          chaseArtwork.material.map = map;
+          chaseArtwork.material.needsUpdate = true;
+          chaseArtwork.material.color.setRGB(1, 1, 1);
+          chaseArtwork.material.opacity = reducedMotion ? .82 : .92;
+          chaseArtwork.center.copy(source.center);
+          chaseArtwork.material.rotation = source.material.rotation + chaseProgress.wag * .10;
+          chaseArtwork.position.set(chaseX, chaseFrame.y + .10 + chaseProgress.bob, chaseZ);
+          chaseArtwork.scale.set(
+            Math.abs(source.scale.x) * (camera.aspect < .85 ? .70 : .64),
+            source.scale.y * (camera.aspect < .85 ? .70 : .64),
+            1,
+          );
+          chaseArtwork.visible = true;
+        }
+      } else if (ghostSample) {
+        // The personal replay uses the same painted pose library as the live
+        // puppy. A mint rim and low-opacity tint make it unmistakably a ghost
+        // without turning it into an unrelated polygon character. The
+        // read-only lookup never starts a texture request for the replay.
+        chaseArtwork.visible = false;
+        const ghostRelativeZ = distance - ghostSample.distance;
+        const ghostFrame = frameAt(ghostRelativeZ);
+        const ghostX = ghostFrame.x + ghostSample.x * Math.cos(ghostFrame.yaw);
+        const ghostZ = ghostFrame.z - ghostSample.x * Math.sin(ghostFrame.yaw);
+        ghostGroup.visible = true;
+        ghostGroup.position.set(ghostX, ghostFrame.y + ghostSample.y, ghostZ);
+        ghostGroup.rotation.set(ghostFrame.pitch, ghostFrame.yaw, 0, 'YXZ');
+        const ghostScale = (camera.aspect < .85 ? 1.02 : .92)
+          * (ghostSample.posture === 'slide' ? .86 : 1);
+        ghostGroup.scale.setScalar(ghostScale);
+        const ghostFade = THREE.MathUtils.clamp(1 - Math.abs(ghostRelativeZ) / 90, .28, 1);
+        const ghostPulse = reducedMotion ? 1 : .92 + Math.sin(time * 4.2) * .08;
+        const source = rasterArtwork.spriteForPose?.(ghostSample.posture)
+          || rasterArtwork.activeSprite?.();
+        const map = source?.material?.map;
+        if (source && map) {
+          const sourceScaleX = Math.abs(source.scale.x) || 1;
+          const sourceScaleY = Math.abs(source.scale.y) || 1;
+          const sourceSign = Math.sign(source.scale.x) || 1;
+          const poseScale = ghostSample.posture === 'hang' ? .84
+            : ghostSample.posture === 'raft' ? .88 : .78;
+          const ghostOpacity = (reducedMotion ? .42 : .50) * ghostFade * ghostPulse;
+          const rimOpacity = (reducedMotion ? .10 : .16) * ghostFade * ghostPulse;
+          ghostArtwork.material.map = map;
+          ghostArtwork.material.needsUpdate = true;
+          ghostArtwork.center.copy(source.center);
+          ghostArtwork.material.rotation = source.material.rotation
+            + (reducedMotion ? 0 : Math.sin(time * 3.2) * .025);
+          ghostArtwork.position.copy(source.position);
+          ghostArtwork.scale.set(sourceSign * sourceScaleX * poseScale, sourceScaleY * poseScale, 1);
+          ghostArtwork.material.opacity = ghostOpacity;
+          ghostArtwork.visible = true;
+          ghostRim.material.map = map;
+          ghostRim.material.needsUpdate = true;
+          ghostRim.center.copy(source.center);
+          ghostRim.material.rotation = ghostArtwork.material.rotation;
+          ghostRim.position.copy(source.position);
+          ghostRim.scale.set(sourceSign * sourceScaleX * poseScale * 1.075, sourceScaleY * poseScale * 1.075, 1);
+          ghostRim.material.opacity = rimOpacity;
+          ghostRim.visible = true;
+        } else {
+          ghostArtwork.visible = false;
+          ghostRim.visible = false;
+        }
+        ghostShadow.material.opacity = (reducedMotion ? .08 : .12) * ghostFade;
+        ghostShadow.scale.setScalar((ghostSample.posture === 'slide' ? .78 : .92) * ghostPulse);
+      } else {
+        ghostGroup.visible = false;
+        ghostArtwork.visible = false;
+        ghostRim.visible = false;
+        chaseArtwork.visible = false;
+      }
       menuGlow.visible = hero;
       menuContrast.visible = hero;
       if (hero) {
@@ -2203,6 +2544,8 @@ export function createView(canvas) {
           }
           const pickup = PICKUPS.includes(object.type);
           for (const child of item.children) {
+            if (child.userData.bridgeCollapseMarker)
+              child.visible = Boolean(object.bridgeCollapse);
             if (child.userData.ziplineSign)
               child.visible=ziplineSignVisible(object,distance);
             // The gantry's center support sits directly behind the hanging
@@ -2216,7 +2559,7 @@ export function createView(canvas) {
             }
           }
           item.position.set(
-            LANES[object.lane],
+            object.movingGate ? movingGateX(object, distance) : LANES[object.lane],
             pickup
               ? (object.airborne ? ZIPLINE_HEIGHT + 1.1 : 1.1) +
                   (reducedMotion ? 0 : Math.sin(time * 3 + object.id) * 0.12) +
@@ -2252,6 +2595,17 @@ export function createView(canvas) {
             frame.z - across * Math.sin(frame.yaw));
           item.rotation.x = pickup ? 0 : frame.pitch;
           item.rotation.y += frame.yaw;
+          if (object.movingGate) {
+            // A small, eased bank sells the sweep while preserving the road
+            // tangent. It is frozen in reduced-motion mode and never feeds
+            // back into the collision position.
+            item.rotation.z = reducedMotion ? 0 : Math.sin(time * 6 + object.id * .3) * .035;
+            const beacon = item.children.find(child => child.userData.movingGateBeacon);
+            if (beacon?.material) {
+              const pulse = reducedMotion ? .82 : .72 + .28 * (.5 + .5 * Math.sin(time * 7 + object.id));
+              beacon.material.emissiveIntensity = .25 + pulse * .5;
+            }
+          }
           item.rotation.order = 'YXZ';
           if (scenePickupBadge?.object === object) scenePickupBadgeItem = item;
           if (object.type === 'corner-left' || object.type === 'corner-right') {
@@ -2322,7 +2676,12 @@ export function createView(canvas) {
               const depthFade = 1 - THREE.MathUtils.clamp((approach - 2) / 40, 0, 1);
               const glintPulse = .5 + .5 * Math.sin(time * 3.4 + (Number(object.id) || 0) * .73);
               const glintScale = (.026 + glintPulse * .034) * (.72 + depthFade * .28);
+              // Optional branch bones carry a warm/mint accent that matches
+              // the route choice card, making the reward line distinguishable
+              // from ordinary center-lane bones without changing its hitbox.
               flashColor.set('#fff0b7');
+              if (object.routeTrail)
+                flashColor.set(object.routeKind === 'challenge' ? '#f0b762' : '#a7e59e');
               flashMatrix.makeScale(glintScale, glintScale * 1.7, glintScale);
               flashMatrix.setPosition(item.position.x, item.position.y + .28 + glintPulse * .04, item.position.z + .015);
               flashes.setColorAt(sparkCount, flashColor);
@@ -2361,12 +2720,12 @@ export function createView(canvas) {
             // row never turns into a second overlay. The existing flash batch
             // keeps this at zero extra geometry or texture uploads.
             const approach = object.at - distance;
-            const solidHazard = ['rock', 'log', 'arch', 'branch', 'gate'].includes(object.type);
+            const solidHazard = ['rock', 'log', 'arch', 'branch', 'gate'].includes(object.type) || object.type === 'moving-gate';
             if (solidHazard && approach > 5 && approach < 32 && sparkCount < 192) {
               const urgency = 1 - THREE.MathUtils.clamp((approach - 5) / 27, 0, 1);
               const pulse = .5 + .5 * Math.sin(time * 3.1 + (Number(object.id) || 0) * .67);
               const cueScale = (.018 + urgency * .036) * (.78 + pulse * .22);
-              const overhead = ['arch', 'branch', 'gate'].includes(object.type);
+              const overhead = ['arch', 'branch', 'gate', 'moving-gate'].includes(object.type);
               flashColor.set(overhead ? '#8ff2d2' : '#ffd38b');
               flashMatrix.makeScale(cueScale * 1.7, cueScale * .42, cueScale * .56);
               flashMatrix.setPosition(

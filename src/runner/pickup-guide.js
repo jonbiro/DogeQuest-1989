@@ -6,7 +6,10 @@ export const PICKUP_DEFINITIONS = Object.freeze({
     label: 'Magnet',
     icon: '🧲',
     effect: 'Pulls nearby bones',
-    detail: 'Collect to draw ground bones toward Mochi for 10 seconds.',
+    // The duration grows with the Magnet upgrade (and the opening perk has
+    // its own timer), so avoid promising a fixed ten seconds in the guide.
+    // The live chip and pickup receipt show the exact timer for this run.
+    detail: 'Collect to draw ground bones toward Mochi; the live timer shows how long it lasts.',
     color: '#8ff2e7',
   }),
   shield: Object.freeze({

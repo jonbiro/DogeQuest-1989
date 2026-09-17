@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {URL} from 'node:url';
 import {PICKUP_DEFINITIONS, PICKUP_TYPES, pickupBadgeFor, pickupGuideFor, pickupNoticeFor} from '../src/runner/pickup-guide.js';
+
+const appSource = readFileSync(new URL('../src/runner/app.js', import.meta.url), 'utf8');
+const shellSource = readFileSync(new URL('../runner/index.html', import.meta.url), 'utf8');
 
 test('every special pickup has a plain-language effect and distinct visual identity', () => {
   assert.equal(PICKUP_TYPES.length, 8);
@@ -13,6 +18,17 @@ test('every special pickup has a plain-language effect and distinct visual ident
   }
   assert.equal(PICKUP_DEFINITIONS.double.label, 'Bone doubler');
   assert.match(PICKUP_DEFINITIONS.double.effect, /2× bone points/);
+  assert.match(PICKUP_DEFINITIONS.magnet.detail, /live timer/i,
+    'the magnet guide must not promise a fixed duration when upgrades can extend it');
+});
+
+test('the help key is rebuilt from the pickup definitions instead of drifting in the HTML shell', () => {
+  assert.match(shellSource, /id="pickup-key-grid"/);
+  assert.match(appSource, /import \{PICKUP_DEFINITIONS,PICKUP_TYPES,pickupGuideFor/);
+  assert.match(appSource, /function syncPickupKey\(\)/);
+  assert.match(appSource, /const items = PICKUP_TYPES\.map\(type =>/);
+  assert.match(appSource, /item\.setAttribute\('aria-label', `\$\{definition\.label\}/);
+  assert.match(appSource, /syncPickupKey\(\);/);
 });
 
 test('upcoming pickup guide names the effect and the lane without taking over urgent play', () => {

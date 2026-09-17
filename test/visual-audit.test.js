@@ -8,8 +8,14 @@ const css = readFileSync(new URL('../src/runner/ui.css', import.meta.url), 'utf8
 const artwork = readFileSync(new URL('../src/runner/puppy-artwork.js', import.meta.url), 'utf8');
 const shell = readFileSync(new URL('../runner/index.html', import.meta.url), 'utf8');
 const visibility = readFileSync(new URL('../src/runner/visibility.js', import.meta.url), 'utf8');
+const laneTarget = readFileSync(new URL('../src/runner/lane-target.js', import.meta.url), 'utf8');
 
 test('clubhouse surfaces expose stable hooks for their intentional layouts', () => {
+  assert.match(shell, /id="streak-preview"/);
+  assert.match(shell, /id="streak-help"/);
+  assert.match(app, /adventureStreakSummary\(saved\.adventureStreak\)/);
+  assert.match(app, /receipt\.adventureStreak/);
+  assert.match(css, /\.trail-tag \.streak-preview/);
   assert.match(app, /content\.dataset\.category = clubhouseCategory/);
   assert.match(app, /masteryIntro\.className='mastery-intro'/);
   assert.match(app, /section\.dataset\.complete=String/);
@@ -19,6 +25,20 @@ test('clubhouse surfaces expose stable hooks for their intentional layouts', () 
 });
 
 test('the audit CSS keeps passport, prizes, help and focus treatments readable', () => {
+  assert.match(app, /className='upgrade-preview'/);
+  assert.match(app, /NOW \$\{upgradeEffect\(key, level\)\}/);
+  assert.match(app, /className = 'upgrade-preview-rail'/);
+  assert.match(app, /pip\.dataset\.next = String\(index === level \+ 1\)/);
+  assert.match(css, /\.upgrade-copy \.upgrade-preview/);
+  // The preview rail contains nested icon/pip spans. A broad `.upgrade-copy
+  // span` rule forced those children back to block layout, stacking the three
+  // level pips vertically on phones. Keep only the actual benefit span blocky
+  // so the rail can remain flex/grid-driven.
+  assert.match(css, /\.upgrade-copy > span:not\(\.upgrade-preview-rail\)/);
+  assert.match(css, /\.upgrade-preview-rail\s*\{\s*display: flex/);
+  assert.match(css, /\.upgrade-preview-pips\s*\{\s*display: grid/);
+  assert.match(css, /\.upgrade-preview-rail\s*\{/);
+  assert.match(css, /\.upgrade-preview-pips i\[data-filled="true"\]/);
   assert.match(css, /#overlay\[data-kind="kennel"\] \.modal-content #collection\[data-category="passport"\]/);
   assert.match(css, /#overlay\[data-kind="kennel"\] \.modal-content #collection\[data-category="prizes"\]/);
   assert.match(css, /grid-template-columns:\s*minmax\(104px, 108px\)/);
@@ -57,16 +77,30 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(css, /#mission-hud\[data-dock="mission-summary"\]\[data-posture="jump"\],/);
   assert.match(css, /#mission-hud\[data-dock="mission-summary"\]\[data-posture="jump"\][\s\S]*?visibility: hidden;/);
   assert.match(css, /#mission-hud\[data-dock="mission-summary"\]\[data-posture="jump"\][\s\S]*?transform: none;/);
+  assert.match(css, /@media \(max-width: 700px\) and \(orientation: portrait\)[\s\S]*?\.power-chip small \{\s*display: block;[\s\S]*?text-overflow: ellipsis;/);
   assert.match(app, /setData\('mission-hud', 'posture', posture\)/);
   assert.match(css, /@media \(min-width: 701px\) \{\s*\.trail-tag \{ margin-top: 18px; \}/);
   assert.match(css, /#game\[data-state="menu"\] footer > span \{ display: none; \}/);
   assert.match(css, /#game\[data-state="menu"\] footer \{ justify-content: flex-end; pointer-events: none; \}/);
   assert.match(css, /#game\[data-state="menu"\] footer \.text-button \{ pointer-events: auto; \}/);
+  assert.match(css, /\.menu \{[\s\S]*?scrollbar-width: thin;/);
+  assert.match(css, /scrollbar-color: #a9d9d04d transparent;/);
+  assert.match(css, /\.menu::-webkit-scrollbar \{ width: 4px; \}/);
+  assert.match(css, /\.menu::-webkit-scrollbar-track \{ background: transparent; \}/);
   assert.match(app, /setText\('mission-label-mobile', missionSummaryLabel/);
+  assert.match(app, /\['warmup', 'escalation', 'spectacle', 'recovery'\]\.includes\(encounter\.phase\)/);
   assert.match(app, /pickupNoticeFor\(run\)/);
   assert.match(app, /setData\('pickup-guide', 'state', notice \? 'recent' : 'upcoming'\)/);
+  assert.match(app, /setAttribute\('bone-counter', 'aria-label', `Bones collected: \$\{boneCount\}`\)/);
   assert.match(app, /const busy = Number\(run\?\.y\) > 0\.1/);
   assert.match(app, /Boolean\(run\?\.zipline \|\| run\?\.raft \|\| run\?\.minecart\)/);
+  const minecart = readFileSync(new URL('../src/runner/minecart.js', import.meta.url), 'utf8');
+  assert.match(minecart, /minecartChoiceFor/);
+  assert.match(minecart, /minecartChoice === 'gem'/);
+  assert.match(minecart, /rewardLane/);
+  assert.match(minecart, /Gem shortcut/);
+  assert.match(readFileSync(new URL('../src/runner/guidance.js', import.meta.url), 'utf8'), /CART · CHOOSE GEM OR BONES/);
+  assert.match(readFileSync(new URL('../src/runner/power-hud.js', import.meta.url), 'utf8'), /CART · GEM \/ BONE/);
   assert.match(css, /#overlay\[data-kind="help"\] \.basic-moves img \{ grid-column: 1; grid-row: 1 \/ span 3; width: 84px; height: 70px;/);
   assert.match(css, /@media \(max-width: 430px\) and \(orientation: portrait\)[\s\S]*?#overlay\[data-kind="help"\] \.basic-moves \{\s*grid-template-columns: repeat\(3, minmax\(0, 1fr\)\)/);
   assert.match(css, /#overlay\[data-kind="help"\] \.basic-moves p \{\s*display: grid;\s*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
@@ -85,6 +119,20 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(css, /@keyframes lane-cue-pulse/);
   assert.match(app, /updateActionCueControls\(traversalButtons, textOf\('cue'\)\)/);
   assert.match(app, /updateLaneCueControls\(turnButtons, textOf\('cue'\)\)/);
+  assert.match(shell, /id="encounter-progress" max="1" value="0" hidden/);
+  assert.match(shell, /id="pickup-receipt" hidden/);
+  assert.match(shell, /id="run-next-hint" hidden/);
+  assert.match(app, /function renderPickupReceipt\(run\)/);
+  assert.match(app, /pickupReceiptItems\(run\)/);
+  assert.match(app, /nextHintNode.textContent = nextHint/);
+  assert.match(app, /setProperty\('run-breakdown', 'open', false\)/);
+  assert.match(app, /const runBreakdown = \$\("run-breakdown"\);\s*runBreakdown\?\.addEventListener/);
+  assert.doesNotMatch(app, /\$\("run-highlights"\)\.textContent = nextMasteryHint/);
+  assert.match(app, /meter\.value = Math\.max\(0, Math\.min\(1, Number\(encounter\.progress\) \|\| 0\)\)/);
+  assert.match(css, /#encounter-progress\s*\{[\s\S]*?height: 3px/);
+  assert.match(css, /#encounter-beat\[data-phase="escalation"\]/);
+  assert.match(css, /#encounter-progress\[data-phase="spectacle"\]/);
+  assert.match(css, /#encounter-progress\[data-phase="escalation"\]/);
   assert.match(app, /boneStreakLabel\(run\.combo\)/);
   assert.match(app, /cleanFlowLabel\(run\.cleanStreak\)/);
   assert.match(app, /setProperty\('streak-progress', 'value', streak\.progress\)/);
@@ -102,6 +150,12 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(css, /@keyframes streak-pop/);
   assert.match(readFileSync(new URL('../src/runner/traversal-controls.js', import.meta.url), 'utf8'), /export function updateActionCueControls/);
   assert.match(readFileSync(new URL('../src/runner/traversal-controls.js', import.meta.url), 'utf8'), /export function updateLaneCueControls/);
+  assert.match(laneTarget, /export function laneTargetFor/);
+  assert.match(laneTarget, /source: recommendation\?\.source \?\? 'steady'/);
+  assert.match(readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8'), /laneTargetGroup\.name = 'runner-lane-targets'/);
+  assert.match(readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8'), /lane-target-pad-/);
+  assert.match(readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8'), /lane-target-arrow-/);
+  assert.match(readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8'), /const laneInfo = laneTargetFor\(run\)/);
 });
 
 test('painted puppy poses retain authored color and ease frame transforms', () => {
@@ -142,6 +196,9 @@ test('the live runner never layers Mochi’s legacy polygon rig under the painti
   const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
   assert.match(render, /mochi\.group\.visible = false/);
   assert.doesNotMatch(render, /mochi\.group\.visible = isMochi/);
+  assert.match(render, /ghostArtwork\.name = 'painted-puppy-ghost'/);
+  assert.match(render, /rasterArtwork\.spriteForPose\?\.\(ghostSample\.posture\)/);
+  assert.doesNotMatch(render, /const ghostPart = \(geometry, material/);
   assert.match(render, /camera\.fov=48;camera\.aspect = 1; camera\.position\.set\(0,2\.0,3\.1\)/);
 });
 
@@ -157,10 +214,10 @@ test('the mobile menu keeps the featured puppy visible without competing with th
   assert.match(render, /const mobileHero = hero && camera\.aspect < \.85/);
   assert.match(render, /const compactHero = mobileHero && canvas\.clientHeight <= 600/);
   assert.match(render, /const heroOffsetX = mobileHero \? \(compactHero \? \.58 : -\.04\) : 0/);
-  assert.match(render, /const heroOffsetY = mobileHero \? \(compactHero \? \.44 : -\.20\) : 0/);
+  assert.match(render, /const heroOffsetY = mobileHero \? \(compactHero \? \.44 : \.56\) : 0/);
   assert.match(render, /const heroVisualX = heroOffsetX \+ \(mobileHero \? \(compactHero \? \.22 : \.26\) : 0\)/);
   assert.match(render, /const heroVisualY = heroOffsetY \+ \(mobileHero \? \(compactHero \? \.08 : -\.01\) : 0\)/);
-  assert.match(render, /if \(hero\) dog\.scale\.multiplyScalar\(compactHero \? 1\.08 : camera\.aspect < \.85 \? 1\.16 : 1\.09\)/);
+  assert.match(render, /if \(hero\) dog\.scale\.multiplyScalar\(compactHero \? 1\.08 : camera\.aspect < \.85 \? 1\.10 : 1\.09\)/);
   assert.match(render, /menuGlow\.position\.set\(heroVisualX, 1\.08 \+ heroVisualY, -\.08\)/);
   assert.match(render, /if \(entry\.gateway && camera\.aspect < \.85\)/);
   assert.match(render, /instanceMatrix\.scale\(bendScale\.set\(\.78, \.78, \.78\)\)/);
@@ -278,6 +335,11 @@ test('destinations carry a low-cost atmospheric signature without lane clutter',
 test('each destination adds a sparse, named silhouette instead of only recoloring scenery', () => {
   const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
   const areas = readFileSync(new URL('../src/runner/areas.js', import.meta.url), 'utf8');
+  assert.match(render, /const areaLighting=AREAS\.map/);
+  assert.match(render, /hemisphere\.groundColor\.copy\(hemisphereGroundColor\)/);
+  assert.match(render, /sun\.intensity=THREE\.MathUtils\.lerp/);
+  assert.match(areas, /lighting:\{sky:'#ddfff5',ground:'#173d35'/);
+  assert.match(areas, /lighting:\{sky:'#d0d0ff',ground:'#191a36'/);
   assert.match(render, /signature: AREAS\[area\]\.landmark/);
   assert.match(render, /for \(let area = 0; area < AREAS\.length; area\+\+\) for \(let variant = 0; variant < 4; variant\+\+\)/);
   assert.match(render, /variant: 3/);

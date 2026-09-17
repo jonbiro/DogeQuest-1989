@@ -20,6 +20,65 @@ export const allowedEntries = [
   "runner",
 ];
 
+// Keep the release payload in lockstep with the artwork references that the
+// runner actually uses. The source directory also contains a few superseded
+// paintings kept for local art iteration; copying the whole folder would
+// silently ship those dead files to every phone. The verifier still checks
+// that every referenced painting is present in this list and in dist.
+export const PUPPY_ASSET_FILES = Object.freeze([
+  'puppies/biscuit.webp',
+  'puppies/biscuit-run-front.webp',
+  'puppies/biscuit-run-alt.webp',
+  'puppies/biscuit-jump.webp',
+  'puppies/biscuit-jump-alt.webp',
+  'puppies/biscuit-slide.webp',
+  'puppies/biscuit-slide-alt.webp',
+  'puppies/biscuit-turn.webp',
+  'puppies/biscuit-turn-alt.webp',
+  'puppies/biscuit-hang.webp',
+  'puppies/biscuit-hang-alt.webp',
+  'puppies/biscuit-raft.webp',
+  'puppies/mochi.webp',
+  'puppies/mochi-run-side.webp',
+  'puppies/mochi-run-side-alt.webp',
+  'puppies/mochi-jump.webp',
+  'puppies/mochi-jump-alt.webp',
+  'puppies/mochi-slide.webp',
+  'puppies/mochi-slide-alt.webp',
+  'puppies/mochi-turn.webp',
+  'puppies/mochi-turn-alt.webp',
+  'puppies/mochi-hang.webp',
+  'puppies/mochi-hang-alt.webp',
+  'puppies/mochi-away-v3.webp',
+  'puppies/mochi-away-v3-alt.webp',
+  'puppies/mochi-raft.webp',
+  'puppies/pepper.webp',
+  'puppies/pepper-run-front.webp',
+  'puppies/pepper-run-alt.webp',
+  'puppies/pepper-jump.webp',
+  'puppies/pepper-jump-alt.webp',
+  'puppies/pepper-slide.webp',
+  'puppies/pepper-slide-alt.webp',
+  'puppies/pepper-turn.webp',
+  'puppies/pepper-turn-alt.webp',
+  'puppies/pepper-hang.webp',
+  'puppies/pepper-hang-alt.webp',
+  'puppies/pepper-raft.webp',
+  'puppies/luna.webp',
+  'puppies/luna-run-front.webp',
+  'puppies/luna-run-alt.webp',
+  'puppies/luna-jump.webp',
+  'puppies/luna-jump-alt.webp',
+  'puppies/luna-slide.webp',
+  'puppies/luna-slide-alt.webp',
+  'puppies/luna-turn.webp',
+  'puppies/luna-turn-alt.webp',
+  'puppies/luna-hang.webp',
+  'puppies/luna-hang-alt.webp',
+  'puppies/luna-raft.webp',
+]);
+const puppyAssetSet = new Set(PUPPY_ASSET_FILES);
+
 function assertSafeDistDirectory() {
   if (
     path.basename(distDirectory) !== "dist" ||
@@ -30,6 +89,13 @@ function assertSafeDistDirectory() {
 }
 
 async function copyEntry(source, destination) {
+  const relativePath = path.relative(projectRoot, source).split(path.sep).join('/');
+  // Keep authored source art available for future iteration, but do not copy
+  // superseded puppy paintings into the public release. Returning early here
+  // also avoids creating an empty destination entry for an orphan file.
+  if (relativePath.startsWith('runner/puppies/') && !puppyAssetSet.has(relativePath.slice('runner/'.length))) {
+    return;
+  }
   const entry = await lstat(source);
 
   if (entry.isSymbolicLink()) {
@@ -110,56 +176,7 @@ export async function build() {
     'tilt-controls.js',
     'style.css',
     '../favicon.svg',
-    'puppies/biscuit.webp',
-    'puppies/biscuit-run-front.webp',
-    'puppies/biscuit-run-alt.webp',
-    'puppies/biscuit-jump.webp',
-    'puppies/biscuit-jump-alt.webp',
-    'puppies/biscuit-slide.webp',
-    'puppies/biscuit-slide-alt.webp',
-    'puppies/biscuit-turn.webp',
-    'puppies/biscuit-turn-alt.webp',
-    'puppies/biscuit-hang.webp',
-    'puppies/biscuit-hang-alt.webp',
-    'puppies/biscuit-raft.webp',
-    'puppies/mochi.webp',
-    'puppies/mochi-run-side.webp',
-    'puppies/mochi-run-side-alt.webp',
-    'puppies/mochi-jump.webp',
-    'puppies/mochi-jump-alt.webp',
-    'puppies/mochi-slide.webp',
-    'puppies/mochi-slide-alt.webp',
-    'puppies/mochi-turn.webp',
-    'puppies/mochi-turn-alt.webp',
-    'puppies/mochi-hang.webp',
-    'puppies/mochi-hang-alt.webp',
-    'puppies/mochi-away-v3.webp',
-    'puppies/mochi-away-v3-alt.webp',
-    'puppies/mochi-raft.webp',
-    'puppies/pepper.webp',
-    'puppies/pepper-run-front.webp',
-    'puppies/pepper-run-alt.webp',
-    'puppies/pepper-jump.webp',
-    'puppies/pepper-jump-alt.webp',
-    'puppies/pepper-slide.webp',
-    'puppies/pepper-slide-alt.webp',
-    'puppies/pepper-turn.webp',
-    'puppies/pepper-turn-alt.webp',
-    'puppies/pepper-hang.webp',
-    'puppies/pepper-hang-alt.webp',
-    'puppies/pepper-raft.webp',
-    'puppies/luna.webp',
-    'puppies/luna-run-front.webp',
-    'puppies/luna-run-alt.webp',
-    'puppies/luna-jump.webp',
-    'puppies/luna-jump-alt.webp',
-    'puppies/luna-slide.webp',
-    'puppies/luna-slide-alt.webp',
-    'puppies/luna-turn.webp',
-    'puppies/luna-turn-alt.webp',
-    'puppies/luna-hang.webp',
-    'puppies/luna-hang-alt.webp',
-    'puppies/luna-raft.webp',
+    ...PUPPY_ASSET_FILES,
   ]) {
     const sha256=createHash('sha256').update(await readFile(path.join(distDirectory,'runner',file))).digest('hex');
     const url=['game.js','style.css'].includes(file)?`${file}?v=${sha256.slice(0,16)}`:file;

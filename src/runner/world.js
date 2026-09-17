@@ -19,10 +19,12 @@ import { ZIPLINE_FIRST, ZIPLINE_PERIOD, ZIPLINE_LENGTH, ZIPLINE_HEIGHT } from ".
 import {courseAt, COURSE_LENGTH, COURSE_RECOVERY, advanceCourse} from './courses.js';
 import {REGION_LENGTH,regionAt} from './regions.js';
 import {AREA_LENGTH,areaAt,areaGameplayAt} from './areas.js';
+import {encounterFor,recoveryUntilFor,encounterPhaseAt} from './encounter-director.js';
 import {raftIntersecting,raftEncounter,advanceRaft,moveRaft} from './rafts.js';
 import {
   MINECART_FIRST,
   MINECART_PERIOD,
+  MINECART_CHOICE_VERSION,
   minecartByIndex,
   minecartIntersecting,
   minecartEncounter,
@@ -30,28 +32,66 @@ import {
   moveMinecart,
 } from './minecart.js';
 import {
+  MOVING_GATE_FIRST,
+  MOVING_GATE_PERIOD,
+  movingGateByIndex,
+  movingGateEncounter,
+  movingGateIntersecting,
+  movingGateX,
+} from './moving-gate.js';
+import {
+  BRIDGE_COLLAPSE_FIRST,
+  BRIDGE_COLLAPSE_PERIOD,
+  bridgeCollapseByIndex,
+  bridgeCollapseIntersecting,
+} from './bridges.js';
+import {
+  DOG_CHASE_FIRST,
+  DOG_CHASE_PERIOD,
+  DOG_CHASE_REWARD,
+  dogChaseByIndex,
+} from './dog-chase.js';
+import {
   TURN_SKILL_REWARD,
   applyTurnInput,
   cornerByIndex,
   cornerIntersecting,
   cornersBetween,
 } from "./turns.js";
+import {routeBranchFor, routeTrailFor} from './route-branch.js';
+import {applyRunModifier} from './run-modifiers.js';
 const SOLID_HAZARDS = ["rock", "log", "arch", "branch", "gate"];
 export const BASE_SLIDE_DURATION = .58;
 export const SLIDE_UPGRADE_DURATION = .07;
-export const HAZARDS = [...SOLID_HAZARDS,"gap"];
+export const HAZARDS = [...SOLID_HAZARDS, "moving-gate", "gap"];
 export const AREA_RELIC_REWARD = 160;
 export const NEAR_MISS_REWARD = 15;
 export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart", 'gift', 'zoomies', 'relic'];
-export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = CURRENT_TRAIL_VERSION) {
+export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = CURRENT_TRAIL_VERSION, modifier = null, options = {}) {
   generatorVersion=supportsTrailVersion(generatorVersion)?generatorVersion:CURRENT_TRAIL_VERSION;
+  const encounterPacing = options?.encounterPacing === true && generatorVersion >= 5;
   const run = {
     seed,
     generatorVersion,
+    // The live app opts current trails into authored warm-up/recovery pacing.
+    // Keeping this explicit lets deterministic unit/replay fixtures compare
+    // historical streams without silently rewriting their opening rows.
+    encounterPacing,
     raftPrototype:generatorVersion>=4,
     // Current prototype trails add a short mine-cart beat after the established
     // river/sky chapters. Versions 1–3 retain their exact object streams.
     minecartPrototype:generatorVersion>=4,
+    // Version five adds a clearly optional scenic gem line to the cart. Keep
+    // version four's object stream intact so existing shared links replay the
+    // same ride they were authored with.
+    minecartChoicePrototype: generatorVersion >= MINECART_CHOICE_VERSION,
+    // The moving-gate chapter is a light timing encounter. It is opt-in for
+    // version four so historical shared trails keep their exact object stream.
+    movingGatePrototype: generatorVersion >= 4,
+    // A friendly chase-pup beat is a version-four presentation/reward chapter.
+    // It has no collision type of its own; the existing lane and bone rules
+    // stay authoritative while the companion leads a short reward line.
+    dogChasePrototype: generatorVersion >= 4,
     random: seededRandom(seed),
     distance: 0,
     time: 0,
@@ -84,6 +124,7 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     invulnerable: 0,
     shield: 0,
     magnet: 0,
+    modifier: null,
     bones: 0,
     combo: 0,
     bestCombo: 0,
@@ -94,17 +135,38 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     clears: 0,
     weaves: 0,
     gifts: 0,
+    // Presentation-only receipt data: the results sheet can explain each
+    // special item without changing score, persistence or seeded generation.
+    pickupCounts: {
+      magnet: 0,
+      shield: 0,
+      gem: 0,
+      double: 0,
+      heart: 0,
+      gift: 0,
+      zoomies: 0,
+      relic: 0,
+    },
     relics: 0,
     relicPoints: 0,
     relicsByArea: Array(6).fill(0),
     score: 0,
     ended: false,
     objects: [],
+    // Keep the established 45m opening so modifier previews and older shared
+    // links see the same seeded start. Quiet warm-up rows take over at later
+    // area boundaries where the director has room to breathe.
     nextRow: 45,
     nextChoice: 350,
     choicePending: null,
     route: null,
     routeChoices: 0,
+    routeTrailBones: 0,
+    routeTrailPoints: 0,
+    // The director also paces current trails. Historical versions stay frozen
+    // below so shared links continue to replay their authored object streams.
+    encounter: null,
+    encounterRecoveryUntil: 0,
     nextCorner: 0,
     turnAttempt: null,
     turns: 0,
@@ -114,12 +176,30 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     ziplines: 0,
     nextMinecart: generatorVersion>=4 ? MINECART_FIRST : Infinity,
     minecart: null,
+    minecartChoice: null,
     minecarts: 0,
+    minecartGemChoices: 0,
+    minecartBoneChoices: 0,
+    nextMovingGate: generatorVersion >= 4 ? MOVING_GATE_FIRST : Infinity,
+    movingGates: 0,
+    nextDogChase: generatorVersion >= 4 ? DOG_CHASE_FIRST : Infinity,
+    dogChaseUpcoming: null,
+    dogChase: null,
+    dogChases: 0,
+    // Collapsing bridges are version-four spectacle beats. They reuse the
+    // proven full-width gap collision, but carry their own metadata so the
+    // renderer, guidance, sound and results can describe the set piece.
+    nextBridgeCollapse: generatorVersion >= 4 ? BRIDGE_COLLAPSE_FIRST : Infinity,
+    bridgeCollapses: 0,
     course: null,
     lastCourseVisit: -1,
     regionalCourses: [0,0,0],
     row: 0,
     lastSafeLane: 1,
+    // The renderer and feedback layer use this to announce a destination
+    // transition once, even when a large restored step crosses the boundary.
+    // It is ephemeral run context and does not affect seeded generation.
+    lastArea: areaAt(0),
     id: 0,
     events: [],
     effects: [],
@@ -150,13 +230,61 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     touchFeedback: '',
     previous: { x: 0, y: 0, distance: 0 },
   };
+  applyRunModifier(run, modifier);
   fillTrack(run);
+  run.encounter = encounterFor(run);
   return run;
 }
 function add(run, type, lane, at) {
   const object = { id: run.id++, type, lane, at, used: false, skillReward:run.route?.kind==="challenge"&&at<run.route.until?60:20 };
   run.objects.push(object);
   return object;
+}
+
+function dogChaseByNext(run) {
+  if (!run?.dogChasePrototype || !Number.isFinite(run.nextDogChase)) return null;
+  const index = Math.round((run.nextDogChase - DOG_CHASE_FIRST) / DOG_CHASE_PERIOD);
+  return dogChaseByIndex(index);
+}
+
+function dogChaseReserved(run, chase) {
+  if (!chase) return true;
+  const start = chase.approach;
+  const end = chase.recovery;
+  const courseOverlap = run.course && run.course.end >= start && run.course.start <= end;
+  const ziplineStart = Number.isFinite(run.nextZipline) ? run.nextZipline : Infinity;
+  const ziplineOverlap = ziplineStart <= end + 45 &&
+    ziplineStart + ZIPLINE_LENGTH + 45 >= start;
+  const choiceOverlap = Number.isFinite(run.nextChoice) &&
+    run.nextChoice >= start - 45 && run.nextChoice <= end + 45;
+  return Boolean(
+    cornerIntersecting(start, end) ||
+    (run.raftPrototype && raftIntersecting(start, end)) ||
+    (run.minecartPrototype && minecartIntersecting(start, end)) ||
+    (run.movingGatePrototype && movingGateIntersecting(start, end)) ||
+    bridgeCollapseIntersecting(start, end) ||
+    courseOverlap || ziplineOverlap || choiceOverlap,
+  );
+}
+
+function scheduleDogChase(run, chase) {
+  if (!chase || dogChaseReserved(run, chase)) return false;
+  // A small, alternating line lets the player chase the companion through the
+  // familiar lanes without adding a new hazard or changing collision timing.
+  const lanes = chase.lane === 1 ? [1, 1, 1, 2, 2, 2, 2] : [0, 0, 0, 1, 1, 1, 1];
+  lanes.forEach((lane, index) => {
+    const bone = add(run, 'bone', lane, chase.start + 10 + index * 10);
+    bone.chasePickup = true;
+    bone.encounter = 'Dog chase';
+  });
+  const gift = add(run, 'gift', lanes.at(-1), chase.end - 8);
+  gift.chasePickup = true;
+  gift.encounter = 'Dog chase';
+  run.dogChaseUpcoming = chase;
+  run.nextRow = chase.recovery + 5;
+  run.nextDogChase = chase.start + DOG_CHASE_PERIOD;
+  run.row++;
+  return true;
 }
 function areaPattern(at, row) {
   const profile = areaGameplayAt(at);
@@ -183,13 +311,66 @@ function areaActionHazard(run, at, row) {
   // proven low-clearance jump for the shared action beat.
   return type==='rock'?'log':type;
 }
+
+function scheduleRouteTrail(run) {
+  if (run.generatorVersion < 4 || !run.route ||
+      !Number.isFinite(run.route.forkAt) || run.route.branchTrailSpawned) return false;
+  // Only routes committed by the current v4 fork carry a fork distance. This
+  // keeps hand-authored fixtures and older restored route objects unchanged.
+  const branch = routeBranchFor(run.route.kind, run.route.forkAt, run.route.until);
+  Object.assign(run.route, {
+    forkAt: branch.forkAt,
+    branchId: run.route.branchId || branch.branchId,
+    branchTitle: run.route.branchTitle || branch.branchTitle,
+    branchDetail: run.route.branchDetail || branch.branchDetail,
+    branchPreview: run.route.branchPreview || branch.branchPreview,
+    branchColor: run.route.branchColor || branch.branchColor,
+    shortcut: Object.hasOwn(run.route, 'shortcut') ? run.route.shortcut : branch.shortcut,
+    trailStart: run.route.trailStart ?? branch.trailStart,
+    trailEnd: run.route.trailEnd ?? branch.trailEnd,
+    trailLanes: run.route.trailLanes ?? branch.trailLanes,
+  });
+  for (const station of routeTrailFor(run.route)) {
+    const bone = add(run, 'bone', station.lane, station.at);
+    bone.routeTrail = true;
+    bone.routeKind = run.route.kind;
+    bone.routeBranchId = run.route.branchId;
+    bone.optional = true;
+    bone.encounter = run.route.branchTitle;
+  }
+  run.route.branchTrailSpawned = true;
+  return true;
+}
 export function fillTrack(run) {
   if (run.practice) return;
-  if(run.choicePending!==null)return;
+  // A chase can fit before a pending fork. Schedule that quiet reward beat
+  // first, then leave the fork's own clear approach untouched. Other pending
+  // choices keep the historical early return so ordinary rows never crowd the
+  // decision gate.
+  if (run.choicePending !== null) {
+    const chase = dogChaseByNext(run);
+    if (chase && run.nextRow >= chase.approach && chase.approach < run.choicePending - 45) {
+      if (scheduleDogChase(run, chase)) return;
+    }
+    return;
+  }
   // Restored fixtures from before the cart rollout may not carry the new
   // scheduler field. Keep those runs deterministic and opt them in only when
   // their generator version explicitly supports carts.
   if (run.minecartPrototype && !Number.isFinite(run.nextMinecart)) run.nextMinecart = MINECART_FIRST;
+  // Restored version-four runs created before the moving-gate rollout may not
+  // carry the scheduler field. Opt them in deterministically without changing
+  // legacy trail versions or manufacturing a gate behind the runner.
+  if (run.movingGatePrototype && !Number.isFinite(run.nextMovingGate)) run.nextMovingGate = MOVING_GATE_FIRST;
+  // Older restored version-four sessions may not carry the chase scheduler.
+  // Opt them into the first deterministic beat without changing legacy trails.
+  if (run.dogChasePrototype && !Number.isFinite(run.nextDogChase)) run.nextDogChase = DOG_CHASE_FIRST;
+  // Older restored version-four sessions may not carry the bridge scheduler.
+  // Opt them into the first deterministic beat without changing legacy trail
+  // versions or manufacturing a collapse behind the runner.
+  if (run.generatorVersion >= 4 && !Number.isFinite(run.nextBridgeCollapse))
+    run.nextBridgeCollapse = BRIDGE_COLLAPSE_FIRST;
+  if (run.route && run.generatorVersion >= 4) scheduleRouteTrail(run);
   // Mark upcoming turns independently from obstacle rows so the renderer can
   // telegraph them early even when generation resumes after a route choice.
   for (const corner of cornersBetween(run.distance - 8, run.distance + 170)) {
@@ -245,10 +426,105 @@ export function fillTrack(run) {
       add(run, 'minecart-start', 1, minecart.start);
       add(run, 'minecart-end', 1, minecart.end);
       const challenge = run.route?.kind === 'challenge' && minecart.start < run.route.until;
-      for (const spec of minecartEncounter(minecart, challenge))
+      for (const spec of minecartEncounter(minecart, challenge, run.minecartChoicePrototype))
         Object.assign(add(run, spec.type, spec.lane, spec.at), spec);
       run.nextRow = minecart.recovery + 5;
       run.nextMinecart = minecart.start + MINECART_PERIOD;
+      continue;
+    }
+    const movingGate = run.movingGatePrototype && Number.isFinite(run.nextMovingGate)
+      ? movingGateByIndex(Math.round((run.nextMovingGate - MOVING_GATE_FIRST) / MOVING_GATE_PERIOD))
+      : null;
+    // Moving gates reserve their approach and recovery just like a ride. If a
+    // course, corner or traversal beat already owns that space, skip this
+    // gate and let the next deterministic one land in a clean chapter.
+    if (movingGate && run.nextRow > movingGate.recovery) {
+      run.nextMovingGate = movingGate.start + MOVING_GATE_PERIOD;
+      continue;
+    }
+    if (movingGate && run.nextRow >= movingGate.approach) {
+      const courseOverlap = run.course && run.course.end >= movingGate.approach &&
+        run.course.start <= movingGate.recovery;
+      // A cable owns its whole approach, aerial line and landing. Do not let
+      // a moving gate be generated into that space; otherwise a gate could
+      // sweep through a puppy that is safely hanging from the handle.
+      const ziplineStart = Number.isFinite(run.nextZipline) ? run.nextZipline : Infinity;
+      const ziplineOverlap = ziplineStart <= movingGate.recovery + 45 &&
+        ziplineStart + ZIPLINE_LENGTH + 45 >= movingGate.approach;
+      const reserved = cornerIntersecting(movingGate.approach, movingGate.recovery) ||
+        (run.raftPrototype && raftIntersecting(movingGate.approach, movingGate.recovery)) ||
+        (run.minecartPrototype && minecartIntersecting(movingGate.approach, movingGate.recovery)) ||
+        courseOverlap || ziplineOverlap;
+      if (!reserved) {
+        const challenge = run.route?.kind === 'challenge' && movingGate.start < run.route.until;
+        for (const spec of movingGateEncounter(movingGate, challenge))
+          Object.assign(add(run, spec.type, spec.lane, spec.at), spec);
+        run.nextRow = movingGate.recovery + 5;
+        run.nextMovingGate = movingGate.start + MOVING_GATE_PERIOD;
+        continue;
+      }
+      run.nextMovingGate = movingGate.start + MOVING_GATE_PERIOD;
+      continue;
+    }
+    const bridgeCollapse = run.generatorVersion >= 4 && Number.isFinite(run.nextBridgeCollapse)
+      ? bridgeCollapseByIndex(Math.round((run.nextBridgeCollapse - BRIDGE_COLLAPSE_FIRST) / BRIDGE_COLLAPSE_PERIOD))
+      : null;
+    // The bridge beat occupies one paving tile, but its visual collapse starts
+    // before the gap and settles after it. Keep the complete window free of
+    // turns, rides, courses, forks and ziplines so the required jump is never
+    // hidden behind another authored action.
+    if (bridgeCollapse && bridgeCollapse.at < run.distance - 1e-6) {
+      run.nextBridgeCollapse = bridgeCollapse.at + BRIDGE_COLLAPSE_PERIOD;
+      continue;
+    }
+    if (bridgeCollapse && run.nextRow >= bridgeCollapse.approach) {
+      const courseOverlap = run.course && run.course.end >= bridgeCollapse.approach &&
+        run.course.start <= bridgeCollapse.recovery;
+      const ziplineStart = Number.isFinite(run.nextZipline) ? run.nextZipline : Infinity;
+      const ziplineOverlap = ziplineStart <= bridgeCollapse.recovery + 45 &&
+        ziplineStart + ZIPLINE_LENGTH + 45 >= bridgeCollapse.approach;
+      const choiceOverlap = Number.isFinite(run.nextChoice) &&
+        run.nextChoice >= bridgeCollapse.approach - 45 &&
+        run.nextChoice <= bridgeCollapse.recovery + 45;
+      const reserved = cornerIntersecting(bridgeCollapse.approach, bridgeCollapse.recovery) ||
+        (run.raftPrototype && raftIntersecting(bridgeCollapse.approach, bridgeCollapse.recovery)) ||
+        (run.minecartPrototype && minecartIntersecting(bridgeCollapse.approach, bridgeCollapse.recovery)) ||
+        (run.movingGatePrototype && movingGateIntersecting(bridgeCollapse.approach, bridgeCollapse.recovery)) ||
+        courseOverlap || ziplineOverlap || choiceOverlap;
+      if (!reserved) {
+        for (const lane of [0, 1, 2]) {
+          const gap = add(run, 'gap', lane, bridgeCollapse.at);
+          gap.bridgeCollapse = true;
+          gap.bridgeIndex = bridgeCollapse.index;
+          gap.bridgeStart = bridgeCollapse.bridgeStart;
+          gap.bridgeEnd = bridgeCollapse.bridgeEnd;
+          gap.encounter = 'Collapsing bridge';
+        }
+        run.nextRow = bridgeCollapse.recovery + 5;
+        run.nextBridgeCollapse = bridgeCollapse.at + BRIDGE_COLLAPSE_PERIOD;
+        run.row++;
+        continue;
+      }
+      // A ride or fork owns this bridge's traversal window. Leave the bridge
+      // intact and advance to the next alternating bridge rather than creating
+      // a decorative collapse without a matching jump gap.
+      run.nextBridgeCollapse = bridgeCollapse.at + BRIDGE_COLLAPSE_PERIOD;
+      continue;
+    }
+    const dogChase = dogChaseByNext(run);
+    // The companion owns a short, clean reward window. It is deliberately
+    // checked after bridges and before the next ride so a spectacular action
+    // always wins when two authored schedules land close together.
+    if (dogChase && dogChase.start < run.distance - 1e-6) {
+      run.nextDogChase = dogChase.start + DOG_CHASE_PERIOD;
+      continue;
+    }
+    if (dogChase && run.nextRow >= dogChase.approach) {
+      if (scheduleDogChase(run, dogChase)) continue;
+      // A corner, ride, bridge, course or fork owns this space. Advance to the
+      // next deterministic chase instead of inserting a companion into a
+      // busy action window.
+      run.nextDogChase = dogChase.start + DOG_CHASE_PERIOD;
       continue;
     }
     if (run.nextRow >= run.nextZipline - 45) {
@@ -283,6 +559,7 @@ export function fillTrack(run) {
           run.nextChoice,
           run.nextZipline,
           Number.isFinite(run.nextMinecart) ? run.nextMinecart : Infinity,
+          Number.isFinite(run.nextMovingGate) ? run.nextMovingGate : Infinity,
         ) - 45 &&
         // A landscape transition is not a gameplay hazard. Prototype courses
         // may finish across it; actual encounter reservations still take priority.
@@ -290,6 +567,7 @@ export function fillTrack(run) {
         !cornerIntersecting(start, sequenceEnd) &&
         (!run.raftPrototype||!raftIntersecting(start,sequenceEnd)) &&
         (!run.minecartPrototype||!minecartIntersecting(start,sequenceEnd)) &&
+        (!run.movingGatePrototype||!movingGateIntersecting(start,sequenceEnd)) &&
         (!run.route || start >= run.route.until || sequenceEnd - COURSE_RECOVERY <= run.route.until)) {
       const region=regionAt(start);
       const ordinal=run.raftPrototype?(run.courseOrdinals?.[region]??0):null;
@@ -302,7 +580,16 @@ export function fillTrack(run) {
         for (let lane = 0; lane < 3; lane++)
           if (run.course.scenic ? lane===beat.blockedLane : lane !== beat.safeLane) {
             const obstacle=add(run, beat.type, lane, beat.at);
-            if(!run.course.scenic)obstacle.courseRegion=run.course.region;
+            if(!run.course.scenic) {
+              obstacle.courseRegion=run.course.region;
+              // Version four can carry the authored destination lane so the
+              // visual strip and restored runs can explain a weave directly.
+              // Keep versions 1–3 byte-for-byte compatible: their object
+              // streams are part of the shared-trail contract.
+              if (run.generatorVersion >= 4) obstacle.safeLane=beat.safeLane;
+            } else if (run.generatorVersion >= 4) {
+              obstacle.blockedLane=beat.blockedLane;
+            }
           }
         for (let i = 1; i <= 3; i++) add(run, "bone", beat.safeLane ?? 1, beat.at + i * 4);
       }
@@ -316,13 +603,27 @@ export function fillTrack(run) {
       run.row++;
       continue;
     }
-    const gapRow = run.row > 5 && run.row % 12 === 10;
+    const phase = run.encounterPacing ? encounterPhaseAt(run.nextRow) : null;
+    // Warm-up and recovery are deliberately quiet. Authored rides, courses,
+    // turns and route challenges above still own their windows; this only
+    // prevents ordinary rows from stacking hazards into a breathing beat.
+    const quietPhase = run.encounterPacing &&
+      ((phase === 'warmup' && route !== 'challenge') ||
+       (phase === 'recovery' && route !== 'challenge'));
+    // Scenic detours are the low-pressure choice, so keep their optional
+    // route free of surprise full-width gaps (the route record remains around
+    // briefly after rejoining). Challenge and uncommitted current trails keep
+    // the familiar gap rhythm; authored collapsing bridges add the spectacle
+    // version on top. Historical generators remain byte-for-byte unchanged.
+    const scenicDetour = run.encounterPacing && run.route?.kind === 'scenic';
+    const gapRow = !quietPhase && !scenicDetour && run.row > 5 && run.row % 12 === 10;
     const at = gapRow ? Math.round(run.nextRow/5)*5 : run.nextRow;
     const pattern = run.generatorVersion >= 4 ? areaPattern(at, run.row) : null;
     // Later rows force a lane decision instead of rewarding camping in one lane.
     let safe;
     if(run.generatorVersion>=4) {
-      if(run.row>5&&route!=="scenic") {
+      if (quietPhase) safe = run.lane;
+      else if(run.row>5&&route!=="scenic") {
         const profile=areaGameplayAt(at);
         const preferred=profile.safeLanes[(run.row+Math.floor(at/AREA_LENGTH)+(pattern?.safeShift||0))%profile.safeLanes.length];
         const fallback=(run.lastSafeLane+1+Math.floor(run.random()*2))%3;
@@ -333,7 +634,7 @@ export function fillTrack(run) {
       : Math.floor(run.random() * 3);
     run.lastSafeLane = safe;
     const blocked = (safe + 1 + Math.floor(run.random() * 2)) % 3;
-    const actionRow = route!=="scenic" && run.row > 5 && (route==="challenge" ? run.row%2===0 : run.row % 4 === 2);
+    const actionRow = !quietPhase && route!=="scenic" && run.row > 5 && (route==="challenge" ? run.row%2===0 : run.row % 4 === 2);
     if (actionRow) {
       const type = gapRow ? "gap" : run.generatorVersion>=4
         ? areaActionHazard(run,at,run.row)
@@ -344,27 +645,34 @@ export function fillTrack(run) {
         if(split) obstacle.splitChoice=true;
         if (pattern?.label) obstacle.encounter = pattern.label;
       }
-    } else if (run.row > 0) {
+    } else if (run.row > 0 && !quietPhase) {
       const primary=run.generatorVersion>=4
         ? areaHazard(run,at,run.row)
         : SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)];
       const first=add(run, primary, blocked, at);
+      if (run.generatorVersion >= 4) first.safeLane = safe;
       if (pattern?.label) first.encounter = pattern.label;
       if (route!=="scenic" && run.row > 2 && (run.random() > 0.15 || at > 600)) {
         const second=add(run,
           run.generatorVersion>=4 ? areaHazard(run,at,run.row+1)
             : SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)],
           3-safe-blocked,at);
+          if (run.generatorVersion >= 4) second.safeLane = safe;
         if (pattern?.label) second.encounter = pattern.label;
       }
     }
-    const offsets = pattern?.boneOffsets || [0];
-    const boneLane = run.row < 3 || run.random() < 0.4 ? safe : blocked;
+    const offsets = quietPhase ? [0] : (pattern?.boneOffsets || [0]);
+    const boneLane = quietPhase || run.row < 3 || run.random() < 0.4 ? safe : blocked;
     for (let i = 0; i < 4; i++) {
       const laneOffset = pattern && run.row >= 3 ? offsets[i % offsets.length] : 0;
       const lane = pattern && run.row >= 3 ? (safe + laneOffset) % 3 : boneLane;
       const bone = add(run, "bone", lane, at + i * 3);
       if (pattern?.label) bone.encounter = pattern.label;
+      if (phase === 'warmup') bone.encounter = 'Warm-up line';
+      if (phase === 'recovery') {
+        bone.encounter = 'Recovery line';
+        bone.recovery = true;
+      }
       if (pattern && laneOffset !== 0) bone.weave = true;
     }
     if (run.row > 0 && run.row % 3 === 0) {
@@ -380,7 +688,12 @@ export function fillTrack(run) {
       const pickupAt = at + 15;
       const pickup = add(run, pickupType, safe, pickupAt);
       if (pattern?.label) pickup.encounter = pattern.label;
-      if (pattern?.cluster) {
+      if (phase === 'warmup') pickup.encounter = 'Warm-up reward';
+      if (phase === 'recovery') {
+        pickup.encounter = 'Recovery reward';
+        pickup.recovery = true;
+      }
+      if (pattern?.cluster && !quietPhase) {
         // Four short bones frame the special item as a deliberate reward line,
         // making its purpose readable before the player reaches the pickup.
         for (const [index, offset] of [8, 11, 19, 22].entries()) {
@@ -405,7 +718,11 @@ export function fillTrack(run) {
     // Keep full-width actions far enough apart for an unupgraded jump to land.
     // Lane rows tighten gradually; Scenic remains the gentler alternative.
     const pressure = route === "scenic" ? 0 : Math.min(1, at / 1200);
-    run.nextRow += (actionRow ? 42 : 26 - pressure * 4) + run.random() * 6;
+    // Keep the seeded meter cadence stable in the quiet beats; the pacing
+    // change is the removal of ordinary hazards, not a hidden speed-up of the
+    // authored row clock. This preserves reaction margins for long replays.
+    const phaseGap = quietPhase ? 26 - pressure * 4 : null;
+    run.nextRow += (phaseGap ?? (actionRow ? 42 : 26 - pressure * 4)) + run.random() * 6;
   }
 }
 export function act(run, action) {
@@ -495,6 +812,7 @@ function resolveCorner(run, from, to) {
 export function step(run, dt) {
   if (run.ended || !Number.isFinite(dt) || dt <= 0) return;
   dt = Math.min(dt, 1 / 30);
+  const eventStart = run.events.length;
   run.fetchTime = Math.max(0, run.fetchTime - dt);
   syncUnvisitedCorners(run);
   run.previous = { x: run.x, y: run.y, distance: run.distance };
@@ -513,6 +831,44 @@ export function step(run, dt) {
     run.events.push("zoomies-end");
   }
   run.distance += run.speed * dt;
+  const currentArea = areaAt(run.distance);
+  if (currentArea !== run.lastArea) {
+    run.lastArea = currentArea;
+    run.events.push('area-enter');
+  }
+  // Start/end the friendly chase on the same fixed simulation clock as rides.
+  // The renderer can therefore animate a companion without maintaining a
+  // second timer, and a restored run cannot award the completion bonus twice.
+  if (run.dogChaseUpcoming && !run.dogChase &&
+      run.previous.distance < run.dogChaseUpcoming.start &&
+      run.distance >= run.dogChaseUpcoming.start) {
+    run.dogChase = {...run.dogChaseUpcoming, startedAt: run.time};
+    run.events.push('dog-chase-start');
+  }
+  if (run.dogChase && run.distance >= run.dogChase.end) {
+    const completed = run.previous.distance < run.dogChase.end;
+    const chase = run.dogChase;
+    run.dogChase = null;
+    run.dogChaseUpcoming = null;
+    if (completed) {
+      run.dogChases = (run.dogChases || 0) + 1;
+      run.bonusPoints += DOG_CHASE_REWARD;
+      run.invulnerable = Math.max(run.invulnerable, .8);
+      run.events.push('dog-chase-end');
+      run.lastDogChase = chase.index;
+    }
+  }
+  // A bridge announces itself once as the runner reaches the first falling
+  // planks. The notice is tied to a real generated gap, so a skipped bridge or
+  // a legacy trail never produces a phantom spectacle cue.
+  for (const object of run.objects) {
+    if (!object.bridgeCollapse || object.lane !== 1 || object.bridgeWarned) continue;
+    const warningAt = object.at - 28;
+    if (run.previous.distance < warningAt && run.distance >= warningAt) {
+      object.bridgeWarned = true;
+      run.events.push('bridge-collapse');
+    }
+  }
   // Zoomies can smash or vault physical hazards, but steering through a corner
   // remains a player decision.
   resolveCorner(run, run.previous.distance, run.distance);
@@ -527,7 +883,12 @@ export function step(run, dt) {
     steer(run, LANES[run.lane], dt);
   if(run.choicePending!==null && run.distance>=run.choicePending) {
     const kind=run.x>1.2?"challenge":"scenic";
-    run.route={kind,until:run.choicePending+220};
+    // Branch metadata and optional reward trails are version-four additions.
+    // Keep older shared-trail route objects as small as they were when those
+    // links were authored.
+    run.route = run.generatorVersion >= 4
+      ? routeBranchFor(kind, run.choicePending, run.choicePending + 220)
+      : {kind, until: run.choicePending + 220};
     run.routeChoices++;
     run.nextChoice=run.choicePending+700;
     run.choicePending=null;
@@ -557,7 +918,8 @@ export function step(run, dt) {
   for (const object of run.objects) {
     if (object.used) continue;
     const dz = object.at - run.distance;
-    const sameLane = Math.abs(LANES[object.lane] - run.x) < 0.95;
+    const objectX = object.movingGate ? movingGateX(object, run.distance) : LANES[object.lane];
+    const sameLane = Math.abs(objectX - run.x) < 0.95;
     if (object.type === "zipline-start" && !object.caught && Math.abs(dz) < 3 && run.y > .65 && !run.zipline) {
       object.caught = true;
       run.zipline = {start: object.at, end: object.at + ZIPLINE_LENGTH};
@@ -587,8 +949,13 @@ export function step(run, dt) {
         object.used = true;
         run.bones++;
         if (!object.pull) chargeFetch(run, 2);
-        run.bonePoints +=
-          (25 + run.upgrades.value * 5) * (run.double > 0 ? 2 : 1);
+        if (object.minecartChoice === 'bone') run.minecartBoneChoices++;
+        const boneValue = (25 + run.upgrades.value * 5) * (run.double > 0 ? 2 : 1);
+        run.bonePoints += boneValue;
+        if (object.routeTrail) {
+          run.routeTrailBones = (run.routeTrailBones || 0) + 1;
+          run.routeTrailPoints = (run.routeTrailPoints || 0) + boneValue;
+        }
         run.combo++;
         run.bestCombo = Math.max(run.combo, run.bestCombo);
         run.events.push("bone");
@@ -616,6 +983,8 @@ export function step(run, dt) {
       PICKUPS.includes(object.type)
     ) {
       object.used = true;
+      if (run.pickupCounts && Object.hasOwn(run.pickupCounts, object.type))
+        run.pickupCounts[object.type]++;
       let pickupResult = null;
       if (object.type === "magnet") run.magnet = 10 + run.upgrades.magnet * 3;
       const bonusesBeforePickup=run.bonusPoints;
@@ -631,7 +1000,8 @@ export function step(run, dt) {
       }
       if (object.type === "gem") {
         run.bonusPoints += 250;
-        pickupResult = '+250 points';
+        if (object.minecartChoice === 'gem') run.minecartGemChoices++;
+        pickupResult = object.minecartChoice === 'gem' ? 'Gem shortcut · +250 points' : '+250 points';
       }
       if (object.type === "double") {
         run.double = 10;
@@ -680,6 +1050,18 @@ export function step(run, dt) {
       });
     } else if (HAZARDS.includes(object.type) && dz < -0.4 && !object.passed) {
       object.passed = true;
+      if (object.bridgeCollapse && object.lane === 1 && !object.counted) {
+        object.counted = true;
+        run.bridgeCollapses = (run.bridgeCollapses || 0) + 1;
+      }
+      if (object.movingGate && !object.counted) {
+        // Count the authored timing beat once it reaches the collision plane,
+        // whether it was cleared, dodged, or absorbed by a shield. This keeps
+        // results and weekly ride/encounter summaries honest without letting a
+        // pooled object increment the stat on later frames.
+        object.counted = true;
+        run.movingGates = (run.movingGates || 0) + 1;
+      }
       if (sameLane && run.zoomies > 0 && object.type !== "gap") {
         object.used = true;
         run.smashes++;
@@ -692,7 +1074,7 @@ export function step(run, dt) {
         (object.type === "gap" && (run.y > .8 || run.zoomies > 0)) ||
         (object.type === "log" && run.y > 0.65) ||
         (object.type === "rock" && run.y > 1.25) ||
-        (["arch", "branch", "gate"].includes(object.type) &&
+        (["arch", "branch", "gate", "moving-gate"].includes(object.type) &&
           run.slide > 0 &&
           run.y < 0.2);
       if (sameLane && cleared) {
@@ -706,7 +1088,10 @@ export function step(run, dt) {
       // of it before the collision plane. Ordinary scenery in another lane
       // never qualifies, and the passed flag keeps the reward one-shot.
       const previousX = Number.isFinite(run.previous?.x) ? run.previous.x : run.x;
-      const previousNear = Math.abs(LANES[object.lane] - previousX) < 1.75;
+      const previousObjectX = object.movingGate
+        ? movingGateX(object, run.previous?.distance)
+        : LANES[object.lane];
+      const previousNear = Math.abs(previousObjectX - previousX) < 1.75;
       const dodgedAtTheLine = !sameLane && previousNear;
       if (dodgedAtTheLine) {
         run.nearMisses++;
@@ -718,7 +1103,8 @@ export function step(run, dt) {
       if (sameLane && !cleared && run.invulnerable === 0) {
         object.used = true;
         harm(run, object.raftHazard ? {type:'rock',raftHazard:true,safeLane:object.raftSafeLane} : object.minecartHazard ? {type:'rock',minecartHazard:true,safeLane:object.minecartSafeLane} : object.type==='rock' && [0,1,2].includes(object.courseRegion)
-          ? {type:'rock',courseWeave:true,safeLane:run.course?.beats.find(beat=>beat.at===object.at)?.safeLane} : {type: object.type});
+          ? {type:'rock',courseWeave:true,safeLane:run.course?.beats.find(beat=>beat.at===object.at)?.safeLane} : object.bridgeCollapse
+            ? {type:'gap',bridgeCollapse:true} : {type: object.type});
         if (run.ended) break;
       }
     }
@@ -736,5 +1122,16 @@ export function step(run, dt) {
     }
   }
   run.score = Math.floor(run.distance) + run.bonePoints + run.bonusPoints;
+  const newEvents = run.events.slice(eventStart);
+  if (newEvents.some(event => [
+    'zipline-end', 'raft-end', 'minecart-end', 'course-complete',
+    'course-recovery', 'route-scenic', 'route-challenge', 'turn-left', 'turn-right',
+    'dog-chase-end',
+  ].includes(event))) {
+    run.encounterRecoveryUntil = recoveryUntilFor(run, run.distance);
+  }
   fillTrack(run);
+  // Refresh after generation so a newly reserved course, fork or ride can be
+  // named on the very next HUD tick instead of waiting for another step.
+  run.encounter = encounterFor(run);
 }

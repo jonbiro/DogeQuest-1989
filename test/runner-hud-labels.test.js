@@ -46,6 +46,13 @@ test('destination rhythm never leaks across an area boundary',()=>{
   assert.equal(runHudLabels(run,0).rhythm,'Root run');
 });
 
+test('the destination rhythm does not repeat the same mechanic in the phase cue',()=>{
+  const run=createRun(1989);
+  run.distance=24;
+  const labels=runHudLabels(run,0);
+  assert.equal(labels.rhythm,'Roots + canopy');
+});
+
 test('portrait mission summaries stay scannable while preserving progress',()=>{
   assert.equal(missionSummaryLabel({metric:'regionalCourses',title:'Course conqueror',target:1},0,1,3),'1/3 · Course · 0/1');
   assert.equal(missionSummaryLabel({metric:'bestCombo',title:'Snack streak',target:10},7,2,3),'2/3 · Streak · 7/10');

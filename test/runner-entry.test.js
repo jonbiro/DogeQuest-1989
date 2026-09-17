@@ -50,5 +50,6 @@ test('runner headline and onboarding name bones as the core collectible',()=>{
   assert.match(html,/chase glowing bones/);
   assert.match(html,/Zipline bones ↗︎/);
   assert.match(html,/id="area-rhythm"/);
+  assert.match(html,/id="bone-counter"[^>]*aria-label="Bones collected: 0"/);
   assert.doesNotMatch(html,/Fetch gold/);
 });

@@ -250,7 +250,20 @@ header {
   left: 8%;
   top: 23%;
   max-width: 560px;
+  /* The tall portrait camp can scroll, but a platform-default scrollbar
+     becomes a heavy black rail beside Mochi on iOS and the in-app browser.
+     Keep the affordance discoverable while letting the illustrated scene
+     remain the visual anchor. */
+  scrollbar-width: thin;
+  scrollbar-color: #a9d9d04d transparent;
 }
+.menu::-webkit-scrollbar { width: 4px; }
+.menu::-webkit-scrollbar-track { background: transparent; }
+.menu::-webkit-scrollbar-thumb {
+  background: #a9d9d04d;
+  border-radius: 999px;
+}
+.menu::-webkit-scrollbar-thumb:hover { background: #d5edb677; }
 .eyebrow {
   font-size: 10px;
   font-weight: bold;
@@ -295,9 +308,134 @@ h1 em {
   order: 3;
   color: var(--lime);
 }
-#route-choice { color:#efffc9; font-size:10px; line-height:1.5; }
+#route-choice { color:#efffc9; font-size:10px; line-height:1.35; }
 #route-choice:empty { display:none; }
+#route-choice[data-state="preview"] {
+  display: grid;
+  gap: 6px;
+}
+.route-choice-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: baseline;
+  column-gap: 8px;
+  color: #ffe0a0;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.route-choice-head strong {
+  color: #fff5d6;
+  font-size: 15px;
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.route-choice-head small {
+  grid-column: 1 / -1;
+  color: #b9d4d5;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: .04em;
+  text-transform: none;
+}
+.route-choice-options {
+  display: grid;
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  gap: 6px;
+}
+.route-option {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  padding: 7px 8px;
+  border: 1px solid #a9d9d04d;
+  border-radius: 10px;
+  background: #0b2733d9;
+  box-shadow: inset 0 1px 0 #ffffff12;
+}
+.route-option-challenge { border-color: #f2cc8466; background: #2b2a2dd9; }
+.route-option-top {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  column-gap: 5px;
+}
+.route-option-top b { color: #a9eee0; font-size: 15px; line-height: 1; }
+.route-option-challenge .route-option-top b { color: #ffe0a0; }
+.route-option-top strong { color: #eefcf1; font-size: 10px; letter-spacing: .07em; }
+.route-option-top small {
+  grid-column: 2;
+  color: #a9c9cb;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .05em;
+}
+.route-option-effect { color: #d6fff0; font-size: 10px; font-weight: 800; }
+.route-option-challenge .route-option-effect { color: #ffe6ad; }
+.route-option-reward { color: #a9c1c6; font-size: 9px; }
 #run-highlights { font-size:12px; color:var(--lime); }
+#run-next-hint {
+  margin: 6px 0 0;
+  padding: 7px 9px;
+  border-left: 3px solid #ffe0a0;
+  border-radius: 8px;
+  background: #ffe0a00e;
+  color: #ffe6ad;
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 750;
+}
+#pickup-receipt {
+  margin: 10px 0;
+  padding: 9px;
+  border: 1px solid #a9d9d033;
+  border-radius: 12px;
+  background: #071e242e;
+}
+.pickup-receipt-heading {
+  display: block;
+  margin-bottom: 7px;
+  color: #ffe0a0;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.pickup-receipt-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pickup-receipt-item {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--pickup-color) 35%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--pickup-color) 8%, transparent);
+}
+.pickup-receipt-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--pickup-color) 16%, #102b35);
+  color: var(--pickup-color);
+  font-size: 17px;
+  font-weight: 900;
+}
+.pickup-receipt-copy { min-width: 0; }
+.pickup-receipt-copy b,
+.pickup-receipt-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pickup-receipt-copy b { color: #eefcf1; font-size: 10px; }
+.pickup-receipt-copy small { margin-top: 2px; color: #b9d2d0; font-size: 9px; line-height: 1.25; }
 #run-lesson { font-size:13px; line-height:1.6; padding:12px; border-radius:12px; background:#ffffff0a; }
 #controls button.turn-ready { background:var(--lime); color:#173c32; border-color:var(--lime); }
 .save-notice { flex-basis:100%; grid-column:1/-1; margin:0 0 6px; padding:8px 10px; background:#493c26; border:1px solid #edc47788; border-radius:10px; font-size:11px; line-height:1.4; color:#fff0cb; }
@@ -390,9 +528,69 @@ h1 em {
     font-size: 11px;
   }
 }
-.upgrade-copy strong, .upgrade-copy span, .upgrade-copy small { display: block; }
+.upgrade-copy > strong,
+.upgrade-copy > span:not(.upgrade-preview-rail),
+.upgrade-copy > small { display: block; }
 .upgrade-copy strong { font-size: 15px; color: #f4f5e8; margin-bottom: 6px; }
 .upgrade-copy small { font-size: 12px; margin: 8px 0 4px; color: var(--lime); }
+.upgrade-copy .upgrade-preview {
+  margin: 8px 0 2px;
+  color: #a9f0e0;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: .02em;
+}
+.upgrade-preview-rail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 3px;
+  min-height: 28px;
+}
+.upgrade-preview-icon {
+  display: grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  border: 1px solid #ffe0a066;
+  border-radius: 8px;
+  background: #ffe0a018;
+  color: #ffe0a0;
+  font-size: 17px;
+  font-weight: 900;
+}
+.upgrade-preview-pips {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.upgrade-preview-pips i {
+  display: grid;
+  place-items: center;
+  min-height: 24px;
+  border: 1px solid #a9d9d04a;
+  border-radius: 7px;
+  background: #0d2933;
+  color: #83a5a8;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 850;
+}
+.upgrade-preview-pips i[data-filled="true"] {
+  border-color: #a9f0e0aa;
+  background: #8fe7db2b;
+  color: #d9fff4;
+  box-shadow: inset 0 0 0 1px #8fe7db22;
+}
+.upgrade-preview-pips i[data-next="true"] {
+  border-color: #ffe0a0;
+  background: #ffe0a018;
+  color: #ffe6ad;
+  box-shadow: 0 0 0 2px #ffe0a018;
+}
 .upgrade-copy progress { width: 100%; accent-color: #98f5e1; height: 7px; display: block; }
 .upgrade-actions { display: grid; gap: 8px; flex: 0 0 105px; }
 #upgrades .upgrade-refund { background: #173c32; color: #f4f5e8; border-color: #98f5e1; font-size: 11px; }
@@ -473,6 +671,89 @@ h1 em {
   color: #ffe3a8;
   font-size: 14px;
 }
+.trail-perks {
+  width: min(480px, 92vw);
+  margin-top: 18px;
+}
+.trail-perks-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: #ffe0a0;
+  font-size: 10px;
+  letter-spacing: .12em;
+}
+.trail-perks-heading small {
+  color: #b8d2ca;
+  font-size: 10px;
+  letter-spacing: .02em;
+  font-weight: 650;
+}
+.trail-perk-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 8px;
+}
+.trail-perk {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 6px;
+  min-width: 0;
+  min-height: 54px;
+  padding: 7px 8px;
+  border: 1px solid #a6d7cf55;
+  border-radius: 12px;
+  background: #102d39d9;
+  color: #eaf7ed;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 #ffffff0d;
+}
+.trail-perk:hover { border-color: #c7f1e6aa; transform: translateY(-1px); }
+.trail-perk[aria-pressed="true"] {
+  border-color: #ffe0a0;
+  background: linear-gradient(145deg, #31504a, #173640);
+  box-shadow: inset 0 0 0 1px #ffe0a044, 0 5px 16px #061a2430;
+}
+.trail-perk-icon {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 8px;
+  background: #ffffff15;
+  font-size: 16px;
+}
+.trail-perk strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #f7ffe9;
+  font-size: 10px;
+  letter-spacing: .01em;
+}
+.trail-perk small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #b9d6d0;
+  font-size: 9px;
+  line-height: 1.25;
+}
+.trail-perk[aria-pressed="true"] small { color: #ffe8b0; }
+.trail-perk-detail {
+  margin: 6px 0 0;
+  color: #c7dbd0;
+  font-size: 10px;
+  line-height: 1.35;
+  min-height: 1.35em;
+}
 .trail-tag {
   display: flex;
   gap: 16px;
@@ -495,6 +776,36 @@ h1 em {
   color: var(--muted);
   margin-top: 7px;
   letter-spacing: 0;
+}
+.trail-tag .weekly-preview {
+  display: block;
+  margin-top: 8px;
+  color: #ffe0a0;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .02em;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trail-tag .weekly-preview[data-complete="true"] {
+  color: #a9f0e0;
+}
+.trail-tag .streak-preview {
+  display: block;
+  margin-top: 5px;
+  color: #bdeee1;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: .015em;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.trail-tag .streak-preview[data-active="true"] {
+  color: #fff0b7;
 }
 .trail-tag > div { flex:1; min-width:0; }
 #daily-camp {
@@ -605,6 +916,59 @@ footer .text-button {
   text-transform: uppercase;
 }
 #area-rhythm:empty { display: none; }
+#encounter-beat {
+  display: block;
+  max-width: min(230px, 42vw);
+  margin-top: 4px;
+  overflow: hidden;
+  color: #d8e9ef;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .075em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+#encounter-beat[data-phase="warmup"] { color: #a9eee0; }
+#encounter-beat[data-phase="escalation"] { color: #ffe0a0; }
+#encounter-beat[data-phase="spectacle"] { color: #f4c0ff; }
+#encounter-beat[data-phase="recovery"] { color: #b9d9ff; }
+#encounter-beat[hidden] { display: none; }
+#encounter-progress {
+  display: block;
+  width: min(230px, 42vw);
+  height: 3px;
+  margin-top: 5px;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  color: #9be7d7;
+  accent-color: #9be7d7;
+  background: #0a202b99;
+}
+#encounter-progress[data-phase="spectacle"] { color: #f6b5ff; accent-color: #f6b5ff; }
+#encounter-progress[data-phase="escalation"] { color: #ffe0a0; accent-color: #ffe0a0; }
+#encounter-progress[data-phase="recovery"] { color: #b8d8ff; accent-color: #b8d8ff; }
+#encounter-progress::-webkit-progress-bar { background: #0a202b99; border-radius: 999px; }
+#encounter-progress::-webkit-progress-value { background: currentColor; border-radius: 999px; }
+#encounter-progress::-moz-progress-bar { background: currentColor; border-radius: 999px; }
+#encounter-progress[hidden] { display: none; }
+#ghost-status {
+  display: block;
+  max-width: min(230px, 42vw);
+  margin-top: 4px;
+  overflow: hidden;
+  color: #a9f0e0;
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .085em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+#ghost-status[hidden] { display: none; }
 .score {
   background: #102a28ed;
   outline: 6px solid #102a28ed;
@@ -1308,14 +1672,41 @@ kbd {
   .trail-tag { margin-bottom: 8px; }
 }
 @media (max-width:700px) and (min-height:701px) {
-  .start-actions { position:fixed; left:7%; right:7%; bottom:calc(15svh + var(--safe-bottom)); max-width:none; margin:0; gap:8px; }
-  .start-actions button { padding:12px 8px; font-size:12px; }
+  /* Keep the full camp flow together on tall portrait phones. The previous
+     fixed action shelf and fixed challenge card competed for the same last
+     170px, which hid the upgrades row behind the challenge copy. A contained
+     menu scroll keeps the primary actions, perks and challenge in one readable
+     order while the footer remains a stable browser-safe landmark. */
+  .menu {
+    top: 18%;
+    bottom: calc(68px + var(--safe-bottom));
+    max-height: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 4px;
+  }
+  .start-actions { position: static; width: 100%; max-width: none; margin: 14px 0 0; gap:8px; }
+  .start-actions button { min-height:44px; padding:8px; font-size:12px; }
   .menu-stats { display:none; }
-  .trail-tag { position:fixed; left:7%; right:7%; bottom:calc(5.5svh + var(--safe-bottom)); margin:0; padding:10px; border-radius:12px; background:#102a28d9; font-size:11px; }
+  .trail-tag { position:static; width:100%; margin:10px 0 12px; padding:10px; border-radius:12px; background:#102a28d9; font-size:11px; }
   .trail-tag i,.trail-tag b { display:none; }
   .trail-tag span { font-size:11px; line-height:1.4; margin-top:4px; }
 }
 @media (max-width:700px) {
+  .trail-perks {
+    width: 100%;
+    margin-top: 14px;
+  }
+  .trail-perks-heading small { display: none; }
+  .trail-perk {
+    min-height: 50px;
+    padding: 6px;
+    column-gap: 4px;
+  }
+  .trail-perk-icon { width: 22px; height: 22px; font-size: 14px; }
+  .trail-perk strong { font-size: 9px; }
+  .trail-perk small { font-size: 8px; }
+  .trail-perk-detail { margin-top: 5px; font-size: 9px; }
   footer > span { display:none; }
   footer { justify-content:flex-end; }
 }
@@ -1493,6 +1884,8 @@ kbd {
 .power-chip[data-power="double"] small { color: #ffe6a9; }
 .power-chip[data-power="zoomies"] small { color: #dbf5a0; }
 .power-chip[data-power="ride"] small { color: #b9e9df; }
+.power-chip[data-power="calm"] { border-color: #bfe9af99; color: #efffc8; }
+.power-chip[data-power="calm"] small { color: #c9efb6; }
 
 /* A compact, visual key turns the long help paragraph into a quick reference.
    Four columns fit comfortably on desktop; phones switch to two larger cards. */
@@ -1638,7 +2031,18 @@ kbd {
     padding: 6px 8px;
     font-size: 11px;
   }
-  .power-chip small { display: none; }
+  /* Keep active powers self-explanatory on portrait phones. The short effect
+     line sits inside the same chip as the timer, so players can understand a
+     magnet, shield or boost without opening Help or waiting for a toast. It
+     is intentionally clipped to one quiet line to protect the trail view. */
+  .power-chip small {
+    display: block;
+    max-width: min(42vw, 150px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 8px;
+  }
   .power-chip progress { margin-top: 3px; height: 2px; }
 }
 @media (orientation: landscape) and (max-height: 520px) {
@@ -1734,6 +2138,7 @@ h1 { letter-spacing: -.055em; word-spacing: .07em; }
 .score { background:#112d39ed; outline-color:#112d39ed; border-radius:10px; }
 .score > span { letter-spacing:.08em; color:#c0dce0; font-size:10px; }
 #area-rhythm { color:#f5d58f; font-size:10px; letter-spacing:.11em; }
+#ghost-status { color:#a9f0e0; }
 .score strong { font-variant-numeric:tabular-nums; letter-spacing:-.04em; }
 #run-score { color:#f8e5bd; font-variant-numeric:tabular-nums; }
 .bones { background:#112d39ed; border-color:#e9c88670; color:#ffe3ad; border-radius:14px; }
@@ -1879,6 +2284,16 @@ h1 { letter-spacing: -.055em; word-spacing: .07em; }
   #cue:not(:empty) { font-size:12px; }
   #controls small { font-size:9px; letter-spacing:.02em; }
   #controls #fetch { font-size:9px; letter-spacing:-.01em; }
+  .trail-perk-options { gap: 4px; }
+  .trail-perk {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+    min-height: 58px;
+    padding: 5px 3px;
+  }
+  .trail-perk-icon { grid-row: auto; }
+  .trail-perk strong, .trail-perk small { max-width: 100%; }
 }
 /* Touch tablets can be wider than a phone, but they still need the same
    thumb-level lesson. Only hide this dock when a fine pointer identifies a

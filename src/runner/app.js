@@ -19,14 +19,22 @@ import {dailyTrail,restoredTrailSelection} from './daily-trail.js';
 import {trailRecordsFrom,trailBest} from './trail-records.js';
 import {updateTraversalControls,updateActionCueControls,updateLaneCueControls,updateTurnControls,traversalDescription} from './traversal-controls.js';
 import {supportsMobileTilt,supportsTouchControls,noTiltController} from './tilt-platform.js';
-import {scoreBreakdown} from './score-breakdown.js';
+import {scoreBreakdown,pickupReceiptItems} from './score-breakdown.js';
 import {rematchFor} from './rematch.js';
 import {preferencesFrom} from "./preferences.js";
 import {readStoredProfile,writeStoredProfile} from "./storage.js";
 import {CUES,playNotes,stopSound,resumeSound,traversalCue,feedbackPriority} from "./sound.js";
 import {createAreaSoundscape} from './soundscape.js';
 import {actionCue,eventNotice,dockMode,runLesson,routeChoiceCue,touchCoach,touchGestureCoach,touchCoachVisible} from "./guidance.js";
-import {pickupGuideFor,pickupNoticeFor} from './pickup-guide.js';
+import {routeChoiceMarkup, routeChoicePreview} from './route-preview.js';
+import {PICKUP_DEFINITIONS,PICKUP_TYPES,pickupGuideFor,pickupNoticeFor,pickupDefinition} from './pickup-guide.js';
+import {encounterDisplayTitle, encounterFor} from './encounter-director.js';
+import {createGhostRecorder,recordGhostSample,bankGhostRecord,ghostFor,ghostSummary,ghostsFrom} from './ghost.js';
+import {weeklyGoalFor,weeklyStateFrom,weeklySummary} from './weekly-goals.js';
+import {adventureStreakFrom,adventureStreakSummary} from './adventure-streak.js';
+import {DEFAULT_RUN_MODIFIER, modifierFor, modifierFrom} from './run-modifiers.js';
+import {createHapticController} from './haptics.js';
+import {DOG_CHASE_REWARD} from './dog-chase.js';
 import {turnPrompt} from "./turns.js";
 import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,tapAction} from "./gestures.js";
 import {hudReserve,hudReserveApplies} from "./hud-layout.js";
@@ -52,6 +60,7 @@ let run = createRun(),
   noticePriority = 0,
   sound = false,
   audio = null;
+const haptics = createHapticController(typeof navigator !== 'undefined' ? navigator : null);
 // Keep the reason for a lifecycle pause so a phone never appears to freeze
 // without explaining what happened or how to continue.
 let pauseReason = 'manual';
@@ -83,6 +92,10 @@ let saved = {
   collection: collectionFrom(),
   mastery: masteryFrom(),
   trailRecords: [],
+  ghosts: [],
+  weekly: weeklyStateFrom(null),
+  adventureStreak: adventureStreakFrom(null),
+  runModifier: DEFAULT_RUN_MODIFIER,
   preferences: preferencesFrom(null,reducedMotion),
 };
 try {
@@ -96,6 +109,10 @@ try {
   saved.collection = collectionFrom(value?.collection,{migrateLegacyDefault:true});
   saved.mastery = masteryFrom(value?.mastery);
   saved.trailRecords = trailRecordsFrom(value?.trailRecords);
+  saved.ghosts = ghostsFrom(value?.ghosts);
+  saved.weekly = weeklyStateFrom(value?.weekly);
+  saved.adventureStreak = adventureStreakFrom(value?.adventureStreak);
+  saved.runModifier = modifierFrom(value?.runModifier);
   saved.preferences = preferencesFrom(value?.preferences,reducedMotion);
   saved.challenges = Math.floor(saved.challenges);
 } catch {
@@ -109,7 +126,12 @@ let localDailyTarget=restoredTrail.localDaily;
 $('shared-description').textContent=restoredTrail.description;
 reducedMotion=saved.preferences.reducedMotion;
 function updateRecords() {
+  // A new UTC week gets a fresh local goal the next time the menu is painted.
+  // Keep this rollover in memory until the next normal persistence write so a
+  // read-only visit never unexpectedly mutates localStorage.
+  saved.weekly = weeklyStateFrom(saved.weekly);
   updateSaveNotice();
+  syncPickupKey();
   $("play").textContent = playLabel();
   // A service-worker/browser cache can briefly pair this bundle with an older
   // shell. Keep a missing optional child from turning a camp refresh into a
@@ -129,6 +151,34 @@ function updateRecords() {
     `${mission.title}: ${mission.target} ${mission.unit} in one run · +${mission.reward} pts`;
   $("mission-help-title").textContent = `Your challenge: ${mission.title}`;
   $("mission-help-copy").textContent = `${mission.target} ${mission.unit} in one run · +${mission.reward} points. ${missionTip(mission)} Finish the run to bank your reward.`;
+  const weekly = weeklyGoalFor();
+  const weeklyNode = $('weekly-preview');
+  if (weeklyNode && weekly) {
+    const state = weeklyStateFrom(saved.weekly);
+    weeklyNode.textContent = weeklySummary(state);
+    weeklyNode.dataset.complete = String(state.claimed);
+    weeklyNode.title = `${weekly.title}: ${weekly.description} Reward: ${weekly.reward} points. Progress is local to this browser and resets each UTC week.`;
+    weeklyNode.setAttribute('aria-label', `${weekly.title}: ${state.progress} of ${weekly.target} ${weekly.unit}. ${weekly.description} Reward ${weekly.reward} points.`);
+  }
+  const streakNode = $('streak-preview');
+  if (streakNode) {
+    const summary = adventureStreakSummary(saved.adventureStreak);
+    streakNode.textContent = summary;
+    streakNode.setAttribute('aria-label', summary);
+    streakNode.dataset.active = String(Boolean(saved.adventureStreak?.count));
+  }
+  const perk = modifierFor(saved.runModifier);
+  const perkPicker = $('trail-perks');
+  if (perkPicker) {
+    perkPicker.dataset.modifier = perk.id;
+    for (const button of perkPicker.querySelectorAll('[data-modifier]')) {
+      const selected = button.dataset.modifier === perk.id;
+      button.setAttribute('aria-pressed', String(selected));
+      button.dataset.selected = String(selected);
+    }
+    const detail = $('trail-perk-detail');
+    if (detail) detail.textContent = `${perk.name} · ${perk.effect}`;
+  }
 }
 let clubhouseCategory = 'puppy';
 let previewRear = false;
@@ -301,6 +351,15 @@ function shop() {
     `${Math.floor(saved.credits).toLocaleString()} points to spend · Remove a level for a full refund. Tune your paws freely; records and unlocks stay yours.`;
   $("overlay-primary").textContent = "Run with your upgrades ↗︎";
   $("upgrades").replaceChildren();
+  const upgradeEffect = (key, level) => {
+    const value = Math.max(0, Math.min(3, Math.floor(Number(level) || 0)));
+    if (key === 'leap') return value ? `+${value * 10}% jump clearance` : 'Base jump clearance';
+    if (key === 'slide') return `${(.58 + value * .07).toFixed(2)}s low hold`;
+    if (key === 'magnet') return `${10 + value * 3}s pickup magnet`;
+    if (key === 'value') return `${25 + value * 5} pts per bone`;
+    return `Level ${value}`;
+  };
+  const upgradeIcons = {leap: '↟', slide: '⌁', magnet: '✦', value: '＋'};
   for (const [key, upgrade] of Object.entries(UPGRADES)) {
     const level = saved.upgrades[key],
       cost = price(level);
@@ -309,10 +368,36 @@ function shop() {
       button = document.createElement("button");
     const name=document.createElement('strong');name.textContent=upgrade.name;
     const benefit=document.createElement('span');benefit.textContent=upgrade.description;
+    const preview=document.createElement('small');
+    preview.className='upgrade-preview';
+    preview.textContent = level >= 3
+      ? `MAX · ${upgradeEffect(key, level)}`
+      : `NOW ${upgradeEffect(key, level)}  →  NEXT ${upgradeEffect(key, level + 1)}`;
+    preview.setAttribute('aria-label', `${upgrade.name}: current ${upgradeEffect(key, level)}; next ${level >= 3 ? 'maximum level' : upgradeEffect(key, level + 1)}`);
+    const visual = document.createElement('div');
+    visual.className = 'upgrade-preview-rail';
+    visual.dataset.level = String(level);
+    visual.setAttribute('role', 'img');
+    visual.setAttribute('aria-label', `${upgrade.name}: level ${level} of 3${level < 3 ? `, level ${level + 1} preview highlighted` : ', maximum level'}`);
+    const visualIcon = document.createElement('span');
+    visualIcon.className = 'upgrade-preview-icon';
+    visualIcon.textContent = upgradeIcons[key] || '✦';
+    visualIcon.setAttribute('aria-hidden', 'true');
+    const track = document.createElement('span');
+    track.className = 'upgrade-preview-pips';
+    track.setAttribute('aria-hidden', 'true');
+    for (let index = 1; index <= 3; index++) {
+      const pip = document.createElement('i');
+      pip.dataset.filled = String(index <= level);
+      pip.dataset.next = String(index === level + 1);
+      pip.textContent = String(index);
+      track.append(pip);
+    }
+    visual.append(visualIcon, track);
     const meter=document.createElement('progress');meter.max=3;meter.value=level;
     meter.setAttribute('aria-label',`${upgrade.name}: level ${level} of 3`);
     const status=document.createElement('small');status.textContent=`Level ${level} / 3`;
-    copy.append(name,benefit,status,meter);copy.className='upgrade-copy';
+    copy.append(name,benefit,preview,visual,status,meter);copy.className='upgrade-copy';
     button.textContent =
       cost === null ? "Maxed" : `${cost.toLocaleString()} pts`;
     button.setAttribute('aria-label',`${button.textContent} · ${upgrade.name} · ${cost===null?'Maximum level':`Upgrade to level ${level+1}`}`);
@@ -391,6 +476,84 @@ function setHidden(id, hidden) {
   const node = $(id);
   if (node) node.hidden = Boolean(hidden);
 }
+
+// Keep the help key generated from the same definitions that power the
+// approach card, pickup receipt, and active chips. The authored HTML remains
+// a useful first paint for a cached shell, then this small sync removes stale
+// names/effects and adds any future pickup without another vocabulary drift.
+function syncPickupKey() {
+  const grid = $('pickup-key-grid');
+  if (!grid || typeof grid.replaceChildren !== 'function') return;
+  const doc = grid.ownerDocument || document;
+  if (typeof doc?.createElement !== 'function') return;
+  const items = PICKUP_TYPES.map(type => {
+    const definition = PICKUP_DEFINITIONS[type];
+    const item = doc.createElement('div');
+    item.className = 'pickup-key-item';
+    item.dataset.pickup = type;
+    item.title = definition.detail;
+    item.setAttribute('aria-label', `${definition.label}. ${definition.detail}`);
+    const icon = doc.createElement('b');
+    icon.textContent = definition.icon;
+    icon.setAttribute('aria-hidden', 'true');
+    const copy = doc.createElement('span');
+    const label = doc.createElement('strong');
+    label.textContent = definition.label;
+    const effect = doc.createElement('small');
+    effect.textContent = definition.effect;
+    copy.append(label, effect);
+    item.append(icon, copy);
+    return item;
+  });
+  grid.replaceChildren(...items);
+}
+
+// Keep the post-run receipt visual and scannable. The text score breakdown is
+// still available for sharing and older saves, but a small row per item makes
+// the effect obvious at a glance on a phone and gives each icon a useful
+// accessible name instead of asking players to decode a paragraph.
+function renderPickupReceipt(run) {
+  const node = $('pickup-receipt');
+  if (!node) return;
+  node.replaceChildren();
+  const items = pickupReceiptItems(run);
+  if (!items.length) {
+    node.hidden = true;
+    node.removeAttribute('aria-label');
+    return;
+  }
+  const heading = document.createElement('strong');
+  heading.textContent = 'Pickup haul';
+  heading.className = 'pickup-receipt-heading';
+  const list = document.createElement('ul');
+  list.className = 'pickup-receipt-list';
+  list.setAttribute('aria-label', 'Collected special items');
+  for (const item of items) {
+    const definition = pickupDefinition(item.key);
+    const row = document.createElement('li');
+    row.className = 'pickup-receipt-item';
+    row.dataset.pickup = item.key;
+    row.style?.setProperty?.('--pickup-color', definition?.color || '#a9f0e0');
+    const icon = document.createElement('span');
+    icon.className = 'pickup-receipt-icon';
+    icon.textContent = definition?.icon || '•';
+    icon.setAttribute('aria-hidden', 'true');
+    const copy = document.createElement('span');
+    copy.className = 'pickup-receipt-copy';
+    const label = document.createElement('b');
+    label.textContent = `${item.count} × ${item.label}`;
+    const effect = document.createElement('small');
+    effect.textContent = item.effect;
+    copy.append(label, effect);
+    row.append(icon, copy);
+    row.title = definition?.detail || item.effect;
+    row.setAttribute('aria-label', `${label.textContent}. ${definition?.detail || item.effect}`);
+    list.append(row);
+  }
+  node.append(heading, list);
+  node.hidden = false;
+  node.setAttribute('aria-label', `Pickup haul: ${items.map(item => `${item.count} ${item.label}`).join(', ')}`);
+}
 function setData(id, key, value) {
   const node = $(id);
   if (node?.dataset) node.dataset[key] = String(value);
@@ -430,6 +593,76 @@ function updatePickupGuide(run) {
   setData('pickup-guide', 'pickup', guide.type);
   setData('pickup-guide', 'state', notice ? 'recent' : 'upcoming');
   node.style?.setProperty?.('--pickup-color', guide.color);
+}
+// The encounter beat is a single, quiet line in the score card. It surfaces
+// authored warm-ups, rising pressure, set pieces and breathing room without
+// adding another message over the playable trail. Keeping all four phases in
+// the same slot lets the director communicate pacing without a banner stack.
+function updateEncounterBeat(run) {
+  const node = $('encounter-beat');
+  if (!node) return;
+  const meter = $('encounter-progress');
+  const encounter = encounterFor(run);
+  const visible = Boolean(encounter && !run?.practice &&
+    ['warmup', 'escalation', 'spectacle', 'recovery'].includes(encounter.phase));
+  node.hidden = !visible;
+  if (meter) meter.hidden = !visible;
+  if (!visible) {
+    node.removeAttribute('data-phase');
+    node.removeAttribute('aria-label');
+    node.removeAttribute('title');
+    if (meter) {
+      meter.value = 0;
+      meter.removeAttribute('aria-label');
+    }
+    return;
+  }
+  const displayTitle = encounter.displayTitle || encounterDisplayTitle(encounter.title);
+  setText('encounter-beat', `${encounter.label} · ${displayTitle}`);
+  setData('encounter-beat', 'phase', encounter.phase);
+  setAttribute('encounter-beat', 'aria-label', `${encounter.label}. ${encounter.title}. ${encounter.detail}`);
+  setAttribute('encounter-beat', 'title', encounter.detail);
+  if (meter) {
+    meter.max = 1;
+    meter.value = Math.max(0, Math.min(1, Number(encounter.progress) || 0));
+    setData('encounter-progress', 'phase', encounter.phase);
+    setAttribute('encounter-progress', 'aria-label', `${encounter.label}: ${Math.round(meter.value * 100)}% through this beat`);
+  }
+}
+function updateGhostStatus(run) {
+  const node = $('ghost-status');
+  if (!node) return;
+  const ghost = run?.ghostPlayback;
+  const visible = Boolean(ghost && !run?.practice);
+  node.hidden = !visible;
+  if (!visible) {
+    node.textContent = '';
+    node.removeAttribute('aria-label');
+    node.removeAttribute('title');
+    return;
+  }
+  const summary = ghostSummary(ghost);
+  setText('ghost-status', 'GHOST · RACE YOUR BEST');
+  setAttribute('ghost-status', 'aria-label', `${summary}. A translucent local replay is running on this trail.`);
+  setAttribute('ghost-status', 'title', `${summary}. Match its lane and action timing to improve your run.`);
+}
+// A route fork is the one place where a player needs to compare two choices
+// rather than decode a sentence. Keep the original cue as the accessible text
+// source, then add a compact visual preview with the same deterministic copy.
+function updateRouteChoice(run) {
+  const cue = routeChoiceCue(run);
+  const node = $('route-choice');
+  if (!node) return;
+  setHTML('route-choice', cue ? routeChoiceMarkup(run) : '');
+  if (cue) {
+    const preview = routeChoicePreview(run);
+    const area = preview?.context?.area ? `${preview.context.area.toLowerCase()} ` : '';
+    setAttribute('route-choice', 'aria-label', `${cue}. ${area}fork. Scenic uses the left lane for fewer hazards and an optional bone trail. Challenge uses the right lane for tougher rows, sixty points per clear and an optional bone trail.`);
+    setData('route-choice', 'state', 'preview');
+  } else {
+    node.removeAttribute('aria-label');
+    node.removeAttribute('data-state');
+  }
 }
 // A cached shell can omit an optional HUD/control node for one navigation
 // frame. Keep those presentation-only updates from promoting a valid run to a
@@ -614,13 +847,26 @@ function start() {
   const retry = rematchFor(run,state==='ended');
   const rematchBest=retry?.rematchBest||0;
   const challengeTarget=retry ? retry.challengeTarget : sharedTarget;
+  // Keep authored pacing a browser-run concern. Node replay fixtures and
+  // shared-link contract checks intentionally create the same trail without
+  // the live encounter director so their seeded object streams stay exact.
+  const encounterPacing = typeof window !== 'undefined';
   run = createRun(retry ? retry.seed : sharedSeed ?? Date.now(), saved.upgrades,
-    retry ? retry.generatorVersion : sharedSeed === null ? undefined : sharedVersion);
+    retry ? retry.generatorVersion : sharedSeed === null ? undefined : sharedVersion,
+    saved.runModifier, {encounterPacing});
   run.rematchBest=rematchBest;
   run.challengeTarget=challengeTarget;
   run.localDailyTarget=retry?Boolean(retry.localDailyTarget):localDailyTarget;
   run.puppy = saved.collection.puppy;
   run.appearance = { ...saved.collection };
+  // Ghosts are local replays for the exact seeded trail/version. They never
+  // participate in collisions or scoring; a new recorder captures this run
+  // while an existing best replay becomes the translucent pacer in front.
+  // Keep this reset tolerant of an older cached shell/test harness that has
+  // not loaded the optional replay helpers yet. The live module always has
+  // them, while a missing helper should never strand a playable run.
+  run.ghostRecorder = typeof createGhostRecorder === 'function' ? createGhostRecorder(run) : null;
+  run.ghostPlayback = typeof ghostFor === 'function' ? ghostFor(saved.ghosts, run.seed, run.generatorVersion) : null;
   // Keep the opening interaction hint for touch-capable players; fine-pointer
   // desktop stays focused on the authored trail and explicit buttons.
   // Touch coaching is independent from optional motion sensors. A phone can
@@ -636,6 +882,12 @@ function start() {
   toastUntil = 0;
   noticePriority = 0;
   for (const id of ['cue','route-choice','toast']) setText(id, '');
+  // Avoid querying through the required HUD helper here: stale shells may not
+  // include this optional status node, and reset must remain non-fatal.
+  if (typeof document !== 'undefined') {
+    const ghostStatus = document.getElementById('ghost-status');
+    if (ghostStatus) ghostStatus.hidden = true;
+  }
   $('hud').classList.toggle('has-powers', updatePowerHud(run));
   setState("playing");
   $("scene").focus({ preventScroll: true });
@@ -651,8 +903,16 @@ function showOverlay(kind) {
   $("results").hidden = kind !== "ended";
   $("run-lesson").hidden = kind !== "ended";
   $("run-highlights").hidden = kind !== "ended";
-  $("run-breakdown").hidden = kind !== "ended";
-  $("run-breakdown").open = false;
+  // These result-only nodes are optional in an older cached shell. Keep
+  // overlay transitions safe while a service worker/browser cache rolls over
+  // to the current HTML.
+  setHidden('run-next-hint', kind !== 'ended');
+  setHidden('pickup-receipt', kind !== 'ended');
+  setHidden('run-breakdown', kind !== 'ended');
+  // A service worker can briefly pair this newer module with an older shell
+  // that predates the expandable result details. Reset it only when that
+  // optional node exists; an absent disclosure must never abort a new run.
+  setProperty('run-breakdown', 'open', false);
   $("instructions").hidden = kind !== "help";
   $("overlay-label").textContent =
     kind === "ended"
@@ -706,6 +966,9 @@ function pause() {
   const reason = arguments[0];
   pauseReason = ['background','rotation','touch','manual'].includes(reason) ? reason : 'manual';
   if (audio) stopSound(audio);
+    // Keep pause resilient when this function is exercised in isolation (for
+    // example by the rotation harness) before the controller is initialized.
+    if (typeof haptics !== 'undefined') haptics.cancel();
   if (state === "playing") showOverlay("paused");
 }
 function resume() {
@@ -731,7 +994,7 @@ function resume() {
 function finish() {
   if (run.practice) {
     showOverlay('ended');
-    for (const id of ['results','run-breakdown','run-highlights']) $(id).hidden = true;
+    for (const id of ['results','run-breakdown','run-highlights','run-next-hint','pickup-receipt']) setHidden(id, true);
     $('overlay-label').textContent = 'NO PRESSURE. JUST PRACTICE.';
     const result=practiceResult(run);
     $('overlay-title').textContent = result.title;
@@ -743,6 +1006,7 @@ function finish() {
       ? `Practice the ${run.practice.direction==='left' ? 'right' : 'left'} turn` : 'Practice again';
     return;
   }
+  const ghostReceipt = bankGhostRecord(saved, run);
   const receipt = bankRun(saved, run, run.missions);
   if (!receipt) return;
   $('trail-target').checked = validTrailTarget(run.score);
@@ -768,6 +1032,7 @@ function finish() {
   if (courses) $("run-highlights").textContent += ` · ${courses} clean regional ${courses === 1 ? 'course' : 'courses'}`;
   if (run.relics) $("run-highlights").textContent += ` · ${run.relics} area ${run.relics === 1 ? 'relic' : 'relics'} found`;
   if (run.nearMisses) $("run-highlights").textContent += ` · ${run.nearMisses} near ${run.nearMisses === 1 ? 'miss' : 'misses'}`;
+  if (run.dogChases) $("run-highlights").textContent += ` · ${run.dogChases} puppy ${run.dogChases === 1 ? 'chase' : 'chases'} (+${run.dogChases * DOG_CHASE_REWARD})`;
   const {missionPoints: reward, prizes} = receipt;
   $("overlay-copy").textContent +=
     ` +${run.score.toLocaleString()} upgrade points earned. Spend them at camp.`;
@@ -786,18 +1051,35 @@ function finish() {
     const next=dogCard.tiers.find(tier=>dogCard.current<tier.target);
     $("run-highlights").textContent += next ? ` · ${dogCard.name} bond: ${dogCard.current}/${next.target} toward ${next.name}` : ` · ${dogCard.name}: Trail legend`;
   }
-  $("run-breakdown-copy").textContent = `${$("overlay-copy").textContent} ${$("run-highlights").textContent}`;
+  const nextHint = nextMasteryHint(saved.mastery,run.puppy);
+  const nextHintNode = $('run-next-hint');
+  if (nextHintNode) {
+    nextHintNode.textContent = nextHint;
+    nextHintNode.setAttribute('aria-label', nextHint);
+  } else {
+    // A stale cached shell may not have the optional hint node. Preserve the
+    // useful highlight text rather than replacing it with the hint.
+    $("run-highlights").textContent += ` · ${nextHint}`;
+  }
+  $("run-breakdown-copy").textContent = `${$("overlay-copy").textContent} ${$("run-highlights").textContent} ${nextHint}`;
   $("run-breakdown-copy").textContent += ` Best clean-move streak: ${run.bestCleanStreak}.`;
+  renderPickupReceipt(run);
   $('score-sources').textContent=scoreBreakdown(run);
   if (run.rematchBest>0) {
     const difference=run.score-run.rematchBest;
     $("run-breakdown-copy").textContent += ` Rematch target: ${run.rematchBest.toLocaleString()} points. ${difference>0?`${difference.toLocaleString()} ahead`:difference===0?'Target tied':`${(-difference).toLocaleString()} short`}.`;
+  }
+  if (run.modifier) {
+    $("run-breakdown-copy").textContent += ' Trail perk: ' + run.modifier.name + ' · ' + run.modifier.effect;
   }
   if (run.challengeTarget>0) {
     const difference=run.score-run.challengeTarget;
     $("run-breakdown-copy").textContent += ` Shared target: ${run.challengeTarget.toLocaleString()} points. ${difference>0?`${difference.toLocaleString()} ahead`:difference===0?'Target tied — one more point to beat it':`${(-difference).toLocaleString()} short`}. This is a friendly, unverified score, not a ranked result.`;
   }
   $("overlay-copy").textContent = `${resultChallenge(run)}${resultRecord(receipt,run)}${receipt.totalPoints.toLocaleString()} upgrade ${receipt.totalPoints===1?'point':'points'} banked. Retry the same trail, or head to camp ${sharedSeed === null ? 'for a fresh one' : 'to switch to random trails'}.`;
+  if (run.modifier) {
+    $("overlay-copy").textContent += ' Trail perk: ' + run.modifier.name + ' · ' + run.modifier.effect;
+  }
   // Keep traversal rewards visible in the final copy. The concise result line
   // above intentionally replaces the in-run narration, so append a compact
   // receipt after it rather than letting completed rides disappear silently.
@@ -808,13 +1090,44 @@ function finish() {
   const completedRides=(run.ziplines||0)+(run.rafts||0)+(run.minecarts||0);
   if (rides.length) $("overlay-copy").textContent += ` ${rides.join(' and ')} completed (+${completedRides * 250} points included).`;
   if (run.relics) $("overlay-copy").textContent += ` ${run.relics} area ${run.relics === 1 ? 'relic' : 'relics'} found (+${run.relicPoints} points included).`;
-  $("run-highlights").textContent = nextMasteryHint(saved.mastery,run.puppy);
+  if (run.dogChases) $("overlay-copy").textContent += ` ${run.dogChases} puppy ${run.dogChases === 1 ? 'chase' : 'chases'} completed (+${run.dogChases * DOG_CHASE_REWARD} points included).`;
+  if (ghostReceipt?.stored) $("overlay-copy").textContent += ' Personal ghost saved — retry this trail to race it.';
+  if (receipt.weekly) {
+    const weekly = receipt.weekly;
+    $("overlay-copy").textContent += weekly.reward
+      ? ` Weekly fetch complete: ${weekly.goal.title} · +${weekly.reward} points.`
+      : ` Weekly fetch: ${weekly.progress}/${weekly.target} ${weekly.goal.unit}.`;
+  }
+  if (receipt.adventureStreak) {
+    const streak = receipt.adventureStreak;
+    const earned = streak.earned?.length
+      ? ' ' + streak.earned.map(milestone => milestone.title + ' (+' + milestone.reward + ' pts)').join(' · ') + '.'
+      : '';
+    const streakCopy = streak.continued
+      ? ' ' + streak.count + '-day adventure streak kept alive.' + earned
+      : streak.count > 1
+        ? ' Adventure streak: ' + streak.count + ' days.' + earned
+        : ' Adventure streak started today.' + earned;
+    $("overlay-copy").textContent += streakCopy;
+    $("run-highlights").textContent += ' · ' + streak.count + '-day adventure streak';
+    $("run-breakdown-copy").textContent += streakCopy;
+  }
   persist();
   if (!storageAvailable) $("overlay-copy").textContent = 'Run complete. These rewards are available for this visit only; saving is unavailable.';
   updateRecords();
   tone("finish");
 }
 $("play").onclick = start;
+for (const button of document.querySelectorAll('#trail-perks [data-modifier]')) {
+  button.onclick = () => {
+    const next = modifierFrom(button.dataset.modifier);
+    if (saved.runModifier === next) return;
+    saved.runModifier = next;
+    persist();
+    updateRecords();
+    tone(820, .12);
+  };
+}
 function chooseDailyTrail() {
   const daily=dailyTrail(window.location.href);
   if (!daily) return;
@@ -887,8 +1200,9 @@ $('practice-again').onclick = () => {
   startPractice(run.practice.kind || 'moves',
     run.practice.kind==='turn' && run.practice.correct ? 1-run.practice.cornerIndex : run.practice.cornerIndex || 0);
 };
-$("run-breakdown").addEventListener("toggle", () => {
-  if ($("run-breakdown").open) $("run-breakdown").scrollIntoView({block:"start"});
+const runBreakdown = $("run-breakdown");
+runBreakdown?.addEventListener?.("toggle", () => {
+  if (runBreakdown.open) runBreakdown.scrollIntoView?.({block:"start"});
 });
 for (const id of ['mission-help','practice-help']) {
   $(id).addEventListener('toggle', () => {
@@ -1862,16 +2176,24 @@ function frame(now) {
       else step(run, 1 / 120);
       accumulator -= 1 / 120;
     }
+    // Capture a distance-spaced sample after the fixed-step loop so a ghost
+    // reflects the same interpolated action state that the player saw. The
+    // recorder is bounded and ignores practice runs and ended frames.
+    recordGhostSample(run.ghostRecorder, run);
     for (const event of run.events) {
+      // Haptics mirror the sound vocabulary but stay optional and throttled;
+      // desktop browsers simply report unavailable and continue silently.
+      haptics.trigger(event, run, time * 1000);
       const notice = eventNotice(event, run);
       if (notice) toast(notice.text, 1.5, notice.priority);
       if (event === "bone") tone(740 + Math.min(run.combo, 12) * 28, 0.055);
       if (event === "streak" || event === 'flow') {
         tone("reward");
       }
-      if (event === "near-miss") tone(610, 0.05);
-      if (event === "clear" || event === 'weave') tone(540, 0.08);
-      if (event === "turn-left" || event === "turn-right") tone(680, 0.1);
+      if (event === "near-miss") tone('near-miss');
+      if (event === "clear" || event === 'weave') tone('clear');
+      if (event === "turn-left" || event === "turn-right") tone('turn');
+      if (event === "area-enter") tone('area');
       if (event === "course-complete" || event === "course-recovery") tone('reward');
       if (event === "jump") tone("jump");
       if (event === "land") tone("land");
@@ -1898,6 +2220,7 @@ function frame(now) {
         tone(660, 0.2);
       }
       if (event === "relic") tone("reward");
+      if (event === "modifier-start") tone(820, .12);
       if (event === "hit") {
         tone('hit');
       }
@@ -1914,6 +2237,7 @@ function frame(now) {
       scene.dataset.missedTurns = String(run.missedTurns);
       scene.dataset.courses = run.regionalCourses.join(',');
       scene.dataset.course = run.course?.name || '';
+      scene.dataset.encounterPhase = encounterFor(run).phase;
       scene.dataset.posture =
       run.raft ? "raft" : run.minecart ? "minecart" : run.zipline ? "zipline" : run.y > 0.05 ? "jump" : run.slide > 0 ? "slide" : "run";
     });
@@ -1936,8 +2260,17 @@ function frame(now) {
       const labels=runHudLabels(run,saved.best);
       setText('region-name', labels.region);
       setText('area-rhythm', labels.rhythm);
-      setText('route-choice', routeChoiceCue(run));
+      updateEncounterBeat(run);
+      updateGhostStatus(run);
+      updateRouteChoice(run);
       setText('bones', run.bones);
+      // The icon is intentionally compact on a phone, but it should never be
+      // an unlabeled number for assistive tech or a long-press glance. Keep
+      // the counter's label in sync without adding another HUD card or a
+      // chatty live region that would announce every individual bone.
+      const boneCount = Math.max(0, Math.floor(Number(run.bones) || 0));
+      setAttribute('bone-counter', 'aria-label', `Bones collected: ${boneCount}`);
+      setAttribute('bone-counter', 'title', `${boneCount} ${boneCount === 1 ? 'bone' : 'bones'} collected`);
       const streak = boneStreakLabel(run.combo);
       const flow = cleanFlowLabel(run.cleanStreak);
       const streakNode = $('streak');
@@ -2026,8 +2359,10 @@ function frame(now) {
         fetchButton.disabled = !ready;
         fetchButton.classList.toggle('ready', !fetchButton.disabled);
         fetchButton.classList.toggle('charging', !ready && run.fetchTime <= 0 && run.magnet <= 0);
+        // The active-magnet chip already names and times the magnet. Keep the
+        // center control reserved for the Fetch meter so a narrow phone HUD
+        // never renders two competing "active" labels in the same row.
         setText('fetch', run.fetchTime > 0 ? `FETCH · ${Math.ceil(run.fetchTime)}s`
-          : run.magnet > 0 ? `MAGNET ACTIVE · ${run.fetchCharge}%`
           : run.fetchCharge === 100 ? 'FETCH READY · F' : `FETCH · ${run.fetchCharge}%`);
         fetchButton.setAttribute('aria-label', run.fetchTime > 0 ? 'Fetch active'
           : run.magnet > 0 ? `Magnet active. Fetch charge ${run.fetchCharge} percent`

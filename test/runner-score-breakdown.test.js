@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRun,step,NEAR_MISS_REWARD} from '../src/runner/world.js';
-import {scoreBreakdown} from '../src/runner/score-breakdown.js';
+import {scoreBreakdown,pickupReceiptItems} from '../src/runner/score-breakdown.js';
 import {bankRun} from '../src/runner/rewards.js';
 import {collectionFrom} from '../src/runner/collection.js';
 import {eventNotice} from '../src/runner/guidance.js';
@@ -48,6 +48,37 @@ test('score details explain included bonuses without counting them twice',()=>{
     'Score sources: 100 distance + 250 bones + 150 trail bonuses = 500 points. Trail bonuses include 100 from bone streaks and 50 from clean-move streaks; these are already in your score.');
   assert.equal(scoreBreakdown({distance:0,bonePoints:0,bonusPoints:0,score:0}),
     'Score sources: 0 distance + 0 bones + 0 trail bonuses = 0 points.');
+});
+
+test('score details identify mine-cart gem choices as an already-counted reward', () => {
+  const text = scoreBreakdown({
+    distance: 7200,
+    bonePoints: 500,
+    bonusPoints: 750,
+    score: 8450,
+    minecartGemChoices: 3,
+  });
+  assert.match(text, /750 from mine-cart gem choices/);
+  assert.match(text, /already in your score/);
+});
+
+test('receipt itemizes special pickups with their actual effects', () => {
+  const text = scoreBreakdown({
+    distance: 120,
+    bonePoints: 250,
+    bonusPoints: 350,
+    score: 720,
+    pickupCounts: { magnet: 2, shield: 1, gem: 1, zoomies: 1 },
+  });
+  assert.match(text, /Pickup haul: 2 magnets \(pull nearby bones\); 1 shields \(block one hit\); 1 gems \(\+250 points each\); 1 Zoomies balls \(speed \+ smash for 6s\)\./);
+});
+
+test('pickup receipt rows stay structured for the visual results haul', () => {
+  assert.deepEqual(pickupReceiptItems({pickupCounts: {magnet: 2, gift: 1, relic: -4}}), [
+    {key: 'magnet', count: 2, label: 'magnets', effect: 'pull nearby bones'},
+    {key: 'gift', count: 1, label: 'gift boxes', effect: '+100 points each'},
+  ]);
+  assert.deepEqual(pickupReceiptItems({}), []);
 });
 
 test('a last-second lane dodge earns one quiet near-miss reward',()=>{

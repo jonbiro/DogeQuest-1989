@@ -3,6 +3,9 @@ import {collectionFrom} from './collection.js';
 import {masteryFrom} from './mastery.js';
 import {preferencesFrom} from './preferences.js';
 import {trailRecordsFrom} from './trail-records.js';
+import {weeklyStateFrom} from './weekly-goals.js';
+import {adventureStreakFrom} from './adventure-streak.js';
+import {modifierFrom} from './run-modifiers.js';
 
 export const MAX_BACKUP_BYTES = 64000;
 const record = value => value && typeof value === 'object' && !Array.isArray(value);
@@ -22,6 +25,15 @@ function cleanProfile(profile) {
   clean.mastery=masteryFrom(profile.mastery);
   clean.preferences=preferencesFrom(profile.preferences);
   clean.trailRecords=trailRecordsFrom(profile.trailRecords);
+  // Weekly progress is optional for older backups. Preserve it when present,
+  // but keep the established backup shape importable for legacy files.
+  if (Object.hasOwn(profile, 'weekly')) clean.weekly=weeklyStateFrom(profile.weekly);
+  // Adventure streaks are optional so backups from before the return loop
+  // remain importable and retain their established shape.
+  if (Object.hasOwn(profile, 'adventureStreak')) clean.adventureStreak=adventureStreakFrom(profile.adventureStreak);
+  // The selected trail perk is an optional preference. Older backups keep
+  // their established shape; newer backups round-trip only known ids.
+  if (Object.hasOwn(profile, 'runModifier')) clean.runModifier=modifierFrom(profile.runModifier);
   return clean;
 }
 export function encodeBackup(profile) {

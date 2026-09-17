@@ -22,6 +22,7 @@ test('scene instructions match the available traversal actions',()=>{
   assert.match(traversalDescription({raft:{}}),/Jump and slide return at the shore/);
   assert.match(traversalDescription({zipline:{}}),/return after the cable/);
   assert.match(traversalDescription({minecart:{}}),/return after the cart/);
+  assert.match(traversalDescription({minecart:{},minecartChoice:{kind:'gem-line'}}),/gem lane for \+250 points each/);
   assert.match(traversalDescription({}),/The buttons are easiest: tap LEFT or RIGHT for one lane/);
   assert.match(traversalDescription({}),/One swipe equals one move\. To keep your finger down, stop your thumb briefly, then drag again/);
   assert.match(traversalDescription({}),/tap a left or right edge to steer/);

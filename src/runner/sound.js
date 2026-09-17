@@ -7,6 +7,15 @@ export const CUES = {
   jump:[{from:300,to:700,at:0,duration:.12,type:"sine"}],
   land:[{from:180,to:100,at:0,duration:.065,type:"sine",volume:.016}],
   slide:[{from:420,to:140,at:0,duration:.10,type:"sine"}],
+  // Keep the small event vocabulary distinct enough that a player can learn
+  // what just happened without turning the trail into a wall of beeps.
+  clear:[{from:470,to:620,at:0,duration:.075,type:"triangle",volume:.022}],
+  "near-miss":[{from:560,to:320,at:0,duration:.09,type:"sine",volume:.026}],
+  turn:[{from:430,to:700,at:0,duration:.08,type:"triangle",volume:.024},{from:700,to:900,at:.07,duration:.1,type:"triangle",volume:.026}],
+  area:[{from:330,to:500,at:0,duration:.12,type:"sine",volume:.021},{from:500,to:760,at:.13,duration:.16,type:"triangle",volume:.025}],
+  "bridge-collapse":[{from:250,to:120,at:0,duration:.16,type:"sine",volume:.024},{from:180,to:110,at:.1,duration:.2,type:"triangle",volume:.018}],
+  "chase-start":[{from:330,to:620,at:0,duration:.12,type:"triangle",volume:.024},{from:494,to:988,at:.10,duration:.18,type:"sine",volume:.022}],
+  "chase-end":[{from:523,to:659,at:0,duration:.10,type:"triangle",volume:.024},{from:659,to:1046,at:.08,duration:.20,type:"sine",volume:.022}],
   hit:[{from:120,to:120,at:0,duration:.2,type:"sine"}],
   ready:[{from:660,to:660,at:0,duration:.09,type:"sine"},{from:880,to:880,at:.09,duration:.12,type:"sine"}],
   finish:[{from:523,to:440,at:0,duration:.15,type:"triangle"},{from:392,to:330,at:.17,duration:.2,type:"triangle"}],
@@ -19,6 +28,9 @@ export function traversalCue(event) {
     case 'minecart-end':return 'shore';
     case 'zipline-start':return 'zoomies';
     case 'zipline-end':return 'reward';
+    case 'bridge-collapse':return 'bridge-collapse';
+    case 'dog-chase-start':return 'chase-start';
+    case 'dog-chase-end':return 'chase-end';
     default:return null;
   }
 }

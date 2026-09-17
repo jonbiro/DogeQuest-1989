@@ -1,8 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {puppyAssetParityError} from '../scripts/verify-dist.js';
+import {PUPPY_ASSET_FILES} from '../scripts/build.js';
 
 const exact = ['biscuit.webp', 'mochi.webp', 'mochi-away-v3.webp'];
+
+test('the release allowlist keeps superseded puppy paintings out of dist', () => {
+  assert.ok(PUPPY_ASSET_FILES.includes('puppies/mochi-away-v3.webp'));
+  for (const orphan of ['puppies/mochi-away.webp', 'puppies/mochi-away-alt.webp', 'puppies/mochi-run-front.webp']) {
+    assert.ok(!PUPPY_ASSET_FILES.includes(orphan), `${orphan} should stay source-only`);
+  }
+});
 
 test('puppy parity accepts a source, dist and offline manifest with the same files', () => {
   assert.equal(puppyAssetParityError({

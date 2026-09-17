@@ -26,7 +26,16 @@ export function runHudLabels(run, best) {
     .filter(object => object.encounter && !object.used && !object.passed &&
       object.at > run.distance + 2 && areaAt(object.at) === currentAreaIndex)
     .sort((a,b) => a.at - b.at)[0];
-  const rhythm=nextEncounter?.encounter || areaGameplayAt(run.distance).label;
+  const profile = areaGameplayAt(run.distance);
+  const candidate = nextEncounter?.encounter || profile.label;
+  // When the next authored pattern has the same name as the area's core
+  // mechanic, the encounter line already carries that name. Keep the smaller
+  // rhythm line focused on the destination's broader identity instead of
+  // repeating it directly above the phase cue.
+  const normalize = value => String(value || '').toLocaleLowerCase().replace(/\s+/g, ' ').trim();
+  const rhythm = normalize(candidate) === normalize(area.mechanic?.label)
+    ? profile.label
+    : candidate;
   const route=run.route && run.distance<run.route.until ? run.route.kind : null;
   return {
     region: route

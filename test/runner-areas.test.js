@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {AREAS,AREA_GAMEPLAY,areaAt,areaBlend,areaGameplayAt,landmarkSway,landmarkVariation,LANDMARK_SHOULDER_MIN,LANDMARK_SHOULDER_SPREAD} from '../src/runner/areas.js';
+import {AREAS,AREA_GAMEPLAY,areaAt,areaBlend,areaGameplayAt,areaSignatureAt,landmarkSway,landmarkVariation,LANDMARK_SHOULDER_MIN,LANDMARK_SHOULDER_SPREAD} from '../src/runner/areas.js';
 import {regionAt} from '../src/runner/regions.js';
 import {createBoneGeometry} from '../src/runner/bone-model.js';
 import {createCapeGeometry} from '../src/runner/cape-model.js';
@@ -23,11 +23,32 @@ test('six visual areas cycle without changing mastery region identity',()=>{
   }
 });
 
+test('each destination owns a distinct, bounded lighting profile',()=>{
+  const profiles=AREAS.map(area=>area.lighting);
+  assert.ok(profiles.every(profile=>profile&&/^#[0-9a-f]{6}$/i.test(profile.sky)),'every area has a hemisphere sky color');
+  assert.ok(profiles.every(profile=>/^#[0-9a-f]{6}$/i.test(profile.ground)),'every area has a hemisphere ground color');
+  assert.ok(profiles.every(profile=>/^#[0-9a-f]{6}$/i.test(profile.sun)),'every area has a sun color');
+  assert.ok(profiles.every(profile=>profile.hemi>=1.4&&profile.hemi<=2.2),'hemisphere energy stays readable');
+  assert.ok(profiles.every(profile=>profile.sunPower>=2.4&&profile.sunPower<=3.7),'sun energy stays readable');
+  assert.equal(new Set(profiles.map(profile=>`${profile.sky}/${profile.ground}/${profile.sun}`)).size,AREAS.length,
+    'destination lights do not collapse into one global look');
+  for(const distance of [0,224.99,225,449.99,675,1125]){
+    const blend=areaBlend(distance);
+    const from=profiles[blend.previous],to=profiles[blend.index];
+    const intensity=from.hemi+(to.hemi-from.hemi)*blend.blend;
+    const sunlight=from.sunPower+(to.sunPower-from.sunPower)*blend.blend;
+    assert.ok(Number.isFinite(intensity)&&Number.isFinite(sunlight));
+    assert.ok(intensity>=1.4&&intensity<=2.2);
+    assert.ok(sunlight>=2.4&&sunlight<=3.7);
+  }
+});
+
 test('version four gives every destination a distinct readable encounter rhythm',()=>{
   assert.equal(AREA_GAMEPLAY.length,AREAS.length);
   assert.equal(new Set(AREA_GAMEPLAY.map(profile=>profile.id)).size,AREAS.length);
   for(const [area,profile] of AREA_GAMEPLAY.entries()){
     assert.equal(areaGameplayAt(area*225+12),profile);
+    assert.equal(profile.mechanic,AREAS[area].mechanic.id);
     assert.ok(profile.hazards.length>=3);
     assert.ok(profile.hazards.every(type=>HAZARDS.includes(type)&&type!=='gap'));
     assert.equal(new Set(profile.safeLanes).size,3);
@@ -41,6 +62,58 @@ test('version four gives every destination a distinct readable encounter rhythm'
     assert.ok(hazards.length>0);
     assert.ok(hazards.some(object=>profile.hazards.includes(object.type)),profile.id);
   }
+});
+
+test('every destination owns a distinct mechanic, prop family and traversal cue',()=>{
+  const mechanicIds=AREAS.map(area=>area.mechanic?.id);
+  const mechanicLabels=AREAS.map(area=>area.mechanic?.label);
+  assert.equal(new Set(mechanicIds).size,AREAS.length);
+  assert.equal(new Set(mechanicLabels).size,AREAS.length);
+  for(const [index,area] of AREAS.entries()){
+    assert.match(area.mechanic.id,/^[a-z-]+$/);
+    assert.ok(area.mechanic.cue.length>8);
+    assert.ok(area.mechanic.detail.endsWith('.'));
+    assert.ok(Array.isArray(area.props)&&area.props.length>=3);
+    assert.ok(area.props.every(prop=>typeof prop==='string'&&prop.length>2));
+    assert.ok(area.traversal.endsWith('.'));
+    const signature=areaSignatureAt(index*225+30);
+    assert.equal(signature.index,index);
+    assert.equal(signature.landmark,area.landmark);
+    assert.equal(signature.mechanic.label,area.mechanic.label);
+    assert.deepEqual(signature.props,area.props);
+  }
+});
+
+test('current trails turn the director into quiet warm-up and recovery beats',()=>{
+  const fixture = distance => {
+    const run = createRun(4242,{},5,null,{encounterPacing:true});
+    Object.assign(run,{distance,nextRow:distance,row:18,objects:[],nextChoice:Infinity,
+      nextZipline:Infinity,choicePending:null,lastCourseVisit:Math.floor(distance/450),
+      nextCorner:Infinity,nextMinecart:Infinity,nextMovingGate:Infinity,
+      nextDogChase:Infinity,nextBridgeCollapse:Infinity,
+      raftPrototype:false,minecartPrototype:false,movingGatePrototype:false,
+      dogChasePrototype:false,course:null});
+    fillTrack(run);
+    return run;
+  };
+  const warmup=fixture(12);
+  const warmupObjects=warmup.objects.filter(object=>object.at>=0&&object.at<42);
+  assert.ok(warmupObjects.some(object=>object.type==='bone'),'warm-up still offers a readable reward line');
+  assert.equal(warmupObjects.some(object=>HAZARDS.includes(object.type)),false,
+    'warm-up does not hide a hazard in the first lesson line');
+  assert.ok(warmupObjects.filter(object=>object.type==='bone').every(object=>object.lane===1),
+    'warm-up bones stay in the runner lane');
+
+  const escalation=fixture(55);
+  assert.ok(escalation.objects.some(object=>object.at>=42&&object.at<105&&HAZARDS.includes(object.type)),
+    'the middle of the area still raises pressure');
+
+  const recovery=fixture(430);
+  const recoveryObjects=recovery.objects.filter(object=>object.at>=414&&object.at<450);
+  assert.ok(recoveryObjects.some(object=>object.type==='bone'&&object.recovery),
+    'recovery gives the player an explicitly tagged bonus line');
+  assert.equal(recoveryObjects.some(object=>HAZARDS.includes(object.type)),false,
+    'recovery keeps the ordinary lane clear');
 });
 
 test('each authored pattern changes the hazard rhythm without inventing new moves',()=>{

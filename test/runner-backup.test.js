@@ -33,6 +33,20 @@ test('older backups without trail records remain importable',()=>{
   const restored=decodeBackup(JSON.stringify(data));
   assert.deepEqual(restored.trailRecords,[]);assert.equal(restored.best,2400);
 });
+test('backups preserve the optional local adventure streak',()=>{
+  const before={...profile(),adventureStreak:{version:1,count:7,best:9,lastDay:'2026-01-06',claimed:[3,7]}};
+  const restored=decodeBackup(encodeBackup(before));
+  assert.deepEqual(restored.adventureStreak,before.adventureStreak);
+});
+test('backups preserve a selected trail perk without importing unknown ids',()=>{
+  const before={...profile(),runModifier:'calm-start'};
+  const restored=decodeBackup(encodeBackup(before));
+  assert.equal(restored.runModifier,'calm-start');
+  const legacy=JSON.parse(encodeBackup(profile()));
+  assert.equal(Object.hasOwn(legacy.profile,'runModifier'),false);
+  legacy.profile.runModifier='surprise';
+  assert.equal(decodeBackup(JSON.stringify(legacy)).runModifier,'treat-pouch');
+});
 test('restore retains the exact previous save, including damaged bytes',()=>{
   const data=new Map([['biscuit-dash-v1','{damaged original']]);
   const storage={getItem:key=>data.get(key)??null,setItem:(key,value)=>data.set(key,value)};

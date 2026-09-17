@@ -1031,6 +1031,16 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     awayAlt: new THREE.Vector3(),
     raftAlt: new THREE.Vector3(),
   };
+  // Mochi's rear chase paintings are intentionally expressive: the raised
+  // plume and reaching paws make the away view read immediately, but their
+  // silhouette also carries more visual mass than the front/action paintings.
+  // Keep the art's proportions intact while giving the tail a little breathing
+  // room in the portrait chase camera. This is applied while the alpha bounds
+  // are normalized below, so both away beats keep the same paw baseline and
+  // never pop when the alternate frame arrives.
+  const posePresentationScale = Object.freeze({
+    away: Object.freeze({x: .92, y: .96}),
+  });
   const poseHandleDrops = {hang: 0, hangAlt: 0};
   const alternateSlot = {
     key: null,
@@ -1107,8 +1117,11 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
         return;
       }
       alternateSlot.loading = false;
+      // Alternate frames use the same matte cleanup as their base pose. A
+      // single dark edge is enough to make a frame swap look like a second
+      // dog pasted behind the first one on a phone.
       let alternateTexture = compactTexture(loaded, maxTextureDimension);
-      if (pose === 'hang') alternateTexture = normalizeTransparentMatte(alternateTexture);
+      alternateTexture = normalizeTransparentMatte(alternateTexture);
       alternateSlot.texture = prepareTexture(alternateTexture);
       configurePoseSprite(alternateSprite, `${pose}Alt`, alternateSlot.texture, key);
     });
@@ -1151,12 +1164,14 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
       // not exist for every dog. Clear the previous dog's map as well as its
       // visibility so a rapid clubhouse swap can never show stale artwork.
       setSpriteMap(sprite, null);
+      sprite.visible = false;
       sprite.material.opacity = 0;
       return;
     }
     const {width, height} = sourceSize(texture);
     if (!width || !height) {
       setSpriteMap(sprite, null);
+      sprite.visible = false;
       sprite.material.opacity = 0;
       return;
     }
@@ -1169,6 +1184,7 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     const idleSize = sourceSize(sourceTextures.get(key));
     const idle = frameBoundsFor(key, 'idle', idleSize.width || width, idleSize.height || height);
     const frame = frameBoundsFor(key, pose, width, height);
+    const presentation = posePresentationScale[basePose] || {x: 1, y: 1};
     // Normalize the opaque bounds instead of the transparent canvas. The
     // authored pose can still change silhouette, but swapping frames no
     // longer makes the puppy pop larger, smaller, or off the ground.
@@ -1177,8 +1193,8 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     const frameWidth = frame.boxWidth / frame.width;
     const frameHeight = frame.boxHeight / frame.height;
     scale.set(
-      bodyBaseScale.x * idleWidth / frameWidth,
-      bodyBaseScale.y * idleHeight / frameHeight,
+      bodyBaseScale.x * idleWidth / frameWidth * presentation.x,
+      bodyBaseScale.y * idleHeight / frameHeight * presentation.y,
       1,
     );
 
@@ -1227,8 +1243,14 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     // WebGL upload the whole action catalog at once, even when opacity is 0.
     // Hidden sprites retain their maps and become visible instantly when the
     // corresponding physics state asks for them.
-    sprite.visible = pose === 'idle' || group.userData.activePose === pose;
-    sprite.material.opacity = pose === 'idle' ? 1 : 0;
+    // A late image decode can land between two render frames. Only the pose
+    // the stack currently selected may become visible; unconditionally
+    // showing the idle body here briefly drew a second full puppy beneath a
+    // streamed jump/turn/away painting.
+    const selectedPose = group.userData.activePose || 'idle';
+    const active = selectedPose === pose;
+    sprite.visible = active;
+    sprite.material.opacity = active ? 1 : 0;
   }
 
   function requestPose(key, pose) {
@@ -1252,7 +1274,12 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
       poseLoads.add(`${key}:${pose}`);
       const texture = loader.load(url, loaded => {
         let compact = compactTexture(loaded, maxTextureDimension);
-        if (pose === 'hang') compact = normalizeTransparentMatte(compact);
+        // Every authored action can expose transparent space between paws,
+        // around the tail, or beneath a belly. Normalising all pose mattes
+        // keeps WebGL's linear sampler from pulling a black RGB fringe into
+        // those openings on a dark bridge or gate, not just in the hanging
+        // frame.
+        compact = normalizeTransparentMatte(compact);
         // The player may have changed puppies while this network request was
         // in flight. Do not repopulate a pruned action cache on mobile; release
         // that texture and let a future selection request it again if needed.
@@ -1274,6 +1301,19 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
 
   function configurePoseStack(key, texture) {
     const map = poseMapFor(key);
+    const puppyChanged = group.userData.puppyKey !== key;
+    // A clubhouse swap can happen while the previous puppy is in a jump,
+    // slide, turn, or rear-view beat. Reset the selection before configuring
+    // the new stack so the newly decoded idle frame is drawable immediately;
+    // otherwise every frame would be gated by the previous dog's active pose
+    // until the next physics tick, producing a blank flash on fast taps. A
+    // late idle decode for the *same* puppy must retain its active action,
+    // though, or the decode would resurrect the body beneath a rear pose.
+    if (puppyChanged) {
+      group.userData.activePose = 'idle';
+      group.userData.poseState = null;
+      group.userData.puppyKey = key;
+    }
     map.set('idle', texture);
     visiblePose = 'idle';
     poseTransitionStart = 0;
@@ -1290,17 +1330,21 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     }
     for (const pose of ['jump', 'slide', 'turn', 'hang', 'away', 'strideAlt']) {
       const sprite = poseSprites[pose];
-      configurePoseSprite(sprite, pose, null, key);
+      // The source portrait can decode after an action frame (notably the
+      // rear Mochi frame) on a warm cache. Reusing the map already held by
+      // this pose keeps that action visible; clearing every sprite here used
+      // to erase a decoded away/jump painting and leave a blank or doubled
+      // transition for one or more frames.
+      const poseTexture = map.get(pose);
+      configurePoseSprite(sprite, pose, poseTexture || null, key);
     }
-    poseSprites.idle.material.opacity = 1;
-    poseSprites.stride.material.opacity = 0;
-    poseSprites.jump.material.opacity = 0;
-    poseSprites.slide.material.opacity = 0;
-    poseSprites.turn.material.opacity = 0;
-    poseSprites.hang.material.opacity = 0;
-    poseSprites.away.material.opacity = 0;
-    poseSprites.strideAlt.material.opacity = 0;
+    // `configurePoseSprite` already applied the current selection to every
+    // base frame above. Do not blanket-reset the action opacities here: if an
+    // action decoded before the idle portrait, that reset would leave the
+    // selected silhouette visible but transparent until the next physics
+    // tick (and made late mobile loads look like a missing or doubled dog).
     poseSprites.alternate.material.opacity = 0;
+    poseSprites.alternate.visible = false;
   }
 
   function configureAccessories(key, costume = currentCostume) {
@@ -1427,7 +1471,11 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
       const token = Symbol(key);
       sourceLoadTokens.set(key, token);
       const texture = loader.load(puppyArtworkUrl(key), loaded => {
-        const compact = compactTexture(loaded, maxTextureDimension);
+        let compact = compactTexture(loaded, maxTextureDimension);
+        // Keep the idle/source frame on the same neutral transparent matte as
+        // action paintings so the first transition cannot introduce a dark
+        // halo around the puppy while the rest of the pose stack streams in.
+        compact = normalizeTransparentMatte(compact);
         if (sourceLoadTokens.get(key) !== token) {
           compact.dispose?.();
           return;
@@ -1779,6 +1827,37 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     }
   }
 
+  // Expose the one complete painted frame currently driving the puppy. The
+  // renderer uses this read-only handle for the friendly chase companion so it
+  // can share the already-resident artwork instead of creating a second
+  // procedural or full-resolution texture catalog.
+  function activeSprite() {
+    const pose = group.userData.activePose || 'idle';
+    const slot = pose.endsWith('Alt') ? alternateSprite : poseSprites[pose];
+    return slot?.material?.map ? slot : bodySprite;
+  }
+
+  // Read-only pose lookup for lightweight companions (the local ghost and
+  // chase beat). It deliberately never requests artwork: a replay can reuse
+  // whichever authored frame is already resident and fall back to the active
+  // player frame while a less common action streams in for the runner.
+  function spriteForPose(pose = 'idle') {
+    const requested = String(pose || 'idle');
+    const aliases = {
+      run: 'stride',
+      jump: 'jump',
+      slide: 'slide',
+      turn: 'turn',
+      hang: 'hang',
+      away: 'away',
+      raft: 'raftAlt',
+      minecart: 'stride',
+    };
+    const key = aliases[requested] || requested;
+    const slot = key.endsWith('Alt') ? alternateSprite : poseSprites[key];
+    return slot?.material?.map ? slot : activeSprite();
+  }
+
   return {
     group,
     sprite: bodySprite,
@@ -1789,6 +1868,8 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     apply,
     setCostume,
     setPose,
+    activeSprite,
+    spriteForPose,
     warmActionPoses,
   };
 }

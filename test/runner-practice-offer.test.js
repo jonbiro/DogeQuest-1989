@@ -39,7 +39,7 @@ test('collision results offer relevant practice without guessing an unsupported 
 test('the actual results practice button routes collisions and rehearsal retries correctly', () => {
   const source=readFileSync(new URL('../src/runner/app.js',import.meta.url),'utf8');
   const from=source.indexOf("$('practice-again').onclick =");
-  const to=source.indexOf('$("run-breakdown").addEventListener',from);
+  const to=source.indexOf('const runBreakdown = $("run-breakdown")',from);
   assert.ok(from>=0&&to>from);
   for (const [run,expected] of [
     [{ended:true,lastMistake:{type:'corner',direction:'right'}},['turn',1]],

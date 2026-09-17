@@ -1,7 +1,7 @@
 // Capture collision evidence before the next simulation step changes the pose.
 export function mistakeDetail(run, mistake) {
   let reason = 'missed';
-  const overhead = ['arch', 'branch', 'gate'].includes(mistake.type);
+  const overhead = ['arch', 'branch', 'gate', 'moving-gate'].includes(mistake.type);
   if(mistake.minecartHazard){
     reason=run.lane===mistake.safeLane?'late-minecart-steer':'minecart-lane';
   } else if(mistake.raftHazard){
@@ -38,6 +38,7 @@ export function timingLesson(detail, obstacleType) {
     jumped: 'You jumped into an overhead obstacle. Stay low: swipe down instead of up.',
     'late-dive': 'You were still landing when the overhead obstacle arrived. Slide earlier, or approach it on the ground.',
     'early-slide': 'Your slide ended before the overhead obstacle passed. Swipe down a little later on the retry.',
+    'moving-gate': 'The moving gate swept into your lane. Follow the opening to a clear lane, or slide under it when the bar arrives.',
     'wrong-turn': 'The turn was locked in the wrong direction. Match the arrow with one left or right swipe.',
     'late-minecart-steer': 'The cart was still drifting toward the open lane. Start steering earlier; one swipe moves one lane.',
     'minecart-lane': 'The mine-cart rocks leave one open lane. Steer toward the glowing lane cue; jump and slide are unavailable until the exit.',

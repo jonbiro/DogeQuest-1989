@@ -41,7 +41,10 @@ function themeRelic(item,distance,materialFor){
 export function themeHazard(item,type,distance,materialFor){
   if(type==='relic'){themeRelic(item,distance,materialFor);return;}
   if(type==='log'||type==='branch')return themeOrganicHazard(item,type,distance,materialFor);
-  if(!['rock','arch','gate'].includes(type))return;
+  // Moving gates share the architectural palette with regular gates; their
+  // sweep beacon remains a distinct warm accent supplied by the template.
+  const paletteType = type === 'moving-gate' ? 'gate' : type;
+  if(!['rock','arch','gate'].includes(paletteType))return;
   const area=areaAt(distance);
   if(item.userData.hazardArea===area)return;
   item.traverse(part=>{

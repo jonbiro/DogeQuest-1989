@@ -98,6 +98,19 @@ test('an unknown saved puppy renders the collection default, not another starter
     `a damaged save must only load ${DEFAULT_PUPPY} art, got ${poseNames(loader.requested)}`);
 });
 
+test('companion pose lookup reuses only resident paintings', () => {
+  const loader = recordingLoader();
+  const artwork = createPuppyArtwork({mobile: true, loader});
+  artwork.apply(DEFAULT_PUPPY);
+  const before = loader.requested.length;
+  const idle = artwork.spriteForPose('run');
+  const jump = artwork.spriteForPose('jump');
+  assert.equal(loader.requested.length, before,
+    'a ghost lookup must not start a large action download');
+  assert.equal(idle, artwork.activeSprite(), 'the ground companion falls back to the active stack');
+  assert.equal(jump, artwork.activeSprite(), 'an undecoded action falls back to the active stack');
+});
+
 // A loader whose requests can be completed on demand with a decoded image of a
 // known size, so pose activation can be driven deterministically.
 function decodingLoader(size = 1254) {
@@ -187,6 +200,48 @@ test('the rear chase gait swaps between two authored Mochi beats', () => {
   assert.ok(activePoses.has('awayAlt'), `the alternate rear beat should be visible: ${[...activePoses]}`);
   assert.equal(loader.requested.filter(url => url === awayAltUrl).length, 1,
     'the alternate rear beat is streamed once and reused');
+});
+
+test('a late idle decode cannot re-enable the body beneath an active pose', () => {
+  const loader = decodingLoader();
+  const artwork = createPuppyArtwork({loader});
+  artwork.apply(DEFAULT_PUPPY);
+  const awayUrl = puppyPoseArtworkUrl(DEFAULT_PUPPY, 'away');
+  // The action is requested and decoded first, so the runner is already
+  // showing the rear silhouette when the slower source/idle callback lands.
+  artwork.setPose({time: 0, away: true});
+  loader.decode(awayUrl);
+  artwork.setPose({time: .1, away: true});
+  assert.equal(artwork.group.userData.activePose, 'away');
+  loader.decode(puppyPoseArtworkUrl(DEFAULT_PUPPY, 'idle'));
+  const visible = artwork.group.children
+    .filter(part => part.visible && part.material?.opacity > 0)
+    .map(part => part.name);
+  assert.deepEqual(visible, ['puppy-painted-away-pose'],
+    'a late idle callback must not leave a second full-body painting visible');
+});
+
+test('switching puppies during an action immediately reveals the new idle frame', () => {
+  const loader = decodingLoader();
+  const artwork = createPuppyArtwork({loader});
+  artwork.apply(DEFAULT_PUPPY);
+  const mochiIdleUrl = puppyPoseArtworkUrl(DEFAULT_PUPPY, 'idle');
+  loader.decode(mochiIdleUrl);
+  const awayUrl = puppyPoseArtworkUrl(DEFAULT_PUPPY, 'away');
+  artwork.setPose({time: 0, away: true});
+  loader.decode(awayUrl);
+  artwork.setPose({time: .1, away: true});
+  assert.equal(artwork.group.userData.activePose, 'away');
+
+  // The new puppy's idle callback can land in the same task as a kennel tap.
+  // It must not inherit Mochi's rear-view selection and flash blank for a
+  // frame before the next physics update.
+  artwork.apply('biscuit');
+  loader.decode(puppyPoseArtworkUrl('biscuit', 'idle'));
+  const body = artwork.group.children.find(part => part.name === 'puppy-painted-body');
+  assert.equal(artwork.group.userData.activePose, 'idle');
+  assert.equal(body.visible, true);
+  assert.equal(body.material.opacity, 1);
 });
 
 test('a starting run warms every silhouette reachable in its first seconds', () => {

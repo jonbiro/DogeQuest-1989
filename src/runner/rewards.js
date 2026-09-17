@@ -2,10 +2,12 @@ import { claimMission } from './missions.js';
 import { awardPrizes } from './collection.js';
 import {bankMastery} from './mastery.js';
 import {bankTrailRecord} from './trail-records.js';
+import {bankWeeklyGoal} from './weekly-goals.js';
+import {bankAdventureStreak} from './adventure-streak.js';
 
 // One completion transaction owns all record updates and earned currency.
 // Returning the original receipt also keeps repeated results renders stable.
-export function bankRun(profile, run, mission) {
+export function bankRun(profile, run, mission, timestamp = Date.now()) {
   if (!run.ended || run.practice) return null;
   if (run.receipt) return run.receipt;
   const creditsBefore=profile.credits;
@@ -27,7 +29,11 @@ export function bankRun(profile, run, mission) {
   }
   const prizes = awardPrizes(profile, run);
   const mastery = bankMastery(profile, run);
+  const weekly = bankWeeklyGoal(profile, run, timestamp);
+  const adventureStreak = bankAdventureStreak(profile, run, timestamp);
   run.receipt = {scorePoints: run.score, missionPoints, missionCount, prizes, personalBest, mastery,
     totalPoints:profile.credits-creditsBefore,distanceBest,bonesBest,trailRecord};
+  if (weekly) run.receipt.weekly = weekly;
+  if (adventureStreak) run.receipt.adventureStreak = adventureStreak;
   return run.receipt;
 }

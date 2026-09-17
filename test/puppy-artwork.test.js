@@ -156,19 +156,19 @@ test('the visible runner stack uses complete idle, stride, jump, slide, turn and
   assert.ok(artwork.group.children.some(part => part.name === 'puppy-painted-action-alt-pose'));
 });
 
-test('hanging paintings normalize their transparent matte before upload', () => {
+test('all painted poses normalize their transparent matte before upload', () => {
   assert.match(artworkSource, /function normalizeTransparentMatte\(texture\)/);
   // The mobile compact path also returns a CanvasTexture. It must not be
-  // treated as already-normalized, or the black RGB matte in mochi-hang-alt
-  // can bleed into the opening between the paws during linear filtering.
+  // treated as already-normalized, or the black RGB matte in an action frame
+  // can bleed into the opening between paws during linear filtering.
   assert.doesNotMatch(artworkSource, /!texture\?\.image\s*\|\|\s*typeof texture\.image\.getContext/);
   assert.match(artworkSource, /context\.getImageData\(0, 0, width, height\)/);
   assert.match(artworkSource, /const neutral = \[239, 250, 248\]/);
   assert.match(artworkSource, /if \(alpha === 0\)/);
   assert.match(artworkSource, /context\.putImageData\(imageData, 0, 0\)/);
   assert.match(artworkSource, /const normalized = prepareTexture\(new THREE\.CanvasTexture\(canvas\)\)/);
-  assert.match(artworkSource, /if \(pose === 'hang'\) compact = normalizeTransparentMatte\(compact\)/);
-  assert.match(artworkSource, /if \(pose === 'hang'\) alternateTexture = normalizeTransparentMatte\(alternateTexture\)/);
+  assert.match(artworkSource, /compact = normalizeTransparentMatte\(compact\)/);
+  assert.match(artworkSource, /alternateTexture = normalizeTransparentMatte\(alternateTexture\)/);
 });
 
 test('mobile downsampled paintings use the shared colour and sampler contract', () => {

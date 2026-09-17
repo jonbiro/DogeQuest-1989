@@ -1,10 +1,16 @@
 // Keep the layout stable while making unavailable cable actions honest.
 import {jumpLandingTime} from './motion.js';
+import {areaGameplayAt,areaSignatureAt} from './areas.js';
 export function traversalDescription(run){
   if(run.raft)return 'River raft. Tap LEFT or RIGHT, or swipe once per lane, to steer between rocks. To keep your finger down, stop your thumb briefly before the next swipe; lifting is always okay. Jump and slide return at the shore. Escape pauses.';
   if(run.zipline)return 'Zipline ride. Tap LEFT or RIGHT, or swipe once per lane, to collect bones. To keep your finger down, stop your thumb briefly before the next swipe; lifting is always okay. Jump and slide return after the cable. Escape pauses.';
-  if(run.minecart)return 'Mine-cart ride. The cart boards automatically; tap LEFT or RIGHT, or swipe once per lane, to steer around rocks and collect bones. Jump and slide return after the cart. Escape pauses.';
-  return '3D running trail. The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. One swipe equals one move. To keep your finger down, stop your thumb briefly, then drag again; lifting is always okay. A clear swipe can switch between steering and jump/slide without lifting. On touch screens, tap a left or right edge to steer or the center to jump. Arrow keys also work. Escape pauses.';
+  if(run.minecart)return run.minecartChoice
+    ? 'Mine-cart ride. Scenic carts offer a choice: stay on the glowing bone lane, or chase the gem lane for +250 points each. Tap LEFT or RIGHT, or swipe once per lane, to steer. Jump and slide return after the cart. Escape pauses.'
+    : 'Mine-cart ride. The cart boards automatically; tap LEFT or RIGHT, or swipe once per lane, to steer around rocks and collect bones. Jump and slide return after the cart. Escape pauses.';
+  if(run.dogChase)return 'Puppy chase. Follow the wagging companion and tap LEFT or RIGHT to stay with the moving bone line. The chase is a safe reward beat; collect the gift at the finish. Escape pauses.';
+  const signature=areaSignatureAt(run?.distance||0);
+  const rhythm=areaGameplayAt(run?.distance||0).label;
+  return `3D running trail in ${signature.name}. The current ${rhythm} mechanic is ${signature.mechanic.label}: ${signature.mechanic.cue}. The buttons are easiest: tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. One swipe equals one move. To keep your finger down, stop your thumb briefly, then drag again; lifting is always okay. A clear swipe can switch between steering and jump/slide without lifting. On touch screens, tap a left or right edge to steer or the center to jump. Arrow keys also work. Escape pauses.`;
 }
 
 function ensureLabel(button) {
@@ -87,7 +93,7 @@ export function updateLaneCueControls(buttons, cue = '') {
   const text = String(cue || '').toUpperCase().trim();
   const direction = text.startsWith('←') ? 'left' : text.startsWith('→') ? 'right' : '';
   const specificLaneCue = Boolean(direction && !/\bTURN\b/.test(text) &&
-    /\b(?:WEAVE|RAFT|CART|BONES|GIFT|RELIC)\b/.test(text));
+    /\b(?:WEAVE|RAFT|CART|BONES|GIFT|RELIC|CHASE)\b/.test(text));
   for (const button of buttons || []) {
     const type = button?.dataset?.action;
     if (!['left', 'right'].includes(type)) continue;

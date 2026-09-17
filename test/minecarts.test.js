@@ -8,8 +8,10 @@ import {
   MINECART_RECOVERY,
   MINECART_BANK_LIMIT,
   MINECART_REWARD,
+  MINECART_CHOICE_VERSION,
   minecartAt,
   minecartByIndex,
+  minecartChoiceFor,
   minecartIntersecting,
   minecartCurrent,
   steerMinecart,
@@ -140,6 +142,23 @@ test('mine-cart encounters trade safe lanes for readable scenic and challenge be
   }
 });
 
+test('version-five scenic carts add a visible gem shortcut without changing challenge fairness', () => {
+  const section = minecartByIndex(0);
+  const choice = minecartChoiceFor(section);
+  assert.deepEqual(choice.beats.map(beat => beat.rewardLane), [2, 1, 0]);
+  assert.equal(choice.effect, '+250 points each');
+  const scenic = minecartEncounter(section, false, true);
+  const gems = scenic.filter(object => object.minecartChoice === 'gem');
+  const bones = scenic.filter(object => object.minecartChoice === 'bone');
+  assert.equal(gems.length, 3);
+  assert.equal(bones.length, 12);
+  assert.deepEqual(gems.map(object => object.lane), [2, 1, 0]);
+  assert.ok(gems.every(object => object.minecartPickup && object.type === 'gem'));
+  assert.ok(gems.every(object => object.at > section.start && object.at < section.end));
+  assert.equal(minecartEncounter(section, true, true).some(object => object.minecartChoice), false,
+    'challenge carts keep a single readable open lane');
+});
+
 test('generated prototype trails reserve the cart and older versions stay unchanged', () => {
   const run = createRun(1989);
   const section = minecartByIndex(0);
@@ -157,11 +176,53 @@ test('generated prototype trails reserve the cart and older versions stay unchan
   assert.equal(run.nextMinecart, section.start + MINECART_PERIOD);
   assert.ok(run.objects.filter(object => object.minecartHazard).every(object => object.at >= section.start));
 
+  const current = createRun(1989, {}, MINECART_CHOICE_VERSION);
+  Object.assign(current, {
+    distance: section.start - MINECART_APPROACH - 1,
+    nextRow: section.start - MINECART_APPROACH - 1,
+    nextMinecart: section.start,
+    nextZipline: section.start + 900,
+    nextChoice: section.start + 500,
+    objects: [],
+  });
+  fillTrack(current);
+  assert.equal(current.objects.filter(object => object.minecartChoice === 'gem').length, 3);
+
+  const previous = createRun(1989, {}, 4);
+  Object.assign(previous, {
+    distance: section.start - MINECART_APPROACH - 1,
+    nextRow: section.start - MINECART_APPROACH - 1,
+    nextMinecart: section.start,
+    nextZipline: section.start + 900,
+    nextChoice: section.start + 500,
+    objects: [],
+  });
+  fillTrack(previous);
+  assert.equal(previous.objects.some(object => object.minecartChoice), false,
+    'version-four shared carts remain unchanged');
+
   const old = createRun(1989, {}, 3);
   Object.assign(old, {distance: section.start - 20, nextRow: section.start - 20, objects: []});
   fillTrack(old);
   assert.equal(old.minecartPrototype, false);
   assert.equal(old.objects.some(object => object.minecartHazard || object.type.startsWith('minecart-')), false);
+});
+
+test('scenic cart boarding exposes the choice to guidance and clears it on exit', () => {
+  const section = minecartByIndex(0);
+  const run = createRun(1989, {}, MINECART_CHOICE_VERSION);
+  run.distance = section.start - .2;
+  run.nextRow = Infinity;
+  run.objects = minecartEncounter(section, false, true).map((object, id) => ({...object, id}));
+  run.lane = 1;
+  run.x = LANES[1];
+  assert.equal(advanceMinecart(run, section.start - .2, section.start + .1), 'entered');
+  assert.equal(run.minecartChoice.kind, 'gem-line');
+  run.distance = section.start + 19;
+  run.speed = 10;
+  assert.equal(actionCue(run), '→ GEM LINE RIGHT');
+  assert.equal(advanceMinecart(run, section.end - .1, section.end), 'exited');
+  assert.equal(run.minecartChoice, null);
 });
 
 test('following cart cues collects the bone line without jump or slide inputs', () => {
