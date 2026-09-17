@@ -2898,15 +2898,15 @@ export function createView(canvas) {
         hanging:!menu && Boolean(run.zipline),
         rafting:!menu && Boolean(run.raft),
         skiing:!menu && Boolean(run.ski),
-        // Mochi's default ground run is viewed from the owner's chase-camera
-        // perspective. The dedicated rear painting is optional and scoped to
-        // Mochi, while jumps, slides, turns, ziplines, and raft travel keep
-        // their more legible authored action silhouettes.
-        away:!menu && activeRig===mochi && !run.zipline && !run.raft,
-        // The wide supplied gallop frame is reserved for a real bend or lane
-        // bank, where its side profile reinforces the direction of travel.
-        side:!menu && activeRig===mochi && !run.zipline && !run.raft &&
-          (Math.abs(lean)>.045 || Math.abs(groundFrame.yaw)>.055),
+        // Keep the ordinary chase camera on Mochi's two authored side-gallop
+        // frames. The supplied rear painting is a wonderful expressive
+        // crouch, but its raised tail and tucked head read like a roll when
+        // shown on every straightaway. Side-gallop gives the eye a clear
+        // forward-running silhouette while the route lean still communicates
+        // each lane change. The rear beat remains available for a future
+        // authored rear-view encounter instead of being discarded.
+        away:false,
+        side:!menu && activeRig===mochi && !run.zipline && !run.raft,
         menu,
         reducedMotion,
       });
