@@ -37,6 +37,21 @@ test('moving gates recommend the closest open lane', () => {
   assert.equal(info.recommended, true);
 });
 
+test('Frostpeak characters expose their authored safe lane', () => {
+  const info = laneTargetFor({
+    lane: 1,
+    distance: 8700,
+    objects: [{
+      type: 'yeti', lane: 1, at: 8720, skiObstacle: true,
+      skiYeti: true, skiSafeLane: 0, used: false,
+    }],
+  });
+  assert.equal(info.source, 'ski');
+  assert.equal(info.target, 0);
+  assert.equal(info.distance, 20);
+  assert.equal(info.recommended, true);
+});
+
 test('a pickup can light a lane when no hazard owns the decision', () => {
   const info = laneTargetFor({
     lane: 1,

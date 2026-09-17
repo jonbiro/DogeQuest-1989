@@ -10,7 +10,7 @@ import {movingGateSafeLane, movingGateX} from './moving-gate.js';
 function skiHazardCue(run) {
   const objects = Array.isArray(run?.objects) ? run.objects : [];
   const hazard = objects
-    .filter(object => object.skiHazard && !object.used && !object.passed &&
+    .filter(object => (object.skiHazard || object.skiObstacle) && !object.used && !object.passed &&
       object.at > run.distance && object.at - run.distance < run.speed * 1.45)
     .sort((a, b) => a.at - b.at)[0];
   if (!hazard) return run.ski?.end - run.distance < run.speed * .8
@@ -19,6 +19,20 @@ function skiHazardCue(run) {
     const gap = hazard.at - run.distance;
     if (run.y > .4 || run.skiHop > 0) return '';
     return gap < run.speed * .75 ? '↑ HOP MOGUL' : 'MOGUL AHEAD · GET READY';
+  }
+  if (hazard.type === 'snowball') {
+    if (run.y > .4 || run.skiHop > 0) return '';
+    const gap = hazard.at - run.distance;
+    return gap < run.speed * .78
+      ? '↑ HOP SNOWBALL'
+      : 'SNOWBALL AHEAD · HOP OR CARVE';
+  }
+  if (hazard.type === 'yeti') {
+    const lane = laneCue(run.lane, hazard.skiSafeLane, 'YETI');
+    return lane || 'YETI CROSSING · CARVE AWAY';
+  }
+  if (hazard.type === 'snowman') {
+    return laneCue(run.lane, hazard.skiSafeLane, 'SNOWMAN') || 'SNOWMAN AHEAD · CARVE AROUND';
   }
   const safe = hazard.skiSafeLane;
   const label = hazard.type === 'ice' ? 'ICE' : 'OPEN GATE';
@@ -228,6 +242,10 @@ export function eventNotice(event, run) {
     'ski-end': {text: 'Frostpeak complete · +360', priority: 1},
     'ski-jump': {text: 'Mogul hop', priority: 0},
     'ski-mogul-clear': {text: 'Clean mogul · +70', priority: 0},
+    'ski-yeti-dodge': {text: 'Yeti dodged · bonus', priority: 0},
+    'ski-snowball-clear': {text: 'Snowball hop · bonus', priority: 0},
+    'ski-snowball-dodge': {text: 'Snowball dodged · bonus', priority: 0},
+    'ski-snowman-dodge': {text: 'Snowman dodged · bonus', priority: 0},
     'dog-chase-start': {text: 'Puppy ahead · follow the bone line', priority: 1},
     'dog-chase-end': {text: 'Chase complete · +140', priority: 1},
     'bridge-collapse': {text: 'Bridge shifting · jump gap ahead', priority: 1},
@@ -243,6 +261,9 @@ export function runLesson(run) {
   if (run.lastMistake?.skiHazard) {
     if (run.lastMistake.type === 'mogul') return 'That mogul needed a short hop. Tap HOP as its crest reaches Mochi, then return to carving.';
     if (run.lastMistake.type === 'ice') return 'Blue ice is slippery. Carve into the highlighted open lane before the patch reaches Mochi.';
+    if (run.lastMistake.type === 'snowball') return 'Snowballs are jumpable. Tap HOP as the rolling ball reaches Mochi, or carve into the highlighted open lane.';
+    if (run.lastMistake.type === 'yeti') return 'A yeti crossed the slope. Watch its patrol, then carve toward the highlighted lane before it reaches Mochi.';
+    if (run.lastMistake.type === 'snowman') return 'Snowmen are fixed lane markers. Carve toward the highlighted open lane before the snowman reaches Mochi.';
     return 'Follow the open ski gate. The colored flags show the lane to carve toward; one swipe moves one lane.';
   }
   if(run.lastMistake?.minecartHazard)return run.lastMistakeDetail?.reason==='late-minecart-steer'

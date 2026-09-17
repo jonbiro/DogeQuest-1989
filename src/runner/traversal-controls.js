@@ -2,7 +2,7 @@
 import {jumpLandingTime} from './motion.js';
 import {areaGameplayAt,areaSignatureAt} from './areas.js';
 export function traversalDescription(run){
-  if(run.ski)return 'Frostpeak ski descent. Tap LEFT or RIGHT, or swipe once per lane, to carve between hazards. Tap HOP when a mogul crests; steer around blue ice and follow the open ski gate. Bones and the bright finish gift follow the safe line. Sliding is paused during the descent; jump and slide return after the finish. Escape pauses.';
+  if(run.ski)return 'Frostpeak ski descent. Tap LEFT or RIGHT, or swipe once per lane, to carve between hazards. Tap HOP when a mogul or rolling snowball crests; dodge the crossing yeti and carve around snowmen, blue ice, and the open ski gate. Bones and the bright finish gift follow the safe line. Sliding is paused during the descent; jump and slide return after the finish. Escape pauses.';
   if(run.raft)return 'River raft. Tap LEFT or RIGHT, or swipe once per lane, to steer between rocks. To keep your finger down, stop your thumb briefly before the next swipe; lifting is always okay. Jump and slide return at the shore. Escape pauses.';
   if(run.zipline)return 'Zipline ride. Tap LEFT or RIGHT, or swipe once per lane, to collect bones. To keep your finger down, stop your thumb briefly before the next swipe; lifting is always okay. Jump and slide return after the cable. Escape pauses.';
   if(run.minecart)return run.minecartChoice

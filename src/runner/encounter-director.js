@@ -127,7 +127,7 @@ function rideEncounter(run) {
         ? 'Choose the steady bone lane or chase the glowing gem line'
         : 'Steer between the glowing open lanes'
       : run.ski
-        ? 'Carve the open lane, hop the moguls, and dodge blue ice'
+        ? 'Carve the open lane, hop moguls and snowballs, and dodge the yeti patrol'
         : 'Catch the handle, then chase the floating bones';
   return phaseCopy(
     'spectacle',
@@ -214,7 +214,7 @@ function upcomingSpecial(run, distance) {
   const detail = candidate.type === 'zipline-start'
     ? `Jump for the turquoise handle · in ${meters(candidate.at - distance)}m`
     : candidate.type === 'ski-start'
-      ? `Carve the slope · hop moguls and follow the open gate · in ${meters(candidate.at - distance)}m`
+      ? `Carve the slope · hop snowballs, dodge yetis, and follow the open gate · in ${meters(candidate.at - distance)}m`
       : candidate.type === 'ski-gate'
         ? `Follow the open flag · in ${meters(candidate.at - distance)}m`
     : candidate.type === 'moving-gate'

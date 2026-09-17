@@ -17,6 +17,9 @@ import {
   advanceSki,
   moveSki,
   skiEncounter,
+  skiYetiX,
+  skiSnowballX,
+  SKI_OBSTACLE_TYPES,
 } from '../src/runner/ski.js';
 import { createRun, fillTrack, act, LANES } from '../src/runner/world.js';
 import { actionCue, eventNotice, runLesson } from '../src/runner/guidance.js';
@@ -147,4 +150,24 @@ test('ski movement follows cues and keeps jump/slide state deterministic', () =>
   assert.equal(run.y, 0);
   assert.equal(run.skiHop, 0);
   assert.match(runLesson({ ...run, lastMistake: null }), /Keep an eye|next run/);
+});
+
+test('Frostpeak adds readable character obstacles without changing the base beat contract', () => {
+  const section = skiByIndex(0);
+  const scenic = skiEncounter(section, false);
+  const challenge = skiEncounter(section, true);
+  assert.deepEqual(SKI_OBSTACLE_TYPES, ['yeti', 'snowball', 'snowman']);
+  for (const objects of [scenic, challenge]) {
+    for (const type of SKI_OBSTACLE_TYPES) {
+      const obstacle = objects.find(object => object.type === type);
+      assert.ok(obstacle, `${type} is authored in every descent`);
+      assert.equal(obstacle.skiObstacle, true);
+      assert.ok(obstacle.at >= section.start && obstacle.at <= section.end);
+      assert.ok([0, 1, 2].includes(obstacle.skiSafeLane));
+    }
+  }
+  const yeti = scenic.find(object => object.type === 'yeti');
+  assert.notEqual(skiYetiX(yeti, yeti.skiYetiStart), skiYetiX(yeti, yeti.skiYetiEnd));
+  assert.ok(Math.abs(skiSnowballX(scenic.find(object => object.type === 'snowball'), section.start + 98)) < 2.6);
+  assert.ok(challenge.filter(object => object.type === 'snowball').length > scenic.filter(object => object.type === 'snowball').length);
 });

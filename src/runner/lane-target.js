@@ -6,6 +6,7 @@ import {movingGateSafeLane} from './moving-gate.js';
 // restored run or changing seeded collision timing.
 const HAZARDS = new Set([
   'rock', 'log', 'arch', 'branch', 'gate', 'moving-gate', 'gap',
+  'mogul', 'ice', 'ski-gate', 'yeti', 'snowball', 'snowman',
 ]);
 const OVERHEAD = new Set(['arch', 'branch', 'gate', 'moving-gate']);
 const PICKUPS = new Set(['bone', 'magnet', 'shield', 'gem', 'double', 'heart', 'gift', 'zoomies', 'relic']);
@@ -31,7 +32,7 @@ function openLaneForBlocked(blocked, current) {
 
 function explicitSafeLane(object, run, current) {
   if (object?.movingGate) return movingGateSafeLane(object, object.at, current);
-  for (const key of ['raftSafeLane', 'minecartSafeLane', 'safeLane']) {
+  for (const key of ['raftSafeLane', 'minecartSafeLane', 'skiSafeLane', 'safeLane']) {
     const lane = laneIndex(object?.[key]);
     if (lane !== null) return lane;
   }
@@ -63,6 +64,7 @@ function hazardForecast(run, current, lookahead) {
     if (target !== null) {
       const type = entry.object.raftHazard ? 'raft'
         : entry.object.minecartHazard ? 'cart'
+          : entry.object.skiHazard || entry.object.skiObstacle ? 'ski'
           : entry.object.movingGate ? 'gate'
             : entry.object.courseRegion !== undefined ? 'course' : 'hazard';
       return {
@@ -141,4 +143,3 @@ export function laneTargetFor(run = {}, {lookahead = 38, pickupLookahead = 28} =
     recommended: Boolean(recommendation && recommendation.target !== current),
   };
 }
-

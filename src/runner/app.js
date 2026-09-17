@@ -1066,6 +1066,10 @@ function finish() {
       `${run.skis} Frostpeak ${run.skis === 1 ? 'descent' : 'descents'}`,
       run.skiJumps ? `${run.skiJumps} mogul ${run.skiJumps === 1 ? 'hop' : 'hops'}` : '',
       run.skiDodges ? `${run.skiDodges} ice ${run.skiDodges === 1 ? 'dodge' : 'dodges'}` : '',
+      run.skiYetiDodges ? `${run.skiYetiDodges} yeti ${run.skiYetiDodges === 1 ? 'dodge' : 'dodges'}` : '',
+      run.skiSnowballClears ? `${run.skiSnowballClears} snowball ${run.skiSnowballClears === 1 ? 'hop' : 'hops'}` : '',
+      run.skiSnowballDodges ? `${run.skiSnowballDodges} snowball ${run.skiSnowballDodges === 1 ? 'dodge' : 'dodges'}` : '',
+      run.skiSnowmenDodged ? `${run.skiSnowmenDodged} snowman ${run.skiSnowmenDodged === 1 ? 'dodge' : 'dodges'}` : '',
     ].filter(Boolean).join(' · ');
     $("run-highlights").textContent += ` · ${skiDetails}`;
   }

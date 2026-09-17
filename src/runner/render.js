@@ -45,7 +45,7 @@ import {raftAt,raftIntersecting} from './rafts.js';
 import {createRaftModel} from './raft-model.js';
 import {minecartIntersecting} from './minecart.js';
 import {createMinecartModel} from './minecart-model.js';
-import {skiIntersecting, skiVisualBlend} from './ski.js';
+import {skiIntersecting, skiVisualBlend, skiYetiX, skiSnowballX} from './ski.js';
 import {createSkiModel} from './ski-model.js';
 import {movingGateX} from './moving-gate.js';
 import {createRiverBanks} from './river-banks.js';
@@ -1771,6 +1771,61 @@ export function createView(canvas) {
   templates['ski-end'].children.forEach(item => {
     if (item.material?.color?.getHexString?.() === 'd9f6ff') item.material.color.set('#ffd78e');
   });
+  // Frostpeak characters are rounded, high-contrast silhouettes rather than
+  // tiny hazard blocks. Each one has a few tagged parts so the render loop can
+  // give it a soft, readable motion beat without allocating per-frame meshes.
+  templates.yeti = new THREE.Group();
+  const yetiBody = ball(templates.yeti, '#dbeaf0', 0, .82, .08, .62, .68, .52);
+  yetiBody.castShadow = true;
+  ball(templates.yeti, '#f6fbfc', 0, .72, -.38, .42, .47, .18).name = 'yeti-belly';
+  const yetiHead = ball(templates.yeti, '#e9f4f6', 0, 1.55, -.16, .56, .5, .46);
+  yetiHead.castShadow = true;
+  for (const side of [-1, 1]) {
+    ball(templates.yeti, '#c4dce6', side * .48, 1.58, -.08, .24, .34, .2).name = 'yeti-ear';
+    ball(templates.yeti, '#173b4b', side * .19, 1.66, -.57, .095, .11, .055).name = 'yeti-eye';
+  }
+  ball(templates.yeti, '#243b49', 0, 1.43, -.61, .14, .1, .09).name = 'yeti-nose';
+  const yetiScarf = box(templates.yeti, '#4e9db0', 0, 1.17, -.2, .72, .12, .5);
+  yetiScarf.name = 'yeti-scarf';
+  const yetiTail = ball(templates.yeti, '#c4dce6', 0, .84, .55, .24, .27, .25);
+  yetiTail.name = 'yeti-tail';
+  for (const side of [-1, 1]) {
+    const arm = box(templates.yeti, '#c4dce6', side * .68, .92, -.08, .18, .22, .56);
+    arm.rotation.z = side * .34;
+    arm.name = 'yeti-arm';
+    ball(templates.yeti, '#b3d3df', side * .38, .2, -.06, .28, .2, .34).name = 'yeti-foot';
+  }
+  templates.snowball = new THREE.Group();
+  const snowball = ball(templates.snowball, '#f7fcff', 0, .55, 0, .58, .58, .58);
+  snowball.castShadow = true;
+  ball(templates.snowball, '#b7e0ee', -.2, .46, -.39, .18, .12, .08).name = 'snowball-shadow';
+  ball(templates.snowball, '#ccecf5', .3, .66, -.38, .14, .1, .07).name = 'snowball-highlight';
+  const snowballTrail = [];
+  for (let index = 0; index < 3; index++) {
+    const puff = ball(templates.snowball, '#e5f6fb', (index - 1) * .34, .17 + index * .06, .64 + index * .18,
+      .12 - index * .02, .1 - index * .015, .14 - index * .025);
+    puff.name = 'snowball-puff';
+    puff.material = puff.material.clone();
+    puff.material.transparent = true;
+    puff.material.opacity = .62 - index * .14;
+    puff.material.depthWrite = false;
+    snowballTrail.push(puff);
+  }
+  templates.snowman = new THREE.Group();
+  ball(templates.snowman, '#f7fcff', 0, .38, 0, .42, .38, .38).name = 'snowman-base';
+  ball(templates.snowman, '#f7fcff', 0, .92, -.02, .55, .5, .48).name = 'snowman-middle';
+  ball(templates.snowman, '#f7fcff', 0, 1.51, -.04, .42, .4, .38).name = 'snowman-head';
+  for (const side of [-1, 1]) {
+    ball(templates.snowman, '#293b48', side * .16, 1.59, -.39, .065, .075, .04).name = 'snowman-eye';
+    ball(templates.snowman, '#304451', side * .14, .96, -.48, .07, .075, .04).name = 'snowman-button';
+  }
+  const carrot = cone(templates.snowman, '#e58d4c', 0, 1.45, -.48, .11, .34, .11);
+  carrot.rotation.x = -Math.PI / 2;
+  carrot.name = 'snowman-carrot';
+  const snowmanScarf = box(templates.snowman, '#e06f70', 0, 1.2, -.08, .62, .12, .52);
+  snowmanScarf.name = 'snowman-scarf';
+  box(templates.snowman, '#263d49', 0, 1.91, -.02, .62, .12, .58).name = 'snowman-hat-brim';
+  box(templates.snowman, '#314c5a', 0, 2.12, -.02, .42, .34, .4).name = 'snowman-hat';
   const routeLabels=document.createElement('canvas');
   routeLabels.width=1024;routeLabels.height=512;
   const routeText=routeLabels.getContext('2d');
@@ -2647,6 +2702,15 @@ export function createView(canvas) {
         skis.forEach((ski, index) => {
           ski.rotation.z = skiAnimated ? Math.sin(time * 5.5 + index * Math.PI) * .018 : 0;
         });
+        const skiTips = skiModel.userData.skiTips || [];
+        skiTips.forEach((tip, index) => {
+          const side = tip.userData.side || (index ? 1 : -1);
+          tip.rotation.x = tip.userData.baseRotation + (skiAnimated ? Math.sin(time * 5.5 + index * Math.PI) * .06 * side : 0);
+        });
+        const bindings = skiModel.userData.bindings || [];
+        bindings.forEach((binding, index) => {
+          binding.position.y = binding.userData.baseY + (skiAnimated ? Math.abs(Math.sin(time * 5.5 + index * Math.PI)) * .018 : 0);
+        });
         const poles = skiModel.userData.poles || [];
         poles.forEach((pole, index) => {
           const side = pole.userData.side || (index ? 1 : -1);
@@ -2868,12 +2932,16 @@ export function createView(canvas) {
             }
           }
           item.position.set(
-            object.movingGate ? movingGateX(object, distance) : LANES[object.lane],
+            object.movingGate
+              ? movingGateX(object, distance)
+              : object.skiYeti
+                ? skiYetiX(object, distance)
+                : object.skiSnowball ? skiSnowballX(object, distance) : LANES[object.lane],
             pickup
               ? (object.skiAirborne ? 1.75 : object.airborne ? ZIPLINE_HEIGHT + 1.1 : 1.1) +
                   (reducedMotion ? 0 : Math.sin(time * 3 + object.id) * 0.12) +
                   pickupBob(object.type, time, object.id, reducedMotion)
-              : object.raftHazard ? -.55 : object.skiHazard ? .035 : 0,
+              : object.raftHazard ? -.55 : object.skiHazard || object.skiObstacle ? .035 : 0,
             -(object.at - distance),
           );
           if (object.pull) {
@@ -2904,6 +2972,40 @@ export function createView(canvas) {
             frame.z - across * Math.sin(frame.yaw));
           item.rotation.x = pickup ? 0 : frame.pitch;
           item.rotation.y += frame.yaw;
+          // Character hazards carry their own small animation language. Keep
+          // the movement rooted in the transformed trail frame so a turning
+          // slope never makes a yeti or snowball slide sideways off the road.
+          if (object.skiYeti) {
+            const patrol = reducedMotion ? 0 : Math.sin(time * 5.2 + object.id * .31);
+            item.position.y += reducedMotion ? 0 : Math.abs(patrol) * .045;
+            item.rotation.z = patrol * .045;
+            item.rotation.y += reducedMotion ? 0 : patrol * .055;
+            item.children.forEach((child, index) => {
+              if (child.userData?.type === 'yeti-arm' || child.name === 'yeti-arm') {
+                const side = child.position.x < 0 ? -1 : 1;
+                child.rotation.z = side * .34 + (reducedMotion ? 0 : patrol * .16 * side);
+              }
+              if (child.name === 'yeti-tail') child.rotation.x = reducedMotion ? 0 : patrol * .22;
+              if (child.name === 'yeti-scarf') child.rotation.z = reducedMotion ? 0 : patrol * .10;
+            });
+          }
+          if (object.skiSnowball) {
+            item.rotation.z = reducedMotion ? 0 : animationTime * 7.5 + object.id * .21;
+            item.rotation.x = reducedMotion ? frame.pitch : frame.pitch + animationTime * 2.2;
+            item.position.y += reducedMotion ? 0 : Math.abs(Math.sin(animationTime * 4 + object.id)) * .025;
+            item.children.forEach((child, index) => {
+              if (child.name === 'snowball-puff') {
+                const puffPulse = reducedMotion ? 1 : .84 + .16 * Math.sin(animationTime * 4.2 + index);
+                child.scale.setScalar(puffPulse);
+              }
+            });
+          }
+          if (object.type === 'snowman') {
+            const sway = reducedMotion ? 0 : Math.sin(animationTime * 2.4 + object.id * .18) * .035;
+            item.rotation.z = sway;
+            const scarf = item.children.find(child => child.name === 'snowman-scarf');
+            if (scarf) scarf.rotation.z = reducedMotion ? 0 : Math.sin(animationTime * 3.8 + object.id) * .08;
+          }
           // A set-piece should announce itself in the world before the player
           // is close enough to parse its model. Select only authored spectacle
           // objects (never an ordinary row), keep the nearest candidate, and
@@ -2914,7 +3016,8 @@ export function createView(canvas) {
             const spectacleObject = object.bridgeCollapse ||
               (object.type === 'gift' && object.chasePickup) ||
               ['zipline-start', 'raft-start', 'minecart-start', 'moving-gate',
-                'choice-left', 'choice-right', 'ski-start', 'ski-end', 'ski-gate'].includes(object.type);
+                'choice-left', 'choice-right', 'ski-start', 'ski-end', 'ski-gate',
+                'yeti', 'snowball', 'snowman'].includes(object.type);
             const approach = object.at - distance;
             if (spectacleObject && approach >= 0 && approach < 64 &&
                 (!spectacleBeacon || approach < spectacleBeacon.approach)) {
@@ -3047,16 +3150,22 @@ export function createView(canvas) {
             // keeps this at zero extra geometry or texture uploads.
             const approach = object.at - distance;
             const solidHazard = ['rock', 'log', 'arch', 'branch', 'gate'].includes(object.type) || object.type === 'moving-gate';
-            if (solidHazard && approach > 5 && approach < 32 && sparkCount < 192) {
+            const skiCharacter = object.skiObstacle || object.skiHazard;
+            if ((solidHazard || skiCharacter) && approach > 5 && approach < 32 && sparkCount < 192) {
               const urgency = 1 - THREE.MathUtils.clamp((approach - 5) / 27, 0, 1);
               const pulse = .5 + .5 * Math.sin(time * 3.1 + (Number(object.id) || 0) * .67);
-              const cueScale = (.018 + urgency * .036) * (.78 + pulse * .22);
+              const cueScale = (.018 + urgency * (skiCharacter ? .042 : .036)) * (.78 + pulse * .22);
               const overhead = ['arch', 'branch', 'gate', 'moving-gate'].includes(object.type);
-              flashColor.set(overhead ? '#8ff2d2' : '#ffd38b');
+              const skiColor = object.type === 'snowball' ? '#c7f1ff'
+                : object.type === 'yeti' ? '#b8edff'
+                  : object.type === 'snowman' ? '#fff0b7' : '#d8f6ff';
+              if (skiCharacter) flashColor.set(skiColor);
+              else flashColor.set(overhead ? '#8ff2d2' : '#ffd38b');
               flashMatrix.makeScale(cueScale * 1.7, cueScale * .42, cueScale * .56);
               flashMatrix.setPosition(
                 item.position.x,
-                item.position.y + (overhead ? 2.55 : object.type === 'rock' ? 1.42 : 1.05),
+                item.position.y + (overhead ? 2.55 : object.type === 'rock' ? 1.42 :
+                  object.type === 'yeti' ? 2.25 : object.type === 'snowman' ? 2.18 : 1.12),
                 item.position.z + .055,
               );
               flashes.setColorAt(sparkCount, flashColor);
@@ -3081,8 +3190,10 @@ export function createView(canvas) {
           : object.type === 'moving-gate' ? 3.22
           : object.type === 'gap' ? .78
               : object.type === 'choice-left' || object.type === 'choice-right' ? 3.86
-                : object.type === 'ski-gate' ? 2.82
-                  : object.type === 'ski-start' || object.type === 'ski-end' ? 3.18 : 3.18;
+                  : object.type === 'ski-gate' ? 2.82
+                  : object.type === 'ski-start' || object.type === 'ski-end' ? 3.18
+                    : object.type === 'yeti' ? 2.52
+                      : object.type === 'snowman' ? 2.35 : 1.65;
         // Three floating lozenges read as an arrival marker at a glance. They
         // stay tiny and distance-faded so the actual obstacle, bone line and
         // lane target remain the visual priorities when the beat is close.

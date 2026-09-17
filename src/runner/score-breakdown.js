@@ -60,6 +60,15 @@ export function scoreBreakdown(run) {
   if(run.minecarts>0)included.push(`${format(run.minecarts*250)} from mine-cart rides`);
   if(run.skis>0)included.push(`${format(run.skis*SKI_REWARD)} from Frostpeak descents`);
   if(run.skiJumps>0)included.push(`${format(run.skiJumps*70)} from mogul hops`);
+  if(run.skiObstaclePoints>0) {
+    const details = [
+      run.skiYetiDodges ? `${run.skiYetiDodges} yeti` : '',
+      run.skiSnowballClears ? `${run.skiSnowballClears} snowball hop${run.skiSnowballClears === 1 ? '' : 's'}` : '',
+      run.skiSnowballDodges ? `${run.skiSnowballDodges} snowball dodge${run.skiSnowballDodges === 1 ? '' : 's'}` : '',
+      run.skiSnowmenDodged ? `${run.skiSnowmenDodged} snowman${run.skiSnowmenDodged === 1 ? '' : 's'}` : '',
+    ].filter(Boolean).join(', ');
+    included.push(`${format(run.skiObstaclePoints)} from snow hazards${details ? ` (${details})` : ''}`);
+  }
   if(run.minecartGemChoices>0)included.push(`${format(run.minecartGemChoices*250)} from mine-cart gem choices`);
   if(run.streakPoints>0)included.push(`${format(run.streakPoints)} from bone streaks`);
   if(run.nearMissPoints>0)included.push(`${format(run.nearMissPoints)} from near misses`);

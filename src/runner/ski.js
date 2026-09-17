@@ -5,6 +5,9 @@
 
 // The first slope lands in a clear pocket after the established bridge beat
 // and before the next zipline/cart chapter, leaving a calm recovery window.
+// Keeping the authored distance also protects the opening three-kilometre
+// learning route from competing set pieces; later long runs then earn the
+// distinct Frostpeak chapter as a deliberate escalation.
 export const SKI_FIRST = 8700;
 export const SKI_PERIOD = 3600;
 export const SKI_LENGTH = 210;
@@ -15,12 +18,21 @@ export const SKI_BANK_LIMIT = 3.35;
 export const SKI_HOP_DURATION = 0.52;
 export const SKI_HOP_HEIGHT = 1.08;
 
+// Frostpeak's character hazards use their own flag instead of `skiHazard`.
+// The original four-beat contract is still consumed by older replay helpers
+// and tests; the new flag lets the chapter grow without changing that count.
+export const SKI_OBSTACLE_TYPES = Object.freeze(['yeti', 'snowball', 'snowman']);
+
 const FREQUENCY = 15;
 const DAMPING = 8.8;
 const DAMPED_FREQUENCY = Math.sqrt(FREQUENCY * FREQUENCY - DAMPING * DAMPING);
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function lerp(from, to, amount) {
+  return from + (to - from) * amount;
 }
 
 export function skiByIndex(index) {
@@ -63,6 +75,32 @@ export function skiCurrent(distance) {
   if (!section) return 0;
   const progress = clamp((distance - section.start) / SKI_LENGTH, 0, 1);
   return 0.24 * Math.pow(Math.sin(Math.PI * progress), 2) * Math.sin(progress * Math.PI * 5);
+}
+
+// The yeti deliberately crosses the slope rather than sitting in a lane. Both
+// simulation and renderer call this helper so the creature's readable patrol
+// animation is also its actual collision position.
+export function skiYetiX(object, distance) {
+  const from = Number.isInteger(object?.skiYetiFrom) ? clamp(object.skiYetiFrom, 0, 2) : 0;
+  const to = Number.isInteger(object?.skiYetiTo) ? clamp(object.skiYetiTo, 0, 2) : 2;
+  const start = Number.isFinite(object?.skiYetiStart) ? object.skiYetiStart : (object?.at ?? 0) - 9;
+  const end = Number.isFinite(object?.skiYetiEnd) ? object.skiYetiEnd : (object?.at ?? 0) + 9;
+  const progress = clamp((Number.isFinite(distance) ? distance : start - 9) - start, 0, Math.max(.001, end - start)) /
+    Math.max(.001, end - start);
+  const eased = progress * progress * (3 - 2 * progress);
+  return lerp([-2.4, 0, 2.4][from], [-2.4, 0, 2.4][to], eased);
+}
+
+// Snowballs stay mostly in their authored lane but wobble over the packed
+// snow. The tiny wave makes them feel alive without ever erasing a clear lane
+// choice or making their hitbox surprising.
+export function skiSnowballX(object, distance) {
+  const lane = Number.isInteger(object?.lane) ? clamp(object.lane, 0, 2) : 1;
+  const phase = Number.isFinite(object?.skiWavePhase) ? object.skiWavePhase : 0;
+  const wobble = Number.isFinite(distance) && !object?.reducedMotion
+    ? Math.sin((distance - (object?.at ?? 0)) * .9 + phase) * .16
+    : 0;
+  return [-2.4, 0, 2.4][lane] + wobble;
 }
 
 // A damped response makes one lane swipe feel immediate but still gives the
@@ -188,6 +226,66 @@ export function skiEncounter(section, challenge = false) {
       if (type === 'mogul' && (offset === -4 || offset === 3)) bone.skiAirborne = true;
       objects.push(bone);
     }
+  }
+
+  // Three distinct set-piece characters break up the four base beats. They
+  // sit in the gaps between bone ribbons so the player can read one decision
+  // at a time: carve around the patrol, hop the rolling ball, then choose a
+  // clear lane around the snowman. Challenge runs add a second snowball as a
+  // high-value optional hop without changing the original hazard count.
+  const yetiFrom = (section.index + 1) % 3;
+  const yetiTo = (yetiFrom + 1) % 3;
+  const yetiSafeLane = [0, 1, 2].find(lane => lane !== yetiFrom && lane !== yetiTo) ?? 1;
+  objects.push({
+    type: 'yeti',
+    lane: yetiFrom,
+    at: section.start + 52,
+    skiObstacle: true,
+    skiYeti: true,
+    skiYetiFrom: yetiFrom,
+    skiYetiTo: yetiTo,
+    skiYetiStart: section.start + 42,
+    skiYetiEnd: section.start + 62,
+    // The crossing body occupies the space between its two lanes. A slightly
+    // wider envelope makes the midpoint a real decision instead of a visual
+    // prop that a centered skier can pass through without consequence.
+    skiCollisionWidth: 1.45,
+    skiSafeLane: yetiSafeLane,
+    skillReward: challenge ? 105 : 80,
+  });
+  const snowballLane = (section.index + 2) % 3;
+  objects.push({
+    type: 'snowball',
+    lane: snowballLane,
+    at: section.start + 98,
+    skiObstacle: true,
+    skiSnowball: true,
+    skiJumpable: true,
+    skiWavePhase: section.index * .75,
+    skiSafeLane: (snowballLane + 1) % 3,
+    skillReward: challenge ? 115 : 90,
+  });
+  const snowmanLane = section.index % 3;
+  objects.push({
+    type: 'snowman',
+    lane: snowmanLane,
+    at: section.start + 145,
+    skiObstacle: true,
+    skiSafeLane: (snowmanLane + 1) % 3,
+    skillReward: challenge ? 95 : 72,
+  });
+  if (challenge) {
+    objects.push({
+      type: 'snowball',
+      lane: (snowballLane + 2) % 3,
+      at: section.start + 156,
+      skiObstacle: true,
+      skiSnowball: true,
+      skiJumpable: true,
+      skiWavePhase: section.index * .75 + 1.8,
+      skiSafeLane: snowballLane,
+      skillReward: 125,
+    });
   }
   const magnet = { type: 'magnet', lane: 1, at: section.start + 12, skiPickup: true };
   magnet.encounter = 'Frostpeak descent';

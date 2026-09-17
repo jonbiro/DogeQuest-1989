@@ -20,6 +20,9 @@ export const CUES = {
   "ski-end":[{from:392,to:523,at:0,duration:.12,type:"triangle",volume:.024},{from:523,to:784,at:.09,duration:.2,type:"sine",volume:.022}],
   "ski-jump":[{from:440,to:880,at:0,duration:.13,type:"triangle",volume:.022}],
   "ski-ice":[{from:180,to:110,at:0,duration:.12,type:"sine",volume:.02}],
+  "ski-yeti":[{from:260,to:520,at:0,duration:.1,type:"triangle",volume:.021},{from:520,to:780,at:.08,duration:.14,type:"sine",volume:.018}],
+  "ski-snowball":[{from:330,to:220,at:0,duration:.11,type:"sine",volume:.019},{from:440,to:660,at:.09,duration:.12,type:"triangle",volume:.02}],
+  "ski-snowman":[{from:280,to:180,at:0,duration:.16,type:"sine",volume:.018}],
   hit:[{from:120,to:120,at:0,duration:.2,type:"sine"}],
   ready:[{from:660,to:660,at:0,duration:.09,type:"sine"},{from:880,to:880,at:.09,duration:.12,type:"sine"}],
   finish:[{from:523,to:440,at:0,duration:.15,type:"triangle"},{from:392,to:330,at:.17,duration:.2,type:"triangle"}],
@@ -39,6 +42,10 @@ export function traversalCue(event) {
     case 'ski-end':return 'ski-end';
     case 'ski-jump':return 'ski-jump';
     case 'ski-ice-dodge':return 'ski-ice';
+    case 'ski-yeti-dodge':return 'ski-yeti';
+    case 'ski-snowball-clear':return 'ski-snowball';
+    case 'ski-snowball-dodge':return 'ski-snowball';
+    case 'ski-snowman-dodge':return 'ski-snowman';
     default:return null;
   }
 }

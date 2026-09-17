@@ -60,6 +60,8 @@ import {
   advanceSki,
   moveSki,
   skiHopHeight,
+  skiYetiX,
+  skiSnowballX,
   SKI_HOP_DURATION,
 } from './ski.js';
 import {
@@ -74,7 +76,7 @@ import {applyRunModifier} from './run-modifiers.js';
 const SOLID_HAZARDS = ["rock", "log", "arch", "branch", "gate"];
 export const BASE_SLIDE_DURATION = .58;
 export const SLIDE_UPGRADE_DURATION = .07;
-export const HAZARDS = [...SOLID_HAZARDS, "moving-gate", "gap", "mogul", "ice", "ski-gate"];
+export const HAZARDS = [...SOLID_HAZARDS, "moving-gate", "gap", "mogul", "ice", "ski-gate", "yeti", "snowball", "snowman"];
 export const AREA_RELIC_REWARD = 160;
 export const NEAR_MISS_REWARD = 15;
 // The live trail earns its first real hazard only after a short runway. This
@@ -210,6 +212,14 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     skiJumps: 0,
     skiDodges: 0,
     skiGates: 0,
+    skiYetiDodges: 0,
+    skiYetiEncounters: 0,
+    skiSnowballClears: 0,
+    skiSnowballDodges: 0,
+    skiSnowballEncounters: 0,
+    skiSnowmenDodged: 0,
+    skiSnowmanEncounters: 0,
+    skiObstaclePoints: 0,
     skiUpcoming: null,
     // Collapsing bridges are version-four spectacle beats. They reuse the
     // proven full-width gap collision, but carry their own metadata so the
@@ -264,6 +274,12 @@ function add(run, type, lane, at) {
   const object = { id: run.id++, type, lane, at, used: false, skillReward:run.route?.kind==="challenge"&&at<run.route.until?60:20 };
   run.objects.push(object);
   return object;
+}
+
+function skiObjectX(object, distance) {
+  if (object?.skiYeti) return skiYetiX(object, distance);
+  if (object?.skiSnowball) return skiSnowballX(object, distance);
+  return LANES[object?.lane] ?? 0;
 }
 
 function dogChaseByNext(run) {
@@ -1014,8 +1030,16 @@ export function step(run, dt) {
   for (const object of run.objects) {
     if (object.used) continue;
     const dz = object.at - run.distance;
-    const objectX = object.movingGate ? movingGateX(object, run.distance) : LANES[object.lane];
-    const sameLane = Math.abs(objectX - run.x) < 0.95;
+    const objectX = object.movingGate
+      ? movingGateX(object, run.distance)
+      : object.skiObstacle ? skiObjectX(object, run.distance) : LANES[object.lane];
+    // Most hazards occupy one lane. Crossing Frostpeak yetis are wider than a
+    // lane at the midpoint of their patrol, so their authored envelope is
+    // carried with the object instead of leaving a visual-only dodge.
+    const collisionWidth = Number.isFinite(object.skiCollisionWidth)
+      ? object.skiCollisionWidth
+      : 0.95;
+    const sameLane = Math.abs(objectX - run.x) < collisionWidth;
     if (object.type === "zipline-start" && !object.caught && Math.abs(dz) < 3 && run.y > .65 && !run.zipline) {
       object.caught = true;
       run.zipline = {start: object.at, end: object.at + ZIPLINE_LENGTH};
@@ -1159,6 +1183,15 @@ export function step(run, dt) {
         object.counted = true;
         run.movingGates = (run.movingGates || 0) + 1;
       }
+      if (object.skiObstacle && !object.counted) {
+        // Count a snow set piece once it reaches the collision plane. The
+        // dodge/clear stats below describe the player's response; this count
+        // keeps results useful even when a player takes the hit.
+        object.counted = true;
+        if (object.type === 'yeti') run.skiYetiEncounters = (run.skiYetiEncounters || 0) + 1;
+        if (object.type === 'snowball') run.skiSnowballEncounters = (run.skiSnowballEncounters || 0) + 1;
+        if (object.type === 'snowman') run.skiSnowmanEncounters = (run.skiSnowmanEncounters || 0) + 1;
+      }
       if (sameLane && run.zoomies > 0 && object.type !== "gap") {
         object.used = true;
         run.smashes++;
@@ -1172,6 +1205,7 @@ export function step(run, dt) {
         (object.type === "log" && run.y > 0.65) ||
         (object.type === "rock" && run.y > 1.25) ||
         (object.skiHazard && object.type === 'mogul' && run.y > .58) ||
+        (object.skiObstacle && object.skiJumpable && run.y > .58) ||
         (["arch", "branch", "gate", "moving-gate"].includes(object.type) &&
           run.slide > 0 &&
           run.y < 0.2);
@@ -1181,8 +1215,13 @@ export function step(run, dt) {
           run.skiJumps = (run.skiJumps || 0) + 1;
           run.events.push('ski-mogul-clear');
         }
+        if (object.skiObstacle && object.type === 'snowball') {
+          run.skiSnowballClears = (run.skiSnowballClears || 0) + 1;
+          run.skiObstaclePoints = (run.skiObstaclePoints || 0) + (object.skillReward || 90);
+          run.events.push('ski-snowball-clear');
+        }
         if (run.zoomies === 0) { chargeFetch(run, 12); cleanMove(run); }
-        run.bonusPoints += object.skillReward || 20;
+        run.bonusPoints += (object.skillReward || 20);
         run.events.push("clear");
       }
       // A dodge is only a near miss when the puppy was still inside the
@@ -1192,7 +1231,7 @@ export function step(run, dt) {
       const previousX = Number.isFinite(run.previous?.x) ? run.previous.x : run.x;
       const previousObjectX = object.movingGate
         ? movingGateX(object, run.previous?.distance)
-        : LANES[object.lane];
+        : object.skiObstacle ? skiObjectX(object, run.previous?.distance) : LANES[object.lane];
       const previousNear = Math.abs(previousObjectX - previousX) < 1.75;
       const dodgedAtTheLine = !sameLane && previousNear;
       if (dodgedAtTheLine) {
@@ -1202,13 +1241,34 @@ export function step(run, dt) {
         run.events.push('near-miss');
         run.effects.push({id:object.id,type:'near-miss',time:run.time,x:run.x,y:run.y+.72});
       }
-      if (!sameLane && object.skiHazard && dodgedAtTheLine) {
+      if (!sameLane && (object.skiHazard || object.skiObstacle) && dodgedAtTheLine) {
         run.skiDodges = (run.skiDodges || 0) + 1;
         if (object.type === 'ice') run.events.push('ski-ice-dodge');
+        if (object.type === 'yeti') {
+          run.skiYetiDodges = (run.skiYetiDodges || 0) + 1;
+          run.bonusPoints += (object.skillReward || 80);
+          run.skiObstaclePoints = (run.skiObstaclePoints || 0) + (object.skillReward || 80);
+          cleanMove(run);
+          run.events.push('ski-yeti-dodge');
+        }
+        if (object.type === 'snowball') {
+          run.skiSnowballDodges = (run.skiSnowballDodges || 0) + 1;
+          run.bonusPoints += (object.skillReward || 90);
+          run.skiObstaclePoints = (run.skiObstaclePoints || 0) + (object.skillReward || 90);
+          cleanMove(run);
+          run.events.push('ski-snowball-dodge');
+        }
+        if (object.type === 'snowman') {
+          run.skiSnowmenDodged = (run.skiSnowmenDodged || 0) + 1;
+          run.bonusPoints += (object.skillReward || 72);
+          run.skiObstaclePoints = (run.skiObstaclePoints || 0) + (object.skillReward || 72);
+          cleanMove(run);
+          run.events.push('ski-snowman-dodge');
+        }
       }
       if (sameLane && !cleared && run.invulnerable === 0) {
         object.used = true;
-        harm(run, object.skiHazard ? {type:object.type,skiHazard:true,skiSafeLane:object.skiSafeLane} : object.raftHazard ? {type:'rock',raftHazard:true,safeLane:object.raftSafeLane} : object.minecartHazard ? {type:'rock',minecartHazard:true,safeLane:object.minecartSafeLane} : object.type==='rock' && [0,1,2].includes(object.courseRegion)
+        harm(run, (object.skiHazard || object.skiObstacle) ? {type:object.type,skiHazard:true,skiObstacle:Boolean(object.skiObstacle),skiSafeLane:object.skiSafeLane} : object.raftHazard ? {type:'rock',raftHazard:true,safeLane:object.raftSafeLane} : object.minecartHazard ? {type:'rock',minecartHazard:true,safeLane:object.minecartSafeLane} : object.type==='rock' && [0,1,2].includes(object.courseRegion)
           ? {type:'rock',courseWeave:true,safeLane:run.course?.beats.find(beat=>beat.at===object.at)?.safeLane} : object.bridgeCollapse
             ? {type:'gap',bridgeCollapse:true} : {type: object.type});
         if (run.ended) break;
