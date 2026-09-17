@@ -45,6 +45,8 @@ import {raftAt,raftIntersecting} from './rafts.js';
 import {createRaftModel} from './raft-model.js';
 import {minecartIntersecting} from './minecart.js';
 import {createMinecartModel} from './minecart-model.js';
+import {skiIntersecting, skiVisualBlend} from './ski.js';
+import {createSkiModel} from './ski-model.js';
 import {movingGateX} from './moving-gate.js';
 import {createRiverBanks} from './river-banks.js';
 import {createPuppyArtwork,PUPPY_HANG_HANDLE_HEIGHT} from './puppy-artwork.js';
@@ -74,6 +76,8 @@ const SPECTACLE_BEACON_COLORS = Object.freeze([
   ['mine-cart', '#ffd27a'],
   ['minecart', '#ffd27a'],
   ['zipline', '#a2ffde'],
+  ['frostpeak', '#9fe4ff'],
+  ['ski', '#9fe4ff'],
   ['moving gate', '#f4d58a'],
   ['puppy chase', '#f6b5ff'],
   ['fork', '#c5f0a5'],
@@ -217,6 +221,9 @@ export function createView(canvas) {
   const hemisphereGroundColor=new THREE.Color();
   const sunlightColor=new THREE.Color();
   const areaGroundColor=new THREE.Color();
+  const skiSkyColor=new THREE.Color('#b9d9ef');
+  const skiGroundColor=new THREE.Color('#eef8fb');
+  const skiSunColor=new THREE.Color('#fff8ec');
   // Recycled slabs, lane inlays, and scenery are translated rather than rebuilt.
   const scenery = new THREE.Group();
   scene.add(scenery);
@@ -794,11 +801,49 @@ export function createView(canvas) {
     }
   }
   scene.remove(scenery);
+  // Frostpeak gets a small, persistent snow dressing that follows the same
+  // curved route frames as the road. Reusing these pads and landmarks avoids
+  // allocating a new mountain scene every time the chapter repeats.
+  const skiLandscape = new THREE.Group();
+  skiLandscape.name = 'frostpeak-landscape';
+  skiLandscape.visible = false;
+  scene.add(skiLandscape);
+  const skiPads = [];
+  for (let index = 0; index < 48; index++) {
+    const pad = box(skiLandscape, '#eaf5f8', 0, .03, 0, 9.35, .07, 5.9);
+    pad.material = pad.material.clone();
+    pad.material.roughness = .96;
+    pad.material.transparent = true;
+    pad.material.opacity = .92;
+    pad.userData.offset = index * 5.9 - 34;
+    pad.castShadow = false;
+    pad.receiveShadow = true;
+    skiPads.push(pad);
+  }
+  const skiLandmarks = [];
+  for (let index = 0; index < 14; index++) {
+    const marker = new THREE.Group();
+    const side = index % 2 ? 1 : -1;
+    marker.userData.offset = index * 21 + 10;
+    marker.userData.side = side;
+    marker.userData.baseScale = .82 + (index % 3) * .12;
+    // Layered snow cones read as distant peaks, while the turquoise flags
+    // make the safe gate language visible from the approach.
+    cone(marker, index % 3 ? '#d2e8f2' : '#c4dfec', 0, 2.25, 0, 1.4, 4.5 + (index % 4) * .45, 1.2);
+    cone(marker, '#f5fbff', -.2, 3.25, -.15, .84, 1.75, .72);
+    box(marker, '#5d8ca3', 0, .7, 0, .10, 1.4, .10);
+    box(marker, index % 2 ? '#79d2df' : '#f2b76a', side * .28, 1.28, 0, .52, .34, .06);
+    ball(marker, '#edfaff', side * .28, 1.28, -.05, .11, .11, .05);
+    marker.visible = false;
+    skiLandscape.add(marker);
+    skiLandmarks.push(marker);
+  }
   const cornerRoad = createCornerRoad(scene);
   const water = createWaterSurface(scene);
   const raftWater=createWaterSurface(scene);
   const raftModel=createRaftModel(mesh,boxGeometry,trunkGeometry);scene.add(raftModel);
   const minecartModel=createMinecartModel(mesh,boxGeometry,trunkGeometry);scene.add(minecartModel);
+  const skiModel=createSkiModel(mesh,boxGeometry);scene.add(skiModel);
   // The classic dogs share mobile-friendly geometry, but each has a distinct
   // silhouette. Proportions and face details are applied by puppyVisual().
   const dog = new THREE.Group();
@@ -1681,6 +1726,42 @@ export function createView(canvas) {
   const bridgeCollapseMarker = box(templates.gap, '#ef6f59', 0, .46, 0, 1.2, .07, .12);
   bridgeCollapseMarker.userData.bridgeCollapseMarker = true;
   bridgeCollapseMarker.visible = false;
+  // Frostpeak hazards use unmistakable, low-profile silhouettes: a rounded
+  // snow mogul to hop, a cool blue ice patch to carve around, and a pair of
+  // small colored flags that leave one lane visibly open.
+  templates.mogul = new THREE.Group();
+  const mogul = ball(templates.mogul, '#f4fbff', 0, .22, 0, 1.18, .34, .72);
+  mogul.castShadow = true;
+  ball(templates.mogul, '#b8e5f4', -.34, .18, -.28, .36, .09, .24);
+  ball(templates.mogul, '#d8f2fb', .38, .20, .18, .28, .08, .22);
+  templates.ice = new THREE.Group();
+  const icePatch = box(templates.ice, '#75cfe5', 0, .035, 0, 1.38, .07, 1.95);
+  icePatch.material = icePatch.material.clone();
+  icePatch.material.roughness = .26;
+  icePatch.material.metalness = .18;
+  icePatch.material.transparent = true;
+  icePatch.material.opacity = .86;
+  box(templates.ice, '#d7fbff', -.34, .10, -.34, .18, .035, .82).rotation.y = -.24;
+  box(templates.ice, '#b7eff7', .37, .11, .28, .16, .035, .7).rotation.y = .22;
+  templates['ski-gate'] = new THREE.Group();
+  for (const side of [-1, 1]) {
+    const pole = box(templates['ski-gate'], '#3f7893', side * .62, .86, 0, .08, 1.72, .08);
+    pole.castShadow = true;
+    box(templates['ski-gate'], side < 0 ? '#ef7d86' : '#ffd66f', side * .62, 1.72, 0, .38, .42, .08);
+  }
+  box(templates['ski-gate'], '#f4fbff', 0, 1.02, 0, 1.28, .07, .08);
+  templates['ski-start'] = new THREE.Group();
+  box(templates['ski-start'], '#3d6c88', -.72, 1.25, 0, .08, 2.5, .08);
+  box(templates['ski-start'], '#3d6c88', .72, 1.25, 0, .08, 2.5, .08);
+  box(templates['ski-start'], '#d9f6ff', 0, 2.4, 0, 1.55, .12, .08);
+  box(templates['ski-start'], '#72cde3', 0, 2.18, .02, .22, .28, .06);
+  templates['ski-end'] = templates['ski-start'].clone(true);
+  templates['ski-end'].traverse(item => {
+    if (item.isMesh && item.material?.color) item.material = item.material.clone();
+  });
+  templates['ski-end'].children.forEach(item => {
+    if (item.material?.color?.getHexString?.() === 'd9f6ff') item.material.color.set('#ffd78e');
+  });
   const routeLabels=document.createElement('canvas');
   routeLabels.width=1024;routeLabels.height=512;
   const routeText=routeLabels.getContext('2d');
@@ -1998,10 +2079,15 @@ export function createView(canvas) {
       // The valley floor stays below the elevated trail instead of cutting it off.
       ground.position.y = -12;
       const smooth = 1 - Math.exp(-18 * dt);
+      const skiSection = !menu && run.skiPrototype
+        ? skiIntersecting(distance - 70, distance + 260)
+        : null;
+      const skiBlend = skiSection ? skiVisualBlend(distance, skiSection) : 0;
       const weight = bodyMotion({vx:run.vx,vy:run.vy,y,time:run.time,landing:run.landing,
         ziplining:Boolean(run.zipline),reducedMotion:reducedMotion||menu});
       const atmosphere = areaBlend(menu ? 0 : distance);
       const atmosphereEnabled = !reducedMotion &&
+        !skiSection &&
         (menu || state === 'playing' || state === 'paused');
       atmosphereParticles.visible = atmosphereEnabled;
       atmosphereParticles.count = atmosphereEnabled ? ATMOSPHERE_PARTICLE_COUNT : 0;
@@ -2058,9 +2144,11 @@ export function createView(canvas) {
         if (atmosphereParticles.instanceColor) atmosphereParticles.instanceColor.needsUpdate = true;
       }
       scene.background.copy(areaColors[atmosphere.previous].sky).lerp(areaColors[atmosphere.index].sky,atmosphere.blend);
+      if (skiBlend > 0) scene.background.lerp(skiSkyColor, skiBlend);
       scene.fog.color.copy(scene.background);
       sky.material.color.copy(scene.background);
       ground.material.color.copy(areaColors[atmosphere.previous].ground).lerp(areaColors[atmosphere.index].ground,atmosphere.blend);
+      if (skiBlend > 0) ground.material.color.lerp(skiGroundColor, skiBlend);
       // Destination lighting follows the same eased handoff as the sky and
       // ground. The color contrast is authored per area: warm Sunleaf/Oasis,
       // ember Redrock, cool Crystal and moonlit Mooncap. Interpolating the
@@ -2076,10 +2164,18 @@ export function createView(canvas) {
       hemisphere.intensity=THREE.MathUtils.lerp(previousLighting.hemi,currentLighting.hemi,atmosphere.blend);
       sun.color.copy(sunlightColor);
       sun.intensity=THREE.MathUtils.lerp(previousLighting.sunPower,currentLighting.sunPower,atmosphere.blend);
+      if (skiBlend > 0) {
+        hemisphere.color.lerp(skiSkyColor, skiBlend);
+        hemisphere.groundColor.lerp(skiGroundColor, skiBlend);
+        hemisphere.intensity = THREE.MathUtils.lerp(hemisphere.intensity, 2.15, skiBlend);
+        sun.color.lerp(skiSunColor, skiBlend);
+        sun.intensity = THREE.MathUtils.lerp(sun.intensity, 3.9, skiBlend);
+      }
       horizonProfile(menu ? 0 : distance, horizon);
       for(const mountain of mountains) {
         blendMountainArea(mountain,atmosphere);
         mountain.material.color.copy(ground.material.color).lerp(scene.background,horizon.haze+mountain.userData.depthHaze);
+        if (skiBlend > 0) mountain.material.color.lerp(skiSkyColor, skiBlend * .72);
         const base=mountain.userData.baseScale;
         mountain.scale.set(base.x*horizon.width,base.y*horizon.height,base.z);
       }
@@ -2227,6 +2323,36 @@ export function createView(canvas) {
       else raftWater.mesh.visible=false;
       riverBanks.update(distance,frameAt,river);
       const cartSection=!menu&&run.minecartPrototype?minecartIntersecting(distance-12,distance+170):null;
+      skiLandscape.visible = Boolean(skiSection) && !menu;
+      if (skiSection && !menu) {
+        const skiOrigin = skiSection.start - 34;
+        for (const pad of skiPads) {
+          const worldAt = skiOrigin + pad.userData.offset;
+          const relative = -(worldAt - distance);
+          const frame = frameAt(relative);
+          pad.position.set(frame.x, frame.y + .02, frame.z);
+          pad.rotation.set(frame.pitch, frame.yaw, 0, 'YXZ');
+          pad.material.opacity = .2 + skiBlend * .72;
+          pad.visible = relative < 18 && relative > -255;
+        }
+        for (const marker of skiLandmarks) {
+          const worldAt = skiOrigin + marker.userData.offset;
+          const relative = -(worldAt - distance);
+          const frame = frameAt(relative);
+          const across = marker.userData.side * (6.6 + (marker.userData.offset % 3) * .7);
+          marker.position.set(
+            frame.x + across * Math.cos(frame.yaw),
+            frame.y + .02,
+            frame.z - across * Math.sin(frame.yaw),
+          );
+          marker.rotation.set(frame.pitch, frame.yaw, 0, 'YXZ');
+          marker.scale.setScalar(marker.userData.baseScale);
+          marker.visible = relative < 20 && relative > -175;
+        }
+      } else {
+        skiPads.forEach(pad => { pad.visible = false; });
+        skiLandmarks.forEach(marker => { marker.visible = false; });
+      }
       // Portrait camp needs a slightly different stage mark than desktop:
       // the headline occupies the left two thirds, while a centered origin
       // leaves the puppy low and half-hidden behind the route. Give Mochi a
@@ -2257,7 +2383,7 @@ export function createView(canvas) {
       dog.rotation.z = menu || reducedMotion ? 0 : lean * 0.3;
       dog.rotation.x = menu ? 0 : groundFrame.pitch + (reducedMotion ? 0 : pitch);
       dog.scale.setScalar(1);
-      const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:y>.1&&!run.minecart,sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline),rafting:!menu&&Boolean(run.raft)});
+      const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:y>.1&&!run.minecart,sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline),rafting:!menu&&Boolean(run.raft),skiing:!menu&&Boolean(run.ski)});
       const crouch=activeRig===mochi?mochiCrouch((1-pose)/.54):null;
       dog.scale.y = ((crouch?.scaleY ?? pose) + personality.breathe) * (1-weight.compression);
       dog.scale.x = dog.scale.z = 1+weight.compression*.4;
@@ -2425,6 +2551,7 @@ export function createView(canvas) {
           : run.zipline ? .78
             : run.raft ? .88
               : run.minecart ? .84
+                : run.ski ? .9
                 : y > .1 ? 1.04 : 1;
         const focusPulse = reducedMotion ? 1 : 1 + Math.sin(time * 3.1) * .035;
         const focusScale = Math.abs(dog.scale.x) * actionScale * focusPulse;
@@ -2467,6 +2594,41 @@ export function createView(canvas) {
         const boarding=frameAt(distance-cartSection.start);
         minecartModel.position.set(boarding.x,boarding.y,boarding.z);
         minecartModel.rotation.set(boarding.pitch,boarding.yaw,0,'YXZ');
+      }
+      skiModel.visible = !menu && !run.raft && !run.minecart && !run.zipline &&
+        Boolean(run.ski || (skiSection && distance < skiSection.start));
+      if (skiModel.visible) {
+        const skiFrame = run.ski ? groundFrame : frameAt(-(skiSection.start - distance));
+        const skiAcross = run.ski ? x : 0;
+        skiModel.position.set(
+          skiFrame.x + skiAcross * Math.cos(skiFrame.yaw),
+          skiFrame.y + (run.ski ? y * .08 : 0),
+          skiFrame.z - skiAcross * Math.sin(skiFrame.yaw),
+        );
+        skiModel.rotation.set(
+          skiFrame.pitch,
+          skiFrame.yaw + (reducedMotion ? 0 : lean * .24),
+          reducedMotion ? 0 : lean * .12,
+          'YXZ',
+        );
+        const skiAnimated = state === 'playing' && !reducedMotion && Boolean(run.ski);
+        const skis = skiModel.userData.skis || [];
+        skis.forEach((ski, index) => {
+          ski.rotation.z = skiAnimated ? Math.sin(time * 5.5 + index * Math.PI) * .018 : 0;
+        });
+        const poles = skiModel.userData.poles || [];
+        poles.forEach((pole, index) => {
+          const side = pole.userData.side || (index ? 1 : -1);
+          pole.rotation.x = pole.userData.baseRotation + (skiAnimated ? Math.sin(time * 5.5 + index * Math.PI) * .09 * side : 0);
+        });
+        const spray = skiModel.userData.spray || [];
+        spray.forEach((flake, index) => {
+          const phase = skiAnimated ? (time * 1.7 + index * .21) % 1 : .32;
+          flake.position.z = .92 + index * .18 + phase * .34;
+          flake.position.x = (index - 2) * .28 + (skiAnimated ? Math.sin(time * 4 + index) * .05 : 0);
+          flake.material.opacity = skiAnimated ? .62 * (1 - phase * .45) : .3;
+          flake.visible = Boolean(run.ski);
+        });
       }
       const cartWheels=minecartModel.userData.wheels||[];
       const cartAnimated=state==='playing'&&!reducedMotion&&minecartModel.visible;
@@ -2523,6 +2685,7 @@ export function createView(canvas) {
         sliding:run.slide>0,
         hanging:!menu && Boolean(run.zipline),
         rafting:!menu && Boolean(run.raft),
+        skiing:!menu && Boolean(run.ski),
         // Mochi's default ground run is viewed from the owner's chase-camera
         // perspective. The dedicated rear painting is optional and scoped to
         // Mochi, while jumps, slides, turns, ziplines, and raft travel keep
@@ -2622,7 +2785,7 @@ export function createView(canvas) {
       // persistent overlay. Rides, jumps and slides keep their own silhouettes
       // and effects; only a calm ground stride receives this trace.
       if (!menu && !reducedMotion && !run.ended
-        && y < .12 && run.slide <= 0 && !run.zipline && !run.raft && !run.minecart) {
+        && y < .12 && run.slide <= 0 && !run.zipline && !run.raft && !run.minecart && !run.ski) {
         flashColor.set('#b98a5e');
         for (const puff of pawDust(time)) {
           if (sparkCount >= 192) break;
@@ -2676,10 +2839,10 @@ export function createView(canvas) {
           item.position.set(
             object.movingGate ? movingGateX(object, distance) : LANES[object.lane],
             pickup
-              ? (object.airborne ? ZIPLINE_HEIGHT + 1.1 : 1.1) +
+              ? (object.skiAirborne ? 1.75 : object.airborne ? ZIPLINE_HEIGHT + 1.1 : 1.1) +
                   (reducedMotion ? 0 : Math.sin(time * 3 + object.id) * 0.12) +
                   pickupBob(object.type, time, object.id, reducedMotion)
-              : object.raftHazard?-.55:0,
+              : object.raftHazard ? -.55 : object.skiHazard ? .035 : 0,
             -(object.at - distance),
           );
           if (object.pull) {
@@ -2720,7 +2883,7 @@ export function createView(canvas) {
             const spectacleObject = object.bridgeCollapse ||
               (object.type === 'gift' && object.chasePickup) ||
               ['zipline-start', 'raft-start', 'minecart-start', 'moving-gate',
-                'choice-left', 'choice-right'].includes(object.type);
+                'choice-left', 'choice-right', 'ski-start', 'ski-end', 'ski-gate'].includes(object.type);
             const approach = object.at - distance;
             if (spectacleObject && approach >= 0 && approach < 64 &&
                 (!spectacleBeacon || approach < spectacleBeacon.approach)) {
@@ -2885,8 +3048,10 @@ export function createView(canvas) {
         const anchorZ = wide ? frame.z : item.position.z;
         const anchorY = object.type === 'zipline-start' ? 6.82
           : object.type === 'moving-gate' ? 3.22
-            : object.type === 'gap' ? .78
-              : object.type === 'choice-left' || object.type === 'choice-right' ? 3.86 : 3.18;
+          : object.type === 'gap' ? .78
+              : object.type === 'choice-left' || object.type === 'choice-right' ? 3.86
+                : object.type === 'ski-gate' ? 2.82
+                  : object.type === 'ski-start' || object.type === 'ski-end' ? 3.18 : 3.18;
         // Three floating lozenges read as an arrival marker at a glance. They
         // stay tiny and distance-faded so the actual obstacle, bone line and
         // lane target remain the visual priorities when the beat is close.
@@ -2988,7 +3153,7 @@ export function createView(canvas) {
         const routeBank = THREE.MathUtils.clamp(look.yaw * .07, -.075, .075);
         const lateralVelocity = Number.isFinite(run.vx) ? run.vx : 0;
         const laneBank = THREE.MathUtils.clamp(lean * .22 + lateralVelocity * .0015, -.055, .055);
-        const actionBank = run.zipline ? lean * .08 : run.raft ? lean * .06 : run.minecart ? lean * .04 : 0;
+        const actionBank = run.zipline ? lean * .08 : run.raft ? lean * .06 : run.minecart ? lean * .04 : run.ski ? lean * .10 : 0;
         const targetRoll = !reducedMotion && cameraActive
           ? THREE.MathUtils.clamp(routeBank + laneBank + actionBank, -.105, .105)
           : 0;

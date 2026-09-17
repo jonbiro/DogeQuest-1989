@@ -38,6 +38,8 @@ const SPECIAL_TYPES = Object.freeze([
   'zipline-start',
   'raft-start',
   'minecart-start',
+  'ski-start',
+  'ski-gate',
   'moving-gate',
   'gap',
   'choice-left',
@@ -78,6 +80,7 @@ const ENCOUNTER_SHORT_TITLES = Object.freeze({
   'collapsing bridge': 'Bridge gap',
   'river crossing': 'River run',
   'mine-cart rush': 'Minecart',
+  'frostpeak descent': 'Ski descent',
   'zipline flight': 'Zipline',
   'fork in the trail': 'Trail fork',
 });
@@ -113,17 +116,19 @@ function phaseCopy(phase, area, rhythm, detail, progress = 0) {
 }
 
 function rideEncounter(run) {
-  const ride = run?.raft || run?.zipline || run?.minecart;
+  const ride = run?.raft || run?.zipline || run?.minecart || run?.ski;
   if (!ride || !Number.isFinite(ride.start) || !Number.isFinite(ride.end)) return null;
   const distance = finiteDistance(run.distance);
-  const kind = run.raft ? 'River crossing' : run.minecart ? 'Mine-cart rush' : 'Zipline flight';
+  const kind = run.ski ? 'Frostpeak descent' : run.raft ? 'River crossing' : run.minecart ? 'Mine-cart rush' : 'Zipline flight';
   const action = run.raft
     ? 'Steer between the glowing open lanes'
     : run.minecart
       ? run.minecartChoice
         ? 'Choose the steady bone lane or chase the glowing gem line'
         : 'Steer between the glowing open lanes'
-      : 'Catch the handle, then chase the floating bones';
+      : run.ski
+        ? 'Carve the open lane, hop the moguls, and dodge blue ice'
+        : 'Catch the handle, then chase the floating bones';
   return phaseCopy(
     'spectacle',
     distance,
@@ -202,10 +207,16 @@ function upcomingSpecial(run, distance) {
   const title = candidate.type === 'raft-start'
     ? 'River crossing'
     : candidate.type === 'minecart-start' ? 'Mine-cart rush'
+      : candidate.type === 'ski-start' ? 'Frostpeak descent'
+        : candidate.type === 'ski-gate' ? 'Ski gate'
       : candidate.type === 'moving-gate' ? 'Moving gate'
         : candidate.type === 'gap' ? 'Collapsing bridge' : 'Zipline flight';
   const detail = candidate.type === 'zipline-start'
     ? `Jump for the turquoise handle · in ${meters(candidate.at - distance)}m`
+    : candidate.type === 'ski-start'
+      ? `Carve the slope · hop moguls and follow the open gate · in ${meters(candidate.at - distance)}m`
+      : candidate.type === 'ski-gate'
+        ? `Follow the open flag · in ${meters(candidate.at - distance)}m`
     : candidate.type === 'moving-gate'
       ? `Follow the opening or slide under the sweep · in ${meters(candidate.at - distance)}m`
       : candidate.type === 'gap'

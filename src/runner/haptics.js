@@ -21,6 +21,10 @@ export const HAPTIC_PATTERNS = Object.freeze({
   'bridge-collapse': Object.freeze([16, 24, 16]),
   'dog-chase-start': Object.freeze([9, 18, 9]),
   'dog-chase-end': Object.freeze([8, 18, 8]),
+  'ski-start': Object.freeze([12, 20, 12]),
+  'ski-end': Object.freeze([8, 18, 8]),
+  'ski-jump': Object.freeze([8, 14, 8]),
+  'ski-ice-dodge': Object.freeze([6, 18, 6]),
   'modifier-start': Object.freeze([8, 20, 8]),
   'encounter-warmup': Object.freeze([5, 18, 5]),
   'encounter-escalation': Object.freeze([7, 20, 7]),
@@ -69,9 +73,9 @@ export function hapticPattern(event, run = {}) {
   if (name === 'streak' || name === 'flow' || name === 'course-complete' || name === 'course-recovery')
     return HAPTIC_PATTERNS.reward;
   if (name === 'turn-left' || name === 'turn-right') return HAPTIC_PATTERNS.turn;
-  if (name === 'raft-start' || name === 'zipline-start' || name === 'minecart-start')
+  if (name === 'raft-start' || name === 'zipline-start' || name === 'minecart-start' || name === 'ski-start')
     return HAPTIC_PATTERNS['ride-start'];
-  if (name === 'raft-end' || name === 'zipline-end' || name === 'minecart-end')
+  if (name === 'raft-end' || name === 'zipline-end' || name === 'minecart-end' || name === 'ski-end')
     return HAPTIC_PATTERNS['ride-end'];
   return HAPTIC_PATTERNS[name] || null;
 }

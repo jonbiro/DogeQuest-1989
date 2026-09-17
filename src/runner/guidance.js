@@ -7,6 +7,25 @@ import {timingLesson} from './mistakes.js';
 import {laneCue} from './lane-cue.js';
 import {movingGateSafeLane, movingGateX} from './moving-gate.js';
 
+function skiHazardCue(run) {
+  const objects = Array.isArray(run?.objects) ? run.objects : [];
+  const hazard = objects
+    .filter(object => object.skiHazard && !object.used && !object.passed &&
+      object.at > run.distance && object.at - run.distance < run.speed * 1.45)
+    .sort((a, b) => a.at - b.at)[0];
+  if (!hazard) return run.ski?.end - run.distance < run.speed * .8
+    ? 'SKI EXIT AHEAD' : 'SKI · CARVE THE OPEN LINE';
+  if (hazard.type === 'mogul') {
+    const gap = hazard.at - run.distance;
+    if (run.y > .4 || run.skiHop > 0) return '';
+    return gap < run.speed * .75 ? '↑ HOP MOGUL' : 'MOGUL AHEAD · GET READY';
+  }
+  const safe = hazard.skiSafeLane;
+  const label = hazard.type === 'ice' ? 'ICE' : 'OPEN GATE';
+  return laneCue(run.lane, safe, label) || (hazard.type === 'ice'
+    ? 'BLUE ICE · CARVE AWAY' : 'SKI GATE · FOLLOW THE OPEN FLAG');
+}
+
 function onApproach(run, object) {
   const projected = {x:run.x, vx:run.vx};
   // Forecast the lane the runner is already committed to, rather than
@@ -35,6 +54,7 @@ export function actionCue(run) {
     return obstacle?laneCue(run.lane,obstacle.raftSafeLane,'RAFT'):
       run.raft.end-run.distance<run.speed*.8?'SHORE AHEAD':'RAFT · STEER LEFT / RIGHT';
   }
+  if (run.ski) return skiHazardCue(run);
   if(run.minecart){
     const objects = Array.isArray(run.objects) ? run.objects : [];
     const obstacle=objects.find(object=>object.minecartHazard&&!object.used&&object.at>run.distance&&object.at-run.distance<run.speed*1.35);
@@ -70,6 +90,11 @@ export function actionCue(run) {
     if (cable.at - run.distance >= run.speed * .45) return 'ZIPLINE AHEAD · zipline bones';
     return run.y > .05 || run.vy > 0 ? 'CATCH THE TURQUOISE HANDLE' : '↑ JUMP · ZIPLINE';
   }
+  const skiStart = run.objects.find(object => object.type === 'ski-start' && !object.used &&
+    object.at > run.distance && object.at - run.distance < run.speed * 1.8);
+  if (skiStart) return skiStart.at - run.distance >= run.speed * .45
+    ? 'FROSTPEAK AHEAD · GET READY'
+    : 'SKI DESCENT AHEAD · CARVE + HOP';
   // A chase is a reward beat, not a new hazard. Point at the next authored
   // pickup only while the lane is otherwise safe; any imminent obstacle below
   // still owns the cue and keeps the player out of a distracting side quest.
@@ -199,6 +224,10 @@ export function eventNotice(event, run) {
     'zipline-end': {text: 'Zipline complete · +250', priority: 1},
     'raft-end': {text: 'Shore reached · +250', priority: 1},
     'minecart-end': {text: 'Cart reached · +250', priority: 1},
+    'ski-start': {text: 'Frostpeak descent · hop moguls', priority: 1},
+    'ski-end': {text: 'Frostpeak complete · +360', priority: 1},
+    'ski-jump': {text: 'Mogul hop', priority: 0},
+    'ski-mogul-clear': {text: 'Clean mogul · +70', priority: 0},
     'dog-chase-start': {text: 'Puppy ahead · follow the bone line', priority: 1},
     'dog-chase-end': {text: 'Chase complete · +140', priority: 1},
     'bridge-collapse': {text: 'Bridge shifting · jump gap ahead', priority: 1},
@@ -211,6 +240,11 @@ export function eventNotice(event, run) {
 
 export function runLesson(run) {
   if (run.retired) return 'Good dogs deserve a break. Only completed challenges and traversal rewards count; your next adventure is ready whenever you are.';
+  if (run.lastMistake?.skiHazard) {
+    if (run.lastMistake.type === 'mogul') return 'That mogul needed a short hop. Tap HOP as its crest reaches Mochi, then return to carving.';
+    if (run.lastMistake.type === 'ice') return 'Blue ice is slippery. Carve into the highlighted open lane before the patch reaches Mochi.';
+    return 'Follow the open ski gate. The colored flags show the lane to carve toward; one swipe moves one lane.';
+  }
   if(run.lastMistake?.minecartHazard)return run.lastMistakeDetail?.reason==='late-minecart-steer'
     ? 'The cart was still drifting toward the open lane. Start steering earlier; one swipe moves one lane and jump/slide return after the cart.'
     : run.minecartChoice

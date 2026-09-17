@@ -1,7 +1,7 @@
 {
   "name": "dogequest-1989",
   "version": "3.0.0",
-  "description": "A mobile-first 3D puppy endless runner through six illustrated landscapes with bones, powers, ziplines, rafts, upgrades, and replayable trails.",
+  "description": "A mobile-first 3D puppy endless runner through seven illustrated landscapes with bones, powers, ziplines, rafts, a snowy ski descent, upgrades, and replayable trails.",
   "type": "module",
   "private": true,
   "license": "MIT",

@@ -2,6 +2,7 @@
 import {jumpLandingTime} from './motion.js';
 import {areaGameplayAt,areaSignatureAt} from './areas.js';
 export function traversalDescription(run){
+  if(run.ski)return 'Frostpeak ski descent. Tap LEFT or RIGHT, or swipe once per lane, to carve between hazards. Tap HOP when a mogul crests; steer around blue ice and follow the open ski gate. Bones and the bright finish gift follow the safe line. Sliding is paused during the descent; jump and slide return after the finish. Escape pauses.';
   if(run.raft)return 'River raft. Tap LEFT or RIGHT, or swipe once per lane, to steer between rocks. To keep your finger down, stop your thumb briefly before the next swipe; lifting is always okay. Jump and slide return at the shore. Escape pauses.';
   if(run.zipline)return 'Zipline ride. Tap LEFT or RIGHT, or swipe once per lane, to collect bones. To keep your finger down, stop your thumb briefly before the next swipe; lifting is always okay. Jump and slide return after the cable. Escape pauses.';
   if(run.minecart)return run.minecartChoice
@@ -33,21 +34,30 @@ function ensureLabel(button) {
 export function updateTraversalControls(buttons, run) {
   const ride=run.zipline||run.raft||run.minecart;
   const riding=Boolean(ride);
+  const skiing=Boolean(run.ski);
   for (const button of buttons) {
     if (!['jump','slide'].includes(button.dataset.action)) continue;
     // Repair the nested label before checking the cached state. A stale shell
     // can otherwise keep the same state string while still missing the node
     // that gives the player readable feedback.
     const label=ensureLabel(button);
-    const queued=!riding&&(button.dataset.action==='jump'
+    const queued=!riding&&!skiing&&(button.dataset.action==='jump'
       ?run.jumpBuffer>0&&jumpLandingTime(run)<=run.jumpBuffer:run.slideNext>0);
-    const state=run.raft?'rafting':run.minecart?'minecart':riding?'riding':queued?'queued':'ready';
-    const nextLabel=queued?'QUEUED':button.dataset.action.toUpperCase();
+    const state=skiing?'skiing':run.raft?'rafting':run.minecart?'minecart':riding?'riding':queued?'queued':'ready';
+    const nextLabel=queued?'QUEUED':skiing&&button.dataset.action==='jump'?'HOP':button.dataset.action.toUpperCase();
     if (label && label.textContent !== nextLabel) label.textContent=nextLabel;
     if(button.dataset.controlState===state)continue;
     button.dataset.controlState=state;
-    button.disabled=riding;
-    if (riding) {
+    button.disabled=riding || (skiing && button.dataset.action==='slide');
+    if (skiing) {
+      if (button.dataset.action === 'jump') {
+        button.setAttribute('aria-label', 'Hop over a mogul');
+        button.setAttribute('title', 'Tap HOP as the mogul reaches your puppy');
+      } else {
+        button.setAttribute('aria-label', 'Slide unavailable during the ski descent');
+        button.setAttribute('title', 'Carve around hazards during Frostpeak');
+      }
+    } else if (riding) {
       const action=button.dataset.action==='jump'?'Jump':'Slide';
       const exit=run.raft?'at the shore':run.minecart?'after the cart':'after the zipline';
       const vehicle=run.raft?'the raft':run.minecart?'the mine-cart':'the cable';
@@ -73,7 +83,7 @@ export function updateActionCueControls(buttons, cue = '') {
   const text = String(cue || '').toUpperCase();
   const action = /SLIDE|DIVE|OVERHEAD/.test(text)
     ? 'slide'
-    : /JUMP|GAP/.test(text) ? 'jump' : '';
+    : /JUMP|HOP|GAP|MOGUL/.test(text) ? 'jump' : '';
   for (const button of buttons || []) {
     const type = button?.dataset?.action;
     if (!['jump', 'slide'].includes(type)) continue;
@@ -93,7 +103,7 @@ export function updateLaneCueControls(buttons, cue = '') {
   const text = String(cue || '').toUpperCase().trim();
   const direction = text.startsWith('←') ? 'left' : text.startsWith('→') ? 'right' : '';
   const specificLaneCue = Boolean(direction && !/\bTURN\b/.test(text) &&
-    /\b(?:WEAVE|RAFT|CART|BONES|GIFT|RELIC|CHASE)\b/.test(text));
+    /\b(?:WEAVE|RAFT|CART|SKI|BONES|GIFT|RELIC|CHASE|GATE)\b/.test(text));
   for (const button of buttons || []) {
     const type = button?.dataset?.action;
     if (!['left', 'right'].includes(type)) continue;

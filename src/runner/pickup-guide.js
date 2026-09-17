@@ -133,7 +133,7 @@ function laneLabel(run, object) {
 // jump/slide/turn cues retain the single message slot and the player still
 // has time to move for the reward.
 export function pickupGuideFor(run, maxDistance = 58) {
-  if (!run || run.ended || run.practice || run.raft || run.minecart) return null;
+  if (!run || run.ended || run.practice || run.raft || run.minecart || run.ski) return null;
   const distance = Number.isFinite(run.distance) ? run.distance : 0;
   const candidate = (run.objects || [])
     .filter(object => PICKUP_TYPES.includes(object.type) && !object.used && !object.passed &&
@@ -172,7 +172,7 @@ export function pickupGuideFor(run, maxDistance = 58) {
 // so the renderer can choose a single candidate without duplicating the item
 // vocabulary or showing labels for every pickup in a dense row.
 export function pickupBadgeFor(run, maxDistance = 34) {
-  if (!run || run.ended || run.practice || run.raft || run.minecart || run.zipline ||
+  if (!run || run.ended || run.practice || run.raft || run.minecart || run.ski || run.zipline ||
       Number(run.y) > 0.1 || Number(run.slide) > 0) return null;
   const distance = Number.isFinite(run.distance) ? run.distance : 0;
   let candidate = null;

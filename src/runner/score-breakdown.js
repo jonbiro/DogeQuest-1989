@@ -1,5 +1,6 @@
 // Score components are explanations of the existing total, never extra awards.
 import {DOG_CHASE_REWARD} from './dog-chase.js';
+import {SKI_REWARD} from './ski.js';
 
 const PICKUP_RECEIPTS = Object.freeze([
   ['magnet', 'magnet', 'magnets', 'pull nearby bones'],
@@ -57,6 +58,8 @@ export function scoreBreakdown(run) {
   if(run.rafts>0)included.push(`${format(run.rafts*250)} from river crossings`);
   if(run.ziplines>0)included.push(`${format(run.ziplines*250)} from zipline rides`);
   if(run.minecarts>0)included.push(`${format(run.minecarts*250)} from mine-cart rides`);
+  if(run.skis>0)included.push(`${format(run.skis*SKI_REWARD)} from Frostpeak descents`);
+  if(run.skiJumps>0)included.push(`${format(run.skiJumps*70)} from mogul hops`);
   if(run.minecartGemChoices>0)included.push(`${format(run.minecartGemChoices*250)} from mine-cart gem choices`);
   if(run.streakPoints>0)included.push(`${format(run.streakPoints)} from bone streaks`);
   if(run.nearMissPoints>0)included.push(`${format(run.nearMissPoints)} from near misses`);

@@ -16,6 +16,10 @@ export const CUES = {
   "bridge-collapse":[{from:250,to:120,at:0,duration:.16,type:"sine",volume:.024},{from:180,to:110,at:.1,duration:.2,type:"triangle",volume:.018}],
   "chase-start":[{from:330,to:620,at:0,duration:.12,type:"triangle",volume:.024},{from:494,to:988,at:.10,duration:.18,type:"sine",volume:.022}],
   "chase-end":[{from:523,to:659,at:0,duration:.10,type:"triangle",volume:.024},{from:659,to:1046,at:.08,duration:.20,type:"sine",volume:.022}],
+  "ski-start":[{from:196,to:294,at:0,duration:.14,type:"sine",volume:.022},{from:294,to:440,at:.10,duration:.18,type:"triangle",volume:.024}],
+  "ski-end":[{from:392,to:523,at:0,duration:.12,type:"triangle",volume:.024},{from:523,to:784,at:.09,duration:.2,type:"sine",volume:.022}],
+  "ski-jump":[{from:440,to:880,at:0,duration:.13,type:"triangle",volume:.022}],
+  "ski-ice":[{from:180,to:110,at:0,duration:.12,type:"sine",volume:.02}],
   hit:[{from:120,to:120,at:0,duration:.2,type:"sine"}],
   ready:[{from:660,to:660,at:0,duration:.09,type:"sine"},{from:880,to:880,at:.09,duration:.12,type:"sine"}],
   finish:[{from:523,to:440,at:0,duration:.15,type:"triangle"},{from:392,to:330,at:.17,duration:.2,type:"triangle"}],
@@ -31,6 +35,10 @@ export function traversalCue(event) {
     case 'bridge-collapse':return 'bridge-collapse';
     case 'dog-chase-start':return 'chase-start';
     case 'dog-chase-end':return 'chase-end';
+    case 'ski-start':return 'ski-start';
+    case 'ski-end':return 'ski-end';
+    case 'ski-jump':return 'ski-jump';
+    case 'ski-ice-dodge':return 'ski-ice';
     default:return null;
   }
 }

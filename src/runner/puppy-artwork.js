@@ -1551,6 +1551,7 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     sliding = false,
     hanging = false,
     rafting = false,
+    skiing = false,
     away = false,
     side = false,
     menu = false,
@@ -1564,7 +1565,7 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     const landingPulse = motion && Number.isFinite(impact)
       ? THREE.MathUtils.clamp(impact * 4, 0, .36)
       : 0;
-    const gaitRate = hanging ? 3.1 : rafting ? 3.6 : menu ? 2.8 : sliding ? 8.8 : airborne ? 7.2 : 8.4;
+    const gaitRate = hanging ? 3.1 : rafting ? 3.6 : skiing ? 7.5 : menu ? 2.8 : sliding ? 8.8 : airborne ? 7.2 : 8.4;
     const gait = motion ? (Math.sin(time * gaitRate - Math.PI / 2) + 1) / 2 : 0;
     const turnAmount = motion ? THREE.MathUtils.clamp((Math.abs(look) - .16) / .64, 0, 1) : 0;
     // `request` separates "the physics wants this silhouette" from "is anything
@@ -1658,6 +1659,7 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
       sliding: Boolean(sliding),
       hanging: Boolean(hanging),
       rafting: Boolean(rafting),
+      skiing: Boolean(skiing),
       away: Boolean(activePose === 'away'),
       side: Boolean(sideRequested && (activePose === 'stride' || activePose === 'strideAlt')),
       look,
@@ -1680,7 +1682,7 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     const raftBob = motion && activeBasePose === 'raft' ? Math.sin(time * 2.25 + look * .35) : 0;
     const raftPaddle = motion && activeBasePose === 'raft' ? Math.sin(time * 4.5 + .55) : 0;
     const bounce = hanging ? 0 : motion
-      ? Math.abs(cadence) * (menu ? .008 : activeBasePose === 'raft' ? .006 : airborne ? .018 : sliding ? .010 : .018)
+      ? Math.abs(cadence) * (menu ? .008 : activeBasePose === 'raft' ? .006 : skiing ? .010 : airborne ? .018 : sliding ? .010 : .018)
       : 0;
     const sway = motion ? Math.sin(time * 3.9) * (menu ? .010 : hanging ? .008 : .018) : 0;
     // The supplied paintings already carry the anatomy. These whole-body
@@ -1692,6 +1694,15 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
     const hangSwing = motion && activeBasePose === 'hang' ? Math.sin(time * 2.8 + look * .65) : 0;
     const hangKick = motion && activeBasePose === 'hang' ? Math.sin(time * 5.6 + .8) * .7 : 0;
     const awayMotion = motion && activeBasePose === 'away' ? Math.sin(time * 8.4 + .18) : 0;
+    // Skiing keeps the complete painted silhouette, but the puppy still needs
+    // a little body language of its own: knees flex over each mogul, the
+    // shoulders counter-bank into a carve, and the coat drifts with the turn.
+    // These ranges are intentionally smaller than the authored action swaps so
+    // the paws never appear to detach from Mochi's body.
+    const skiLean = motion && skiing
+      ? THREE.MathUtils.clamp(look * .08 + Math.sin(time * 2.6) * .032, -.12, .12)
+      : 0;
+    const skiDrift = motion && skiing ? Math.sin(time * 3.75 + .35) * .022 : 0;
     const lean = motion ? look * (activeBasePose === 'turn' ? .075 : activeBasePose === 'slide' ? .04 : activeBasePose === 'hang' ? .018 : activeBasePose === 'raft' ? .022 : .028) : 0;
     const stretch = motion
       ? ['hang', 'raft'].includes(activeBasePose) ? 0 : cadence * (activeBasePose === 'stride' ? .028 : activeBasePose === 'jump' ? .016 : activeBasePose === 'slide' ? .012 : .012)
@@ -1753,11 +1764,11 @@ export function createPuppyArtwork({mobile = false, loader = new THREE.TextureLo
             : basePose === 'away' ? awayMotion * .018
               : basePose === 'raft' ? raftBob * .018 : 0;
       const impactRoll = basePose === 'hang' ? 0 : landingPulse ? Math.sin(time * 28) * landingPulse * .12 : 0;
-      const targetRotation = lean * (basePose === 'turn' ? .45 : .2) + actionRotation + impactRoll;
+    const targetRotation = lean * (basePose === 'turn' ? .45 : .2) + actionRotation + skiLean + impactRoll;
       const targetScaleX = scale.x * flip * actionScaleX * (1 - stretch) * (1 + landingPulse * .06);
       const targetScaleY = scale.y * actionScaleY * (1 + stretch) * (1 - landingPulse * .1);
-      const targetX = basePosition.x + sway + (basePose === 'turn' ? look * .032 : 0) + (basePose === 'hang' ? hangSwing * .028 : 0) + (basePose === 'away' ? awayMotion * .018 : 0) + (basePose === 'raft' ? raftBob * .012 : 0);
-      const targetY = basePosition.y + bounce + actionDrop - landingPulse * .04;
+      const targetX = basePosition.x + sway + skiDrift + (basePose === 'turn' ? look * .032 : 0) + (basePose === 'hang' ? hangSwing * .028 : 0) + (basePose === 'away' ? awayMotion * .018 : 0) + (basePose === 'raft' ? raftBob * .012 : 0);
+      const targetY = basePosition.y + bounce + actionDrop + (skiing ? Math.sin(time * 7.5) * .010 : 0) - landingPulse * .04;
       const output = {
         scaleX: THREE.MathUtils.lerp(poseTransitionFrom.scaleX, targetScaleX, transitionEase),
         scaleY: THREE.MathUtils.lerp(poseTransitionFrom.scaleY, targetScaleY, transitionEase),

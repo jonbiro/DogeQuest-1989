@@ -1,4 +1,4 @@
-const OVERHEAD = new Set(['arch', 'branch', 'gate', 'moving-gate', 'choice-left', 'choice-right', 'corner-left', 'corner-right', 'zipline-start', 'zipline-end', 'minecart-start', 'minecart-end']);
+const OVERHEAD = new Set(['arch', 'branch', 'gate', 'moving-gate', 'choice-left', 'choice-right', 'corner-left', 'corner-right', 'zipline-start', 'zipline-end', 'minecart-start', 'minecart-end', 'ski-start', 'ski-end', 'ski-gate']);
 // The camera's fog ends at 145 m. Keep a small margin for approach silhouettes
 // while avoiding allocation and shadow work for objects hidden in the haze.
 export const OBJECT_HORIZON = 140;

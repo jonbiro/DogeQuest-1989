@@ -52,6 +52,17 @@ import {
   dogChaseByIndex,
 } from './dog-chase.js';
 import {
+  SKI_FIRST,
+  SKI_PERIOD,
+  skiByIndex,
+  skiIntersecting,
+  skiEncounter,
+  advanceSki,
+  moveSki,
+  skiHopHeight,
+  SKI_HOP_DURATION,
+} from './ski.js';
+import {
   TURN_SKILL_REWARD,
   applyTurnInput,
   cornerByIndex,
@@ -63,7 +74,7 @@ import {applyRunModifier} from './run-modifiers.js';
 const SOLID_HAZARDS = ["rock", "log", "arch", "branch", "gate"];
 export const BASE_SLIDE_DURATION = .58;
 export const SLIDE_UPGRADE_DURATION = .07;
-export const HAZARDS = [...SOLID_HAZARDS, "moving-gate", "gap"];
+export const HAZARDS = [...SOLID_HAZARDS, "moving-gate", "gap", "mogul", "ice", "ski-gate"];
 export const AREA_RELIC_REWARD = 160;
 export const NEAR_MISS_REWARD = 15;
 export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart", 'gift', 'zoomies', 'relic'];
@@ -92,6 +103,9 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     // It has no collision type of its own; the existing lane and bone rules
     // stay authoritative while the companion leads a short reward line.
     dogChasePrototype: generatorVersion >= 4,
+    // Frostpeak is a current-trail chapter. It deliberately lives outside the
+    // six-area palette so old saves and area progress remain compatible.
+    skiPrototype: generatorVersion >= 5,
     random: seededRandom(seed),
     distance: 0,
     time: 0,
@@ -186,6 +200,13 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     dogChaseUpcoming: null,
     dogChase: null,
     dogChases: 0,
+    nextSki: generatorVersion >= 5 ? SKI_FIRST : Infinity,
+    ski: null,
+    skis: 0,
+    skiJumps: 0,
+    skiDodges: 0,
+    skiGates: 0,
+    skiUpcoming: null,
     // Collapsing bridges are version-four spectacle beats. They reuse the
     // proven full-width gap collision, but carry their own metadata so the
     // renderer, guidance, sound and results can describe the set piece.
@@ -262,6 +283,7 @@ function dogChaseReserved(run, chase) {
     (run.raftPrototype && raftIntersecting(start, end)) ||
     (run.minecartPrototype && minecartIntersecting(start, end)) ||
     (run.movingGatePrototype && movingGateIntersecting(start, end)) ||
+    (run.skiPrototype && skiIntersecting(start, end)) ||
     bridgeCollapseIntersecting(start, end) ||
     courseOverlap || ziplineOverlap || choiceOverlap,
   );
@@ -365,6 +387,9 @@ export function fillTrack(run) {
   // Older restored version-four sessions may not carry the chase scheduler.
   // Opt them into the first deterministic beat without changing legacy trails.
   if (run.dogChasePrototype && !Number.isFinite(run.nextDogChase)) run.nextDogChase = DOG_CHASE_FIRST;
+  // Restored version-five sessions may predate the Frostpeak rollout. Opt
+  // them into the first deterministic descent without touching older trails.
+  if (run.skiPrototype && !Number.isFinite(run.nextSki)) run.nextSki = SKI_FIRST;
   // Older restored version-four sessions may not carry the bridge scheduler.
   // Opt them into the first deterministic beat without changing legacy trail
   // versions or manufacturing a collapse behind the runner.
@@ -430,6 +455,46 @@ export function fillTrack(run) {
         Object.assign(add(run, spec.type, spec.lane, spec.at), spec);
       run.nextRow = minecart.recovery + 5;
       run.nextMinecart = minecart.start + MINECART_PERIOD;
+      continue;
+    }
+    const ski = run.skiPrototype && Number.isFinite(run.nextSki)
+      ? skiByIndex(Math.round((run.nextSki - SKI_FIRST) / SKI_PERIOD))
+      : null;
+    if (ski && run.nextRow > ski.recovery) {
+      run.nextSki = ski.start + SKI_PERIOD;
+      continue;
+    }
+    if (ski && run.nextRow >= ski.approach) {
+      const courseOverlap = run.course && run.course.end >= ski.approach &&
+        run.course.start <= ski.recovery;
+      const ziplineStart = Number.isFinite(run.nextZipline) ? run.nextZipline : Infinity;
+      const ziplineOverlap = ziplineStart <= ski.recovery + 45 &&
+        ziplineStart + ZIPLINE_LENGTH + 45 >= ski.approach;
+      const choiceOverlap = Number.isFinite(run.nextChoice) &&
+        run.nextChoice >= ski.approach - 45 && run.nextChoice <= ski.recovery + 45;
+      const reserved = cornerIntersecting(ski.approach, ski.recovery) ||
+        (run.raftPrototype && raftIntersecting(ski.approach, ski.recovery)) ||
+        (run.minecartPrototype && minecartIntersecting(ski.approach, ski.recovery)) ||
+        (run.movingGatePrototype && movingGateIntersecting(ski.approach, ski.recovery)) ||
+        bridgeCollapseIntersecting(ski.approach, ski.recovery) ||
+        courseOverlap || ziplineOverlap || choiceOverlap;
+      if (!reserved) {
+        const startMarker = add(run, 'ski-start', 1, ski.start);
+        startMarker.skiSection = ski.index;
+        startMarker.encounter = 'Frostpeak descent';
+        const endMarker = add(run, 'ski-end', 1, ski.end);
+        endMarker.skiSection = ski.index;
+        endMarker.encounter = 'Frostpeak finish';
+        const challenge = run.route?.kind === 'challenge' && ski.start < run.route.until;
+        for (const spec of skiEncounter(ski, challenge))
+          Object.assign(add(run, spec.type, spec.lane, spec.at), spec);
+        run.skiUpcoming = ski;
+        run.nextRow = ski.recovery + 5;
+        run.nextSki = ski.start + SKI_PERIOD;
+        run.row++;
+        continue;
+      }
+      run.nextSki = ski.start + SKI_PERIOD;
       continue;
     }
     const movingGate = run.movingGatePrototype && Number.isFinite(run.nextMovingGate)
@@ -559,6 +624,7 @@ export function fillTrack(run) {
           run.nextChoice,
           run.nextZipline,
           Number.isFinite(run.nextMinecart) ? run.nextMinecart : Infinity,
+          Number.isFinite(run.nextSki) ? run.nextSki : Infinity,
           Number.isFinite(run.nextMovingGate) ? run.nextMovingGate : Infinity,
         ) - 45 &&
         // A landscape transition is not a gameplay hazard. Prototype courses
@@ -732,6 +798,18 @@ export function act(run, action) {
   if (action === "left" && !applyTurnInput(run, action)) run.lane = Math.max(0, run.lane - 1);
   if (action === "right" && !applyTurnInput(run, action)) run.lane = Math.min(2, run.lane + 1);
   if (run.zipline || run.raft || run.minecart) return;
+  if (run.ski) {
+    if (action === "jump") {
+      if ((run.skiHop || 0) <= 0) {
+        run.skiHop = SKI_HOP_DURATION;
+        run.events.push('ski-jump');
+      }
+    }
+    // Skiing is a crouched carving posture. Sliding is intentionally ignored
+    // here so a stray downward swipe cannot cancel a hop or create an
+    // ambiguous second action on a small touchscreen.
+    return;
+  }
   if (action === "jump") {
     if (run.y === 0 && run.vy === 0) jump(run);
     else run.jumpBuffer = JUMP_BUFFER;
@@ -824,7 +902,8 @@ export function step(run, dt) {
   // Other lessons stay gentle; mistakes never trigger another speed increase.
   const practiceSpeed=run.practice&&(run.practice.kind==='jump'||run.practice.kind==='slide')
     ? 12+5*Math.min(2,run.practice.correct) : 12;
-  const targetSpeed = run.practice ? practiceSpeed : Math.min(36, 22 + run.distance / 90) * (run.zoomies > 0 ? 1.3 : 1);
+  const baseSpeed = run.practice ? practiceSpeed : Math.min(36, 22 + run.distance / 90);
+  const targetSpeed = baseSpeed * (run.ski ? 1.18 : 1) * (run.zoomies > 0 ? 1.3 : 1);
   run.speed += (targetSpeed - run.speed) * (1 - Math.exp(-6 * dt));
   if (wasZooming && run.zoomies === 0) {
     run.invulnerable = Math.max(run.invulnerable, 1.2);
@@ -879,7 +958,9 @@ export function step(run, dt) {
   if(run.zoomies>0 && run.y===0 && run.objects.some(object=>object.type==="gap" && object.at-run.distance>0 && object.at-run.distance<run.speed*.45)) act(run,"jump");
   if(run.raftPrototype)advanceRaft(run,run.previous.distance,run.distance);
   if(run.minecartPrototype)advanceMinecart(run,run.previous.distance,run.distance);
-  if(!moveRaft(run,LANES[run.lane],dt) && !moveMinecart(run,LANES[run.lane],dt))
+  if(run.skiPrototype)advanceSki(run,run.previous.distance,run.distance);
+  if(!moveRaft(run,LANES[run.lane],dt) && !moveMinecart(run,LANES[run.lane],dt) &&
+     !moveSki(run,LANES[run.lane],dt))
     steer(run, LANES[run.lane], dt);
   if(run.choicePending!==null && run.distance>=run.choicePending) {
     const kind=run.x>1.2?"challenge":"scenic";
@@ -908,6 +989,14 @@ export function step(run, dt) {
       run.invulnerable = Math.max(run.invulnerable, 1.2);
       run.events.push("zipline-end");
     }
+  } else if (run.ski) {
+    run.skiHop = Math.max(0, (run.skiHop || 0) - dt);
+    run.y = skiHopHeight(run);
+    run.vy = 0;
+    run.diving = false;
+    run.slide = 0;
+    run.slideNext = 0;
+    run.jumpBuffer = 0;
   } else if(!run.raft && !run.minecart) {
     moveVertical(run, dt);
   }
@@ -929,7 +1018,8 @@ export function step(run, dt) {
       run.events.push("zipline-start");
     }
     // Airborne treats belong to the cable route, not to runners underneath it.
-    const reachable = !object.airborne || Boolean(run.zipline);
+    const reachable = !object.airborne || Boolean(run.zipline) ||
+      Boolean(object.skiAirborne && run.ski && run.y > .45);
     if (object.type === "bone") {
       if (!object.pull && reachable && run.magnet > 0 && dz > -3 && dz < 16) {
         object.pull = {
@@ -937,7 +1027,7 @@ export function step(run, dt) {
           duration: 0.24,
           fromX: LANES[object.lane],
           fromAt: object.at,
-          fromY: object.airborne ? ZIPLINE_HEIGHT + 1.1 : 1.1,
+          fromY: object.airborne ? (object.skiAirborne ? run.y + 1.05 : ZIPLINE_HEIGHT + 1.1) : 1.1,
         };
       }
       if (object.pull) object.pull.elapsed += dt;
@@ -1074,11 +1164,16 @@ export function step(run, dt) {
         (object.type === "gap" && (run.y > .8 || run.zoomies > 0)) ||
         (object.type === "log" && run.y > 0.65) ||
         (object.type === "rock" && run.y > 1.25) ||
+        (object.skiHazard && object.type === 'mogul' && run.y > .58) ||
         (["arch", "branch", "gate", "moving-gate"].includes(object.type) &&
           run.slide > 0 &&
           run.y < 0.2);
       if (sameLane && cleared) {
         run.clears++;
+        if (object.skiHazard && object.type === 'mogul') {
+          run.skiJumps = (run.skiJumps || 0) + 1;
+          run.events.push('ski-mogul-clear');
+        }
         if (run.zoomies === 0) { chargeFetch(run, 12); cleanMove(run); }
         run.bonusPoints += object.skillReward || 20;
         run.events.push("clear");
@@ -1100,9 +1195,13 @@ export function step(run, dt) {
         run.events.push('near-miss');
         run.effects.push({id:object.id,type:'near-miss',time:run.time,x:run.x,y:run.y+.72});
       }
+      if (!sameLane && object.skiHazard && dodgedAtTheLine) {
+        run.skiDodges = (run.skiDodges || 0) + 1;
+        if (object.type === 'ice') run.events.push('ski-ice-dodge');
+      }
       if (sameLane && !cleared && run.invulnerable === 0) {
         object.used = true;
-        harm(run, object.raftHazard ? {type:'rock',raftHazard:true,safeLane:object.raftSafeLane} : object.minecartHazard ? {type:'rock',minecartHazard:true,safeLane:object.minecartSafeLane} : object.type==='rock' && [0,1,2].includes(object.courseRegion)
+        harm(run, object.skiHazard ? {type:object.type,skiHazard:true,skiSafeLane:object.skiSafeLane} : object.raftHazard ? {type:'rock',raftHazard:true,safeLane:object.raftSafeLane} : object.minecartHazard ? {type:'rock',minecartHazard:true,safeLane:object.minecartSafeLane} : object.type==='rock' && [0,1,2].includes(object.courseRegion)
           ? {type:'rock',courseWeave:true,safeLane:run.course?.beats.find(beat=>beat.at===object.at)?.safeLane} : object.bridgeCollapse
             ? {type:'gap',bridgeCollapse:true} : {type: object.type});
         if (run.ended) break;
@@ -1126,7 +1225,7 @@ export function step(run, dt) {
   if (newEvents.some(event => [
     'zipline-end', 'raft-end', 'minecart-end', 'course-complete',
     'course-recovery', 'route-scenic', 'route-challenge', 'turn-left', 'turn-right',
-    'dog-chase-end',
+    'dog-chase-end', 'ski-end',
   ].includes(event))) {
     run.encounterRecoveryUntil = recoveryUntilFor(run, run.distance);
   }

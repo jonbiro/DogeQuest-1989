@@ -2511,7 +2511,9 @@ canvas:focus-visible {
 
 /* When a jump/ride lifts the puppy into the centre of a portrait phone, keep
    the quiet progress chip out of the character silhouette. It returns to its
-   normal horizon dock as soon as the puppy lands; urgent action/turn cues use
+   normal horizon dock as soon as the puppy lands; the same rule applies during
+   the downhill ski chapter, where the player needs a clean view of gates and
+   moguls. Urgent action/turn cues use
    a different dock and are intentionally unaffected. Hiding the quiet chip
    is deliberate: moving it down the trail makes it cover the very pose the
    player is trying to read, while keeping it visible would add a second
@@ -2520,7 +2522,8 @@ canvas:focus-visible {
   #mission-hud[data-dock="mission-summary"][data-posture="jump"],
   #mission-hud[data-dock="mission-summary"][data-posture="zipline"],
   #mission-hud[data-dock="mission-summary"][data-posture="raft"],
-  #mission-hud[data-dock="mission-summary"][data-posture="minecart"] {
+  #mission-hud[data-dock="mission-summary"][data-posture="minecart"],
+  #mission-hud[data-dock="mission-summary"][data-posture="ski"] {
     visibility: hidden;
     opacity: 0;
     pointer-events: none;

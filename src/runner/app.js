@@ -573,9 +573,11 @@ function updatePickupGuide(run) {
   // card sits in the upper trail on portrait phones, so leaving it visible
   // during a jump/slide/ride can cover Mochi's face and the move cue. Urgent
   // action guidance owns attention until the puppy is back on the ground.
+  const busyRide = Boolean(run?.zipline || run?.raft || run?.minecart);
   const busy = Number(run?.y) > 0.1
     || Number(run?.slide) > 0
-    || Boolean(run?.zipline || run?.raft || run?.minecart);
+    || busyRide
+    || Boolean(run?.ski);
   if (busy) {
     node.hidden = true;
     return;
@@ -962,8 +964,10 @@ function showOverlay(kind) {
                   ? "The browser interrupted that touch, so your run is paused. Try a shorter swipe or use the big buttons, then tap Keep running."
                   : "Keep running, or finish now to bank the points, bones and gifts you have earned."
           : run.practice ? "Practice is unscored. Leave whenever you like." : "Keep running, or finish now to bank the points, bones and gifts you have earned.";
-  if(kind==='paused'&&!run.practice&&(run.raft||run.zipline||run.minecart))
-    $('overlay-copy').textContent+=' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
+  if(kind==='paused'&&!run.practice&&(run.raft||run.zipline||run.minecart||run.ski))
+    $('overlay-copy').textContent += run.ski
+      ? ' Finish this downhill to earn its 360-point completion bonus; collected rewards are already yours.'
+      : ' Finish this ride to earn its 250-point completion bonus; collected rewards are already yours.';
   $("home").textContent = kind === 'paused' ? run.practice ? 'Leave practice' : 'Finish & bank points' : 'Back to camp';
   $("overlay-primary").textContent =
     kind === "ended"
@@ -1045,6 +1049,14 @@ function finish() {
   if (run.relics) $("run-highlights").textContent += ` · ${run.relics} area ${run.relics === 1 ? 'relic' : 'relics'} found`;
   if (run.nearMisses) $("run-highlights").textContent += ` · ${run.nearMisses} near ${run.nearMisses === 1 ? 'miss' : 'misses'}`;
   if (run.dogChases) $("run-highlights").textContent += ` · ${run.dogChases} puppy ${run.dogChases === 1 ? 'chase' : 'chases'} (+${run.dogChases * DOG_CHASE_REWARD})`;
+  if (run.skis) {
+    const skiDetails = [
+      `${run.skis} Frostpeak ${run.skis === 1 ? 'descent' : 'descents'}`,
+      run.skiJumps ? `${run.skiJumps} mogul ${run.skiJumps === 1 ? 'hop' : 'hops'}` : '',
+      run.skiDodges ? `${run.skiDodges} ice ${run.skiDodges === 1 ? 'dodge' : 'dodges'}` : '',
+    ].filter(Boolean).join(' · ');
+    $("run-highlights").textContent += ` · ${skiDetails}`;
+  }
   const {missionPoints: reward, prizes} = receipt;
   $("overlay-copy").textContent +=
     ` +${run.score.toLocaleString()} upgrade points earned. Spend them at camp.`;
@@ -1055,6 +1067,7 @@ function finish() {
   if (run.ziplines) $("overlay-copy").textContent += ` ${run.ziplines} zipline ${run.ziplines === 1 ? "ride" : "rides"} completed (+${run.ziplines * 250} points included in your score).`;
   if (run.rafts) $("overlay-copy").textContent += ` ${run.rafts} river ${run.rafts === 1 ? "crossing" : "crossings"} completed (+${run.rafts * 250} points included in your score).`;
   if (run.minecarts) $("overlay-copy").textContent += ` ${run.minecarts} mine-cart ${run.minecarts === 1 ? "ride" : "rides"} completed (+${run.minecarts * 250} points included in your score).`;
+  if (run.skis) $("overlay-copy").textContent += ` ${run.skis} Frostpeak ${run.skis === 1 ? "descent" : "descents"} completed (+${run.skis * 360} points included in your score).`;
   if (prizes.length) $("overlay-copy").textContent += ` Prizes earned: ${prizes.map(p => p.name).join(", ")}! Visit the clubhouse.`;
   const mastery=receipt.mastery;
   if(mastery.earned.length) $("overlay-copy").textContent += ` Passport rewards: ${mastery.earned.map(b=>b.name).join(', ')} (+${mastery.points} pts).`;
@@ -1099,8 +1112,10 @@ function finish() {
   if (run.ziplines) rides.push(`${run.ziplines} zipline ${run.ziplines === 1 ? 'ride' : 'rides'}`);
   if (run.rafts) rides.push(`${run.rafts} river ${run.rafts === 1 ? 'crossing' : 'crossings'}`);
   if (run.minecarts) rides.push(`${run.minecarts} mine-cart ${run.minecarts === 1 ? 'ride' : 'rides'}`);
+  if (run.skis) rides.push(`${run.skis} Frostpeak ${run.skis === 1 ? 'descent' : 'descents'}`);
   const completedRides=(run.ziplines||0)+(run.rafts||0)+(run.minecarts||0);
-  if (rides.length) $("overlay-copy").textContent += ` ${rides.join(' and ')} completed (+${completedRides * 250} points included).`;
+  const traversalBonus = completedRides * 250 + (run.skis || 0) * 360;
+  if (rides.length) $("overlay-copy").textContent += ` ${rides.join(' and ')} completed (+${traversalBonus} points included).`;
   if (run.relics) $("overlay-copy").textContent += ` ${run.relics} area ${run.relics === 1 ? 'relic' : 'relics'} found (+${run.relicPoints} points included).`;
   if (run.dogChases) $("overlay-copy").textContent += ` ${run.dogChases} puppy ${run.dogChases === 1 ? 'chase' : 'chases'} completed (+${run.dogChases * DOG_CHASE_REWARD} points included).`;
   if (ghostReceipt?.stored) $("overlay-copy").textContent += ' Personal ghost saved — retry this trail to race it.';
@@ -2266,7 +2281,7 @@ function frame(now) {
       scene.dataset.course = run.course?.name || '';
       scene.dataset.encounterPhase = encounter.phase;
       scene.dataset.posture =
-      run.raft ? "raft" : run.minecart ? "minecart" : run.zipline ? "zipline" : run.y > 0.05 ? "jump" : run.slide > 0 ? "slide" : "run";
+      run.raft ? "raft" : run.minecart ? "minecart" : run.zipline ? "zipline" : run.ski ? "ski" : run.y > 0.05 ? "jump" : run.slide > 0 ? "slide" : "run";
     });
     // Decision cues follow each rendered frame; counters can wait for the HUD tick.
     // Decision cues remain unthrottled so a last-moment warning is never held

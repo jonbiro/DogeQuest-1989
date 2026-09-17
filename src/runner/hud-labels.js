@@ -17,6 +17,18 @@ const COMPACT_MISSION_TITLES = Object.freeze({
 // Keep location/difficulty together so route sections never hide a score chase.
 export function runHudLabels(run, best) {
   if (run.practice) return {region:'Practice · no penalties',rhythm:'',score:practiceProgress(run)};
+  const skiMarker = (run.objects || [])
+    .filter(object => ['ski-start', 'ski-gate'].includes(object.type) && !object.used &&
+      Number.isFinite(object.at) && object.at >= run.distance && object.at - run.distance < 86)
+    .sort((a, b) => a.at - b.at)[0];
+  if (run.ski || skiMarker) {
+    const active = Boolean(run.ski);
+    return {
+      region: 'Frostpeak',
+      rhythm: active ? 'Downhill run' : 'Ski descent ahead',
+      score: scoreChaseLabel(run.score, best, run.rematchBest, run.challengeTarget),
+    };
+  }
   const currentAreaIndex=areaAt(run.distance);
   const area=AREAS[currentAreaIndex];
   // Prototype rows carry an authored beat name. Surface the next one only

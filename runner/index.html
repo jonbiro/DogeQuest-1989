@@ -9,7 +9,7 @@
     <title>Puppy Run — Run wild. Fetch bones.</title>
     <meta
       name="description"
-      content="An original 3D endless runner starring Mochi. Tap the movement buttons or drag through jungle ruins, jump logs, slide under gates, and chase glowing bones. A Puppy Quest companion."
+      content="An original 3D endless runner starring Mochi. Tap the movement buttons or drag through jungle ruins and a snowy mountain descent, jump logs, slide under gates, and chase glowing bones. A Puppy Quest companion."
     />
     <meta name="theme-color" content="#102a28" />
     <meta
@@ -26,7 +26,7 @@
         id="scene"
         inert
         tabindex="0"
-        aria-label="3D running trail. Easiest on a phone: tap LEFT or RIGHT for one lane, JUMP for a log or gap, or SLIDE for an overhead gate. One swipe equals one move. To keep your finger down, stop your thumb briefly, then drag again; lifting is always okay. On touch screens, tap a left or right edge to steer or the center to jump. Arrow keys also work. Escape pauses."
+        aria-label="3D running trail. Easiest on a phone: tap LEFT or RIGHT for one lane, JUMP for a log or gap, or SLIDE for an overhead gate. One swipe equals one move. To keep your finger down, stop your thumb briefly, then drag again; lifting is always okay. During the Frostpeak descent, tap HOP over moguls and carve around blue ice. On touch screens, tap a left or right edge to steer or the center to jump. Arrow keys also work. Escape pauses."
       ></canvas>
       <div class="vignette" aria-hidden="true"></div>
       <div id="touch-ghost" aria-hidden="true" hidden><span>•</span></div>
@@ -60,7 +60,7 @@
         <div class="eyebrow"><span></span> SMALL DOG. UNLIMITED ADVENTURE.</div>
         <h1 id="title">Run wild.<br />Fetch <em>bones.</em></h1>
         <p class="intro">
-          One fearless pup. Six wild landscapes.<br />And absolutely no bone left
+          One fearless pup. Seven wild landscapes.<br />And absolutely no bone left
           behind.
         </p>
         <p id="touch-launch-hint" class="touch-launch-hint" role="note">
@@ -238,6 +238,12 @@
               <p>Scenic carts give you a choice: stay with the steady bone lane, or chase the glowing gem lane for +250 points each. Challenge carts keep one open lane so the timing stays fair.</p>
               <p>Mine-cart rocks cannot be jumped or slid under. Jump and slide return after the cart exits. Reach the green exit marker for a +250 completion bonus.</p>
             </details>
+            <details id="ski-help">
+              <summary>How the Frostpeak descent works</summary>
+              <p>Frostpeak is a fast snowy downhill chapter. Tap LEFT or RIGHT, or make one short swipe, to carve between lanes. The skis ease into each move, so a smaller correction is enough when you are already turning.</p>
+              <p>Tap HOP (or swipe up) over a white mogul. Blue ice is a ground hazard: carve to the open lane instead. Ski gates show the safe opening with bright flags. Bones and powerups follow the safe line, and the gift at the finish is worth the trip.</p>
+              <p>The descent begins automatically on current adventures, then returns you to the regular trail with a +360 completion bonus. Try to collect the airborne crest bones while hopping; the short hop window is forgiving and slide is unavailable until you reach the next chapter.</p>
+            </details>
             <details id="offline-help">
               <summary>Play without internet</summary>
               <p id="offline-status" role="status">Preparing offline play. On phones, the artwork pack waits until the trail is quiet so 3D play stays smooth.</p>
@@ -328,6 +334,10 @@
               The trail also climbs and descends; jump timing stays the same.
               Jump broken trail sections with striped edges. Missing a jump
               costs a heart; a shield can rescue you. Zoomies jumps gaps automatically.
+              Current adventures also open into Frostpeak: a short snowy downhill
+              where you carve between lanes, hop white moguls, dodge blue ice and
+              follow the open ski gate. Finish the descent for +360 points, then
+              jump and slide return to the regular trail.
             </p>
             <p>
               Each destination has its own mechanic: follow the Fern weave around
@@ -424,7 +434,7 @@
           </div>
         </div>
       </section>
-      <nav id="controls" aria-label="Touch controls. Tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. One swipe equals one move. To keep your finger down, stop your thumb briefly, then drag again; lifting is always okay. Swipe up to jump and down to slide. The middle FETCH meter is status-only until it is ready." hidden>
+      <nav id="controls" aria-label="Touch controls. Tap LEFT or RIGHT for one lane, JUMP for a log or gap, and SLIDE for an overhead gate. One swipe equals one move. To keep your finger down, stop your thumb briefly, then drag again; lifting is always okay. Swipe up to jump and down to slide. During Frostpeak, JUMP becomes HOP for moguls and blue ice needs a lane carve. The middle FETCH meter is status-only until it is ready." hidden>
         <p id="gesture-coach" role="status" aria-live="polite" aria-atomic="true" aria-label="Tap left or right to move. Tap jump or slide. One swipe equals one move. To keep your finger down, stop your thumb briefly, then drag again; lifting is always okay." hidden></p>
         <button data-action="left" aria-label="Move left one lane">←<small>LEFT</small></button
         ><button data-action="right" aria-label="Move right one lane">→<small>RIGHT</small></button
