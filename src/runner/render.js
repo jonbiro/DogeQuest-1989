@@ -2389,14 +2389,14 @@ export function createView(canvas) {
       // as the character being chosen, not a piece of scenery. Keep sheets
       // and gameplay on their established origin so their interaction and
       // hit-test framing stay unchanged.
-      const heroOffsetX = mobileHero ? (compactHero ? .58 : -.04) : 0;
-      const heroOffsetY = mobileHero ? (compactHero ? .44 : .56) : 0;
+      const heroOffsetX = mobileHero ? (compactHero ? .58 : .34) : 0;
+      const heroOffsetY = mobileHero ? (compactHero ? .44 : 1.65) : 0;
       // Nudge the featured puppy toward the open trail shoulder on portrait
       // screens. The title owns the left side; lifting Mochi a little keeps
       // his face out of the bottom control shelf and gives the contrast pool
       // a clean, scene-locked backdrop instead of tree foliage.
-      const heroVisualX = heroOffsetX + (mobileHero ? (compactHero ? .22 : .26) : 0);
-      const heroVisualY = heroOffsetY + (mobileHero ? (compactHero ? .08 : -.01) : 0);
+      const heroVisualX = heroOffsetX + (mobileHero ? (compactHero ? .22 : .34) : 0);
+      const heroVisualY = heroOffsetY + (mobileHero ? (compactHero ? .08 : 0) : 0);
       dog.position.set(
         hero ? heroVisualX : menu ? 0 : x,
         (hero ? heroVisualY : menu ? 0 : y) +
@@ -2413,6 +2413,7 @@ export function createView(canvas) {
       dog.rotation.x = menu ? 0 : groundFrame.pitch + (reducedMotion ? 0 : pitch);
       dog.scale.setScalar(1);
       const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:y>.1&&!run.minecart,sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline),rafting:!menu&&Boolean(run.raft),skiing:!menu&&Boolean(run.ski)});
+      const menuHeroScale = hero && mobileHero && !compactHero ? .76 : 1;
       const crouch=activeRig===mochi?mochiCrouch((1-pose)/.54):null;
       dog.scale.y = ((crouch?.scaleY ?? pose) + personality.breathe) * (1-weight.compression);
       dog.scale.x = dog.scale.z = 1+weight.compression*.4;
@@ -2426,7 +2427,7 @@ export function createView(canvas) {
       // phones without changing collision dimensions or run timing. The
       // gameplay lift is deliberately smaller than the menu treatment so the
       // dog never crowds the fixed thumb controls.
-      if (hero) dog.scale.multiplyScalar(compactHero ? 1.08 : camera.aspect < .85 ? 1.10 : 1.09);
+      if (hero) dog.scale.multiplyScalar(menuHeroScale * (compactHero ? 1.08 : camera.aspect < .85 ? 1.10 : 1.09));
       // The rear chase frame carries a lot of transparent breathing room so
       // its tail and paw line stay natural. Give the complete puppy a modest
       // presentation lift on phones; this improves action recognition without

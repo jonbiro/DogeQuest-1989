@@ -3232,3 +3232,136 @@ canvas:focus-visible {
     top: 180px;
   }
 }
+
+/* -------------------------------------------------------------------------
+   Recording audit: portrait camp composition
+
+   A phone-sized recording exposed three competing layers in the opening
+   screen: the oversized headline, the featured Mochi painting and the
+   browser-safe footer.  This final layer gives each one a deliberate pocket:
+   copy stays on the left, Mochi owns the open shoulder, and the only footer
+   control sits beside the header instead of covering the challenge card.
+   ------------------------------------------------------------------------- */
+@media (max-width: 700px) and (orientation: portrait) {
+  #game[data-state="menu"] h1 {
+    /* The title should resolve to two authored lines on a phone.  Keeping the
+       explicit line break prevents “Fetch bones.” from falling under Mochi. */
+    max-width: calc(100vw - 54px);
+    font-size: clamp(46px, 14vw, 58px);
+    letter-spacing: -3px;
+    line-height: .98;
+    white-space: nowrap;
+    margin: 14px 0 9px;
+    text-shadow: 0 4px 18px #08232980;
+  }
+
+  #game[data-state="menu"] .touch-launch-hint {
+    justify-content: flex-start;
+    max-width: 222px;
+    margin: 9px 0 0;
+    padding: 6px 9px;
+    border: 1px solid #d3ebde38;
+    border-radius: 10px;
+    background: #102d39df;
+    color: #f5fae9;
+    font-size: 10px;
+    line-height: 1.28;
+    text-align: left;
+    box-shadow: 0 5px 16px #061a2430;
+  }
+
+  #game[data-state="menu"] .trail-perks {
+    margin-top: 10px;
+  }
+
+  #game[data-state="menu"] .trail-perk-options {
+    gap: 5px;
+    margin-top: 6px;
+  }
+
+  #game[data-state="menu"] .trail-perk {
+    min-height: 48px;
+    padding: 5px;
+  }
+
+  #game[data-state="menu"] .trail-perk-detail {
+    margin-top: 4px;
+    line-height: 1.3;
+  }
+
+  #game[data-state="menu"] .start-actions {
+    margin-top: 10px;
+  }
+
+  #game[data-state="menu"] .trail-tag {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 7px 10px;
+    align-items: center;
+    margin: 9px 0 10px;
+    padding: 9px 10px;
+    min-height: 72px;
+    border: 1px solid #a6d7cf2e;
+    border-radius: 12px;
+    background: #102a28e8;
+    box-shadow: 0 6px 18px #061a2428;
+  }
+
+  #game[data-state="menu"] .trail-tag > div {
+    grid-column: 1;
+    min-width: 0;
+  }
+
+  #game[data-state="menu"] .trail-tag span,
+  #game[data-state="menu"] .trail-tag .weekly-preview,
+  #game[data-state="menu"] .trail-tag .streak-preview {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #game[data-state="menu"] #daily-camp {
+    grid-column: 2;
+    grid-row: 1;
+    width: 74px;
+    min-width: 74px;
+    min-height: 46px;
+    z-index: 1;
+  }
+
+  /* `footer` only contains the motion preference while the menu is active.
+     Dock it beside the header on portrait phones so it cannot obscure the
+     challenge's Daily trail action or sit under the browser toolbar. */
+  #game[data-state="menu"] footer {
+    top: calc(82px + var(--safe-top));
+    right: max(7%, calc(var(--safe-right) + 12px));
+    bottom: auto;
+    left: auto;
+    width: auto;
+    padding: 0;
+    z-index: 4;
+    justify-content: flex-end;
+    pointer-events: none;
+  }
+
+  #game[data-state="menu"] footer .text-button {
+    min-height: 36px;
+    padding: 7px 10px;
+    border: 1px solid #b6ded355;
+    border-radius: 999px;
+    background: #102a28e8;
+    color: #d9ede1;
+    font-size: 10px;
+    line-height: 1.2;
+    box-shadow: 0 5px 16px #061a2430;
+    pointer-events: auto;
+  }
+}
+
+@media (max-width: 700px) and (orientation: portrait) and (max-height: 700px) {
+  /* Short phones have less header breathing room; keep the same safe dock
+     without pushing the menu title into the status controls. */
+  #game[data-state="menu"] footer {
+    top: calc(66px + var(--safe-top));
+  }
+}
