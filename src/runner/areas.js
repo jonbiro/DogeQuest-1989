@@ -1,6 +1,10 @@
 // Two visual destinations within each mastery region. World generation and
 // passport keys still use the original three regions.
 export const AREA_LENGTH=225;
+// A complete pass visits all six visual destinations. Subtle lighting moods
+// change between passes so a long run feels like a journey through a day,
+// while the authored area palettes and gameplay identity remain intact.
+export const WORLD_PASS_LENGTH = AREA_LENGTH * 6;
 // Foreground landmark families sit just beyond the road shoulders. Keeping the
 // minimum explicit gives the renderer a readable destination cue on portrait
 // cameras without ever placing decorative geometry in a playable lane.
@@ -19,6 +23,17 @@ export const AREAS=[
   {name:'Crystal Reach',short:'Crystal',landmark:'crystal-spires',mechanic:{id:'prism-timing',label:'Prism timing',cue:'Follow the bright shard',detail:'Crystal flashes mark a deliberate slalom.'},props:['prism spires','shard clusters','glimmer stones'],traversal:'Prism clusters pulse beside the active lane.',sky:'#899bd0',ground:'#354460',lighting:{sky:'#d9e9ff',ground:'#202b4c',hemi:1.68,sun:'#d9e9ff',sunPower:3.2},atmosphere:{motif:'crystals',color:'#c7efff',accent:'#b9a9ff',speed:.38,lift:.4,size:.1,opacity:.5}},
   {name:'Mooncap Grove',short:'Mooncap',landmark:'mooncap-ring',mechanic:{id:'moonlit-weave',label:'Moonlit weave',cue:'Use the quiet gap',detail:'Mushroom shadows hide a calm lane, then a quick turn.'},props:['mooncap rings','spore lights','night stones'],traversal:'Spore lights lead the quiet lane before the turn.',sky:'#aaa1d4',ground:'#403a5d',lighting:{sky:'#d0d0ff',ground:'#191a36',hemi:1.56,sun:'#d8d0ff',sunPower:2.72},atmosphere:{motif:'spores',color:'#e6cfff',accent:'#8be5d1',speed:.58,lift:.32,size:.105,opacity:.46}},
 ];
+
+// These are deliberately restrained color grades, not replacement area
+// palettes. The renderer blends them at the start of each full destination
+// pass, giving repeated landscapes a fresh morning/golden/sunset/starlit feel
+// without reducing the contrast needed to read bones, hazards or the puppy.
+export const WORLD_MOODS = Object.freeze([
+  Object.freeze({id:'fresh',label:'Fresh morning',sky:'#fff2d3',ground:'#dbe8c7',sun:'#fff4d8',strength:.08}),
+  Object.freeze({id:'golden',label:'Golden hour',sky:'#ffd5a8',ground:'#d8bd91',sun:'#ffe0ae',strength:.11}),
+  Object.freeze({id:'sunset',label:'Peach sunset',sky:'#f1b0a8',ground:'#a27771',sun:'#ffd0b3',strength:.1}),
+  Object.freeze({id:'starlit',label:'Starlit trail',sky:'#7d8fd0',ground:'#596488',sun:'#c8d6ff',strength:.12}),
+]);
 
 // Current prototype trails give each visual destination a small mechanical
 // accent. These are deliberately built from the existing obstacle vocabulary
@@ -65,6 +80,16 @@ export const AREA_GAMEPLAY=[
 ];
 export function areaAt(distance){return Math.floor(Math.max(0,distance)/AREA_LENGTH)%AREAS.length;}
 export function areaGameplayAt(distance){return AREA_GAMEPLAY[areaAt(distance)];}
+
+export function worldMoodAt(distance=0){
+  const d=Number.isFinite(distance)?Math.max(0,distance):0;
+  const cycle=Math.floor(d/WORLD_PASS_LENGTH);
+  const index=cycle%WORLD_MOODS.length;
+  const previous=cycle>0?(index+WORLD_MOODS.length-1)%WORLD_MOODS.length:index;
+  const progress=cycle===0?1:Math.min(1,(d%WORLD_PASS_LENGTH)/64);
+  const blend=progress*progress*(3-2*progress);
+  return {index,previous,blend,cycle};
+}
 // Keep the destination identity in one small, read-only sampler so the HUD,
 // director and future accessibility surfaces describe the same mechanic as
 // the scenery. This is metadata only: object timing and collision streams do

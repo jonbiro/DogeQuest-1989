@@ -10,7 +10,7 @@ import { createCornerRoad } from "./corner-road.js";
 import { PUPPIES, DEFAULT_PUPPY } from "./collection.js";
 import { puppyVisual } from "./puppy-visuals.js";
 import { REGIONS, regionAt, horizonProfile } from "./regions.js";
-import {AREAS,areaAt,areaBlend,landmarkSway,landmarkVariation,LANDMARK_SHOULDER_MIN,LANDMARK_SHOULDER_SPREAD} from './areas.js';
+import {AREAS,areaAt,areaBlend,worldMoodAt,WORLD_MOODS,landmarkSway,landmarkVariation,LANDMARK_SHOULDER_MIN,LANDMARK_SHOULDER_SPREAD} from './areas.js';
 import {createBoneGeometry} from './bone-model.js';
 import {createCapeGeometry} from './cape-model.js';
 import {createSky} from './sky.js';
@@ -217,10 +217,19 @@ export function createView(canvas) {
     sun:new THREE.Color(area.lighting?.sun || '#fff0ce'),
     sunPower:Number.isFinite(area.lighting?.sunPower) ? area.lighting.sunPower : 3.5,
   }));
+  const moodPalettes=WORLD_MOODS.map(mood=>({
+    sky:new THREE.Color(mood.sky),
+    ground:new THREE.Color(mood.ground),
+    sun:new THREE.Color(mood.sun),
+    strength:Number.isFinite(mood.strength)?mood.strength:.1,
+  }));
   const hemisphereSkyColor=new THREE.Color();
   const hemisphereGroundColor=new THREE.Color();
   const sunlightColor=new THREE.Color();
   const areaGroundColor=new THREE.Color();
+  const moodSkyColor=new THREE.Color();
+  const moodGroundColor=new THREE.Color();
+  const moodSunColor=new THREE.Color();
   const skiSkyColor=new THREE.Color('#b9d9ef');
   const skiGroundColor=new THREE.Color('#eef8fb');
   const skiSunColor=new THREE.Color('#fff8ec');
@@ -2086,6 +2095,13 @@ export function createView(canvas) {
       const weight = bodyMotion({vx:run.vx,vy:run.vy,y,time:run.time,landing:run.landing,
         ziplining:Boolean(run.zipline),reducedMotion:reducedMotion||menu});
       const atmosphere = areaBlend(menu ? 0 : distance);
+      const mood = worldMoodAt(menu ? 0 : distance);
+      const previousMood = moodPalettes[mood.previous];
+      const currentMood = moodPalettes[mood.index];
+      moodSkyColor.copy(previousMood.sky).lerp(currentMood.sky,mood.blend);
+      moodGroundColor.copy(previousMood.ground).lerp(currentMood.ground,mood.blend);
+      moodSunColor.copy(previousMood.sun).lerp(currentMood.sun,mood.blend);
+      const moodStrength=THREE.MathUtils.lerp(previousMood.strength,currentMood.strength,mood.blend);
       const atmosphereEnabled = !reducedMotion &&
         !skiSection &&
         (menu || state === 'playing' || state === 'paused');
@@ -2144,10 +2160,14 @@ export function createView(canvas) {
         if (atmosphereParticles.instanceColor) atmosphereParticles.instanceColor.needsUpdate = true;
       }
       scene.background.copy(areaColors[atmosphere.previous].sky).lerp(areaColors[atmosphere.index].sky,atmosphere.blend);
+      // A light color grade differentiates repeated six-area passes without
+      // washing out the stronger area palettes or the high-contrast road.
+      scene.background.lerp(moodSkyColor,moodStrength);
       if (skiBlend > 0) scene.background.lerp(skiSkyColor, skiBlend);
       scene.fog.color.copy(scene.background);
       sky.material.color.copy(scene.background);
       ground.material.color.copy(areaColors[atmosphere.previous].ground).lerp(areaColors[atmosphere.index].ground,atmosphere.blend);
+      ground.material.color.lerp(moodGroundColor,moodStrength*.62);
       if (skiBlend > 0) ground.material.color.lerp(skiGroundColor, skiBlend);
       // Destination lighting follows the same eased handoff as the sky and
       // ground. The color contrast is authored per area: warm Sunleaf/Oasis,
@@ -2159,11 +2179,15 @@ export function createView(canvas) {
       hemisphereSkyColor.copy(previousLighting.sky).lerp(currentLighting.sky,atmosphere.blend);
       hemisphereGroundColor.copy(previousLighting.ground).lerp(currentLighting.ground,atmosphere.blend);
       sunlightColor.copy(previousLighting.sun).lerp(currentLighting.sun,atmosphere.blend);
+      hemisphereSkyColor.lerp(moodSkyColor,moodStrength*.5);
+      hemisphereGroundColor.lerp(moodGroundColor,moodStrength*.34);
+      sunlightColor.lerp(moodSunColor,moodStrength*.4);
       hemisphere.color.copy(hemisphereSkyColor);
       hemisphere.groundColor.copy(hemisphereGroundColor);
       hemisphere.intensity=THREE.MathUtils.lerp(previousLighting.hemi,currentLighting.hemi,atmosphere.blend);
       sun.color.copy(sunlightColor);
       sun.intensity=THREE.MathUtils.lerp(previousLighting.sunPower,currentLighting.sunPower,atmosphere.blend);
+      sun.intensity += (moodStrength-.1)*.6;
       if (skiBlend > 0) {
         hemisphere.color.lerp(skiSkyColor, skiBlend);
         hemisphere.groundColor.lerp(skiGroundColor, skiBlend);
@@ -2303,6 +2327,11 @@ export function createView(canvas) {
             instanced.geometry.attributes.terrainStation.setX(i,terrainStation(distance,z));
             const blend=areaBlend(menu?0:distance-z);
             areaGroundColor.copy(areaColors[blend.previous].ground).lerp(areaColors[blend.index].ground,blend.blend);
+            // Carry the current pass mood into the side terrain as well as
+            // the valley floor so the world reads as one place instead of a
+            // flat overlay. The runner's mood is close enough for the visible
+            // tiles and avoids another palette allocation in this hot loop.
+            areaGroundColor.lerp(moodGroundColor,moodStrength*.42);
             instanced.setColorAt(i,areaGroundColor);
           }else if(entry.road && !entry.bridge && !entry.cable){
             if(entry.areaMark) instanced.setColorAt(i,sampleTrailMarkColor(menu?0:distance-z,areaGroundColor,entry.markSlot));

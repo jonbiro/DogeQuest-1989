@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {AREAS,AREA_GAMEPLAY,areaAt,areaBlend,areaGameplayAt,areaSignatureAt,landmarkSway,landmarkVariation,LANDMARK_SHOULDER_MIN,LANDMARK_SHOULDER_SPREAD} from '../src/runner/areas.js';
+import {AREAS,AREA_LENGTH,AREA_GAMEPLAY,areaAt,areaBlend,areaGameplayAt,areaSignatureAt,landmarkSway,landmarkVariation,worldMoodAt,WORLD_MOODS,WORLD_PASS_LENGTH,LANDMARK_SHOULDER_MIN,LANDMARK_SHOULDER_SPREAD} from '../src/runner/areas.js';
 import {regionAt} from '../src/runner/regions.js';
 import {createBoneGeometry} from '../src/runner/bone-model.js';
 import {createCapeGeometry} from '../src/runner/cape-model.js';
-import {createRun,fillTrack,HAZARDS} from '../src/runner/world.js';
+import {createRun,fillTrack,HAZARDS,OPENING_RUNWAY_ROWS} from '../src/runner/world.js';
 import {ATMOSPHERE_PARTICLE_COUNT,sampleAtmosphereParticle} from '../src/runner/atmosphere.js';
 
 test('six visual areas cycle without changing mastery region identity',()=>{
@@ -21,6 +21,23 @@ test('six visual areas cycle without changing mastery region identity',()=>{
     assert.equal(start.blend,0);assert.equal(end.blend,1);
     if(visit)assert.equal(start.previous,(visit+5)%6);
   }
+});
+
+test('full destination passes rotate restrained world moods for long-run variety',()=>{
+  assert.equal(WORLD_PASS_LENGTH,AREA_LENGTH*AREAS.length);
+  assert.equal(new Set(WORLD_MOODS.map(mood=>mood.id)).size,WORLD_MOODS.length);
+  assert.ok(WORLD_MOODS.every(mood=>mood.strength>=.06&&mood.strength<=.14));
+  const first=worldMoodAt(0);
+  assert.equal(first.index,0);
+  assert.equal(first.previous,0);
+  assert.equal(first.blend,1);
+  const boundary=worldMoodAt(WORLD_PASS_LENGTH);
+  assert.equal(boundary.index,1);
+  assert.equal(boundary.previous,0);
+  assert.equal(boundary.blend,0);
+  assert.equal(worldMoodAt(WORLD_PASS_LENGTH+64).blend,1);
+  assert.equal(worldMoodAt(WORLD_PASS_LENGTH*WORLD_MOODS.length).index,0);
+  assert.deepEqual(worldMoodAt(Number.NaN),first);
 });
 
 test('each destination owns a distinct, bounded lighting profile',()=>{
@@ -114,6 +131,20 @@ test('current trails turn the director into quiet warm-up and recovery beats',()
     'recovery gives the player an explicitly tagged bonus line');
   assert.equal(recoveryObjects.some(object=>HAZARDS.includes(object.type)),false,
     'recovery keeps the ordinary lane clear');
+});
+
+test('the live opening runway teaches movement before the first hazard row',()=>{
+  const run=createRun(4242,{},5,null,{encounterPacing:true});
+  const runway=run.objects.filter(object => object.at < 120);
+  assert.ok(runway.some(object => object.type==='bone'),'the runway still offers a reward line');
+  assert.ok(runway.some(object => object.type==='magnet' && object.tutorial),'the first special item is still introduced');
+  assert.equal(runway.some(object => HAZARDS.includes(object.type)),false,
+    'the first three authored rows stay clear of surprise hazards');
+  assert.equal(OPENING_RUNWAY_ROWS,3);
+
+  const historical=createRun(4242,{},5);
+  assert.ok(historical.objects.some(object => HAZARDS.includes(object.type) && object.at < 120),
+    'replay streams without live pacing keep their established rows');
 });
 
 test('each authored pattern changes the hazard rhythm without inventing new moves',()=>{

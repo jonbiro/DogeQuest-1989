@@ -6,6 +6,10 @@ export const CORNER_ARC_LENGTH = 25;
 export const CORNER_CLEAR_BEFORE = 45;
 export const CORNER_CLEAR_AFTER = 45;
 export const TURN_WINDOW_SECONDS = 1;
+// The first live adventure gets a wider, still deliberate turn preview. It
+// gives a new player time to read the chevrons and tap LEFT/RIGHT without
+// changing historical trail timing or making later corners easier.
+export const OPENING_TURN_WINDOW_SECONDS = 1.55;
 export const TURN_SKILL_REWARD = 100;
 
 export function cornerByIndex(index) {
@@ -68,6 +72,12 @@ function pendingCorner(run) {
   return cornerByIndex(index);
 }
 
+export function turnWindowFor(run) {
+  return run?.encounterPacing && run.nextCorner === 0
+    ? OPENING_TURN_WINDOW_SECONDS
+    : TURN_WINDOW_SECONDS;
+}
+
 export function turnPrompt(run) {
   // Traversal rides own the horizontal input. Do not let a nearby decorative
   // corner steal a left/right swipe while the puppy is on a raft or cart (or
@@ -77,7 +87,7 @@ export function turnPrompt(run) {
   if (!corner) return null;
   const speed = Math.max(1, Number.isFinite(run.speed) ? run.speed : 1);
   const seconds = (corner.at - run.distance) / speed;
-  if (seconds < 0 || seconds > TURN_WINDOW_SECONDS) return null;
+  if (seconds < 0 || seconds > turnWindowFor(run)) return null;
   const attempt = run.turnAttempt?.index === corner.index ? run.turnAttempt : null;
   return {
     ...corner,

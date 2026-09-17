@@ -1,5 +1,18 @@
 # Puppy adventure goal
 
+## Latest increment: a kinder opening and changing world light
+
+Current browser adventures now begin with a three-row runway: bones and the
+first explained Magnet are available, while surprise hazard rows wait until
+the player has had time to try the lane buttons and read the first chevrons.
+The first live corner also previews 1.55 seconds early; later corners and
+historical trail streams keep their established timing.
+
+Every complete six-area pass now receives a restrained lighting mood that
+blends into the existing destination palettes: fresh morning, golden hour,
+peach sunset and starlit trail. The grade is subtle enough to preserve bone,
+hazard and puppy contrast, but gives long runs a visible sense of progress.
+
 ## Regional variety on the gentle route
 
 New version-three trails include optional Scenic encounters: Fern rambles,

@@ -77,6 +77,10 @@ export const SLIDE_UPGRADE_DURATION = .07;
 export const HAZARDS = [...SOLID_HAZARDS, "moving-gate", "gap", "mogul", "ice", "ski-gate"];
 export const AREA_RELIC_REWARD = 160;
 export const NEAR_MISS_REWARD = 15;
+// The live trail earns its first real hazard only after a short runway. This
+// is intentionally row-based so seeded historical streams remain untouched,
+// while a new player gets room to try a lane tap and read the first turn.
+export const OPENING_RUNWAY_ROWS = 3;
 export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart", 'gift', 'zoomies', 'relic'];
 export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = CURRENT_TRAIL_VERSION, modifier = null, options = {}) {
   generatorVersion=supportsTrailVersion(generatorVersion)?generatorVersion:CURRENT_TRAIL_VERSION;
@@ -673,9 +677,12 @@ export function fillTrack(run) {
     // Warm-up and recovery are deliberately quiet. Authored rides, courses,
     // turns and route challenges above still own their windows; this only
     // prevents ordinary rows from stacking hazards into a breathing beat.
+    const openingRunway = run.encounterPacing && run.distance < 120 &&
+      run.row < OPENING_RUNWAY_ROWS;
     const quietPhase = run.encounterPacing &&
       ((phase === 'warmup' && route !== 'challenge') ||
-       (phase === 'recovery' && route !== 'challenge'));
+       (phase === 'recovery' && route !== 'challenge') ||
+       openingRunway);
     // Scenic detours are the low-pressure choice, so keep their optional
     // route free of surprise full-width gaps (the route record remains around
     // briefly after rejoining). Challenge and uncommitted current trails keep

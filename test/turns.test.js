@@ -6,9 +6,11 @@ import {
   CORNER_PERIOD,
   TURN_SKILL_REWARD,
   TURN_WINDOW_SECONDS,
+  OPENING_TURN_WINDOW_SECONDS,
   cornerByIndex,
   cornerIntersecting,
   turnPrompt,
+  turnWindowFor,
   upcomingCorner,
 } from "../src/runner/turns.js";
 
@@ -107,6 +109,25 @@ test("early horizontal input changes lane, while matching input in the window co
   assert.equal(run.bonusPoints, TURN_SKILL_REWARD);
   assert.equal(run.events.filter((event) => event === `turn-${corner.direction}`).length, 1);
   assert.equal(run.objects[0].turnState, "accepted");
+});
+
+test("current live trails preview the first turn earlier without changing replay timing", () => {
+  const corner = cornerByIndex(0);
+  const live = createRun(1989, {}, 5, null, {encounterPacing:true});
+  live.nextCorner = 0;
+  live.distance = corner.at - live.speed * (OPENING_TURN_WINDOW_SECONDS - .05);
+  assert.equal(turnWindowFor(live), OPENING_TURN_WINDOW_SECONDS);
+  assert.equal(turnPrompt(live).direction, corner.direction);
+
+  const legacy = createRun(1989, {}, 5);
+  legacy.nextCorner = 0;
+  legacy.distance = corner.at - legacy.speed * (OPENING_TURN_WINDOW_SECONDS - .05);
+  assert.equal(turnWindowFor(legacy), TURN_WINDOW_SECONDS);
+  assert.equal(turnPrompt(legacy), null);
+
+  live.nextCorner = 1;
+  assert.equal(turnWindowFor(live), TURN_WINDOW_SECONDS,
+    'only the first current-trail turn gets the wider read window');
 });
 
 test("a wrong direction can be corrected before the deadline", () => {
