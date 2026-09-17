@@ -74,9 +74,13 @@ import {
 import {routeBranchFor, routeTrailFor} from './route-branch.js';
 import {applyRunModifier} from './run-modifiers.js';
 const SOLID_HAZARDS = ["rock", "log", "arch", "branch", "gate"];
+// A live-only character hazard breaks up the endless rock/log silhouette.
+// Keep it out of SOLID_HAZARDS so legacy seeded streams remain byte-for-byte
+// stable; current browser runs opt into it through the shelter encounter beat.
+const CHARACTER_HAZARDS = ["pound-worker"];
 export const BASE_SLIDE_DURATION = .58;
 export const SLIDE_UPGRADE_DURATION = .07;
-export const HAZARDS = [...SOLID_HAZARDS, "moving-gate", "gap", "mogul", "ice", "ski-gate", "yeti", "snowball", "snowman"];
+export const HAZARDS = [...SOLID_HAZARDS, ...CHARACTER_HAZARDS, "moving-gate", "gap", "mogul", "ice", "ski-gate", "yeti", "snowball", "snowman"];
 export const AREA_RELIC_REWARD = 160;
 export const NEAR_MISS_REWARD = 15;
 // The live trail earns its first real hazard only after a short runway. This
@@ -724,6 +728,13 @@ export function fillTrack(run) {
     run.lastSafeLane = safe;
     const blocked = (safe + 1 + Math.floor(run.random() * 2)) % 3;
     const actionRow = !quietPhase && route!=="scenic" && run.row > 5 && (route==="challenge" ? run.row%2===0 : run.row % 4 === 2);
+    // Shelter workers are a short character encounter, not a new ruleset:
+    // they occupy one lane, can be jumped, and arrive with a second ordinary
+    // hazard so the open lane remains legible. The live pacing guard keeps
+    // historical/replay generators unchanged while giving current runs a
+    // memorable human-scale beat after the warm-up.
+    const shelterBeat = run.encounterPacing && run.generatorVersion >= 5 &&
+      route !== 'scenic' && !actionRow && !quietPhase && !gapRow && at >= 260 && run.row % 9 === 4;
     if (actionRow) {
       const type = gapRow ? "gap" : run.generatorVersion>=4
         ? areaActionHazard(run,at,run.row)
@@ -735,18 +746,23 @@ export function fillTrack(run) {
         if (pattern?.label) obstacle.encounter = pattern.label;
       }
     } else if (run.row > 0 && !quietPhase) {
-      const primary=run.generatorVersion>=4
+      const primary=shelterBeat ? 'pound-worker' : run.generatorVersion>=4
         ? areaHazard(run,at,run.row)
         : SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)];
       const first=add(run, primary, blocked, at);
       if (run.generatorVersion >= 4) first.safeLane = safe;
       if (pattern?.label) first.encounter = pattern.label;
-      if (route!=="scenic" && run.row > 2 && (run.random() > 0.15 || at > 600)) {
+      if (shelterBeat) {
+        first.shelterWorker = true;
+        first.encounter = 'Shelter crossing';
+      }
+      if (route!=="scenic" && run.row > 2 && (shelterBeat || run.random() > 0.15 || at > 600)) {
         const second=add(run,
           run.generatorVersion>=4 ? areaHazard(run,at,run.row+1)
             : SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)],
           3-safe-blocked,at);
           if (run.generatorVersion >= 4) second.safeLane = safe;
+        if (shelterBeat) second.shelterSupport = true;
         if (pattern?.label) second.encounter = pattern.label;
       }
     }
@@ -1204,6 +1220,7 @@ export function step(run, dt) {
         (object.type === "gap" && (run.y > .8 || run.zoomies > 0)) ||
         (object.type === "log" && run.y > 0.65) ||
         (object.type === "rock" && run.y > 1.25) ||
+        (object.type === "pound-worker" && run.y > .65) ||
         (object.skiHazard && object.type === 'mogul' && run.y > .58) ||
         (object.skiObstacle && object.skiJumpable && run.y > .58) ||
         (["arch", "branch", "gate", "moving-gate"].includes(object.type) &&

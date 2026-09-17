@@ -10,6 +10,8 @@ export function mistakeDetail(run, mistake) {
     if([0,1,2].includes(mistake.safeLane)&&run.lane===mistake.safeLane)reason='late-weave';
   } else if (mistake.type === 'corner') {
     if (run.turnAttempt && !run.turnAttempt.correct) reason = 'wrong-turn';
+  } else if (mistake.type === 'pound-worker') {
+    reason = run.lane === mistake.safeLane ? 'late-shelter-steer' : 'shelter-lane';
   } else if (overhead) {
     if (run.y >= .2) reason = run.diving ? 'late-dive' : 'jumped';
     else if (Number.isFinite(run.slideExpiredAt) && run.time - run.slideExpiredAt < .4) reason = 'early-slide';
@@ -42,6 +44,8 @@ export function timingLesson(detail, obstacleType) {
     'wrong-turn': 'The turn was locked in the wrong direction. Match the arrow with one left or right swipe.',
     'late-minecart-steer': 'The cart was still drifting toward the open lane. Start steering earlier; one swipe moves one lane.',
     'minecart-lane': 'The mine-cart rocks leave one open lane. Steer toward the glowing lane cue; jump and slide are unavailable until the exit.',
+    'late-shelter-steer': 'The shelter worker stepped into your lane before your steer settled. Change lanes earlier; one tap moves one lane.',
+    'shelter-lane': 'The shelter worker blocks this lane. Tap left or right toward the open lane, or jump over the worker.',
   };
   return detail && lessons[detail.reason] || '';
 }

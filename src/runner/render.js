@@ -615,6 +615,79 @@ export function createView(canvas) {
     scenery.add(group);
     decorations.push(group);
   }
+  // One compact postcard landmark per destination makes a long run feel like
+  // a sequence of places rather than an endless loop of trees. These silhouettes
+  // sit outside the shoulders and reuse the existing batched geometries, so a
+  // richer skyline costs no per-frame allocations or extra draw calls.
+  for (let area = 0; area < AREAS.length; area++) {
+    const group = new THREE.Group();
+    const side = area % 2 ? 1 : -1;
+    group.position.x = side * (LANDMARK_SHOULDER_MIN + 2.15);
+    Object.assign(group.userData, {
+      area,
+      offset: area * 37 + 21,
+      variant: 5,
+      setPiece: AREAS[area].setPiece?.id,
+    });
+    if (area === 0) {
+      // Sunleaf: a tiny paw-shelter hut with a bright sign and leafy roof.
+      box(group, '#315968', 0, .92, 0, 1.15, 1.55, .72);
+      cone(group, '#e08a58', 0, 1.95, 0, .98, .72, .74).rotation.y = Math.PI / 5;
+      box(group, '#ffe09a', 0, 1.02, .39, .38, .52, .05);
+      box(group, '#2a5360', 0, 1.02, .43, .06, .34, .035);
+      box(group, '#2a5360', 0, 1.02, .43, .26, .06, .035);
+      ball(group, '#ffe49a', -.72, 1.75, -.18, .12, .12, .12);
+      ball(group, '#fff0b0', .72, 1.75, -.18, .12, .12, .12);
+    } else if (area === 1) {
+      // Bamboo: a small torii-style lantern shrine, open in the middle.
+      for (const x of [-.72, .72]) {
+        mesh(group, trunkGeometry, '#6f8f53', x, 1.45, 0, .18, 2.9, .18);
+        box(group, '#a8b86e', x, .7, 0, .26, .08, .26);
+      }
+      box(group, '#7a5c3f', 0, 2.72, 0, 1.82, .2, .26);
+      box(group, '#c89154', 0, 1.82, -.34, .42, .56, .3);
+      ball(group, '#ffe49a', 0, 1.82, -.56, .13, .16, .13);
+    } else if (area === 2) {
+      // Redrock: a ranger flag and a three-stone cairn give the pass a
+      // distinctive vertical marker without becoming another road hazard.
+      mesh(group, trunkGeometry, '#59423d', 0, 1.6, 0, .1, 3.2, .1);
+      box(group, '#f0b15e', .42, 2.45, 0, .72, .42, .06).rotation.z = -.12;
+      for (let rock = 0; rock < 3; rock++)
+        cone(group, rock === 1 ? '#d28157' : '#a9573f', 0, .22 + rock * .28, 0,
+          .42 - rock * .05, .42 + rock * .12, .36);
+    } else if (area === 3) {
+      // Oasis: a waterwheel built from chunky spokes and a striped market awning.
+      ball(group, '#d8b26c', 0, 1.12, .08, .72, .72, .16);
+      for (let spoke = 0; spoke < 4; spoke++) {
+        const arm = box(group, '#a87343', 0, 1.12, .2, .13, 1.35, .12);
+        arm.rotation.z = spoke * Math.PI / 4;
+      }
+      box(group, '#4c815d', 0, 2.28, 0, 1.55, .16, .72);
+      box(group, '#e8c476', 0, 2.05, .34, 1.62, .1, .05);
+    } else if (area === 4) {
+      // Crystal Reach: a little prism observatory with a three-shard crown.
+      for (const x of [-.62, .62])
+        box(group, '#4a7185', x, 1.12, 0, .11, 2.25, .11);
+      box(group, '#6d94a6', 0, 2.18, 0, 1.52, .12, .14);
+      for (let shard = 0; shard < 3; shard++) {
+        const crystal = cone(group, ['#79c5d8', '#9b8de4', '#b9e5ee'][shard],
+          (shard - 1) * .42, 2.65 + shard * .16, 0, .32, 1.2 + shard * .18, .32);
+        crystal.rotation.z = (shard - 1) * .16;
+      }
+    } else {
+      // Mooncap: a cozy tent and paired firefly lamps establish a clear night
+      // chapter silhouette while leaving the road itself quiet.
+      cone(group, '#6d5f91', 0, 1.28, 0, 1.1, 2.15, .9).rotation.y = Math.PI / 4;
+      box(group, '#e1c77a', 0, 1.1, .64, .34, .5, .05);
+      for (const x of [-.85, .85]) {
+        mesh(group, trunkGeometry, '#806d91', x, 1.25, 0, .08, 2.5, .08);
+        ball(group, '#e8d8ee', x, 2.35, -.08, .16, .16, .16);
+      }
+      mesh(group, mushroomCapGeometry, '#ae91c4', 0, .32, -.16, .42, .25, .38);
+    }
+    scenery.add(group);
+    decorations.push(group);
+  }
   for (let i = 0; i < 12; i++) {
     const group = new THREE.Group();
     for (const side of [-1, 1]) {
@@ -773,6 +846,7 @@ export function createView(canvas) {
             region: group.userData.region,
             variant: group.userData.variant,
             area: group.userData.area,
+            setPiece: group.userData.setPiece,
             gateway: group.userData.gateway === true,
             motion: group.userData.area !== undefined &&
               (geometry === palmFrondGeometry ||
@@ -1826,6 +1900,49 @@ export function createView(canvas) {
   snowmanScarf.name = 'snowman-scarf';
   box(templates.snowman, '#263d49', 0, 1.91, -.02, .62, .12, .58).name = 'snowman-hat-brim';
   box(templates.snowman, '#314c5a', 0, 2.12, -.02, .42, .34, .4).name = 'snowman-hat';
+  // A shelter worker is the first human-scale trail character. The silhouette
+  // is intentionally rounded and high-contrast: amber vest, teal trousers,
+  // cap, face, waving arm and clipboard all read as one friendly volunteer at
+  // phone distance. Tagged parts let the render loop animate a small wave and
+  // head turn without rebuilding geometry every frame.
+  templates['pound-worker'] = new THREE.Group();
+  const workerBody = box(templates['pound-worker'], '#1d5360', 0, .78, 0, .62, .92, .44);
+  workerBody.name = 'worker-body';
+  workerBody.castShadow = true;
+  const workerVest = box(templates['pound-worker'], '#ef8a50', 0, .91, .43, .48, .5, .07);
+  workerVest.name = 'worker-vest';
+  box(templates['pound-worker'], '#ffe08e', 0, .93, .505, .38, .08, .025).name = 'worker-reflective-band';
+  for (const side of [-1, 1]) {
+    const leg = box(templates['pound-worker'], '#214554', side * .2, .24, 0, .18, .48, .22);
+    leg.name = 'worker-leg';
+    ball(templates['pound-worker'], '#e08a5d', side * .2, .055, .08, .22, .12, .3).name = 'worker-shoe';
+  }
+  const workerHead = ball(templates['pound-worker'], '#dca273', 0, 1.55, .04, .45, .43, .38);
+  workerHead.name = 'worker-head';
+  workerHead.castShadow = true;
+  // Soft hair and cap keep the face from reading like a generic low-poly orb.
+  ball(templates['pound-worker'], '#574956', 0, 1.87, .02, .4, .16, .34).name = 'worker-hair';
+  const workerCap = box(templates['pound-worker'], '#e36c4d', 0, 1.94, .02, .5, .18, .38);
+  workerCap.name = 'worker-cap';
+  box(templates['pound-worker'], '#f7b95d', 0, 1.86, .37, .6, .08, .16).name = 'worker-cap-brim';
+  for (const side of [-1, 1]) {
+    ball(templates['pound-worker'], '#243340', side * .16, 1.61, .385, .075, .085, .045).name = 'worker-eye';
+    ball(templates['pound-worker'], '#f6d1aa', side * .17, 1.43, .37, .09, .07, .05).name = 'worker-cheek';
+  }
+  ball(templates['pound-worker'], '#4b3440', 0, 1.47, .405, .11, .075, .06).name = 'worker-nose';
+  const workerSmile = box(templates['pound-worker'], '#6a3542', 0, 1.34, .39, .16, .035, .035);
+  workerSmile.name = 'worker-smile';
+  for (const side of [-1, 1]) {
+    const arm = box(templates['pound-worker'], '#ef8a50', side * .53, .9, .02, .16, .5, .18);
+    arm.rotation.z = side * .24;
+    arm.name = 'worker-arm';
+    ball(templates['pound-worker'], '#dca273', side * .62, .64, .08, .14, .14, .14).name = 'worker-hand';
+  }
+  const clipboard = box(templates['pound-worker'], '#efd09a', .55, 1.04, .36, .28, .38, .055);
+  clipboard.rotation.z = -.15;
+  clipboard.name = 'worker-clipboard';
+  box(templates['pound-worker'], '#e36c4d', .55, 1.2, .42, .16, .035, .02).name = 'worker-clipboard-mark';
+  ball(templates['pound-worker'], '#ffe08e', -.55, .98, .26, .11, .11, .05).name = 'worker-badge';
   const routeLabels=document.createElement('canvas');
   routeLabels.width=1024;routeLabels.height=512;
   const routeText=routeLabels.getContext('2d');
@@ -3006,6 +3123,26 @@ export function createView(canvas) {
             const scarf = item.children.find(child => child.name === 'snowman-scarf');
             if (scarf) scarf.rotation.z = reducedMotion ? 0 : Math.sin(animationTime * 3.8 + object.id) * .08;
           }
+          if (object.type === 'pound-worker') {
+            // The shelter volunteer gives the otherwise static lane hazard a
+            // friendly, readable beat: a small wave, head turn and clipboard
+            // bob. Animation stays local to the character and is frozen for
+            // reduced-motion users, so it never changes collision timing.
+            const wave = reducedMotion ? 0 : Math.sin(animationTime * 4.2 + object.id * .29);
+            item.position.y += reducedMotion ? 0 : Math.abs(wave) * .028;
+            item.rotation.z = reducedMotion ? 0 : wave * .024;
+            item.rotation.y += reducedMotion ? 0 : wave * .045;
+            item.children.forEach(child => {
+              if (child.name === 'worker-arm' && child.position.x > 0)
+                child.rotation.z = .24 + (reducedMotion ? 0 : wave * .18);
+              if (child.name === 'worker-clipboard')
+                child.rotation.z = -.15 + (reducedMotion ? 0 : wave * .08);
+              if (child.name === 'worker-head')
+                child.rotation.z = reducedMotion ? 0 : wave * .035;
+              if (child.name === 'worker-badge')
+                child.scale.setScalar(reducedMotion ? 1 : 1 + Math.abs(wave) * .08);
+            });
+          }
           // A set-piece should announce itself in the world before the player
           // is close enough to parse its model. Select only authored spectacle
           // objects (never an ordinary row), keep the nearest candidate, and
@@ -3149,7 +3286,7 @@ export function createView(canvas) {
             // row never turns into a second overlay. The existing flash batch
             // keeps this at zero extra geometry or texture uploads.
             const approach = object.at - distance;
-            const solidHazard = ['rock', 'log', 'arch', 'branch', 'gate'].includes(object.type) || object.type === 'moving-gate';
+            const solidHazard = ['rock', 'log', 'arch', 'branch', 'gate'].includes(object.type) || object.type === 'moving-gate' || object.type === 'pound-worker';
             const skiCharacter = object.skiObstacle || object.skiHazard;
             if ((solidHazard || skiCharacter) && approach > 5 && approach < 32 && sparkCount < 192) {
               const urgency = 1 - THREE.MathUtils.clamp((approach - 5) / 27, 0, 1);
@@ -3158,14 +3295,16 @@ export function createView(canvas) {
               const overhead = ['arch', 'branch', 'gate', 'moving-gate'].includes(object.type);
               const skiColor = object.type === 'snowball' ? '#c7f1ff'
                 : object.type === 'yeti' ? '#b8edff'
-                  : object.type === 'snowman' ? '#fff0b7' : '#d8f6ff';
+                  : object.type === 'snowman' ? '#fff0b7'
+                    : object.type === 'pound-worker' ? '#ffad72' : '#d8f6ff';
               if (skiCharacter) flashColor.set(skiColor);
               else flashColor.set(overhead ? '#8ff2d2' : '#ffd38b');
               flashMatrix.makeScale(cueScale * 1.7, cueScale * .42, cueScale * .56);
               flashMatrix.setPosition(
                 item.position.x,
                 item.position.y + (overhead ? 2.55 : object.type === 'rock' ? 1.42 :
-                  object.type === 'yeti' ? 2.25 : object.type === 'snowman' ? 2.18 : 1.12),
+                  object.type === 'yeti' ? 2.25 : object.type === 'snowman' ? 2.18 :
+                    object.type === 'pound-worker' ? 2.25 : 1.12),
                 item.position.z + .055,
               );
               flashes.setColorAt(sparkCount, flashColor);

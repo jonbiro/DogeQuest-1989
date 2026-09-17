@@ -5,7 +5,7 @@ import {movingGateSafeLane} from './moving-gate.js';
 // Keeping the forecast pure means the renderer can draw it without mutating a
 // restored run or changing seeded collision timing.
 const HAZARDS = new Set([
-  'rock', 'log', 'arch', 'branch', 'gate', 'moving-gate', 'gap',
+  'rock', 'log', 'arch', 'branch', 'gate', 'moving-gate', 'gap', 'pound-worker',
   'mogul', 'ice', 'ski-gate', 'yeti', 'snowball', 'snowman',
 ]);
 const OVERHEAD = new Set(['arch', 'branch', 'gate', 'moving-gate']);
