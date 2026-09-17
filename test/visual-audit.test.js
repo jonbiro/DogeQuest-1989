@@ -71,6 +71,13 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(css, /#overlay\[data-kind="shop"\] \.modal-actions > \.primary,[\s\S]*?#overlay\[data-kind="shop"\] \.modal-actions > \.text-button \{[\s\S]*?margin-top: 0;/);
   assert.match(css, /outline: 2px solid #ffe0a0/);
   assert.match(css, /canvas:focus-visible \{[\s\S]*?outline: none;/);
+  assert.match(css, /#run-breakdown\s*\{[\s\S]*?overflow-wrap: anywhere;/);
+  assert.match(css, /#run-breakdown p,[\s\S]*?#run-breakdown \.backup-actions\s*\{[\s\S]*?overflow-wrap: anywhere;/);
+  assert.match(css, /#run-breakdown input\[type="url"\]\s*\{\s*min-width: 0;/);
+  const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
+  assert.match(render, /function fitBadgeText\(context, value, x, y, maxWidth, size, color/);
+  assert.match(render, /String\(definition\.effect \|\| ''\)\.toUpperCase\(\)/);
+  assert.match(render, /\$\{String\(action \|\| 'COLLECT'\)\.toUpperCase\(\)\} · \$\{lane\}\$\{meters\}/);
   assert.match(css, /padding: 0 3px 24px/);
   assert.match(css, /#mission-label-mobile \{ display: none; \}/);
   assert.match(css, /#mission-hud\[data-dock="mission-summary"\] #mission-label-mobile/);
@@ -80,6 +87,11 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(css, /@media \(max-width: 700px\) and \(orientation: portrait\)[\s\S]*?\.power-chip small \{\s*display: block;[\s\S]*?text-overflow: ellipsis;/);
   assert.match(app, /setData\('mission-hud', 'posture', posture\)/);
   assert.match(css, /@media \(min-width: 701px\) \{\s*\.trail-tag \{ margin-top: 18px; \}/);
+  // Short desktop windows still need the challenge strip and daily-trail
+  // action. Keep the contained menu scroll and explicit display rule guarded
+  // so a future responsive cleanup cannot silently hide them again.
+  assert.match(css, /@media \(min-width: 701px\) and \(max-height: 740px\)[\s\S]*?\.menu \{[\s\S]*?overflow-y: auto;/);
+  assert.match(css, /@media \(min-width: 701px\) and \(max-height: 740px\)[\s\S]*?\.trail-tag \{[\s\S]*?display: flex;/);
   assert.match(css, /#game\[data-state="menu"\] footer > span \{ display: none; \}/);
   assert.match(css, /#game\[data-state="menu"\] footer \{ justify-content: flex-end; pointer-events: none; \}/);
   assert.match(css, /#game\[data-state="menu"\] footer \.text-button \{ pointer-events: auto; \}/);
@@ -89,6 +101,14 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(css, /\.menu::-webkit-scrollbar-track \{ background: transparent; \}/);
   assert.match(app, /setText\('mission-label-mobile', missionSummaryLabel/);
   assert.match(app, /\['warmup', 'escalation', 'spectacle', 'recovery'\]\.includes\(encounter\.phase\)/);
+  // Encounter beats should be felt as well as seen. Keep the audio/haptic
+  // wiring next to the director lookup so a future refactor cannot leave a
+  // beautifully labelled phase silent on supported phones.
+  assert.match(app, /phase:encounter\?\.phase/);
+  assert.match(app, /haptics\.trigger\(`encounter-\$\{encounter\.phase\}`/);
+  const soundscape = readFileSync(new URL('../src/runner/soundscape.js', import.meta.url), 'utf8');
+  assert.match(soundscape, /export const ENCOUNTER_STINGERS=Object\.freeze\(\{/);
+  assert.match(soundscape, /const STINGER_COOLDOWN\s*=\s*2\.4/);
   assert.match(app, /pickupNoticeFor\(run\)/);
   assert.match(app, /setData\('pickup-guide', 'state', notice \? 'recent' : 'upcoming'\)/);
   assert.match(app, /setAttribute\('bone-counter', 'aria-label', `Bones collected: \$\{boneCount\}`\)/);
@@ -156,6 +176,20 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   assert.match(readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8'), /lane-target-pad-/);
   assert.match(readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8'), /lane-target-arrow-/);
   assert.match(readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8'), /const laneInfo = laneTargetFor\(run\)/);
+  const renderLane = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
+  assert.match(renderLane, /new THREE\.TorusGeometry\(0\.94, 0\.042, 6, 48\)/);
+  assert.match(renderLane, /color: '#baffea', transparent: true, opacity: \.84/);
+  assert.match(renderLane, /pad\.scale\.set\(\.86, \.035, \.58\)/);
+  // Spectacle beats get a small world-space arrival cue, not another HUD
+  // message. Keep the cue tied to authored set pieces and the director's
+  // colour vocabulary so a future renderer cleanup cannot flatten every area
+  // back into the same undifferentiated approach.
+  assert.match(renderLane, /const SPECTACLE_BEACON_COLORS = Object\.freeze/);
+  assert.match(renderLane, /function spectacleBeaconColor\(title\)/);
+  assert.match(renderLane, /run\.encounter\?\.phase === 'spectacle'/);
+  assert.match(renderLane, /const spectacleObject = object\.bridgeCollapse/);
+  assert.match(renderLane, /const color = spectacleBeaconColor\(run\.encounter\?\.title\)/);
+  assert.match(renderLane, /Three floating lozenges read as an arrival marker/);
 });
 
 test('painted puppy poses retain authored color and ease frame transforms', () => {
@@ -198,7 +232,11 @@ test('the live runner never layers Mochi’s legacy polygon rig under the painti
   assert.doesNotMatch(render, /mochi\.group\.visible = isMochi/);
   assert.match(render, /ghostArtwork\.name = 'painted-puppy-ghost'/);
   assert.match(render, /rasterArtwork\.spriteForPose\?\.\(ghostSample\.posture\)/);
+  assert.match(render, /ghostWake\.name = 'personal-ghost-wake'/);
+  assert.match(render, /ghostWake\.children\.forEach/);
   assert.doesNotMatch(render, /const ghostPart = \(geometry, material/);
+  assert.match(app, /GHOST · 24M AHEAD · RACE YOUR BEST/);
+  assert.match(css, /#ghost-status\s*\{[\s\S]*?font-size: 9px;/);
   assert.match(render, /camera\.fov=48;camera\.aspect = 1; camera\.position\.set\(0,2\.0,3\.1\)/);
 });
 

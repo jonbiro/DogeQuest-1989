@@ -8,6 +8,11 @@ test('haptic vocabulary distinguishes quiet pickups from important moments', () 
   assert.deepEqual(hapticPattern('bone', { combo: 5 }), HAPTIC_PATTERNS.streak);
   assert.deepEqual(hapticPattern('turn-left'), HAPTIC_PATTERNS.turn);
   assert.deepEqual(hapticPattern('area-enter'), HAPTIC_PATTERNS['area-enter']);
+  assert.deepEqual(hapticPattern('encounter-spectacle'), HAPTIC_PATTERNS['encounter-spectacle']);
+  for (const phase of ['warmup', 'escalation', 'spectacle', 'recovery']) {
+    const pattern = HAPTIC_PATTERNS[`encounter-${phase}`];
+    assert.ok(pattern.length >= 2 && pattern.every(value => value >= 1 && value <= 120));
+  }
   assert.deepEqual(hapticPattern('not-an-event'), null);
 });
 

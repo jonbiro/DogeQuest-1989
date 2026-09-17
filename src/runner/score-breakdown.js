@@ -2,14 +2,14 @@
 import {DOG_CHASE_REWARD} from './dog-chase.js';
 
 const PICKUP_RECEIPTS = Object.freeze([
-  ['magnet', 'magnets', 'pull nearby bones'],
-  ['shield', 'shields', 'block one hit'],
-  ['gem', 'gems', '+250 points each'],
-  ['double', 'bone doublers', 'double bone points for 10s'],
-  ['heart', 'hearts', 'heal 1 heart or +100 at full health'],
-  ['gift', 'gift boxes', '+100 points each'],
-  ['zoomies', 'Zoomies balls', 'speed + smash for 6s'],
-  ['relic', 'area relics', '+160 points each'],
+  ['magnet', 'magnet', 'magnets', 'pull nearby bones'],
+  ['shield', 'shield', 'shields', 'block one hit'],
+  ['gem', 'gem', 'gems', '+250 points each'],
+  ['double', 'bone doubler', 'bone doublers', 'double bone points for 10s'],
+  ['heart', 'heart', 'hearts', 'heal 1 heart or +100 at full health'],
+  ['gift', 'gift box', 'gift boxes', '+100 points each'],
+  ['zoomies', 'Zoomies ball', 'Zoomies balls', 'speed + smash for 6s'],
+  ['relic', 'area relic', 'area relics', '+160 points each'],
 ]);
 
 // Keep the results view and the compact text receipt driven by the same
@@ -18,13 +18,27 @@ const PICKUP_RECEIPTS = Object.freeze([
 // that did not record pickup counts).
 export function pickupReceiptItems(run) {
   const counts = run?.pickupCounts;
-  if (!counts || typeof counts !== 'object') return [];
-  return PICKUP_RECEIPTS
-    .map(([key, label, effect]) => {
+  const rows = [];
+  const boneCount = Number.isFinite(Number(run?.bones))
+    ? Math.max(0, Math.floor(Number(run.bones)))
+    : Number.isFinite(Number(counts?.bone))
+      ? Math.max(0, Math.floor(Number(counts.bone)))
+      : 0;
+  if (boneCount) {
+    rows.push({
+      key: 'bone',
+      count: boneCount,
+      label: boneCount === 1 ? 'bone' : 'bones',
+      effect: '+25 base points · +2% Fetch',
+    });
+  }
+  if (!counts || typeof counts !== 'object') return rows;
+  return rows.concat(PICKUP_RECEIPTS
+    .map(([key, singular, plural, effect]) => {
       const count = Number.isFinite(counts[key]) ? Math.max(0, Math.floor(counts[key])) : 0;
-      return count ? {key, count, label, effect} : null;
+      return count ? {key, count, label: count === 1 ? singular : plural, effect} : null;
     })
-    .filter(Boolean);
+    .filter(Boolean));
 }
 
 function pickupReceipt(run) {

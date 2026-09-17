@@ -186,7 +186,7 @@ function kennel() {
   showOverlay("kennel");
   $("overlay-label").textContent = "YOUR VERY GOOD CREW";
   $("overlay-title").textContent = "The puppy clubhouse.";
-  $("overlay-copy").textContent = `${Math.floor(saved.credits).toLocaleString()} points · ${saved.collection.gifts} gifts banked. Outfits and puppies are cosmetic; your upgrades work with everyone.`;
+  $("overlay-copy").textContent = `${Math.floor(saved.credits).toLocaleString()} points · ${countLabel(saved.collection.gifts, 'gift')} banked. Outfits and puppies are cosmetic; your upgrades work with everyone.`;
   $("overlay-primary").textContent = "Run with your puppy ↗︎";
   const content = $("collection");
   content.replaceChildren();
@@ -472,6 +472,10 @@ function textOf(id) {
   const node = $(id);
   return typeof node?.textContent === 'string' ? node.textContent : '';
 }
+function countLabel(count, singular, plural = `${singular}s`) {
+  const value = Math.max(0, Math.floor(Number(count) || 0));
+  return `${value} ${value === 1 ? singular : plural}`;
+}
 function setHidden(id, hidden) {
   const node = $(id);
   if (node) node.hidden = Boolean(hidden);
@@ -486,8 +490,9 @@ function syncPickupKey() {
   if (!grid || typeof grid.replaceChildren !== 'function') return;
   const doc = grid.ownerDocument || document;
   if (typeof doc?.createElement !== 'function') return;
-  const items = PICKUP_TYPES.map(type => {
+  const createItem = type => {
     const definition = PICKUP_DEFINITIONS[type];
+    if (!definition) return null;
     const item = doc.createElement('div');
     item.className = 'pickup-key-item';
     item.dataset.pickup = type;
@@ -504,7 +509,10 @@ function syncPickupKey() {
     copy.append(label, effect);
     item.append(icon, copy);
     return item;
-  });
+  };
+  const items = PICKUP_TYPES.map(type => createItem(type));
+  const bone = createItem('bone');
+  if (bone) items.unshift(bone);
   grid.replaceChildren(...items);
 }
 
@@ -527,7 +535,7 @@ function renderPickupReceipt(run) {
   heading.className = 'pickup-receipt-heading';
   const list = document.createElement('ul');
   list.className = 'pickup-receipt-list';
-  list.setAttribute('aria-label', 'Collected special items');
+  list.setAttribute('aria-label', 'Collected trail items');
   for (const item of items) {
     const definition = pickupDefinition(item.key);
     const row = document.createElement('li');
@@ -642,7 +650,10 @@ function updateGhostStatus(run) {
     return;
   }
   const summary = ghostSummary(ghost);
-  setText('ghost-status', 'GHOST · RACE YOUR BEST');
+  // Keep the visual copy useful at a glance: the replay is intentionally
+  // staged 24m ahead, so explain the relationship instead of asking players
+  // to infer it from a translucent dog in the distance.
+  setText('ghost-status', 'GHOST · 24M AHEAD · RACE YOUR BEST');
   setAttribute('ghost-status', 'aria-label', `${summary}. A translucent local replay is running on this trail.`);
   setAttribute('ghost-status', 'title', `${summary}. Match its lane and action timing to improve your run.`);
 }
@@ -878,6 +889,7 @@ function start() {
   lastHud = -1;
   lastStreakCombo = -1;
   lastFlowStreak = -1;
+  lastEncounterPhase = null;
   streakFlashUntil = 0;
   toastUntil = 0;
   noticePriority = 0;
@@ -1039,7 +1051,7 @@ function finish() {
   if (reward)
     $("overlay-copy").textContent +=
       ` ${receipt.missionCount} ${receipt.missionCount === 1 ? 'challenge' : 'challenges'} complete: +${reward} extra points!`;
-  if (run.gifts) $("overlay-copy").textContent += ` ${run.gifts} gift boxes banked.`;
+  if (run.gifts) $("overlay-copy").textContent += ` ${countLabel(run.gifts, 'gift box')} banked.`;
   if (run.ziplines) $("overlay-copy").textContent += ` ${run.ziplines} zipline ${run.ziplines === 1 ? "ride" : "rides"} completed (+${run.ziplines * 250} points included in your score).`;
   if (run.rafts) $("overlay-copy").textContent += ` ${run.rafts} river ${run.rafts === 1 ? "crossing" : "crossings"} completed (+${run.rafts * 250} points included in your score).`;
   if (run.minecarts) $("overlay-copy").textContent += ` ${run.minecarts} mine-cart ${run.minecarts === 1 ? "ride" : "rides"} completed (+${run.minecarts * 250} points included in your score).`;
@@ -2162,6 +2174,7 @@ let currentMission = missionFor(saved.challenges),
 let lastHud = -1;
 let lastStreakCombo = -1;
 let lastFlowStreak = -1;
+let lastEncounterPhase = null;
 let streakFlashUntil = 0;
 function frame(now) {
   try {
@@ -2169,6 +2182,11 @@ function frame(now) {
     const dt = Math.min(0.05, frameDt);
     last = now;
     time += dt;
+    // Resolve the presentation beat only after the fixed-step simulation has
+    // had a chance to run. Besides keeping the frame prefix lightweight, this
+    // means a pending motion-permission frame cannot fail just because the
+    // optional director is unavailable in an older cached shell.
+    let encounter = null;
     if (state === "playing" && !tilt.isRequesting()) {
     accumulator += resumeStep(run, dt);
     while (accumulator >= 1 / 120 && !run.ended) {
@@ -2226,8 +2244,17 @@ function frame(now) {
       }
     }
     run.events = [];
+    encounter = encounterFor(run);
     optionalFrameUi('traversal-controls', () => updateTraversalControls(traversalButtons,run));
     const sceneDescription=optionalFrameUi('scene-description', () => traversalDescription(run)) || '';
+    if (state === 'playing' && !run.ended && !run.practice && encounter.phase &&
+        encounter.phase !== lastEncounterPhase) {
+      // A phase change is a quiet pacing cue, not an urgent action. The
+      // controller's normal throttle keeps it from competing with pickups or
+      // collision feedback on devices that support vibration.
+      haptics.trigger(`encounter-${encounter.phase}`, run, time * 1000);
+      lastEncounterPhase = encounter.phase;
+    }
     const scene = $('scene');
     optionalFrameUi('scene-state', () => {
       if (!scene) return;
@@ -2237,7 +2264,7 @@ function frame(now) {
       scene.dataset.missedTurns = String(run.missedTurns);
       scene.dataset.courses = run.regionalCourses.join(',');
       scene.dataset.course = run.course?.name || '';
-      scene.dataset.encounterPhase = encounterFor(run).phase;
+      scene.dataset.encounterPhase = encounter.phase;
       scene.dataset.posture =
       run.raft ? "raft" : run.minecart ? "minecart" : run.zipline ? "zipline" : run.y > 0.05 ? "jump" : run.slide > 0 ? "slide" : "run";
     });
@@ -2270,7 +2297,7 @@ function frame(now) {
       // chatty live region that would announce every individual bone.
       const boneCount = Math.max(0, Math.floor(Number(run.bones) || 0));
       setAttribute('bone-counter', 'aria-label', `Bones collected: ${boneCount}`);
-      setAttribute('bone-counter', 'title', `${boneCount} ${boneCount === 1 ? 'bone' : 'bones'} collected`);
+      setAttribute('bone-counter', 'title', `${boneCount} ${boneCount === 1 ? 'bone' : 'bones'} collected · each bone adds points and 2% Fetch charge`);
       const streak = boneStreakLabel(run.combo);
       const flow = cleanFlowLabel(run.cleanStreak);
       const streakNode = $('streak');
@@ -2391,7 +2418,8 @@ function frame(now) {
     if (time > toastUntil) setText('toast', '');
     try{
       soundscape.update(audio,{enabled:sound&&saved.preferences.ambience&&state==='playing'&&!run.ended&&!document.hidden&&!tilt.isRequesting(),
-        time:run.time,distance:run.distance,quiet:!textOf('cue')&&!routeChoiceCue(run)&&!run.practice});
+        time:run.time,distance:run.distance,phase:encounter?.phase || null,
+        quiet:!textOf('cue')&&!routeChoiceCue(run)&&!run.practice});
     }catch{soundscape.stop();} // Optional audio must never interrupt animation.
     optionalFrameUi('dock', syncDock);
     drawScene(run, time, state, reducedMotion, dt, accumulator / (1 / 120), saved.collection, frameDt);

@@ -65,6 +65,26 @@ const PICKUP_GLOW_COLORS = Object.freeze({
   relic: '#e8c7ff',
 });
 
+// Set-piece approaches need a small world-space punctuation mark. The
+// director already names the beat in the HUD; this palette lets the same beat
+// arrive in the trail with a colour cue instead of another centre-screen card.
+const SPECTACLE_BEACON_COLORS = Object.freeze([
+  ['bridge', '#ff9b78'],
+  ['river', '#8fd8ff'],
+  ['mine-cart', '#ffd27a'],
+  ['minecart', '#ffd27a'],
+  ['zipline', '#a2ffde'],
+  ['moving gate', '#f4d58a'],
+  ['puppy chase', '#f6b5ff'],
+  ['fork', '#c5f0a5'],
+]);
+
+function spectacleBeaconColor(title) {
+  const value = String(title || '').toLocaleLowerCase();
+  return SPECTACLE_BEACON_COLORS.find(([needle]) => value.includes(needle))?.[1]
+    || '#ffe0a0';
+}
+
 // Shared sculpted geometry and materials keep the mobile scene inexpensive.
 export function createView(canvas) {
   // Resolve the device profile before asking the browser for a context. The
@@ -1077,6 +1097,33 @@ export function createView(canvas) {
   ghostShadow.receiveShadow = false;
   ghostShadow.rotation.x = -Math.PI / 2;
   ghostGroup.add(ghostShadow);
+  // A few small, ground-locked paw-light markers make the replay's direction
+  // legible even when its pale painting crosses a bright road. They stay
+  // behind the ghost, pulse as one quiet wake, and disappear with the replay
+  // so they never compete with live bones or lane targets.
+  const ghostWake = new THREE.Group();
+  ghostWake.name = 'personal-ghost-wake';
+  for (let index = 0; index < 3; index++) {
+    const wake = new THREE.Mesh(
+      new THREE.CircleGeometry(.13 - index * .018, 14),
+      new THREE.MeshBasicMaterial({
+        color: '#8ff2e7',
+        transparent: true,
+        opacity: .16,
+        depthTest: true,
+        depthWrite: false,
+        fog: false,
+        toneMapped: false,
+      }),
+    );
+    wake.name = `personal-ghost-wake-${index + 1}`;
+    wake.position.set(0, .045, .72 + index * .62);
+    wake.rotation.x = -Math.PI / 2;
+    wake.userData.index = index;
+    ghostWake.add(wake);
+  }
+  ghostWake.visible = false;
+  ghostGroup.add(ghostWake);
   scene.add(ghostGroup);
   // The chase guide reuses the currently selected puppy's loaded painting.
   // Sharing that texture keeps the companion as cute and illustrated as the
@@ -1197,7 +1244,10 @@ export function createView(canvas) {
   dog.add(aura);
   const magnetField = new THREE.Group();
   scene.add(magnetField);
-  const ringGeometry = new THREE.TorusGeometry(0.94, 0.028, 6, 48);
+  // The lane strip is meant to survive a quick glance on a bright phone
+  // screen. A hair more ring weight gives the current/target lane a crisp edge
+  // without turning the three markers into another obstacle row.
+  const ringGeometry = new THREE.TorusGeometry(0.94, 0.042, 6, 48);
   // A quiet, scene-locked lane strip gives touch players a destination to
   // aim at without adding another center-screen message. The three pads stay
   // just ahead of the puppy; a warm arrow appears only when a real upcoming
@@ -1213,21 +1263,21 @@ export function createView(canvas) {
       depthWrite: false, depthTest: true, fog: false, toneMapped: false,
     }),
     current: new THREE.MeshBasicMaterial({
-      color: '#9ff4d9', transparent: true, opacity: .30,
+      color: '#9ff4d9', transparent: true, opacity: .40,
       depthWrite: false, depthTest: true, fog: false, toneMapped: false,
     }),
     target: new THREE.MeshBasicMaterial({
-      color: '#ffd27a', transparent: true, opacity: .56,
+      color: '#ffd27a', transparent: true, opacity: .64,
       depthWrite: false, depthTest: true, fog: false, toneMapped: false,
     }),
   };
   const laneRingMaterials = {
     idle: new THREE.MeshBasicMaterial({
-      color: '#4b7a7b', transparent: true, opacity: .18,
+      color: '#4b7a7b', transparent: true, opacity: .24,
       depthWrite: false, depthTest: true, fog: false, toneMapped: false,
     }),
     current: new THREE.MeshBasicMaterial({
-      color: '#baffea', transparent: true, opacity: .70,
+      color: '#baffea', transparent: true, opacity: .84,
       depthWrite: false, depthTest: true, fog: false, toneMapped: false,
     }),
     target: new THREE.MeshBasicMaterial({
@@ -1244,13 +1294,13 @@ export function createView(canvas) {
     const pad = new THREE.Mesh(boxGeometry, lanePadMaterials.idle);
     pad.name = `lane-target-pad-${lane}`;
     pad.position.set(LANES[lane], 0, 0);
-    pad.scale.set(.82, .035, .48);
+    pad.scale.set(.86, .035, .58);
     pad.renderOrder = .62;
     laneTargetGroup.add(pad);
     const ring = new THREE.Mesh(ringGeometry, laneRingMaterials.idle);
     ring.name = `lane-target-ring-${lane}`;
     ring.rotation.x = -Math.PI / 2;
-    ring.scale.set(.64, .64, .36);
+    ring.scale.set(.68, .68, .40);
     ring.position.set(LANES[lane], .024, 0);
     ring.renderOrder = .63;
     laneTargetGroup.add(ring);
@@ -1331,6 +1381,17 @@ export function createView(canvas) {
     context.arcTo(x, y, x + width, y, radius);
     context.closePath();
   }
+  function fitBadgeText(context, value, x, y, maxWidth, size, color, weight = 700) {
+    const text = String(value || '');
+    let fontSize = size;
+    context.font = `${weight} ${fontSize}px Arial, sans-serif`;
+    while (fontSize > 20 && context.measureText(text).width > maxWidth) {
+      fontSize -= 1;
+      context.font = `${weight} ${fontSize}px Arial, sans-serif`;
+    }
+    context.fillStyle = color;
+    context.fillText(text, x, y);
+  }
   function paintPickupBadge(definition, action) {
     if (!pickupBadgeContext || !definition) return;
     const context = pickupBadgeContext;
@@ -1368,16 +1429,42 @@ export function createView(canvas) {
     context.fillStyle = edge;
     context.fillText(definition.icon || '✦', 106, 98);
     context.textAlign = 'left';
-    context.font = '850 47px Arial, sans-serif';
-    context.fillStyle = '#fff3ca';
-    context.fillText(String(definition.label || '').toUpperCase(), 190, 74);
-    context.font = '700 29px Arial, sans-serif';
-    context.fillStyle = '#c5e5df';
-    // Keep the effect and the actual lane decision in the same glanceable
-    // line. The object follows the road, so a player can act on this cue
-    // without translating a separate HUD arrow back into the world.
+    fitBadgeText(
+      context,
+      String(definition.label || '').toUpperCase(),
+      190,
+      67,
+      790,
+      47,
+      '#fff3ca',
+      850,
+    );
+    // Give the effect its own line so the item teaches itself before the
+    // player has to parse the lane instruction. The second line is a compact
+    // action recipe; it follows the pickup in world space, so the lane arrow
+    // remains attached to the reward instead of competing with the HUD.
+    fitBadgeText(
+      context,
+      String(definition.effect || '').toUpperCase(),
+      190,
+      111,
+      790,
+      29,
+      '#c5e5df',
+      700,
+    );
     const lane = String(definition.lane || 'your lane').toUpperCase();
-    context.fillText(`${action} · ${definition.effect || ''} · ${lane}`, 190, 125);
+    const meters = Number.isFinite(definition.meters) ? ` · ${definition.meters}M` : '';
+    fitBadgeText(
+      context,
+      `${String(action || 'COLLECT').toUpperCase()} · ${lane}${meters}`,
+      190,
+      143,
+      790,
+      25,
+      '#fff3ca',
+      800,
+    );
     pickupBadgeTexture.needsUpdate = true;
   }
   const templates = {};
@@ -2265,7 +2352,7 @@ export function createView(canvas) {
           const poseScale = ghostSample.posture === 'hang' ? .84
             : ghostSample.posture === 'raft' ? .88 : .78;
           const ghostOpacity = (reducedMotion ? .42 : .50) * ghostFade * ghostPulse;
-          const rimOpacity = (reducedMotion ? .10 : .16) * ghostFade * ghostPulse;
+          const rimOpacity = (reducedMotion ? .16 : .24) * ghostFade * ghostPulse;
           ghostArtwork.material.map = map;
           ghostArtwork.material.needsUpdate = true;
           ghostArtwork.center.copy(source.center);
@@ -2283,9 +2370,16 @@ export function createView(canvas) {
           ghostRim.scale.set(sourceSign * sourceScaleX * poseScale * 1.075, sourceScaleY * poseScale * 1.075, 1);
           ghostRim.material.opacity = rimOpacity;
           ghostRim.visible = true;
+          ghostWake.visible = true;
+          ghostWake.children.forEach((wake, index) => {
+            const wakePulse = reducedMotion ? 1 : .88 + Math.sin(time * 4.2 - index * .65) * .12;
+            wake.material.opacity = (reducedMotion ? .10 : .16) * ghostFade * wakePulse * (1 - index * .14);
+            wake.scale.setScalar((.94 - index * .10) * wakePulse);
+          });
         } else {
           ghostArtwork.visible = false;
           ghostRim.visible = false;
+          ghostWake.visible = false;
         }
         ghostShadow.material.opacity = (reducedMotion ? .08 : .12) * ghostFade;
         ghostShadow.scale.setScalar((ghostSample.posture === 'slide' ? .78 : .92) * ghostPulse);
@@ -2293,6 +2387,7 @@ export function createView(canvas) {
         ghostGroup.visible = false;
         ghostArtwork.visible = false;
         ghostRim.visible = false;
+        ghostWake.visible = false;
         chaseArtwork.visible = false;
       }
       menuGlow.visible = hero;
@@ -2526,6 +2621,7 @@ export function createView(canvas) {
       let aerialCueCount = 0;
       let pickupGlintCount = 0;
       let hazardCueCount = 0;
+      let spectacleBeacon = null;
       const scenePickupBadge = !menu ? pickupBadgeFor(run) : null;
       let scenePickupBadgeItem = null;
       if (!menu)
@@ -2595,6 +2691,23 @@ export function createView(canvas) {
             frame.z - across * Math.sin(frame.yaw));
           item.rotation.x = pickup ? 0 : frame.pitch;
           item.rotation.y += frame.yaw;
+          // A set-piece should announce itself in the world before the player
+          // is close enough to parse its model. Select only authored spectacle
+          // objects (never an ordinary row), keep the nearest candidate, and
+          // let the existing flash batch carry the cue without another draw
+          // call or a persistent overlay.
+          if (!run.ended && run.encounter?.phase === 'spectacle' &&
+              !object.used && !object.passed && Number.isFinite(object.at)) {
+            const spectacleObject = object.bridgeCollapse ||
+              (object.type === 'gift' && object.chasePickup) ||
+              ['zipline-start', 'raft-start', 'minecart-start', 'moving-gate',
+                'choice-left', 'choice-right'].includes(object.type);
+            const approach = object.at - distance;
+            if (spectacleObject && approach >= 0 && approach < 64 &&
+                (!spectacleBeacon || approach < spectacleBeacon.approach)) {
+              spectacleBeacon = {object, item, approach};
+            }
+          }
           if (object.movingGate) {
             // A small, eased bank sells the sweep while preserving the road
             // tangent. It is frozen in reduced-motion mode and never feeds
@@ -2739,6 +2852,37 @@ export function createView(canvas) {
             }
           }
         }
+      if (!menu && !reducedMotion && !run.ended && spectacleBeacon && sparkCount < 192) {
+        const {object, item, approach} = spectacleBeacon;
+        const fade = 1 - THREE.MathUtils.clamp((approach - 4) / 60, 0, 1);
+        const pulse = .5 + .5 * Math.sin(time * 3.1 + (Number(object.id) || 0) * .55);
+        const color = spectacleBeaconColor(run.encounter?.title);
+        const frame = frameAt(-approach);
+        // Gaps and forks span the road; centre their beacon so the cue never
+        // looks like a recommendation for only the left-hand gate. All other
+        // pieces stay anchored to the moving/curved model itself.
+        const wide = object.type === 'gap' || object.type === 'choice-left' || object.type === 'choice-right';
+        const anchorX = wide ? frame.x : item.position.x;
+        const anchorZ = wide ? frame.z : item.position.z;
+        const anchorY = object.type === 'zipline-start' ? 6.82
+          : object.type === 'moving-gate' ? 3.22
+            : object.type === 'gap' ? .78
+              : object.type === 'choice-left' || object.type === 'choice-right' ? 3.86 : 3.18;
+        // Three floating lozenges read as an arrival marker at a glance. They
+        // stay tiny and distance-faded so the actual obstacle, bone line and
+        // lane target remain the visual priorities when the beat is close.
+        const offsets = [[-.62, 0], [0, .16], [.62, 0]];
+        for (const [index, [offsetX, offsetY]] of offsets.entries()) {
+          if (sparkCount >= 192) break;
+          const markerPulse = .82 + .18 * Math.sin(time * 4.2 - index * .72);
+          const markerScale = (.024 + pulse * .018) * (.48 + fade * .52) * markerPulse;
+          flashColor.set(color);
+          flashMatrix.makeScale(markerScale * (index === 1 ? 1.18 : .86), markerScale * 1.5, markerScale);
+          flashMatrix.setPosition(anchorX + offsetX, anchorY + offsetY + pulse * .06, anchorZ + .08);
+          flashes.setColorAt(sparkCount, flashColor);
+          flashes.setMatrixAt(sparkCount++, flashMatrix);
+        }
+      }
       // Keep one badge attached to the actual transformed pickup so it follows
       // route bends and lane changes like the model. Fade it toward the object
       // instead of snapping it on at full size; the HUD remains the source of

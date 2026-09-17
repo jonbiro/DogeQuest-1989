@@ -8,10 +8,11 @@ test envelopes; they do not prove comparative superiority or complete that
 broader goal. Subsequent shipped improvements are recorded in the roadmap and
 verification log. The latest source-and-code gap review is
 [`docs/comparative-gap-review.md`](docs/comparative-gap-review.md). It identifies
-additional traversal variety as the next substantial gameplay slice, alongside
-remaining audio-atmosphere and native-frame-pacing evidence gaps. Historical
-practice-trail and feature acceptance below does not close those gaps. Overall
-superiority remains unproven.
+additional sustained-play and hardware evidence as the next substantial slice.
+The current implementation also includes authored encounter phases, local
+best-run ghosts, and phase audio/haptic cues; the historical rows below are
+retained as dated evidence, not as a claim that the broader objective is done.
+Overall superiority remains unproven.
 
 ## Historical expanded skill-based runner audit
 
@@ -19,8 +20,9 @@ Audited against the full expanded objective, not the earlier scope below.
 Implementation baseline `579529d`, plus this audit's Fetch timer-scale correction.
 All required implementation areas pass the evidence checks below. Final release
 acceptance requires successful CI/Pages for the commit containing this audit and
-matching published script/CSS bytes; these are checked after push. A personal-best
-ghost is optional and has not been implemented.
+matching published script/CSS bytes; these are checked after push. Local
+personal-best ghosts are implemented for the active trail generator and remain
+bounded to the current browser.
 
 | Requirement | Current authoritative evidence | Assessment |
 | --- | --- | --- |
@@ -31,6 +33,7 @@ ghost is optional and has not been implemented.
 | One charged player ability | `ability.js` and `app.js`: Fetch charges through hand collection, clean clears and turns; tap/F spends once for four-second attraction. It can be saved, cannot refill itself, preserves an existing magnet and respects aerial reachability. Ability tests exercise actual collection/expiry. Final browser run used it seven times through alternating keyboard/touch control paths; corrected timer max is four seconds. | Pass |
 | Dog/region mastery and collectibles | `mastery.js`, `rewards.js`, passport UI: four dog tracks and three regional tracks, 21 persistent badges/stamps, one-time upgrade-point rewards. Tests cover thresholds, wrong dog, incomplete runs, migration and repeated banking. Previous-slice real Mochi run crossed four thresholds for exactly 1,850 points; retry/reload retained 11,938 total credits and counters without replay. Those banking paths are unchanged in this audit. | Pass |
 | Post-run learning and immediate retry | `guidance.js` explains the actual last mistake (turn, overhead, gap or low obstacle); results show clears, turns, streak, courses and next dog milestone. `runner-guidance.test.js` checks advice. Mastery-slice browser check naturally ended and the results button immediately began a fresh run at zero Fetch charge. | Pass |
+| Local best-run ghost | `ghost.js` records distance-spaced posture/lane samples, banks only a better scored run, and replays the exact seeded trail without affecting collisions or score. `ghost.test.js` covers bounds, interpolation, version compatibility and idempotent banking; the renderer uses the authored puppy pose stack with a mint rim and ground wake. | Implemented within the local browser/replay-version envelope |
 | Short controls and quiet HUD | `.72s` jump, `.58s` base slide, bounded upgrades, dive/steering interpolation and 120Hz simulation remain intact. Motion tests check timing and timestep behavior. One edge dock arbitrates guidance. Final 320x568/844x390 maximum-power HUD checks found no overlaps, offscreen elements or center-trail cues; modal actions remain reachable. | Pass |
 | Preserve saves and original 2D game | Existing storage key/guards and collection repair remain. Old mastery defaults do not backfill invented history. Storage, collection and banking tests pass; real reload evidence retained upgrades/currency. `src/rebuild`, root HTML and CSS are unchanged from `52b02a1`; all five root trails still complete in simulation. Fresh live root start, pause and resume succeeded without browser errors. | Pass |
 | Mobile performance and reliability | Final production-renderer accelerated check: three 4,500m runs, 54 checkpoints, 21 turns, nine ziplines, courses 12/3/3, minimum three hearts; peaks 15 geometries, four textures, 123 objects and 203 draw calls. Final full-motion 844x390 real-time run: 120s, 4,046m, 7,202 frames, mean 16.66ms, p95 16.70ms, no browser errors or HUD overlaps. Keyboard/menu focus and held-Escape checks pass. | Pass within stated browser envelope |

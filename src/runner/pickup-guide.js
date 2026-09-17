@@ -2,6 +2,17 @@
 // language is used by the in-run guide, the help key, and the active-power
 // chips so a player never has to decode a new name for the same reward.
 export const PICKUP_DEFINITIONS = Object.freeze({
+  // Bones are the core collectable rather than a special pickup, so they do
+  // not participate in the nearby-item guide. They still share the same
+  // vocabulary as powerups everywhere a player needs an explanation: the
+  // help key, accessible labels, and the post-run receipt.
+  bone: Object.freeze({
+    label: 'Bone',
+    icon: '🦴',
+    effect: '+25 base points · +2% Fetch',
+    detail: 'Collect to score points and charge Fetch by 2%; upgrades and the Bone doubler can raise the points.',
+    color: '#ffe4aa',
+  }),
   magnet: Object.freeze({
     label: 'Magnet',
     icon: '🧲',
@@ -66,7 +77,11 @@ export const PICKUP_DEFINITIONS = Object.freeze({
   }),
 });
 
-export const PICKUP_TYPES = Object.freeze(Object.keys(PICKUP_DEFINITIONS));
+// Special pickups are the only objects that should claim the approach card or
+// world badge. Bones are intentionally left out so a dense bone line never
+// turns into a repeating “collect” message, while remaining in the shared
+// definition table for help and results.
+export const PICKUP_TYPES = Object.freeze(Object.keys(PICKUP_DEFINITIONS).filter(type => type !== 'bone'));
 
 export function pickupDefinition(type) {
   return PICKUP_DEFINITIONS[type] || null;

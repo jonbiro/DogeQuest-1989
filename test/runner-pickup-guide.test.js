@@ -18,6 +18,9 @@ test('every special pickup has a plain-language effect and distinct visual ident
   }
   assert.equal(PICKUP_DEFINITIONS.double.label, 'Bone doubler');
   assert.match(PICKUP_DEFINITIONS.double.effect, /2× bone points/);
+  assert.equal(PICKUP_DEFINITIONS.bone.label, 'Bone');
+  assert.match(PICKUP_DEFINITIONS.bone.effect, /\+2% Fetch/);
+  assert.match(PICKUP_DEFINITIONS.bone.detail, /Bone doubler/);
   assert.match(PICKUP_DEFINITIONS.magnet.detail, /live timer/i,
     'the magnet guide must not promise a fixed duration when upgrades can extend it');
 });
@@ -29,6 +32,8 @@ test('the help key is rebuilt from the pickup definitions instead of drifting in
   assert.match(appSource, /const items = PICKUP_TYPES\.map\(type =>/);
   assert.match(appSource, /item\.setAttribute\('aria-label', `\$\{definition\.label\}/);
   assert.match(appSource, /syncPickupKey\(\);/);
+  assert.match(appSource, /const bone = createItem\('bone'\)/);
+  assert.match(shellSource, /data-pickup="bone"/);
 });
 
 test('upcoming pickup guide names the effect and the lane without taking over urgent play', () => {

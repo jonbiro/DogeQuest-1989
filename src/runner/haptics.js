@@ -22,6 +22,10 @@ export const HAPTIC_PATTERNS = Object.freeze({
   'dog-chase-start': Object.freeze([9, 18, 9]),
   'dog-chase-end': Object.freeze([8, 18, 8]),
   'modifier-start': Object.freeze([8, 20, 8]),
+  'encounter-warmup': Object.freeze([5, 18, 5]),
+  'encounter-escalation': Object.freeze([7, 20, 7]),
+  'encounter-spectacle': Object.freeze([10, 26, 10]),
+  'encounter-recovery': Object.freeze([5, 28, 5]),
   'ride-start': Object.freeze([12, 22, 18]),
   'ride-end': Object.freeze([8, 20, 14]),
   reward: Object.freeze([8, 18, 8]),
@@ -53,6 +57,7 @@ function cleanPattern(pattern) {
  */
 export function hapticPattern(event, run = {}) {
   const name = String(event || '');
+  if (name.startsWith('encounter-')) return HAPTIC_PATTERNS[name] || null;
   if (name === 'bone') {
     // Every fifth bone gets a slightly richer pulse; ordinary bones stay
     // deliberately light so a dense line never becomes an irritating buzz.

@@ -70,15 +70,29 @@ test('receipt itemizes special pickups with their actual effects', () => {
     score: 720,
     pickupCounts: { magnet: 2, shield: 1, gem: 1, zoomies: 1 },
   });
-  assert.match(text, /Pickup haul: 2 magnets \(pull nearby bones\); 1 shields \(block one hit\); 1 gems \(\+250 points each\); 1 Zoomies balls \(speed \+ smash for 6s\)\./);
+  assert.match(text, /Pickup haul: 2 magnets \(pull nearby bones\); 1 shield \(block one hit\); 1 gem \(\+250 points each\); 1 Zoomies ball \(speed \+ smash for 6s\)\./);
 });
 
 test('pickup receipt rows stay structured for the visual results haul', () => {
   assert.deepEqual(pickupReceiptItems({pickupCounts: {magnet: 2, gift: 1, relic: -4}}), [
     {key: 'magnet', count: 2, label: 'magnets', effect: 'pull nearby bones'},
-    {key: 'gift', count: 1, label: 'gift boxes', effect: '+100 points each'},
+    {key: 'gift', count: 1, label: 'gift box', effect: '+100 points each'},
   ]);
   assert.deepEqual(pickupReceiptItems({}), []);
+});
+
+test('results explain the core bone collectable alongside special pickups', () => {
+  assert.deepEqual(pickupReceiptItems({bones: 7, pickupCounts: {gem: 1}}), [
+    {key: 'bone', count: 7, label: 'bones', effect: '+25 base points · +2% Fetch'},
+    {key: 'gem', count: 1, label: 'gem', effect: '+250 points each'},
+  ]);
+  assert.match(scoreBreakdown({distance: 120, bones: 7, bonePoints: 175, bonusPoints: 0, score: 295}),
+    /Pickup haul: 7 bones \(\+25 base points · \+2% Fetch\)\./);
+});
+
+test('receipt wording uses singular names for one collected item', () => {
+  assert.match(scoreBreakdown({distance: 10, bones: 1, bonePoints: 25, bonusPoints: 0, score: 35, pickupCounts: {gift: 1}}),
+    /Pickup haul: 1 bone \(\+25 base points · \+2% Fetch\); 1 gift box \(\+100 points each\)\./);
 });
 
 test('a last-second lane dodge earns one quiet near-miss reward',()=>{

@@ -2,8 +2,11 @@
 
 Each of the six landscapes now has an original five-note call-and-response
 phrase with a distinct register and contour. A quiet triangle reply gives the
-melody a little more identity while effects remain much louder. These are still
-light synthesized accents, not a full soundtrack or recorded nature ambience.
+melody a little more identity while effects remain much louder. Warm-up,
+escalation, spectacle and recovery phases also get short transition stingers,
+with matching optional haptic patterns, so the encounter director is felt as
+well as seen. These are still light synthesized accents, not a full soundtrack
+or recorded nature ambience.
 Gain peaks at 0.006 versus the existing 0.035 effects ceiling; ordinary voice
 limits reserve capacity for action sounds.
 
