@@ -10,6 +10,7 @@
   --safe-bottom: env(safe-area-inset-bottom,0px);
   --safe-left: env(safe-area-inset-left,0px);
 }
+
 #run-score {
   display: block;
   font-size: 12px;
@@ -3182,5 +3183,52 @@ canvas:focus-visible {
   #overlay[data-kind="ended"] .modal-actions > #practice-again,
   #overlay[data-kind="ended"] .modal-actions > #home {
     grid-column: 1 / -1;
+  }
+}
+
+/* Portrait phones need the lower trail for reaction time.  The quiet goal
+   already lives in the upper HUD; keep urgent cues and short result toasts in
+   that same upper rail instead of floating directly above the thumb controls.
+   One message still owns the rail at a time (`syncDock`), so this is a move,
+   not another layer of cards. */
+@media (max-width: 700px) and (orientation: portrait) {
+  #mission-hud {
+    top: calc(236px + var(--safe-top));
+    bottom: auto;
+    left: max(5%, calc(var(--safe-left) + 12px));
+    right: max(5%, calc(var(--safe-right) + 12px));
+    width: auto;
+    max-width: none;
+    margin: 0;
+    transform: none;
+  }
+  #mission-hud[data-dock="mission-summary"] {
+    top: calc(230px + var(--safe-top));
+    left: max(5%, calc(var(--safe-left) + 12px));
+    right: auto;
+    width: min(300px, 58vw);
+    max-width: 300px;
+  }
+  #mission-hud[data-dock="cue"],
+  #mission-hud[data-dock="route-choice"],
+  #mission-hud[data-dock="toast"] {
+    top: calc(236px + var(--safe-top));
+    left: 50%;
+    right: auto;
+    width: min(340px, calc(100vw - 28px));
+    max-width: none;
+    transform: translateX(-50%);
+    padding: 8px 11px;
+  }
+  #mission-hud[data-dock="cue"] #cue,
+  #mission-hud[data-dock="toast"] #toast {
+    min-height: 0;
+  }
+
+  /* The item explainer follows the goal in the same upper rail.  It is hidden
+     automatically whenever an urgent cue owns the mission dock, so the two
+     cards never compete for the same pixels. */
+  #pickup-guide {
+    top: 180px;
   }
 }
