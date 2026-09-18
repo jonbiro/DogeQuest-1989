@@ -396,16 +396,18 @@ test('each destination adds a sparse, named silhouette instead of only recolorin
 
 test('quiet trail stretches carry area-specific shoulder motifs without entering the lanes', () => {
   const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
+  const kit = readFileSync(new URL('../src/runner/destination-kit.js', import.meta.url), 'utf8');
   assert.match(render, /Low, readable trail motifs give the player something to discover/);
   assert.match(render, /trailMotif: true/);
   assert.match(render, /const shoulder = LANDMARK_SHOULDER_MIN \+ \.18/);
   assert.match(render, /for \(let area = 0; area < AREAS\.length; area\+\+\) for \(let i = 0; i < 8; i\+\+\)/);
-  assert.match(render, /Sunleaf: a small fern fan/);
-  assert.match(render, /Bamboo: paired shoots/);
-  assert.match(render, /Redrock: three warm pebbles/);
-  assert.match(render, /Oasis: three stepping stones/);
-  assert.match(render, /Crystal Reach: two low shards/);
-  assert.match(render, /Mooncap: a pair of tiny caps/);
+  assert.match(render, /buildTrailMotif\(area, group, kitHelpers\)/);
+  assert.match(kit, /Sunleaf: a small fern fan/);
+  assert.match(kit, /Bamboo: paired shoots/);
+  assert.match(kit, /Redrock: three warm pebbles/);
+  assert.match(kit, /Oasis: three stepping stones/);
+  assert.match(kit, /Crystal Reach: two low shards/);
+  assert.match(kit, /Mooncap: a pair of tiny caps/);
 });
 
 test('ended mobile sheets keep the details affordance above the fixed action shelf', () => {
