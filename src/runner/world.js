@@ -367,6 +367,19 @@ function areaActionHazard(run, at, row) {
   return type==='rock'?'log':type;
 }
 
+// Which character crosses in this shelter beat. The cast joins one crossing
+// at a time: the familiar worker first, the slide-demanding officer second,
+// then the full trio rotates. Crossings land hundreds of meters apart, so the
+// introduction is staged by distance in practice, while the encounter count
+// keeps every seed and shared replay deterministic without consuming the
+// seeded random.
+function shelterCast(run) {
+  const index = Number.isInteger(run.shelterBeats) ? run.shelterBeats : 0;
+  if (index === 0) return 'pound-worker';
+  if (index === 1) return 'pound-officer';
+  return ['pound-worker', 'pound-officer', 'crate-cart'][index % 3];
+}
+
 function scheduleRouteTrail(run) {
   if (run.generatorVersion < 4 || !run.route ||
       !Number.isFinite(run.route.forkAt) || run.route.branchTrailSpawned) return false;
@@ -737,15 +750,16 @@ export function fillTrack(run) {
     run.lastSafeLane = safe;
     const blocked = (safe + 1 + Math.floor(run.random() * 2)) % 3;
     const actionRow = !quietPhase && route!=="scenic" && run.row > 5 && (route==="challenge" ? run.row%2===0 : run.row % 4 === 2);
-    // Shelter workers are a short character encounter, not a new ruleset:
-    // they occupy one lane, can be jumped, and arrive with a second ordinary
-    // hazard so the open lane remains legible. The live pacing guard keeps
-    // historical/replay generators unchanged while giving current runs a
-    // memorable human-scale beat after the warm-up. It repeats across the
-    // route so the trail is not just a long sequence of rocks with a single
-    // shelter cameo.
+    // Shelter beats are short character encounters, not a new ruleset: each
+    // occupies one lane, clears by its own familiar move, and arrives with a
+    // second ordinary hazard so the open lane remains legible. The live pacing
+    // guard keeps historical/replay generators unchanged while giving current
+    // runs a memorable human-scale beat after the warm-up. Beats cycle through
+    // a staged cast (see shelterCast) so the trail is not just a long sequence
+    // of rocks with a single shelter cameo.
     const shelterBeat = run.encounterPacing && run.generatorVersion >= 5 &&
       route !== 'scenic' && !actionRow && !quietPhase && !gapRow && at >= 135 && run.row % 7 === 4;
+    const shelterType = shelterBeat ? shelterCast(run) : null;
     if (actionRow) {
       const type = gapRow ? "gap" : run.generatorVersion>=4
         ? areaActionHazard(run,at,run.row)
@@ -757,7 +771,7 @@ export function fillTrack(run) {
         if (pattern?.label) obstacle.encounter = pattern.label;
       }
     } else if (run.row > 0 && !quietPhase) {
-      const primary=shelterBeat ? 'pound-worker' : run.generatorVersion>=4
+      const primary=shelterBeat ? shelterType : run.generatorVersion>=4
         ? areaHazard(run,at,run.row)
         : SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)];
       const first=add(run, primary, blocked, at);
@@ -766,6 +780,7 @@ export function fillTrack(run) {
       if (shelterBeat) {
         first.shelterWorker = true;
         first.encounter = 'Shelter crossing';
+        run.shelterBeats = (Number.isInteger(run.shelterBeats) ? run.shelterBeats : 0) + 1;
       }
       if (route!=="scenic" && run.row > 2 && (shelterBeat || run.random() > 0.15 || at > 600)) {
         const second=add(run,
@@ -1229,11 +1244,14 @@ export function step(run, dt) {
         run.effects.push({id:object.id,type:"smash",time:run.time,x:run.x,y:1});
         continue;
       }
+      // Low trail hazards clear by out-jumping their cast height. Gap and ski
+      // obstacles keep their own flags below; the slide family derives from
+      // the cast so a new duck can never miss the branch.
+      const jumpClearHeight = ['log', 'rock', 'pound-worker', 'crate-cart'].includes(object.type)
+        ? HAZARD_CAST[object.type].jumpHeight : null;
       const cleared =
         (object.type === "gap" && (run.y > HAZARD_CAST.gap.jumpHeight || run.zoomies > 0)) ||
-        (object.type === "log" && run.y > HAZARD_CAST.log.jumpHeight) ||
-        (object.type === "rock" && run.y > HAZARD_CAST.rock.jumpHeight) ||
-        (object.type === "pound-worker" && run.y > HAZARD_CAST['pound-worker'].jumpHeight) ||
+        (Number.isFinite(jumpClearHeight) && run.y > jumpClearHeight) ||
         (object.skiHazard && object.type === 'mogul' && run.y > HAZARD_CAST.mogul.jumpHeight) ||
         (object.skiObstacle && object.skiJumpable && run.y > HAZARD_CAST.snowball.jumpHeight) ||
         (HAZARD_CAST[object.type]?.clear === 'slide' &&

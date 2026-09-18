@@ -10,7 +10,10 @@ import {turnPrompt} from '../src/runner/turns.js';
 // heart; if a seed can produce an unavoidable hazard, this is what catches it.
 
 const SOLID = ['rock', 'log', 'arch', 'branch', 'gate'];
-const HAZARD = new Set([...SOLID, 'gap']);
+// Shelter beats add character hazards to live rows; the probe reads them too
+// so the officer and cart can never hide from the survival assertions.
+const BEAT = ['pound-worker', 'pound-officer', 'crate-cart'];
+const HAZARD = new Set([...SOLID, 'gap', ...BEAT]);
 // Clearing rules live in `hazard-cast.js`; the probe consumes the same sets
 // the game does so a new cast member cannot silently escape the probe.
 
@@ -168,6 +171,43 @@ test('a player who always picks a clearable lane never loses a heart', () => {
   assert.deepEqual(losses, [], `unavoidable damage: ${JSON.stringify(losses)}`);
 });
 
+test('live trails stay survivable with the full shelter cast in the mix', () => {
+  // Current browser runs opt into encounter pacing: shelter beats stage the
+  // worker, then the slide-demanding officer, then the crate cart in rotation.
+  // Crossings land hundreds of meters apart, so the probe runs to 3,200m. A
+  // perfect player must still never lose a heart, and every seed must actually
+  // meet the officer and the cart.
+  const losses = [];
+  let officers = 0, carts = 0;
+  for (let seed = 0; seed < 40; seed++) {
+    const run = createRun(seed, {}, 5, null, {encounterPacing: true});
+    run.nextChoice = Infinity;
+    const done = new Set();
+    const seen = new Set();
+    const dt = 1 / 120;
+    let guard = 0;
+    while (!run.ended && run.distance < 3200 && guard++ < 600000) {
+      fillTrack(run);
+      for (const object of run.objects)
+        if (BEAT.includes(object.type) && object.at < run.distance + 170) seen.add(object.type);
+      perfectPolicy(run, done);
+      step(run, dt);
+      run.objects = run.objects.filter(object => object.at > run.distance - 20);
+    }
+    assert.ok(run.distance > 1200, `seed ${seed} should reach a long run, stopped at ${run.distance}`);
+    assert.ok(seen.has('pound-worker'), `seed ${seed} never met the shelter worker`);
+    assert.ok(seen.has('pound-officer'), `seed ${seed} never met the pound officer`);
+    assert.ok(seen.has('crate-cart'), `seed ${seed} never met the crate cart`);
+    if (seen.has('pound-officer')) officers++;
+    if (seen.has('crate-cart')) carts++;
+    if (run.hearts < 3)
+      losses.push({seed, hearts: run.hearts, at: Math.round(run.distance), cause: run.lastMistake});
+  }
+  assert.equal(officers, 40, 'every live seed should patrol past the officer');
+  assert.equal(carts, 40, 'every live seed should dodge the crate cart');
+  assert.deepEqual(losses, [], `unavoidable damage with the cast: ${JSON.stringify(losses)}`);
+});
+
 test('a perfect player can solve route gates and ziplines without skipping them', () => {
   for (const seed of Array.from({length: 10}, (_, index) => index)) {
     const run = playOptional(seed);
@@ -263,7 +303,7 @@ test('every hazard type is actually clearable by the action it asks for', () => 
   // clear. Raising a threshold out of reach fails here even though a lane-
   // picking player would never have noticed.
   const actionFor = type => CLEARED_BY_JUMP.has(type) ? 'jump' : 'slide';
-  for (const type of [...SOLID, 'gap']) {
+  for (const type of [...SOLID, 'gap', 'pound-worker', 'pound-officer', 'crate-cart']) {
     for (const speed of [22, 36]) {
       const run = createRun(1);
       run.speed = speed;
@@ -285,7 +325,7 @@ test('every hazard type is actually clearable by the action it asks for', () => 
 test('a hazard met with the wrong action still costs a heart', () => {
   // The counterpart to the rule above: if this ever passes, the clearing test
   // proves nothing, because every action would clear everything.
-  for (const type of [...SOLID, 'gap']) {
+  for (const type of [...SOLID, 'gap', 'pound-worker', 'pound-officer', 'crate-cart']) {
     const wrong = CLEARED_BY_JUMP.has(type) ? 'slide' : 'jump';
     const run = createRun(1);
     run.speed = 22;

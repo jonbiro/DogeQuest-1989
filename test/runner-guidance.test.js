@@ -44,7 +44,8 @@ test('corner cues work in the air, confirm one accepted swipe and correct wrong 
 test('post-run advice explains the actual mistake without inventing one', () => {
   assert.match(runLesson({lastMistake:null}), /next run/i);
   assert.match(runLesson({lastMistake:{type:'corner',direction:'right'}}), /Swipe right/);
-  for (const type of ['arch','branch','gate']) assert.match(runLesson({lastMistake:{type}}), /Slide/);
+  for (const type of ['arch','branch','gate','pound-officer']) assert.match(runLesson({lastMistake:{type}}), /Slide/);
+  assert.match(runLesson({lastMistake:{type:'crate-cart'}}), /Jump/);
   assert.match(runLesson({lastMistake:{type:'gap'}}), /striped edge/);
   assert.match(runLesson({lastMistake:{type:'rock'}}), /open lane/);
   assert.deepEqual(eventNotice('hit', {hearts:1,lastMistake:{type:'corner',direction:'left'}}),
@@ -272,7 +273,7 @@ test("slide guidance renews only when the current slide will expire before impac
 });
 
 test('airborne overhead guidance offers a dive that clears the row without repeated hints', () => {
-  for (const type of ['arch', 'branch', 'gate']) {
+  for (const type of ['arch', 'branch', 'gate', 'pound-officer']) {
     for (const leap of [0, 3]) {
       for (const jumpAge of [.1, .35, .55]) {
         for (const speed of [22, 36]) {

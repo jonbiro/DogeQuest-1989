@@ -2062,6 +2062,122 @@ export function createView(canvas) {
   // silhouette still clears the jump envelope, but the face, vest and
   // clipboard remain readable before the lane decision on a small phone.
   templates['pound-worker'].scale.setScalar(1.18);
+  // The pound officer wears the same shelter crew uniform — a pantomime
+  // sweeper with a butterfly net, not a villain. Only boxes, balls and two
+  // small net geometries are used, so the whole cast stays inside the
+  // standing geometry budget. Tagged parts let the loop sway the net without
+  // rebuilding anything per frame.
+  templates['pound-officer'] = new THREE.Group();
+  const officerBody = box(templates['pound-officer'], '#1d5360', 0, .78, 0, .62, .92, .44);
+  officerBody.name = 'officer-body';
+  officerBody.castShadow = true;
+  const officerVest = box(templates['pound-officer'], '#ef8a50', 0, .91, .43, .48, .5, .07);
+  officerVest.name = 'officer-vest';
+  box(templates['pound-officer'], '#ffe08e', 0, .93, .505, .38, .08, .025).name = 'officer-reflective-band';
+  for (const side of [-1, 1]) {
+    const officerLeg = box(templates['pound-officer'], '#214554', side * .2, .24, 0, .18, .48, .22);
+    officerLeg.name = 'officer-leg';
+    ball(templates['pound-officer'], '#e08a5d', side * .2, .055, .08, .22, .12, .3).name = 'officer-shoe';
+  }
+  const officerHead = ball(templates['pound-officer'], '#dca273', 0, 1.55, .04, .45, .43, .38);
+  officerHead.name = 'officer-head';
+  officerHead.castShadow = true;
+  ball(templates['pound-officer'], '#574956', 0, 1.87, .02, .4, .16, .34).name = 'officer-hair';
+  const officerCap = box(templates['pound-officer'], '#e36c4d', 0, 1.94, .02, .5, .18, .38);
+  officerCap.name = 'officer-cap';
+  box(templates['pound-officer'], '#f7b95d', 0, 1.86, .37, .6, .08, .16).name = 'officer-cap-brim';
+  for (const side of [-1, 1]) {
+    ball(templates['pound-officer'], '#243340', side * .16, 1.61, .385, .075, .085, .045).name = 'officer-eye';
+    const brow = box(templates['pound-officer'], '#3a2f38', side * .16, 1.74, .39, .16, .045, .04);
+    brow.rotation.z = -side * .28;
+    brow.name = 'officer-brow';
+    ball(templates['pound-officer'], '#f6d1aa', side * .17, 1.43, .37, .09, .07, .05).name = 'officer-cheek';
+  }
+  ball(templates['pound-officer'], '#4b3440', 0, 1.47, .405, .11, .075, .06).name = 'officer-nose';
+  for (const side of [-1, 1]) {
+    const officerArm = box(templates['pound-officer'], '#ef8a50', side * .45, 1.02, .22, .16, .5, .18);
+    officerArm.rotation.x = -.85;
+    officerArm.rotation.z = side * .12;
+    officerArm.name = 'officer-arm';
+    ball(templates['pound-officer'], '#dca273', side * .42, .82, .42, .14, .14, .14).name = 'officer-hand';
+  }
+  // The net hangs at standing dog height with its hoop facing the runner, so
+  // the slide answer reads before the lane decision. The translucent disc is
+  // what sells "net you cannot jump through" instead of "ring to leap through".
+  const netPole = box(templates['pound-officer'], '#8a6844', 0, 1.12, .18, 2.3, .09, .09);
+  netPole.name = 'officer-pole';
+  const netHoop = new THREE.Mesh(new THREE.TorusGeometry(.52, .055, 8, 22), mat('#8a6844'));
+  netHoop.position.set(.78, 1.1, .18);
+  netHoop.receiveShadow = true;
+  netHoop.name = 'officer-net';
+  templates['pound-officer'].add(netHoop);
+  const netDisc = new THREE.Mesh(
+    new THREE.CircleGeometry(.46, 20),
+    new THREE.MeshBasicMaterial({color: '#dcefe8', transparent: true, opacity: .42, side: THREE.DoubleSide, depthWrite: false}),
+  );
+  netDisc.position.set(.78, 1.1, .17);
+  netDisc.name = 'officer-disc';
+  templates['pound-officer'].add(netDisc);
+  for (const stringAngle of [Math.PI / 4, -Math.PI / 4]) {
+    const netString = box(templates['pound-officer'], '#b9cfc4', .78, 1.1, .175, .035, .88, .02);
+    netString.rotation.z = stringAngle;
+    netString.name = 'officer-string';
+  }
+  ball(templates['pound-officer'], '#ffe08e', -.55, .98, .26, .11, .11, .05).name = 'officer-badge';
+  templates['pound-officer'].scale.setScalar(1.15);
+  // A low trolley of empty cages, shoved across the lane. Slatted sides stay
+  // see-through so it reads as one low jumpable mass rather than a wall, and
+  // the whole silhouette tops out near a fallen log.
+  templates['crate-cart'] = new THREE.Group();
+  const cartBed = box(templates['crate-cart'], '#8a6844', 0, .55, 0, 1.7, .16, 1.05);
+  cartBed.name = 'cart-bed';
+  cartBed.castShadow = true;
+  box(templates['crate-cart'], '#6e4f30', 0, .66, 0, 1.78, .07, 1.12).name = 'cart-rim';
+  for (const wheelX of [-.62, .62]) for (const wheelZ of [-.42, .42]) {
+    const wheel = mesh(templates['crate-cart'], trunkGeometry, '#4a3a2c', wheelX, .3, wheelZ, .34, .2, .34);
+    wheel.rotation.x = Math.PI / 2;
+    wheel.name = 'cart-wheel';
+  }
+  for (const postX of [-.78, .78]) for (const postZ of [-.48, .48])
+    box(templates['crate-cart'], '#6e4f30', postX, .88, postZ, .09, .5, .09).name = 'cart-post';
+  for (const slatY of [.78, .95, 1.1]) {
+    box(templates['crate-cart'], '#a5763f', 0, slatY, -.48, 1.65, .07, .06).name = 'cart-slat';
+    box(templates['crate-cart'], '#a5763f', 0, slatY, .48, 1.65, .07, .06).name = 'cart-slat';
+    box(templates['crate-cart'], '#a5763f', -.78, slatY, 0, .06, .07, .9).name = 'cart-slat';
+    box(templates['crate-cart'], '#a5763f', .78, slatY, 0, .06, .07, .9).name = 'cart-slat';
+  }
+  box(templates['crate-cart'], '#a5763f', 0, 1.16, 0, 1.72, .07, 1.0).name = 'cart-top-rim';
+  for (const side of [-1, 1]) {
+    const cartHandle = box(templates['crate-cart'], '#6e4f30', side * 1.0, .78, 0, .5, .07, .07);
+    cartHandle.rotation.z = side * .5;
+    cartHandle.name = 'cart-handle';
+  }
+  // The warden's gate is a fence-and-pole re-dress of the stone gate: same
+  // slide envelope, same universal clearance bar and mint slide marks, but
+  // wooden posts and rails instead of architecture. No new geometry.
+  templates['warden-gate'] = new THREE.Group();
+  for (const x of [-1, 1])
+    box(templates['warden-gate'], '#6e4f30', x, 1.5, 0, 0.3, 3, 0.4);
+  for (const railY of [1.9, 2.32])
+    box(templates['warden-gate'], '#8a6844', 0, railY, 0, 2.2, .18, .3);
+  box(templates['warden-gate'], '#102b36', 0, 1.33, 0, 2.1, 0.22, 0.4);
+  for (const x of [-.8, .8])
+    box(templates['warden-gate'], '#b3ffe7', x, 1.35, .23, .2, .15, .04);
+  box(templates['warden-gate'], '#efd09a', 0, 2.11, .18, .5, .3, .05).name = 'warden-sign';
+  box(templates['warden-gate'], '#e36c4d', 0, 2.11, .21, .34, .08, .02).name = 'warden-sign-mark';
+  // Feed sacks are a burlap re-dress of the boulder: same jump rule, stacked
+  // tied sacks with a slight tumble instead of stone. Shared spheres only.
+  templates['feed-sacks'] = new THREE.Group();
+  const sackBottom = ball(templates['feed-sacks'], '#c9a06a', -.08, .52, 0, 1.02, .62, .85);
+  sackBottom.name = 'sack-bottom';
+  sackBottom.castShadow = true;
+  sackBottom.rotation.z = .06;
+  box(templates['feed-sacks'], '#7a5c3e', -.08, .82, 0, 1.0, .09, .83).name = 'sack-tie';
+  const sackTop = ball(templates['feed-sacks'], '#b3854f', .12, 1.12, 0, .78, .52, .64);
+  sackTop.name = 'sack-top';
+  sackTop.rotation.z = -.09;
+  box(templates['feed-sacks'], '#7a5c3e', .12, 1.3, 0, .72, .08, .6).name = 'sack-tie';
+  ball(templates['feed-sacks'], '#d8b983', -.42, .3, .42, .3, .22, .26).name = 'sack-spill';
   const routeLabels=document.createElement('canvas');
   routeLabels.width=1024;routeLabels.height=512;
   const routeText=routeLabels.getContext('2d');
@@ -3271,6 +3387,29 @@ export function createView(canvas) {
             const scarf = item.children.find(child => child.name === 'snowman-scarf');
             if (scarf) scarf.rotation.z = reducedMotion ? 0 : Math.sin(animationTime * 3.8 + object.id) * .08;
           }
+          if (object.type === 'pound-officer') {
+            // The officer sweeps the net side to side at dog height: the sway
+            // sells the sweep while the hoop stays low enough that only a
+            // slide fits underneath. Frozen for reduced motion like the worker.
+            const sweep = reducedMotion ? 0 : Math.sin(animationTime * 3.4 + object.id * .31);
+            item.position.y += reducedMotion ? 0 : Math.abs(sweep) * .02;
+            item.rotation.z = reducedMotion ? 0 : sweep * .02;
+            item.children.forEach(child => {
+              if (child.name === 'officer-net' || child.name === 'officer-disc')
+                child.position.x = .78 + (reducedMotion ? 0 : sweep * .14);
+              if (child.name === 'officer-string')
+                child.position.x = .78 + (reducedMotion ? 0 : sweep * .14);
+              if (child.name === 'officer-head')
+                child.rotation.z = reducedMotion ? 0 : sweep * .04;
+            });
+          }
+          if (object.type === 'crate-cart') {
+            // An empty cart rattles rather than rolls: a tiny rock and jitter
+            // imply wheels without ever moving the collision envelope.
+            const rattle = reducedMotion ? 0 : Math.sin(animationTime * 9 + object.id * .53);
+            item.position.x += reducedMotion ? 0 : rattle * .018;
+            item.rotation.z = reducedMotion ? 0 : rattle * .012;
+          }
           if (object.type === 'pound-worker') {
             // The shelter volunteer gives the otherwise static lane hazard a
             // friendly, readable beat: a small wave, head turn and clipboard
@@ -3434,13 +3573,13 @@ export function createView(canvas) {
             // row never turns into a second overlay. The existing flash batch
             // keeps this at zero extra geometry or texture uploads.
             const approach = object.at - distance;
-            const solidHazard = ['rock', 'log', 'arch', 'branch', 'gate'].includes(object.type) || object.type === 'moving-gate' || object.type === 'pound-worker';
+            const solidHazard = ['rock', 'log', 'arch', 'branch', 'gate'].includes(object.type) || ['moving-gate', 'pound-worker', 'pound-officer', 'crate-cart'].includes(object.type);
             const skiCharacter = object.skiObstacle || object.skiHazard;
             if ((solidHazard || skiCharacter) && approach > 5 && approach < 32 && sparkCount < 192) {
               const urgency = 1 - THREE.MathUtils.clamp((approach - 5) / 27, 0, 1);
               const pulse = .5 + .5 * Math.sin(time * 3.1 + (Number(object.id) || 0) * .67);
               const cueScale = (.018 + urgency * (skiCharacter ? .042 : .036)) * (.78 + pulse * .22);
-              const overhead = ['arch', 'branch', 'gate', 'moving-gate'].includes(object.type);
+              const overhead = ['arch', 'branch', 'gate', 'moving-gate', 'pound-officer'].includes(object.type);
               const skiColor = object.type === 'snowball' ? '#c7f1ff'
                 : object.type === 'yeti' ? '#b8edff'
                   : object.type === 'snowman' ? '#fff0b7'
@@ -3452,7 +3591,7 @@ export function createView(canvas) {
                 item.position.x,
                 item.position.y + (overhead ? 2.55 : object.type === 'rock' ? 1.42 :
                   object.type === 'yeti' ? 2.25 : object.type === 'snowman' ? 2.18 :
-                    object.type === 'pound-worker' ? 2.25 : 1.12),
+                    object.type === 'pound-worker' || object.type === 'pound-officer' ? 2.25 : 1.12),
                 item.position.z + .055,
               );
               flashes.setColorAt(sparkCount, flashColor);

@@ -169,6 +169,44 @@ test('current trails introduce a readable shelter worker instead of only stone h
     'the worker keeps a second lane occupied so the encounter still asks for a choice');
 });
 
+test('the shelter cast arrives in stages with one open lane each',()=>{
+  // The worker crosses first, the officer joins at the second crossing, then
+  // the full trio rotates. Every beat keeps the established two-hazard shape:
+  // one open lane plus a support hazard, never a full-width surprise.
+  const run=createRun(1989,{},5,null,{encounterPacing:true});
+  run.distance=140;
+  fillTrack(run);
+  const beats=run.objects.filter(object=>object.shelterWorker);
+  assert.ok(beats.length>=1,'beats exist in the opening stretch');
+  assert.ok(beats.every(object=>object.type==='pound-worker'),'Sunleaf beats belong to the worker alone');
+
+  const far=createRun(1989,{},5,null,{encounterPacing:true});
+  far.distance=140;
+  const seen=new Set();
+  let choices=0;
+  for(let distance=140;distance<=2600;distance+=10){
+    far.distance=distance;
+    if(far.choicePending!==null&&distance>=far.choicePending){
+      far.route={kind:(choices++%2)?'scenic':'challenge',until:far.choicePending+220};
+      far.nextChoice=far.choicePending+700;far.choicePending=null;
+    }
+    fillTrack(far);
+    for(const object of far.objects)
+      if(object.shelterWorker){
+        seen.add(object.type);
+        assert.equal(object.encounter,'Shelter crossing');
+        const row=far.objects.filter(other=>other.at===object.at&&HAZARDS.includes(other.type));
+        assert.equal(row.length,2,`${object.type} at ${object.at}m keeps a two-hazard beat`);
+        assert.ok(Number.isInteger(object.safeLane),'beats carry an authored safe lane');
+        assert.ok(far.objects.some(other=>other.shelterSupport&&other.at===object.at),
+          'beats keep a support hazard beside the character');
+      }
+    far.objects=far.objects.filter(object=>object.at>=distance-10);
+  }
+  assert.deepEqual([...seen].sort(),['crate-cart','pound-officer','pound-worker'],
+    'the full cast rotates through a long live trail');
+});
+
 test('each authored pattern changes the hazard rhythm without inventing new moves',()=>{
   for(const profile of AREA_GAMEPLAY){
     const patterns=profile.patterns||[];

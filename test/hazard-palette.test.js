@@ -26,7 +26,7 @@ test('six local stone families preserve shared materials and universal clearance
 });
 
 test('special crystals and pickups retain their materials',()=>{
-  for(const type of ['crystal-rock','bone']){
+  for(const type of ['crystal-rock','bone','warden-gate','feed-sacks','pound-officer','crate-cart']){
     const item=new THREE.Group();
     item.traverse=()=>assert.fail('unrelated models must not be traversed');
     themeHazard(item,type,500,()=>assert.fail());

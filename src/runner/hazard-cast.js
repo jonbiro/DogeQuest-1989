@@ -22,6 +22,8 @@ export const HAZARD_CAST = Object.freeze({
   branch: Object.freeze({clear: 'slide', jumpHeight: null, width: 0.95, palette: 'organic', legacy: true, label: 'Overhead branch'}),
   gate: Object.freeze({clear: 'slide', jumpHeight: null, width: 0.95, palette: 'stone', legacy: true, label: 'Trail gate'}),
   'pound-worker': Object.freeze({clear: 'jump', jumpHeight: 0.65, width: 0.95, palette: 'none', character: true, label: 'Shelter worker'}),
+  'pound-officer': Object.freeze({clear: 'slide', jumpHeight: null, width: 0.95, palette: 'none', character: true, label: 'Pound officer'}),
+  'crate-cart': Object.freeze({clear: 'jump', jumpHeight: 0.65, width: 0.95, palette: 'none', character: true, label: 'Crate cart'}),
   'moving-gate': Object.freeze({clear: 'slide', jumpHeight: null, width: 0.95, palette: 'stone', label: 'Moving gate'}),
   gap: Object.freeze({clear: 'jump', jumpHeight: 0.8, width: 0.95, palette: 'none', label: 'Broken trail'}),
   mogul: Object.freeze({clear: 'jump', jumpHeight: 0.58, width: 0.95, palette: 'none', label: 'Mogul'}),
@@ -38,7 +40,7 @@ export const SOLID_HAZARDS = Object.freeze(
   ['rock', 'log', 'arch', 'branch', 'gate'].filter(type => HAZARD_CAST[type]?.legacy),
 );
 
-export const CHARACTER_HAZARDS = Object.freeze(['pound-worker']);
+export const CHARACTER_HAZARDS = Object.freeze(['pound-worker', 'pound-officer', 'crate-cart']);
 
 export const HAZARDS = Object.freeze([
   ...SOLID_HAZARDS,
@@ -64,9 +66,15 @@ export const TRAIL_HAZARDS = Object.freeze([
   'moving-gate',
   'gap',
   'pound-worker',
+  'pound-officer',
+  'crate-cart',
 ]);
 
-export const OVERHEAD_HAZARDS = Object.freeze(['arch', 'branch', 'gate', 'moving-gate']);
+// Every slide-clearing hazard reads as overhead: duck under it. The officer's
+// net hangs at dog height, so it joins the overhead family even though it is
+// a character rather than architecture. This drives dive cues, slide mistake
+// reasons and passed-mesh hiding — never collision, which lives in the cast.
+export const OVERHEAD_HAZARDS = Object.freeze(['arch', 'branch', 'gate', 'moving-gate', 'pound-officer']);
 
 export const CLEARED_BY_JUMP = Object.freeze(
   new Set(Object.keys(HAZARD_CAST).filter(type => HAZARD_CAST[type].clear === 'jump')),
@@ -105,18 +113,22 @@ function normalizedCourseRegion(typeOrObject) {
   return typeof typeOrObject === 'string' ? undefined : typeOrObject?.courseRegion;
 }
 
-// Map a gameplay object to its render template key. `area` is the destination
-// index reserved for future re-dresses; today only the crystal course region
-// changes the key.
+// Map a gameplay object to its render template key. `area` is the visual
+// destination index. Re-dresses cost no taxonomy change: a gate near the
+// Sunleaf shelter renders as the warden's fence-gate, and a boulder by the
+// Oasis market renders as stacked feed sacks. Same silhouette family, same
+// clearing rule, different dress. The crystal course region keeps precedence.
 export function appearanceFor(typeOrObject, area) {
-  void area;
   const type = normalizedType(typeOrObject);
   if (type === 'rock' && normalizedCourseRegion(typeOrObject) === 2) return 'crystal-rock';
+  if (type === 'gate' && area === 0) return 'warden-gate';
+  if (type === 'rock' && area === 3) return 'feed-sacks';
   return type;
 }
 
 // Map a render key back to its gameplay type for palette grouping.
 export function baseTypeFor(renderKey) {
-  if (renderKey === 'crystal-rock') return 'rock';
+  if (renderKey === 'crystal-rock' || renderKey === 'feed-sacks') return 'rock';
+  if (renderKey === 'warden-gate') return 'gate';
   return renderKey;
 }

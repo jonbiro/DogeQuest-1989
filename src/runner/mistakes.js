@@ -14,6 +14,10 @@ export function mistakeDetail(run, mistake) {
     if (run.turnAttempt && !run.turnAttempt.correct) reason = 'wrong-turn';
   } else if (mistake.type === 'pound-worker') {
     reason = run.lane === mistake.safeLane ? 'late-shelter-steer' : 'shelter-lane';
+  } else if (mistake.type === 'pound-officer') {
+    reason = run.lane === mistake.safeLane ? 'late-officer-steer' : 'officer-lane';
+  } else if (mistake.type === 'crate-cart') {
+    reason = run.lane === mistake.safeLane ? 'late-cart-steer' : 'cart-lane';
   } else if (overhead) {
     if (run.y >= .2) reason = run.diving ? 'late-dive' : 'jumped';
     else if (Number.isFinite(run.slideExpiredAt) && run.time - run.slideExpiredAt < .4) reason = 'early-slide';
@@ -48,6 +52,10 @@ export function timingLesson(detail, obstacleType) {
     'minecart-lane': 'The mine-cart rocks leave one open lane. Steer toward the glowing lane cue; jump and slide are unavailable until the exit.',
     'late-shelter-steer': 'The shelter worker stepped into your lane before your steer settled. Change lanes earlier; one tap moves one lane.',
     'shelter-lane': 'The shelter worker blocks this lane. Tap left or right toward the open lane, or jump over the worker.',
+    'late-officer-steer': 'You reached the open lane after the net arrived. Steer earlier — or slide under the net as it reaches Mochi.',
+    'officer-lane': 'The pound officer sweeps a net at dog height. Slide under it as it reaches Mochi, or steer toward the open lane.',
+    'late-cart-steer': 'You reached the open lane after the cart rattled through. Steer earlier — or jump the cart as it reaches Mochi.',
+    'cart-lane': 'The crate cart rattles low across this lane. Jump as it reaches Mochi, or steer toward the open lane.',
   };
   return detail && lessons[detail.reason] || '';
 }

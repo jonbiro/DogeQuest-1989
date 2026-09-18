@@ -265,7 +265,7 @@ test("jump clears logs and blocks across a forgiving early-to-late input window"
     }
 });
 test("short action cues clear every obstacle at starting, top and boost-transition speeds", () => {
-  for (const type of ["log", "rock", "gap", "arch", "branch", "gate"])
+  for (const type of ["log", "rock", "gap", "arch", "branch", "gate", "pound-worker", "pound-officer", "crate-cart"])
     for (const speed of [22, 36, 46.8])
       for (const lead of [0.3, 0.45]) {
         const run = createRun(1);
@@ -275,7 +275,7 @@ test("short action cues clear every obstacle at starting, top and boost-transiti
         run.nextRow = Infinity;
         run.nextChoice = Infinity;
         run.nextZipline = Infinity;
-        act(run, ["arch", "branch", "gate"].includes(type) ? "slide" : "jump");
+        act(run, ["arch", "branch", "gate", "pound-officer"].includes(type) ? "slide" : "jump");
         advance(run, 1);
         assert.equal(run.hearts, 3, `${type} at ${speed}m/s with ${lead}s lead`);
         assert.equal(run.clears, 1);
@@ -291,7 +291,7 @@ test("jumping or sliding far too early no longer protects the player", () => {
   }
 });
 test("every overhead obstacle supports slides but catches upright runners", () => {
-  for (const type of ["arch", "branch", "gate"]) {
+  for (const type of ["arch", "branch", "gate", "pound-officer"]) {
     const run = obstacle(type);
     act(run, "slide");
     advance(run, 0.5);

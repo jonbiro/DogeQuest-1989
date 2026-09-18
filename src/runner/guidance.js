@@ -120,8 +120,9 @@ export function actionCue(run) {
   if (run.zoomies > 0) return '';
   // A closely following jump needs an earlier first takeoff so the next landing
   // buffer remains usable. Short slides retain their normal half-second cue.
-  const warningLead=object=>['log','rock','gap','moving-gate'].includes(object.type)&&run.objects.some(next=>
-    ['log','rock','gap','moving-gate'].includes(next.type)&&!next.used&&!next.passed&&next.at>object.at&&
+  // The crate cart jumps like a log, so it joins the jump lookahead.
+  const warningLead=object=>['log','rock','gap','moving-gate','crate-cart'].includes(object.type)&&run.objects.some(next=>
+    ['log','rock','gap','moving-gate','crate-cart'].includes(next.type)&&!next.used&&!next.passed&&next.at>object.at&&
     next.at-object.at<run.speed*.75&&onApproach(run,next)) ? .58 : .5;
   const relic=run.objects.find(object=>object.type==='relic'&&!object.used&&
     object.at>run.distance&&object.at-run.distance<run.speed*1.1);
@@ -158,6 +159,10 @@ export function actionCue(run) {
     return 'OVERHEAD NEXT';
   if (danger?.type === 'pound-worker')
     return laneCue(run.lane, danger.safeLane, 'SHELTER') || 'SHELTER WORKER · CLEAR LANE';
+  if (danger?.type === 'pound-officer')
+    return laneCue(run.lane, danger.safeLane, 'OFFICER') || 'OFFICER NET · CLEAR LANE';
+  if (danger?.type === 'crate-cart')
+    return laneCue(run.lane, danger.safeLane, 'CART') || 'CRATE CART · CLEAR LANE';
   const intro = run.course && run.course.start-run.distance < 40 &&
     run.course.start-run.distance > run.speed*.5 ? `${run.course.name} · ${run.course.scenic?'open lanes':'+180 clean'}` : '';
   if (!danger && run.dogChase) {
@@ -287,6 +292,8 @@ export function runLesson(run) {
   if (!mistake) return 'Keep an eye on the trail ahead. Your next run is one tap away.';
   if (mistake.type === 'corner') return `Missed a ${mistake.direction} turn. Swipe ${mistake.direction} when the turn arrow appears; one swipe locks it in.`;
   if (mistake.type === 'moving-gate') return 'The moving gate swept into your lane. Follow the opening to a clear lane, or slide under it as it arrives.';
+  if (mistake.type === 'pound-officer') return 'The officer sweeps a net at dog height. Slide under it as it approaches; steering to the open lane also works.';
+  if (mistake.type === 'crate-cart') return 'The crate cart rattles low across the lane. Jump as it reaches your puppy, or take the open lane.';
   if (['arch', 'branch', 'gate'].includes(mistake.type)) return 'Caught an overhead obstacle. Slide as it approaches; a jump will not fit underneath.';
   if (mistake.type === 'gap') return mistake.bridgeCollapse
     ? 'The bridge gave way. Jump at the bright striped edge and stay airborne until the far plank.'

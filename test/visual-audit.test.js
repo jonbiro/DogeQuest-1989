@@ -344,7 +344,7 @@ test('trail collectibles get a visible authored scale and gentle pulse', () => {
   assert.match(render, /aerialCueCount < 3/);
   assert.match(render, /flashColor\.set\('#a2ffde'\)/);
   assert.match(render, /let hazardCueCount = 0/);
-  assert.match(render, /solidHazard = \['rock', 'log', 'arch', 'branch', 'gate'\]\.includes\(object\.type\)/);
+  assert.match(render, /const solidHazard = \['rock', 'log', 'arch', 'branch', 'gate'\]\.includes\(object\.type\) \|\| \['moving-gate', 'pound-worker', 'pound-officer', 'crate-cart'\]\.includes\(object\.type\)/);
   assert.match(render, /approach > 5 && approach < 32 && sparkCount < 192/);
   assert.match(render, /flashColor\.set\(overhead \? '#8ff2d2' : '#ffd38b'\)/);
   assert.match(render, /const pickupEffect = \['magnet','shield','gem','double','heart','gift','zoomies','relic'\]\.includes\(effect\.type\)/);

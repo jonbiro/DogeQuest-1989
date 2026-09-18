@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {URL} from 'node:url';
 import {
   HAZARD_CAST,
   SOLID_HAZARDS,
@@ -32,9 +34,9 @@ test('every cast member carries a clearing rule, collision box and label', () =>
 
 test('legacy solid hazards keep their exact order for seeded streams', () => {
   assert.deepEqual([...SOLID_HAZARDS], ['rock', 'log', 'arch', 'branch', 'gate']);
-  assert.deepEqual([...CHARACTER_HAZARDS], ['pound-worker']);
+  assert.deepEqual([...CHARACTER_HAZARDS], ['pound-worker', 'pound-officer', 'crate-cart']);
   assert.deepEqual([...HAZARDS], [
-    'rock', 'log', 'arch', 'branch', 'gate', 'pound-worker',
+    'rock', 'log', 'arch', 'branch', 'gate', 'pound-worker', 'pound-officer', 'crate-cart',
     'moving-gate', 'gap', 'mogul', 'ice', 'ski-gate', 'yeti', 'snowball', 'snowman',
   ]);
 });
@@ -45,8 +47,8 @@ test('clearing sets match the cast rules', () => {
     if (HAZARD_CAST[type].clear === 'slide') assert.ok(CLEARED_BY_SLIDE.has(type), `${type} should clear by slide`);
   }
   // The classic probe vocabulary is unchanged by the refactor.
-  for (const type of ['rock', 'log', 'gap']) assert.ok(CLEARED_BY_JUMP.has(type));
-  for (const type of ['arch', 'branch', 'gate']) assert.ok(CLEARED_BY_SLIDE.has(type));
+  for (const type of ['rock', 'log', 'gap', 'pound-worker', 'crate-cart']) assert.ok(CLEARED_BY_JUMP.has(type));
+  for (const type of ['arch', 'branch', 'gate', 'moving-gate', 'pound-officer']) assert.ok(CLEARED_BY_SLIDE.has(type));
 });
 
 test('jump thresholds preserve the established collision tuning', () => {
@@ -75,6 +77,32 @@ test('appearance preserves the crystal-rock exception and identity mapping', () 
   assert.equal(appearanceFor({type: 'log'}, 3), 'log');
   assert.equal(baseTypeFor('crystal-rock'), 'rock');
   assert.equal(baseTypeFor('gate'), 'gate');
+});
+
+test('re-dresses route through appearance without changing the rules', () => {
+  // The warden's fence-gate keeps the Sunleaf shelter beat in costume; the
+  // Oasis market stacks feed sacks instead of boulders. Both keep their
+  // base clearing rule, so fairness and cues are unaffected.
+  assert.equal(appearanceFor({type: 'gate', lane: 1}, 0), 'warden-gate');
+  assert.equal(appearanceFor({type: 'gate', lane: 1}, 1), 'gate');
+  assert.equal(appearanceFor({type: 'rock', lane: 1}, 3), 'feed-sacks');
+  assert.equal(appearanceFor({type: 'rock', lane: 1}, 2), 'rock');
+  assert.equal(appearanceFor({type: 'rock', lane: 1, courseRegion: 2}, 3), 'crystal-rock');
+  assert.equal(clearedBy('gate'), 'slide');
+  assert.equal(clearedBy('rock'), 'jump');
+  assert.equal(baseTypeFor('warden-gate'), 'gate');
+  assert.equal(baseTypeFor('feed-sacks'), 'rock');
+});
+
+test('every appearance key has a render template', () => {
+  // appearanceFor must never hand the renderer a key with no template. Render
+  // keys are gameplay types plus the re-dress rows above.
+  const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
+  const keys = new Set([...Object.keys(HAZARD_CAST), 'crystal-rock', 'warden-gate', 'feed-sacks']);
+  for (const key of keys) {
+    assert.match(render, new RegExp(`templates\\['${key}'\\]|templates\\.${key} =`),
+      `render template missing for appearance key ${key}`);
+  }
 });
 
 test('every authored course and area hazard exists in the cast', () => {

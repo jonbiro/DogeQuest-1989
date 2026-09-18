@@ -27,7 +27,7 @@ export function practiceOffer(run) {
   if (mistake?.type==='gap') return {kind:'gap',cornerIndex:0,label:'Practice gap jumps'};
   if (mistake?.type==='corner' && ['left','right'].includes(mistake.direction))
     return {kind:'turn',cornerIndex:mistake.direction==='right'?1:0,label:'Practice this turn'};
-  if(mistake?.type==='log')return {kind:'jump',cornerIndex:0,label:'Practice jump timing'};
+  if(mistake?.type==='log'||mistake?.type==='crate-cart'||mistake?.type==='pound-worker')return {kind:'jump',cornerIndex:0,label:'Practice jump timing'};
   // Slide drills cover the classic overhead trio. The moving gate also clears
   // by slide, but it teaches following an opening rather than holding low, so
   // it keeps its contextual coaching instead of the slide drill.
