@@ -739,8 +739,122 @@ export function createView(canvas) {
     mountain.material.fog = false;
     mountain.userData.baseScale = mountain.scale.clone();
     mountain.userData.depthHaze = (-mountain.position.z - 115) / 25 * .18;
+    mountain.userData.ridgeVariant = i % 2;
     mountains.push(mountain);
   }
+  // A small, persistent skyline gives each destination a readable silhouette
+  // before the shoulder landmarks arrive. The foreground decorations are
+  // intentionally pooled for performance; these six hero silhouettes stay as
+  // ordinary meshes because only one (and briefly its predecessor) is visible
+  // at a time. They live well outside the three lanes, so they add identity
+  // without becoming another obstacle or HUD layer on a portrait phone.
+  const horizonLandmarks = [];
+  const addSkyline = (group, area, x, z) => {
+    group.userData.area = area;
+    group.userData.materials = [];
+    group.position.set(x, -.18, z);
+    group.traverse(item => {
+      if (!item.isMesh) return;
+      item.material = item.material.clone();
+      item.material.transparent = true;
+      item.material.opacity = 0;
+      item.material.depthWrite = false;
+      item.material.fog = true;
+      item.castShadow = false;
+      item.receiveShadow = false;
+      group.userData.materials.push(item.material);
+    });
+    scene.add(group);
+    horizonLandmarks.push(group);
+  };
+  for (let area = 0; area < AREAS.length; area++) {
+    const group = new THREE.Group();
+    // Keep the postcard close enough to survive the portrait camera's narrow
+    // horizontal field of view. It still sits outside the road shoulders, but
+    // the older 14.5-unit placement pushed the identity cues behind the fog
+    // and made every destination fall back to the same mountain silhouette.
+    const x = area % 2 ? 9.4 : -9.4;
+    const z = -55 - (area % 3) * 5;
+    group.scale.setScalar(1.28);
+    if (area === 0) {
+      // Sunleaf Woods: a root arch rises behind the paw-shelter sign.
+      const left = box(group, '#254f49', -2.05, 2.95, 0, .52, 5.9, .54);
+      left.rotation.z = -.22;
+      const right = box(group, '#254f49', 2.05, 2.95, 0, .52, 5.9, .54);
+      right.rotation.z = .22;
+      box(group, '#356b57', 0, 5.72, 0, 4.45, .62, .65);
+      box(group, '#e8c477', 0, 2.55, -.5, 1.42, .75, .08);
+      cone(group, '#d87855', 0, 3.4, 0, 2.2, 1.25, 1.05).rotation.y = Math.PI / 5;
+      ball(group, '#f9df8b', 0, 2.55, -.62, .16, .16, .08);
+    } else if (area === 1) {
+      // Bamboo Sanctuary: tall segmented stalks and a warm shrine crossbar.
+      for (const stalk of [-2.25, -1.05, .2, 1.38, 2.45]) {
+        const height = 7.1 + (Math.abs(stalk) % 1) * 1.4;
+        mesh(group, trunkGeometry, '#4e7a49', stalk, height / 2, 0, .19, height, .19);
+        for (let y = 1.05; y < height - .2; y += 1.25)
+          box(group, '#9eb86a', stalk, y, -.02, .31, .09, .31);
+      }
+      box(group, '#66543f', 0, 7.25, 0, 5.7, .28, .35);
+      box(group, '#d39852', 0, 4.9, -.35, .62, .92, .25);
+      ball(group, '#ffe59a', 0, 4.9, -.56, .19, .19, .12);
+    } else if (area === 2) {
+      // Redrock Pass: flat-topped mesas replace the anonymous green cones.
+      for (const [mesaX, height, width, color] of [
+        [-2.8, 4.8, 2.3, '#8e443b'],
+        [0, 7.8, 2.9, '#b35b45'],
+        [2.7, 5.9, 2.2, '#9d4b40'],
+      ]) {
+        cone(group, color, mesaX, height / 2, 0, width, height, 1.7);
+        box(group, '#df9562', mesaX, height + .12, 0, width * .72, .24, 1.26);
+      }
+      box(group, '#f2bd77', 0, 2.25, -.62, .14, 4.4, .08);
+      box(group, '#f2bd77', .58, 3.42, -.62, 1.16, .1, .08);
+    } else if (area === 3) {
+      // Palm Oasis: fan palms and a waterwheel make the horizon feel lived in.
+      mesh(group, trunkGeometry, '#76553a', 0, 3.35, 0, .3, 6.7, .3);
+      for (let frond = 0; frond < 7; frond++) {
+        const angle = frond * Math.PI * 2 / 7;
+        const leaf = mesh(group, featheredPalmGeometry, frond % 2 ? '#4d8458' : '#75aa68',
+          Math.cos(angle) * 2.3, 6.7, Math.sin(angle) * 1.8, 2.15, 1.28, 1.25);
+        leaf.rotation.y = -angle;
+      }
+      ball(group, '#7ec2b2', 3.05, .2, -.2, 2.2, .12, .9);
+      ball(group, '#d6ae62', -2.55, 1.9, .1, 1.15, 1.15, .18);
+      for (let spoke = 0; spoke < 4; spoke++) {
+        const arm = box(group, '#a06f43', -2.55, 1.9, -.12, .14, 2.2, .12);
+        arm.rotation.z = spoke * Math.PI / 4;
+      }
+    } else if (area === 4) {
+      // Crystal Reach: a cool shard crown catches the light above the fog.
+      for (let shard = 0; shard < 5; shard++) {
+        const height = 4.4 + (shard % 3) * 1.6;
+        const crystal = cone(group, ['#5fc5d9', '#8e82d9', '#b7eaff'][shard % 3],
+          (shard - 2) * 1.2, height / 2, 0, .72, height, .82);
+        crystal.rotation.z = (shard - 2) * .12;
+      }
+      ball(group, '#b9eaff', 0, 1.05, -.7, 1.1, 1.1, .16);
+      box(group, '#687da9', 0, .7, 0, 5.6, .18, 1.35);
+    } else {
+      // Mooncap Grove: a mushroom ring and camp tent make the final area
+      // unmistakable even when the overall mood is dark and hazy.
+      for (let mushroom = 0; mushroom < 3; mushroom++) {
+        const mx = (mushroom - 1) * 2.05;
+        const height = 3.1 + mushroom * 1.25;
+        mesh(group, trunkGeometry, '#625477', mx, height / 2, 0, .34, height, .34);
+        mesh(group, mushroomCapGeometry, ['#745fa0', '#ad8bc7', '#6866a0'][mushroom],
+          mx, height, 0, 1.8, 1.05, 1.5);
+        ball(group, '#ead9f2', mx, height - .28, -.98, .16, .16, .1);
+      }
+      cone(group, '#5d557f', 3.6, 1.75, 0, 1.8, 3.2, 1.4).rotation.y = Math.PI / 4;
+      box(group, '#e4c77d', 3.6, 1.4, .82, .48, .72, .06);
+      ball(group, '#d8f1d7', -3.85, 3.05, -.5, .22, .22, .16);
+    }
+    addSkyline(group, area, x, z);
+  }
+  const skylineRidgeColor = new THREE.Color();
+  const skylineDeepColor = new THREE.Color();
+  const skylineRidgeTarget = new THREE.Color();
+  const skylineDeepTarget = new THREE.Color();
   // One recycled batch gives every destination a quiet visual signature:
   // fireflies in the woods, drifting leaves in bamboo, warm dust in Redrock,
   // glints in the oasis, crystal motes in the reach, and spores at Mooncap.
@@ -1943,6 +2057,10 @@ export function createView(canvas) {
   clipboard.name = 'worker-clipboard';
   box(templates['pound-worker'], '#e36c4d', .55, 1.2, .42, .16, .035, .02).name = 'worker-clipboard-mark';
   ball(templates['pound-worker'], '#ffe08e', -.55, .98, .26, .11, .11, .05).name = 'worker-badge';
+  // Give the character a little more presence than a rock-sized prop. The
+  // silhouette still clears the jump envelope, but the face, vest and
+  // clipboard remain readable before the lane decision on a small phone.
+  templates['pound-worker'].scale.setScalar(1.18);
   const routeLabels=document.createElement('canvas');
   routeLabels.width=1024;routeLabels.height=512;
   const routeText=routeLabels.getContext('2d');
@@ -2369,12 +2487,41 @@ export function createView(canvas) {
         sun.intensity = THREE.MathUtils.lerp(sun.intensity, 3.9, skiBlend);
       }
       horizonProfile(menu ? 0 : distance, horizon);
+      const previousSkyline = AREAS[atmosphere.previous].skyline || {};
+      const currentSkyline = AREAS[atmosphere.index].skyline || previousSkyline;
+      skylineRidgeTarget.set(currentSkyline.ridge || areaColors[atmosphere.index].ground);
+      skylineDeepTarget.set(currentSkyline.deep || areaColors[atmosphere.index].ground);
+      skylineRidgeColor.set(previousSkyline.ridge || areaColors[atmosphere.previous].ground)
+        .lerp(skylineRidgeTarget, atmosphere.blend);
+      skylineDeepColor.set(previousSkyline.deep || areaColors[atmosphere.previous].ground)
+        .lerp(skylineDeepTarget, atmosphere.blend);
       for(const mountain of mountains) {
         blendMountainArea(mountain,atmosphere);
-        mountain.material.color.copy(ground.material.color).lerp(scene.background,horizon.haze+mountain.userData.depthHaze);
+        mountain.material.color.copy(mountain.userData.ridgeVariant ? skylineDeepColor : skylineRidgeColor)
+          .lerp(scene.background,horizon.haze+mountain.userData.depthHaze);
         if (skiBlend > 0) mountain.material.color.lerp(skiSkyColor, skiBlend * .72);
         const base=mountain.userData.baseScale;
         mountain.scale.set(base.x*horizon.width,base.y*horizon.height,base.z);
+      }
+      // Fade the destination skyline with the same 45m handoff as the sky and
+      // lighting. The low-opacity overlap keeps a boundary from feeling like
+      // a scene cut while the distant silhouette still reads as one place.
+      for (const landmark of horizonLandmarks) {
+        const area = landmark.userData.area;
+        const fade = area === atmosphere.index
+          ? 1
+          : area === atmosphere.previous ? 1 - atmosphere.blend : 0;
+        const visibleFade = fade * (1 - skiBlend * .9);
+        landmark.visible = visibleFade > .008;
+        if (landmark.visible && !reducedMotion) {
+          landmark.rotation.y = Math.sin(time * .16 + area * 1.7) * .012;
+          landmark.position.y = -.18 + Math.sin(time * .23 + area) * .018;
+        } else if (reducedMotion) {
+          landmark.rotation.y = 0;
+          landmark.position.y = -.18;
+        }
+        for (const material of landmark.userData.materials || [])
+          material.opacity = visibleFade;
       }
       gapObjects.length = 0;
       if (!menu)

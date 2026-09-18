@@ -732,9 +732,11 @@ export function fillTrack(run) {
     // they occupy one lane, can be jumped, and arrive with a second ordinary
     // hazard so the open lane remains legible. The live pacing guard keeps
     // historical/replay generators unchanged while giving current runs a
-    // memorable human-scale beat after the warm-up.
+    // memorable human-scale beat after the warm-up. It repeats across the
+    // route so the trail is not just a long sequence of rocks with a single
+    // shelter cameo.
     const shelterBeat = run.encounterPacing && run.generatorVersion >= 5 &&
-      route !== 'scenic' && !actionRow && !quietPhase && !gapRow && at >= 260 && run.row % 9 === 4;
+      route !== 'scenic' && !actionRow && !quietPhase && !gapRow && at >= 135 && run.row % 7 === 4;
     if (actionRow) {
       const type = gapRow ? "gap" : run.generatorVersion>=4
         ? areaActionHazard(run,at,run.row)

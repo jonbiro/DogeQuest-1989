@@ -60,6 +60,15 @@ test('each destination owns a distinct, bounded lighting profile',()=>{
   }
 });
 
+test('each destination owns a distinct skyline palette for its horizon postcard',()=>{
+  const skylines=AREAS.map(area=>area.skyline);
+  assert.ok(skylines.every(skyline=>skyline&&/^#[0-9a-f]{6}$/i.test(skyline.ridge)),'every skyline has a ridge color');
+  assert.ok(skylines.every(skyline=>/^#[0-9a-f]{6}$/i.test(skyline.deep)),'every skyline has a deep color');
+  assert.ok(skylines.every(skyline=>/^#[0-9a-f]{6}$/i.test(skyline.accent)),'every skyline has an accent color');
+  assert.equal(new Set(skylines.map(skyline=>`${skyline.ridge}/${skyline.deep}/${skyline.accent}`)).size,AREAS.length,
+    'destination skylines do not collapse into the same generic ridge');
+});
+
 test('version four gives every destination a distinct readable encounter rhythm',()=>{
   assert.equal(AREA_GAMEPLAY.length,AREAS.length);
   assert.equal(new Set(AREA_GAMEPLAY.map(profile=>profile.id)).size,AREAS.length);
@@ -145,6 +154,19 @@ test('the live opening runway teaches movement before the first hazard row',()=>
   const historical=createRun(4242,{},5);
   assert.ok(historical.objects.some(object => HAZARDS.includes(object.type) && object.at < 120),
     'replay streams without live pacing keep their established rows');
+});
+
+test('current trails introduce a readable shelter worker instead of only stone hazards',()=>{
+  const run=createRun(1989,{},5,null,{encounterPacing:true});
+  run.distance=140;
+  fillTrack(run);
+  const worker=run.objects.find(object=>object.type==='pound-worker');
+  assert.ok(worker,'live trails include a human-scale shelter encounter');
+  assert.ok(worker.at>=260&&worker.at<310,'the first worker arrives after the opening and river runway');
+  assert.equal(worker.shelterWorker,true);
+  assert.equal(worker.encounter,'Shelter crossing');
+  assert.ok(run.objects.some(object=>object.shelterSupport&&object.at===worker.at),
+    'the worker keeps a second lane occupied so the encounter still asks for a choice');
 });
 
 test('each authored pattern changes the hazard rhythm without inventing new moves',()=>{
