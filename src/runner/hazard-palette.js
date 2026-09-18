@@ -1,5 +1,6 @@
 import {areaAt} from './areas.js';
 import {themeOrganicHazard} from './organic-hazards.js';
+import {HAZARD_CAST} from './hazard-cast.js';
 
 // Architectural stone follows its world location, never the moving camera.
 // Clearance marks and shadow bands deliberately retain their universal colors.
@@ -40,11 +41,13 @@ function themeRelic(item,distance,materialFor){
 
 export function themeHazard(item,type,distance,materialFor){
   if(type==='relic'){themeRelic(item,distance,materialFor);return;}
-  if(type==='log'||type==='branch')return themeOrganicHazard(item,type,distance,materialFor);
   // Moving gates share the architectural palette with regular gates; their
   // sweep beacon remains a distinct warm accent supplied by the template.
+  // The stone family comes from the hazard cast; appearance-only keys such
+  // as `crystal-rock` keep their authored colors.
   const paletteType = type === 'moving-gate' ? 'gate' : type;
-  if(!['rock','arch','gate'].includes(paletteType))return;
+  if(paletteType==='log'||paletteType==='branch')return themeOrganicHazard(item,paletteType,distance,materialFor);
+  if(HAZARD_CAST[paletteType]?.palette !== 'stone')return;
   const area=areaAt(distance);
   if(item.userData.hazardArea===area)return;
   item.traverse(part=>{

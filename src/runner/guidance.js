@@ -1,5 +1,6 @@
 // One small, timely hint at the edge of the trail; never a stack of banners.
 import {LANES} from './world.js';
+import {TRAIL_HAZARDS, OVERHEAD_HAZARDS} from './hazard-cast.js';
 import {steer,jumpLandingTime,JUMP_BUFFER,SLIDE_BUFFER} from './motion.js';
 import {turnPrompt} from './turns.js';
 import {courseCue} from './courses.js';
@@ -127,10 +128,10 @@ export function actionCue(run) {
   // A lane change takes time to settle. Do not steer toward a collectible if
   // that lane is about to become the occupied path for another hazard.
   const relicLaneBlocked=relic&&run.objects.some(object=>
-    ['rock','log','arch','branch','gate','moving-gate','gap','pound-worker'].includes(object.type)&&!object.used&&
+    TRAIL_HAZARDS.includes(object.type)&&!object.used&&
     object.at>run.distance&&object.at-run.distance<run.speed*1.25&&object.lane===relic.lane);
   const danger = run.objects.find(object => !object.used && !object.passed &&
-    ['rock', 'log', 'arch', 'branch', 'gate', 'moving-gate', 'gap', 'pound-worker'].includes(object.type) &&
+    TRAIL_HAZARDS.includes(object.type) &&
     object.at > run.distance && object.at - run.distance < run.speed*.58 &&
     // A moving gate is a shared timing beat: announce it even when its bar is
     // currently sweeping across another lane so the player can watch the
@@ -142,7 +143,7 @@ export function actionCue(run) {
   // Jumping already answers low hazards, but an overhead row needs a new
   // downward input. Keep that escape visible until the dive is underway.
   if (run.y > 0 || run.vy > 0) {
-    if (danger && ['arch', 'branch', 'gate', 'moving-gate'].includes(danger.type) && !run.diving)
+    if (danger && OVERHEAD_HAZARDS.includes(danger.type) && !run.diving)
       return '↓ DIVE · SLIDE';
     if (danger && !run.diving && run.vy<0 && !run.jumpBuffer) {
       const landing=jumpLandingTime(run);
@@ -151,9 +152,9 @@ export function actionCue(run) {
     }
     return '';
   }
-  if (danger && ['arch','branch','gate','moving-gate'].includes(danger.type) &&
+  if (danger && OVERHEAD_HAZARDS.includes(danger.type) &&
       run.slide+(run.slideNext||0) > (danger.at - run.distance + .4) / run.speed) return '';
-  if (danger && ['arch','branch','gate','moving-gate'].includes(danger.type) && run.slide>SLIDE_BUFFER)
+  if (danger && OVERHEAD_HAZARDS.includes(danger.type) && run.slide>SLIDE_BUFFER)
     return 'OVERHEAD NEXT';
   if (danger?.type === 'pound-worker')
     return laneCue(run.lane, danger.safeLane, 'SHELTER') || 'SHELTER WORKER · CLEAR LANE';
@@ -164,7 +165,7 @@ export function actionCue(run) {
     return 'PUPPY CHASE · FOLLOW THE TAIL';
   }
   if (!danger && relic && !relicLaneBlocked) return laneCue(run.lane,relic.lane,'RELIC') || '✦ RELIC AHEAD';
-  return !danger ? intro : ['arch', 'branch', 'gate', 'moving-gate'].includes(danger.type)
+  return !danger ? intro : OVERHEAD_HAZARDS.includes(danger.type)
     ? (danger.type === 'moving-gate' ? movingGateCue(run, danger) : '↓ SLIDE')
     : danger.type === 'gap' ? (danger.bridgeCollapse ? 'BRIDGE COLLAPSING · ↑ JUMP' : '↑ JUMP GAP') : '↑ JUMP';
 }

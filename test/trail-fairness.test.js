@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createRun, fillTrack, step, act, BASE_SLIDE_DURATION} from '../src/runner/world.js';
+import {CLEARED_BY_JUMP, CLEARED_BY_SLIDE} from '../src/runner/hazard-cast.js';
 import {turnPrompt} from '../src/runner/turns.js';
 
 // Generation fairness is a property of the whole trail, not of any one row, so
@@ -10,8 +11,8 @@ import {turnPrompt} from '../src/runner/turns.js';
 
 const SOLID = ['rock', 'log', 'arch', 'branch', 'gate'];
 const HAZARD = new Set([...SOLID, 'gap']);
-const CLEARED_BY_JUMP = new Set(['rock', 'log', 'gap']);
-const CLEARED_BY_SLIDE = new Set(['arch', 'branch', 'gate']);
+// Clearing rules live in `hazard-cast.js`; the probe consumes the same sets
+// the game does so a new cast member cannot silently escape the probe.
 
 // Drive a run with a policy. `policy` decides what the player does each frame;
 // returning the run lets a caller assert on hearts, distance and mistakes.

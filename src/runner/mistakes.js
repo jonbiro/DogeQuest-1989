@@ -1,7 +1,9 @@
 // Capture collision evidence before the next simulation step changes the pose.
+import {OVERHEAD_HAZARDS} from './hazard-cast.js';
+
 export function mistakeDetail(run, mistake) {
   let reason = 'missed';
-  const overhead = ['arch', 'branch', 'gate', 'moving-gate'].includes(mistake.type);
+  const overhead = OVERHEAD_HAZARDS.includes(mistake.type);
   if(mistake.minecartHazard){
     reason=run.lane===mistake.safeLane?'late-minecart-steer':'minecart-lane';
   } else if(mistake.raftHazard){

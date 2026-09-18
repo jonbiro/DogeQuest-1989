@@ -73,14 +73,23 @@ import {
 } from "./turns.js";
 import {routeBranchFor, routeTrailFor} from './route-branch.js';
 import {applyRunModifier} from './run-modifiers.js';
-const SOLID_HAZARDS = ["rock", "log", "arch", "branch", "gate"];
-// A live-only character hazard breaks up the endless rock/log silhouette.
-// Keep it out of SOLID_HAZARDS so legacy seeded streams remain byte-for-byte
-// stable; current browser runs opt into it through the shelter encounter beat.
-const CHARACTER_HAZARDS = ["pound-worker"];
+import {
+  SOLID_HAZARDS as CAST_SOLID_HAZARDS,
+  HAZARDS as CAST_HAZARDS,
+  HAZARD_CAST,
+} from './hazard-cast.js';
+// The live-only character hazard (pound worker) breaks up the endless
+// rock/log silhouette. It lives in the cast but stays out of SOLID_HAZARDS so
+// legacy seeded streams remain byte-for-byte stable; current browser runs opt
+// into it through the shelter encounter beat. The lists live in
+// `hazard-cast.js` so rules and appearance share one source.
+const SOLID_HAZARDS = CAST_SOLID_HAZARDS;
 export const BASE_SLIDE_DURATION = .58;
 export const SLIDE_UPGRADE_DURATION = .07;
-export const HAZARDS = [...SOLID_HAZARDS, ...CHARACTER_HAZARDS, "moving-gate", "gap", "mogul", "ice", "ski-gate", "yeti", "snowball", "snowman"];
+// Re-exported so existing `world.js` import sites keep working while the
+// canonical lists live in `hazard-cast.js`.
+export const HAZARDS = CAST_HAZARDS;
+export {HAZARD_CAST};
 export const AREA_RELIC_REWARD = 160;
 export const NEAR_MISS_REWARD = 15;
 // The live trail earns its first real hazard only after a short runway. This
@@ -1053,10 +1062,12 @@ export function step(run, dt) {
       : object.skiObstacle ? skiObjectX(object, run.distance) : LANES[object.lane];
     // Most hazards occupy one lane. Crossing Frostpeak yetis are wider than a
     // lane at the midpoint of their patrol, so their authored envelope is
-    // carried with the object instead of leaving a visual-only dodge.
+    // carried with the object instead of leaving a visual-only dodge. The
+    // fallback width comes from the hazard cast so the contract stays in one
+    // place; per-object overrides (yeti patrol) still win.
     const collisionWidth = Number.isFinite(object.skiCollisionWidth)
       ? object.skiCollisionWidth
-      : 0.95;
+      : (HAZARD_CAST[object.type]?.width ?? 0.95);
     const sameLane = Math.abs(objectX - run.x) < collisionWidth;
     if (object.type === "zipline-start" && !object.caught && Math.abs(dz) < 3 && run.y > .65 && !run.zipline) {
       object.caught = true;
@@ -1219,13 +1230,13 @@ export function step(run, dt) {
         continue;
       }
       const cleared =
-        (object.type === "gap" && (run.y > .8 || run.zoomies > 0)) ||
-        (object.type === "log" && run.y > 0.65) ||
-        (object.type === "rock" && run.y > 1.25) ||
-        (object.type === "pound-worker" && run.y > .65) ||
-        (object.skiHazard && object.type === 'mogul' && run.y > .58) ||
-        (object.skiObstacle && object.skiJumpable && run.y > .58) ||
-        (["arch", "branch", "gate", "moving-gate"].includes(object.type) &&
+        (object.type === "gap" && (run.y > HAZARD_CAST.gap.jumpHeight || run.zoomies > 0)) ||
+        (object.type === "log" && run.y > HAZARD_CAST.log.jumpHeight) ||
+        (object.type === "rock" && run.y > HAZARD_CAST.rock.jumpHeight) ||
+        (object.type === "pound-worker" && run.y > HAZARD_CAST['pound-worker'].jumpHeight) ||
+        (object.skiHazard && object.type === 'mogul' && run.y > HAZARD_CAST.mogul.jumpHeight) ||
+        (object.skiObstacle && object.skiJumpable && run.y > HAZARD_CAST.snowball.jumpHeight) ||
+        (HAZARD_CAST[object.type]?.clear === 'slide' &&
           run.slide > 0 &&
           run.y < 0.2);
       if (sameLane && cleared) {

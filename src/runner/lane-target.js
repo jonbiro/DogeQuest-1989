@@ -1,14 +1,14 @@
 import {movingGateSafeLane} from './moving-gate.js';
+import {HAZARDS as CAST_HAZARDS, OVERHEAD_HAZARDS as CAST_OVERHEAD} from './hazard-cast.js';
 
 // The lane strip is a visual affordance, not a second steering system. It
 // answers one small question at a time: which lane is worth aiming for next?
 // Keeping the forecast pure means the renderer can draw it without mutating a
 // restored run or changing seeded collision timing.
 const HAZARDS = new Set([
-  'rock', 'log', 'arch', 'branch', 'gate', 'moving-gate', 'gap', 'pound-worker',
-  'mogul', 'ice', 'ski-gate', 'yeti', 'snowball', 'snowman',
+  ...CAST_HAZARDS,
 ]);
-const OVERHEAD = new Set(['arch', 'branch', 'gate', 'moving-gate']);
+const OVERHEAD = new Set([...CAST_OVERHEAD]);
 const PICKUPS = new Set(['bone', 'magnet', 'shield', 'gem', 'double', 'heart', 'gift', 'zoomies', 'relic']);
 const LANE_COUNT = 3;
 

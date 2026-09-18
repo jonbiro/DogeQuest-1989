@@ -36,6 +36,7 @@ import {createShieldMaterial} from './shield-material.js';
 import {magnetPulse} from './magnet-field.js';
 import {pickupYaw, pickupPulse, pickupBob} from './pickup-motion.js';
 import {themeHazard} from './hazard-palette.js';
+import {appearanceFor} from './hazard-cast.js';
 import {createBoulderGeometry} from './boulder-model.js';
 import {createPalmFrondGeometry,createFeatheredPalmGeometry} from './palm-frond.js';
 import {addBambooLeaves} from './bamboo-leaves.js';
@@ -3172,7 +3173,7 @@ export function createView(canvas) {
           if(!bone)visibleIds.add(object.id);
           let item = bone ? boneTransform : active.get(object.id);
           if (!item) {
-            const renderType = object.type === 'rock' && object.courseRegion === 2 ? 'crystal-rock' : object.type;
+            const renderType = appearanceFor(object, areaAt(object.at));
             item = pools[renderType].pop() || templates[renderType].clone();
             item.userData.type = renderType;
             themeHazard(item,renderType,object.at,mat);

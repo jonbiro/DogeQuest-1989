@@ -1,4 +1,5 @@
 import {createRun, fillTrack, step, LANES} from './world.js';
+import {clearedBy} from './hazard-cast.js';
 import {actionCue} from './guidance.js';
 import {ZIPLINE_FIRST,ZIPLINE_LENGTH} from './ziplines.js';
 import {cornerByIndex,turnPrompt} from './turns.js';
@@ -27,7 +28,10 @@ export function practiceOffer(run) {
   if (mistake?.type==='corner' && ['left','right'].includes(mistake.direction))
     return {kind:'turn',cornerIndex:mistake.direction==='right'?1:0,label:'Practice this turn'};
   if(mistake?.type==='log')return {kind:'jump',cornerIndex:0,label:'Practice jump timing'};
-  if(['arch','branch','gate'].includes(mistake?.type))return {kind:'slide',cornerIndex:0,label:'Practice slide timing'};
+  // Slide drills cover the classic overhead trio. The moving gate also clears
+  // by slide, but it teaches following an opening rather than holding low, so
+  // it keeps its contextual coaching instead of the slide drill.
+  if(mistake?.type && clearedBy(mistake.type)==='slide' && mistake.type!=='moving-gate')return {kind:'slide',cornerIndex:0,label:'Practice slide timing'};
   if (mistake?.type==='rock')
     return {kind:'moves',cornerIndex:0,label:'Practice the basics'};
   return null;
