@@ -92,6 +92,7 @@ test('the audit CSS keeps passport, prizes, help and focus treatments readable',
   // so a future responsive cleanup cannot silently hide them again.
   assert.match(css, /@media \(min-width: 701px\) and \(max-height: 740px\)[\s\S]*?\.menu \{[\s\S]*?overflow-y: auto;/);
   assert.match(css, /@media \(min-width: 701px\) and \(max-height: 740px\)[\s\S]*?\.trail-tag \{[\s\S]*?display: flex;/);
+  assert.match(css, /@media \(min-width: 701px\) and \(max-height: 900px\) and \(min-height: 741px\)[\s\S]*?\.menu \{[\s\S]*?max-height: calc\(100svh - 18vh - 32px\)[\s\S]*?overflow-y: auto;/);
   assert.match(css, /#game\[data-state="menu"\] footer > span \{ display: none; \}/);
   assert.match(css, /#game\[data-state="menu"\] footer \{ justify-content: flex-end; pointer-events: none; \}/);
   assert.match(css, /#game\[data-state="menu"\] footer \.text-button \{ pointer-events: auto; \}/);

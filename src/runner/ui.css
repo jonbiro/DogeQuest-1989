@@ -1843,6 +1843,19 @@ kbd {
   .trail-tag i,.trail-tag b { display:none; }
   .trail-tag span { font-size:11px; line-height:1.4; margin-top:4px; }
 }
+/* The full camp flow grew past the fold on ordinary 800px-tall desktop
+   windows. Keep the scene visible, but give the menu its own quiet scroll
+   region so the challenge and daily-trail action are never clipped by the
+   fixed game viewport. The taller desktop layout remains unchanged. */
+@media (min-width: 701px) and (max-height: 900px) and (min-height: 741px) {
+  .menu {
+    top: 18vh;
+    max-height: calc(100svh - 18vh - 32px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 6px;
+  }
+}
 /* Keep the full start menu usable on short portrait phones. The compact
    layout used to place its actions below the clipped game viewport; shrink
    the gap and give the panel a contained scroll fallback for unusually short
