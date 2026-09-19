@@ -1,6 +1,29 @@
 # Puppy adventure goal
 
-## Latest increment: a kinder opening and changing world light
+## Latest increment: climb walls, glide canopy, and a finishable adventure
+
+Current trails are version six. Two new traversal verbs join the run: vine
+**clamber walls** (jump-pump upward, steer under the leaf cue, +180) and
+**glide canopy** shimmers (jump in, hold jump to float, steer the bone line,
++150). The first wall sits at 850 meters and the first shimmer at 420, so the
+1,450-meter adventure always meets both; wade stones, root rails, mine-carts
+and Frostpeak remain endless chapters. River, zipline, wall and shimmer all
+appear in adventure; the help menu says exactly that.
+
+How to Play offers matching **wall-pump and shimmer practice drills** beside
+the existing eight, with quick retries, cue-driven coaching and no banked
+rewards. A cue-following bot now finishes version-six adventures on eight
+seeds with full hearts while riding every verb, and version-one through
+version-five replay streams remain byte-identical.
+
+Generation fairness fixes ship with it: route gates emit once (a rewind that
+duplicated rows is gone), stale climb/glide slots never emit behind the
+frontier, flavor beats yield to upcoming choices, climbs and glides keep
+clear approaches, far station cues yield to imminent hazards, and wade gaps
+sit 40 meters apart with Scenic excluded. All 815 checks pass; mobile-size,
+zoom and coarse-pointer gates are unchanged.
+
+## Previous increment: a kinder opening and changing world light
 
 Current browser adventures now begin with a three-row runway: bones and the
 first explained Magnet are available, while surprise hazard rows wait until
