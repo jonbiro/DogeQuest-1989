@@ -5,6 +5,12 @@ export function puppyPose(time,distance,{menu=false,reducedMotion=false,airborne
   return {
     blink,
     breathe:menu&&!reducedMotion?Math.sin(time*2.2)*.015:0,
+    // The head has its own soft follow-through instead of being welded to the
+    // torso. Small, bounded cues make turns, landings and rides feel like a
+    // living puppy while keeping the collision body unchanged.
+    headTilt:reducedMotion?0:Math.sin(menu?time*1.7:distance*1.18)* (menu?.035:airborne?.09:skiing?.07:.055),
+    headPitch:reducedMotion?0:airborne?-.09:rafting?.045:sliding?.06:0,
+    headBob:reducedMotion?0:Math.sin(menu?time*2.2:distance*1.64)* (menu?.012:airborne?.028:.009),
     ears:reducedMotion?0:Math.sin(menu?time*2.4:distance*.82)* (menu?.04:airborne?.08:skiing?.11:.17),
     tail:reducedMotion?0:Math.sin(time*(menu?5:skiing?10.5:9))*(menu?.2:skiing?.26:.32),
     cape:reducedMotion?0:Math.sin(time*10)*.07,

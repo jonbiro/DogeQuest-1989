@@ -214,41 +214,42 @@ export function createMochiModel(initialStyle = 'mochi') {
   // pattern visible in the reference photos without adding a second rig.
   ellipsoid(group, 'gray-saddle', initial.solids.saddle, [0, 1.16, .38], [.38, .26, .47]);
   fur(group, 'saddle-curls', [0, 1.16, .38], [.385, .265, .475], 190, initial.saddle, .044);
-  ellipsoid(group, 'dark-face', initial.solids.face, [0, 1.39, -.64], [.405, .385, .43]);
-  fur(group, 'short-face-fur', [0, 1.39, -.64], [.406, .386, .431], 320, dark, .025);
-  ellipsoid(group, 'curly-crown-base', initial.solids.crown, [0, 1.67, -.59], [.425, .225, .385]);
-  fur(group, 'silver-curly-crown', [0, 1.67, -.59], [.45, .245, .405], 360, silver, .049,
+  const head = new THREE.Group(); head.name = 'puppy-head'; group.add(head);
+  ellipsoid(head, 'dark-face', initial.solids.face, [0, 1.39, -.64], [.405, .385, .43]);
+  fur(head, 'short-face-fur', [0, 1.39, -.64], [.406, .386, .431], 320, dark, .025);
+  ellipsoid(head, 'curly-crown-base', initial.solids.crown, [0, 1.67, -.59], [.425, .225, .385]);
+  fur(head, 'silver-curly-crown', [0, 1.67, -.59], [.45, .245, .405], 360, silver, .049,
     (x, y, z) => y > -.35 || z > -.4);
 
   const ears = [], eyes = [];
   for (const side of [-1, 1]) {
     const ear = new THREE.Group(); ear.name = side < 0 ? 'left-floppy-ear' : 'right-floppy-ear';
-    ear.position.set(side * .40, 1.58, -.50); ear.rotation.z = side * .07; group.add(ear);
+    ear.position.set(side * .40, 1.58, -.50); ear.rotation.z = side * .07; head.add(ear);
     ellipsoid(ear, 'long-dark-ear', initial.solids.ears, [side * .025, -.27, .015], [.165, .375, .18]);
     fur(ear, 'ear-curls', [side * .025, -.27, .015], [.168, .375, .183], 200, initial.ears, .035);
     ears.push({ear, side});
 
     const eye = new THREE.Group(); eye.name = side < 0 ? 'left-eye' : 'right-eye';
-    eye.position.set(side * .205, 1.43, -1.002); group.add(eye); eyes.push(eye);
+    eye.position.set(side * .205, 1.43, -1.002); head.add(eye); eyes.push(eye);
     ellipsoid(eye, 'eye-socket', '#171d19', [0, 0, .013], [.083, .094, .024]);
     ellipsoid(eye, 'warm-brown-eye', '#453528', [0, 0, -.012], [.059, .073, .023], .25);
     ellipsoid(eye, 'pupil', '#101711', [0, .002, -.032], [.039, .054, .008], .15);
     ellipsoid(eye, 'catchlight', '#f4f3dd', [-.018, .027, -.041], [.011, .014, .006], .18);
-    ellipsoid(group, 'cream-eyebrow', initial.solids.crown, [side * .218, 1.53, -.90], [.16, .042, .07]);
-    fur(group, `eyebrow-curls-${side}`, [side * .218, 1.53, -.925], [.163, .046, .05], 54, silver, .023);
+    ellipsoid(head, 'cream-eyebrow', initial.solids.crown, [side * .218, 1.53, -.90], [.16, .042, .07]);
+    fur(head, `eyebrow-curls-${side}`, [side * .218, 1.53, -.925], [.163, .046, .05], 54, silver, .023);
   }
-  ellipsoid(group, 'muzzle', initial.solids.muzzle, [0, 1.13, -1.12], [.27, .20, .25]);
+  ellipsoid(head, 'muzzle', initial.solids.muzzle, [0, 1.13, -1.12], [.27, .20, .25]);
   for (const side of [-1, 1]) {
-    ellipsoid(group, 'bearded-cheek', initial.solids.beard, [side * .11, 1.10, -1.15], [.17, .185, .215]);
-    fur(group, `cream-beard-${side}`, [side * .11, 1.10, -1.15], [.172, .19, .22], 110, cream, .032);
+    ellipsoid(head, 'bearded-cheek', initial.solids.beard, [side * .11, 1.10, -1.15], [.17, .185, .215]);
+    fur(head, `cream-beard-${side}`, [side * .11, 1.10, -1.15], [.172, .19, .22], 110, cream, .032);
   }
-  ellipsoid(group, 'chin', initial.solids.chin, [0, .96, -1.13], [.20, .095, .20]);
-  fur(group, 'chin-curls', [0, .97, -1.13], [.21, .10, .20], 65, cream, .031);
-  ellipsoid(group, 'dark-nose-bridge', initial.solids.noseBridge, [0, 1.285, -1.126], [.124, .15, .185]);
-  ellipsoid(group, 'nose', initial.solids.nose, [0, 1.19, -1.405], [.145, .10, .08], .34);
-  for (const side of [-1, 1]) ellipsoid(group, 'nostril', initial.solids.nostril, [side * .066, 1.177, -1.473], [.035, .024, .012], .55);
-  ellipsoid(group, 'nose-highlight', '#5a6256', [-.03, 1.23, -1.471], [.045, .014, .007], .4);
-  ellipsoid(group, 'mouth', initial.solids.mouth, [0, 1.01, -1.319], [.104, .014, .025]);
+  ellipsoid(head, 'chin', initial.solids.chin, [0, .96, -1.13], [.20, .095, .20]);
+  fur(head, 'chin-curls', [0, .97, -1.13], [.21, .10, .20], 65, cream, .031);
+  ellipsoid(head, 'dark-nose-bridge', initial.solids.noseBridge, [0, 1.285, -1.126], [.124, .15, .185]);
+  ellipsoid(head, 'nose', initial.solids.nose, [0, 1.19, -1.405], [.145, .10, .08], .34);
+  for (const side of [-1, 1]) ellipsoid(head, 'nostril', initial.solids.nostril, [side * .066, 1.177, -1.473], [.035, .024, .012], .55);
+  ellipsoid(head, 'nose-highlight', '#5a6256', [-.03, 1.23, -1.471], [.045, .014, .007], .4);
+  ellipsoid(head, 'mouth', initial.solids.mouth, [0, 1.01, -1.319], [.104, .014, .025]);
 
   const legs = [];
   for (const x of [-.29, .29]) for (const z of [-.36, .64]) {
@@ -332,5 +333,5 @@ export function createMochiModel(initialStyle = 'mochi') {
     group.userData.style = id;
   }
   setStyle(initialStyle);
-  return {group, legs, eyes, ears, tail, setStyle};
+  return {group, legs, eyes, ears, tail, head, setStyle};
 }

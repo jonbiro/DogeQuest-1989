@@ -41,6 +41,8 @@ test("Mochi exposes the articulated puppy contract used by the runner", () => {
   assert.equal(model.eyes.length, 2);
   assert.equal(model.ears.length, 2);
   assert.ok(model.tail instanceof THREE.Group);
+  assert.ok(model.head instanceof THREE.Group);
+  assert.match(model.head.name, /head/i);
 
   for (const [part, label] of [
     [model.legs, "leg"],

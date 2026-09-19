@@ -2788,15 +2788,23 @@ export function createView(canvas) {
       // down-trail for the chase camera. All selectable dogs share this same
       // articulation, so a roster swap never changes the presentation rules.
       const live3DPuppy = activeRig === mochi;
+      const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:(y>.1&&!run.minecart)||Boolean(!menu&&(run.glide||run.climb)),sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline||run.climb||run.glide),rafting:!menu&&Boolean(run.raft),skiing:!menu&&Boolean(run.ski)});
       dog.rotation.y = live3DPuppy
         ? (menu ? Math.PI : 0)
         : (menu ? 0 : lean);
       dog.rotation.z = menu || reducedMotion ? 0 : lean * 0.3;
       dog.rotation.x = menu ? 0 : groundFrame.pitch + (reducedMotion ? 0 : pitch);
+      if (activeRig.head) {
+        activeRig.head.rotation.set(
+          (menu ? 0 : groundFrame.pitch * .24) + personality.headPitch,
+          live3DPuppy && !menu ? lean * .28 : 0,
+          live3DPuppy ? personality.headTilt + (menu ? 0 : lean * .24) : 0,
+        );
+        activeRig.head.position.y = personality.headBob;
+      }
       dog.scale.setScalar(1);
-      const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:(y>.1&&!run.minecart)||Boolean(!menu&&(run.glide||run.climb)),sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline||run.climb||run.glide),rafting:!menu&&Boolean(run.raft),skiing:!menu&&Boolean(run.ski)});
-      // The connected 3D Mochi has a tighter silhouette than the old raster
-      // sheet, so the portrait camp composition can give him real presence
+      // The connected 3D puppy has a tighter silhouette than the old raster
+      // sheet, so the portrait camp composition can give it real presence
       // without letting transparent canvas padding swallow the scene.
       const menuHeroScale = hero && mobileHero && !compactHero ? .82 : 1;
       const crouch=activeRig===mochi?mochiCrouch((1-pose)/.54):null;
