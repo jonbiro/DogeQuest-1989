@@ -360,6 +360,8 @@ test('trail collectibles get a visible authored scale and gentle pulse', () => {
   assert.match(render, /approach > 5 && approach < 32 && sparkCount < 192/);
   assert.match(render, /flashColor\.set\(overhead \? '#8ff2d2' : '#ffd38b'\)/);
   assert.match(render, /const pickupEffect = \['magnet','shield','gem','double','heart','gift','zoomies','relic'\]\.includes\(effect\.type\)/);
+  assert.match(render, /new THREE\.SphereGeometry\(1\.08, 18, 10\)/);
+  assert.match(render, /aura\.scale\.set\(\.96, 1\.02, \.78\)/);
   assert.match(render, /const sparkLimit = pickupEffect \? 8 : 6/);
   assert.match(render, /Collection feedback is a brighter, slightly wider burst/);
   assert.match(render, /pickupPulse\(object\.type, time, object\.id, reducedMotion\)/);

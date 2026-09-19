@@ -24,7 +24,10 @@ export function createShieldMaterial(){
         // phone and hides the puppy's legs, nearby bones and the next hazard.
         // The power HUD already explains the state; the world effect only
         // needs to say “protected” at a glance.
-        gl_FragColor=vec4(shieldColor,0.018+0.46*rim);
+        // The HUD already names the power. Keep the world cue to a restrained
+        // edge highlight so the next bone line and obstacle remain visible on
+        // a compact phone screen instead of sitting inside a blue bubble.
+        gl_FragColor=vec4(shieldColor,0.012+0.32*rim);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`,

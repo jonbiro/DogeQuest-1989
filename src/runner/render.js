@@ -1399,10 +1399,13 @@ export function createView(canvas) {
   puppyFocus.scale.set(2.35, 2.55, 1);
   scene.add(puppyFocus);
   const aura = new THREE.Mesh(
-    new THREE.SphereGeometry(1.22, 20, 12),
+    // A close-fitting rim protects the puppy silhouette without swallowing
+    // the lane markers, bones or the next hazard on portrait phones.
+    new THREE.SphereGeometry(1.08, 18, 10),
     createShieldMaterial(),
   );
   aura.position.y = 0.9;
+  aura.scale.set(.96, 1.02, .78);
   dog.add(aura);
   const magnetField = new THREE.Group();
   scene.add(magnetField);
