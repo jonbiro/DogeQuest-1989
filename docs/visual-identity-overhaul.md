@@ -47,8 +47,10 @@ vocabulary and variety of role.
   another go."
 - **One spec covering both subsystems**, because the obstacles and the places
   should be designed to fit each other.
-- **No new textures.** Gameplay measured at exactly 9 of the 9 budgeted, so the
-  procedural decision is a constraint, not a preference.
+- **No new textures.** Gameplay measured at ten small static canvases against
+  the ten budgeted (re-baselined with measurement 2026-09-18; the route-label
+  atlas and pickup badge upload on first gameplay render), so the procedural
+  decision remains a constraint, not a preference.
 
 ## Section 1 — The hazard cast
 

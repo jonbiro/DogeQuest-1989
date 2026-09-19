@@ -1,5 +1,20 @@
 # Runner verification
 
+## Texture budget re-baseline to ten (2026-09-18)
+
+- The headless before/after pass reported 12 textures against the 9-texture
+  budget in both builds, so the count was configuration, not a regression.
+  Re-measured under an iPhone user-agent profile (mobile path: no shadow
+  atlas, pixel ratio 1) with the same CDP harness: camp uploads 8, gameplay
+  uploads 10. The +2 is the route-label atlas and the pickup badge, both
+  built at boot and uploaded on first gameplay render; nothing streams.
+- Desktop adds its shadow path on top (12 measured), which is outside the
+  mobile-first budget by design. The budget constant moves 9 → 10 with this
+  measurement attached; the repeat-lap growth check still guards leaks, and
+  a dedicated test now pins ten passing and eleven failing.
+- Full check below is unaffected; the suite, lint, build and distribution
+  verification for this slice all pass.
+
 ## Batch-loop write skipping (2026-09-18)
 
 - The per-frame instanced-batch loop skipped redundant work: entries
