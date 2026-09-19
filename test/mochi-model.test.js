@@ -118,3 +118,20 @@ test("separate Mochi models can animate independently", () => {
 
   assert.deepEqual(modelSnapshot(second), before);
 });
+
+test("the connected rig can restyle every selectable puppy without changing its anatomy", () => {
+  const model = createMochiModel('mochi');
+  const before = modelSnapshot(model);
+  const ear = model.group.getObjectByName('long-dark-ear');
+  const mochiEar = ear.material.color.getHexString();
+  let biscuitEar = mochiEar;
+
+  for (const puppy of ['biscuit', 'pepper', 'luna', 'mochi']) {
+    model.setStyle(puppy);
+    assert.equal(model.group.userData.style, puppy);
+    assert.notEqual(ear.material.color.getHexString(), undefined);
+    if (puppy === 'biscuit') biscuitEar = ear.material.color.getHexString();
+  }
+  assert.notEqual(mochiEar, biscuitEar, 'the palette should visibly change between styles');
+  assert.deepEqual(modelSnapshot(model), before, 'restyling must not move joints or alter pose pivots');
+});

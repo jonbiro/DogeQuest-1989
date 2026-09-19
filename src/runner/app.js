@@ -282,11 +282,11 @@ function kennel() {
       row.dataset.kind = kind;
       const appearance={puppy:kind==='puppy'?id:saved.collection.puppy,costume:kind==='costume'?id:saved.collection.costume};
       const image=document.createElement('img');
-      // Puppy cards use the lightweight source illustration; outfit cards use
-      // the same isolated portrait renderer as the camp preview so the hat,
-      // cape, coat and crown are actually visible before the player equips
-      // them. Fall back to the source art during the first async texture tick.
-      const portrait = kind === 'costume' ? view.portrait(run, appearance, previewRear) : null;
+      // Every roster card uses the same connected 3D portrait as the live dog.
+      // That keeps the kennel from switching between a painted cutout and a
+      // different low-poly silhouette when players compare puppies or outfits.
+      // Fall back to source art only if the isolated renderer is unavailable.
+      const portrait = view.portrait(run, appearance, previewRear);
       image.src=portrait?.startsWith('data:image/') ? portrait : puppyArtworkUrl(appearance.puppy);
       image.className='puppy-artwork-preview';
       image.decoding='async';

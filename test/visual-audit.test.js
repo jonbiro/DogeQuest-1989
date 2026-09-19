@@ -226,13 +226,15 @@ test('hanging poses keep the raised-paw opening readable over dark scenery', () 
   assert.match(artwork, /hangOpening\.material\.opacity = reducedMotion \? \.50 : \.62/);
 });
 
-test('the live runner uses one connected Mochi rig while keeping paintings for companions', () => {
+test('the live runner uses one connected puppy rig while keeping paintings for companions', () => {
   const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
   assert.match(render, /mochi\.group\.visible = false/);
-  assert.match(render, /mochi\.group\.visible = isMochi/);
-  assert.match(render, /rasterArtwork\.group\.visible = !isMochi/);
-  assert.match(render, /const live3DMochi = activeRig === mochi/);
-  assert.match(render, /live3DMochi\s*\? \(menu \? Math\.PI : 0\)/);
+  assert.match(render, /mochi\.setStyle\?\.\(puppyId\)/);
+  assert.match(render, /mochi\.group\.visible = is3DPuppy/);
+  assert.match(render, /activeRig = is3DPuppy \? mochi : classicRig/);
+  assert.match(render, /rasterArtwork\.group\.visible = !is3DPuppy/);
+  assert.match(render, /const live3DPuppy = activeRig === mochi/);
+  assert.match(render, /live3DPuppy\s*\? \(menu \? Math\.PI : 0\)/);
   assert.match(render, /ghostArtwork\.name = 'painted-puppy-ghost'/);
   assert.match(render, /rasterArtwork\.spriteForPose\?\.\(ghostSample\.posture\)/);
   assert.match(render, /ghostWake\.name = 'personal-ghost-wake'/);

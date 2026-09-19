@@ -1045,11 +1045,10 @@ export function createView(canvas) {
   const outfitPositions = Object.fromEntries(Object.entries(outfits).map(([id, group]) => [id, group.children.map(part => part.position.clone())]));
   const mochi = createMochiModel();
   dog.add(mochi.group);
-  // Mochi is the default 3D hero. The sculpted model is kept as one connected
-  // anatomy source for camp, gameplay and portraits, so ears, paws, fur and
-  // collar share the same lighting and never drift apart like layered cutouts.
-  // The authored paintings remain resident for ghosts, chase beats and the
-  // other selectable puppies while their own 3D rigs are being upgraded.
+  // Every selectable puppy uses the same connected anatomy rig. This keeps
+  // scale, joints, lighting and pose timing coherent when the player changes
+  // dogs; the authored paintings remain resident only for ghosts and chase
+  // guides where a distant silhouette is more readable than a full rig.
   mochi.group.visible = false;
   const rasterArtwork = createPuppyArtwork({mobile});
   dog.add(rasterArtwork.group);
@@ -1073,15 +1072,16 @@ export function createView(canvas) {
     appearanceKey = key;
     const puppyId = Object.hasOwn(PUPPIES, appearance.puppy) ? appearance.puppy : DEFAULT_PUPPY;
     const puppy = PUPPIES[puppyId];
-    const isMochi = puppyId === "mochi";
+    const is3DPuppy = Boolean(puppy);
     const visual = puppyVisual(puppyId);
-    // The active rig supplies both pose timing and the live anatomy for Mochi.
-    // Other puppies continue to use their authored painting until their own
-    // connected rigs are ready.
-    mochi.group.visible = isMochi;
-    for (const part of originalParts) part.visible = !isMochi;
-    classicFur.group.visible = !isMochi;
-    activeRig = isMochi ? mochi : classicRig;
+    // Swap only the style palette, never the anatomy or animation rig. This
+    // eliminates the old painted-cutout jump in crop, pivot and lighting when
+    // a player equips Biscuit, Pepper or Luna.
+    mochi.setStyle?.(puppyId);
+    mochi.group.visible = is3DPuppy;
+    for (const part of originalParts) part.visible = !is3DPuppy;
+    classicFur.group.visible = !is3DPuppy;
+    activeRig = is3DPuppy ? mochi : classicRig;
     const palette = {"#d89043":puppy.fur,"#e9ac59":puppy.fur,"#c7823d":puppy.fur,"#db994e":puppy.fur,"#f2c67b":puppy.head,"#ffe0a1":puppy.muzzle,"#ffe3b1":puppy.paws};
     for (const {item,color} of furMeshes) if (palette[color]) item.material = mat(palette[color]);
 
@@ -1184,28 +1184,30 @@ export function createView(canvas) {
         part.scale.copy(markingBase[index].scale);
       }
       part.material = mat(visual.marking === 'mask' ? '#edf1f1' : '#343e45');
-      part.visible = !isMochi && visual.marking !== 'none' && Boolean(layout);
+      part.visible = !is3DPuppy && visual.marking !== 'none' && Boolean(layout);
     }
-    spots.visible = !isMochi && visual.marking !== 'none';
+    spots.visible = !is3DPuppy && visual.marking !== 'none';
     // The supplied raster illustrations already include their own collars and
     // tags. Never re-enable the old procedural collar/scarf meshes: at the
     // chase-camera scale they read as floating red orbs beside the torso.
     collar.material = mat(visual.collarColor || '#ed734b');
     collar.visible = scarf.visible = false;
     for (const [id, group] of Object.entries(outfits)) {
-      // The illustrated puppet owns its costume plates now. Keep the legacy
-      // mesh groups allocated for compatibility with older diagnostics, but
-      // never let their coarse primitives cover the painted fur.
-      group.visible = false;
+      // These small accessory rigs share the connected puppy's coordinate
+      // space. They stay hidden for the distant raster fallback, but remain
+      // real 3D pieces for the selected dog so an equipped outfit is visible
+      // in camp, portraits and the run instead of silently disappearing.
+      group.visible = is3DPuppy && id === appearance.costume && appearance.costume !== 'scarf';
       group.scale.set(1, 1, 1); group.position.set(0, 0, 0);
       group.children.forEach((part, index) => part.position.copy(outfitPositions[id][index]));
     }
-    // Costumes are rendered as transparent raster accessory plates for the
-    // painted roster. Mochi's 3D collar/model owns his live costume surface.
+    // The connected rig owns its live collar and silhouette. The old raster
+    // layer remains available for distant companions but never covers the
+    // selected puppy.
     rasterArtwork.apply(puppyId);
     rasterArtwork.setCostume(appearance.costume);
     for (const part of legacyDogParts) part.visible = false;
-    rasterArtwork.group.visible = !isMochi;
+    rasterArtwork.group.visible = !is3DPuppy;
   }
   // A personal ghost reuses the already-resident authored puppy painting. The
   // old box-and-sphere silhouette was cheap, but it made the replay look like
@@ -2782,11 +2784,11 @@ export function createView(canvas) {
             (reducedMotion || (!menu && (state !== "playing" || y>.05 || run.slide>0 || run.zipline || run.raft || run.minecart)) ? 0 : 0.045),
         0,
       );
-      // Connected Mochi greets the player in camp/portraits, then turns down
-      // trail for the chase camera. Painted roster dogs keep their authored
-      // front-facing camp treatment and bank with the route in gameplay.
-      const live3DMochi = activeRig === mochi;
-      dog.rotation.y = live3DMochi
+      // The connected puppy greets the player in camp/portraits, then turns
+      // down-trail for the chase camera. All selectable dogs share this same
+      // articulation, so a roster swap never changes the presentation rules.
+      const live3DPuppy = activeRig === mochi;
+      dog.rotation.y = live3DPuppy
         ? (menu ? Math.PI : 0)
         : (menu ? 0 : lean);
       dog.rotation.z = menu || reducedMotion ? 0 : lean * 0.3;
