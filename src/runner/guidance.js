@@ -290,6 +290,7 @@ export function eventNotice(event, run) {
     'climb-exit': {text: 'Climb finished', priority: 0},
     'glide-end': {text: 'Glide complete · +150', priority: 1},
     'rail-end': {text: 'Rail ridden · +40', priority: 0},
+    'wade-end': {text: 'Stones hopped · +120', priority: 1},
     'wade-splash': {text: 'Splashed · streak reset, no heart lost', priority: 2},
     'raft-end': {text: 'Shore reached · +250', priority: 1},
     'minecart-end': {text: 'Cart reached · +250', priority: 1},
@@ -344,7 +345,9 @@ export function runLesson(run) {
   if (['arch', 'branch', 'gate'].includes(mistake.type)) return 'Caught an overhead obstacle. Slide as it approaches; a jump will not fit underneath.';
   if (mistake.type === 'gap') return mistake.bridgeCollapse
     ? 'The bridge gave way. Jump at the bright striped edge and stay airborne until the far plank.'
-    : 'Missed a broken trail section. Jump at the striped edge, not far in advance.';
+    : mistake.wade
+      ? 'Splashed on the stepping stones. Hop each stone with room to land; the first splash is forgiven, but three clean hops earn a bonus.'
+      : 'Missed a broken trail section. Jump at the striped edge, not far in advance.';
   return 'Clipped a low obstacle. Jump shortly before it reaches your puppy, or take an open lane.';
 }
 

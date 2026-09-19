@@ -756,12 +756,13 @@ export function fillTrack(run) {
         bridgeCollapseIntersecting(start - 10, end + 10) ||
         (run.course && run.course.end >= start - 10 && run.course.start <= end + 10);
       if (!reserved) {
-        add(run, "wade-start", 1, start);
-        for (let i = 0; i < 3; i++) {
-          const g = add(run, "gap", 1, start + 10 + i * 40);
-          g.wade = true;
-          add(run, "bone", 1, start + 14 + i * 40);
-        }
+      add(run, "wade-start", 1, start);
+      for (let i = 0; i < 3; i++) {
+        const g = add(run, "gap", 1, start + 10 + i * 40);
+        g.wade = true;
+        g.wadeStretch = start;
+        add(run, "bone", 1, start + 14 + i * 40);
+      }
         add(run, "wade-end", 1, end);
         run.nextRow = end + 30;
         run.row++;
@@ -1541,6 +1542,19 @@ export function step(run, dt) {
           run.y < 0.2);
       if (sameLane && cleared) {
         run.clears++;
+        // Wade stones score as a set: three clean hops in one stretch earn a
+        // completion bonus on top of the ordinary clear points. A splash or a
+        // later miss in the same stretch resets the count.
+        if (object.wade) {
+          const stretch = object.wadeStretch ?? object.at;
+          if (run.wadeStretch !== stretch) run.wadeStretch = stretch, run.wadeClean = 0;
+          run.wadeClean++;
+          if (run.wadeClean >= 3) {
+            run.wadeClean = 0;
+            run.bonusPoints += 120;
+            run.events.push('wade-end');
+          }
+        }
         if (object.skiHazard && object.type === 'mogul') {
           run.skiJumps = (run.skiJumps || 0) + 1;
           run.events.push('ski-mogul-clear');
@@ -1602,6 +1616,7 @@ export function step(run, dt) {
         if (object.wade && !run.wadeForgiven) {
           object.used = true;
           run.wadeForgiven = true;
+          run.wadeClean = 0;
           run.cleanStreak = 0;
           run.combo = 0;
           run.events.push('wade-splash');
@@ -1609,6 +1624,7 @@ export function step(run, dt) {
           run.invulnerable = 1.2;
         } else {
         object.used = true;
+        if (object.wade) run.wadeClean = 0;
         harm(run, (object.skiHazard || object.skiObstacle) ? {type:object.type,skiHazard:true,skiObstacle:Boolean(object.skiObstacle),skiSafeLane:object.skiSafeLane} : object.raftHazard ? {type:'rock',raftHazard:true,safeLane:object.raftSafeLane} : object.minecartHazard ? {type:'rock',minecartHazard:true,safeLane:object.minecartSafeLane} : object.type==='rock' && [0,1,2].includes(object.courseRegion)
           ? {type:'rock',courseWeave:true,safeLane:run.course?.beats.find(beat=>beat.at===object.at)?.safeLane} : object.bridgeCollapse
             ? {type:'gap',bridgeCollapse:true} : object.wade ? {type:'gap',wade:true} : {type: object.type});
@@ -1634,7 +1650,7 @@ export function step(run, dt) {
   if (newEvents.some(event => [
     'zipline-end', 'raft-end', 'minecart-end', 'course-complete',
     'course-recovery', 'route-scenic', 'route-challenge', 'turn-left', 'turn-right',
-    'dog-chase-end', 'ski-end', 'climb-end', 'glide-end',
+    'dog-chase-end', 'ski-end', 'climb-end', 'glide-end', 'wade-end', 'rail-end',
   ].includes(event))) {
     run.encounterRecoveryUntil = recoveryUntilFor(run, run.distance);
   }

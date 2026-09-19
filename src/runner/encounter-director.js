@@ -38,6 +38,8 @@ const SPECIAL_TYPES = Object.freeze([
   'zipline-start',
   'climb-start',
   'glide-start',
+  'wade-start',
+  'rail-start',
   'raft-start',
   'minecart-start',
   'ski-start',
@@ -118,16 +120,18 @@ function phaseCopy(phase, area, rhythm, detail, progress = 0) {
 }
 
 function rideEncounter(run) {
-  const ride = run?.raft || run?.zipline || run?.minecart || run?.ski || run?.climb || run?.glide;
+  const ride = run?.raft || run?.zipline || run?.minecart || run?.ski || run?.climb || run?.glide || run?.rail;
   if (!ride || !Number.isFinite(ride.start) || !Number.isFinite(ride.end)) return null;
   const distance = finiteDistance(run.distance);
-  const kind = run.ski ? 'Frostpeak descent' : run.raft ? 'River crossing' : run.minecart ? 'Mine-cart rush' : run.climb ? 'Clamber wall' : run.glide ? 'Glide canopy' : 'Zipline flight';
+  const kind = run.ski ? 'Frostpeak descent' : run.raft ? 'River crossing' : run.minecart ? 'Mine-cart rush' : run.climb ? 'Clamber wall' : run.glide ? 'Glide canopy' : run.rail ? 'Root rail' : 'Zipline flight';
   const action = run.raft
     ? 'Steer between the glowing open lanes'
     : run.climb
       ? 'Pump upward with Jump, steer under the leaf cue'
       : run.glide
         ? 'Hold Jump to float, steer between bones'
+        : run.rail
+          ? 'Steer center · stay on the log'
         : run.minecart
       ? run.minecartChoice
         ? 'Choose the steady bone lane or chase the glowing gem line'
@@ -214,6 +218,8 @@ function upcomingSpecial(run, distance) {
     ? 'River crossing'
     : candidate.type === 'climb-start' ? 'Clamber wall'
       : candidate.type === 'glide-start' ? 'Glide canopy'
+      : candidate.type === 'wade-start' ? 'Stepping stones'
+      : candidate.type === 'rail-start' ? 'Root rail'
       : candidate.type === 'minecart-start' ? 'Mine-cart rush'
       : candidate.type === 'ski-start' ? 'Frostpeak descent'
         : candidate.type === 'ski-gate' ? 'Ski gate'
@@ -225,6 +231,10 @@ function upcomingSpecial(run, distance) {
       ? `Pump upward at the vine wall · in ${meters(candidate.at - distance)}m`
       : candidate.type === 'glide-start'
         ? `Jump into the shimmer, hold to float · in ${meters(candidate.at - distance)}m`
+      : candidate.type === 'wade-start'
+        ? `Hop the stones · first splash forgiven · in ${meters(candidate.at - distance)}m`
+        : candidate.type === 'rail-start'
+          ? `Ride the root rail · steer center · in ${meters(candidate.at - distance)}m`
     : candidate.type === 'ski-start'
       ? `Carve the slope · hop snowballs, dodge yetis, and follow the open gate · in ${meters(candidate.at - distance)}m`
       : candidate.type === 'ski-gate'

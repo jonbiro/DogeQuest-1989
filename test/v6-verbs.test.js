@@ -4,7 +4,8 @@ import {createRun, act, step} from "../src/runner/world.js";
 import {climbAt, climbByIndex, CLIMB_FIRST} from "../src/runner/climb.js";
 import {glideAt, glideByIndex, GLIDE_FIRST} from "../src/runner/glide.js";
 import {CURRENT_TRAIL_VERSION} from "../src/runner/trail-version.js";
-import {actionCue} from "../src/runner/guidance.js";
+import {actionCue, eventNotice, runLesson} from "../src/runner/guidance.js";
+import {encounterFor} from "../src/runner/encounter-director.js";
 
 function advance(run, seconds) {
   for (let i = 0; i < Math.ceil(seconds * 120); i++) {
@@ -91,4 +92,63 @@ test('wade forgives first splash without heart loss', () => {
   for (let i = 0; i < Math.ceil(0.6 * 120); i++) step(run, 1 / 120);
   assert.equal(run.hearts, 3);
   assert.ok(run.events.includes('wade-splash'));
+});
+
+test('three clean wade hops complete the stretch for +120', () => {
+  const run = createRun(21, {}, 6);
+  run.objects = [0, 1, 2].map(i => ({id: 10 + i, type: 'gap', lane: 1, at: 30 + i * 40, used: false, wade: true, wadeStretch: 30}));
+  run.nextRow = 5000;
+  run.hearts = 3;
+  const before = run.bonusPoints;
+  for (const at of [30, 70, 110]) {
+    // Arrive grounded just before each stone, then jump it.
+    let guard = 0;
+    while (run.distance < at - 3 && guard++ < 2000) step(run, 1 / 120);
+    act(run, 'jump');
+    guard = 0;
+    while (run.distance < at + 2 && guard++ < 2000) step(run, 1 / 120);
+  }
+  assert.equal(run.hearts, 3);
+  assert.ok(run.events.includes('wade-end'));
+  assert.ok(run.bonusPoints >= before + 120);
+  assert.equal(eventNotice('wade-end', run).text, 'Stones hopped · +120');
+});
+
+test('a splash resets the wade set so two of three earns no bonus', () => {
+  const run = createRun(23, {}, 6);
+  run.objects = [0, 1, 2].map(i => ({id: 20 + i, type: 'gap', lane: 1, at: 30 + i * 40, used: false, wade: true, wadeStretch: 30}));
+  run.nextRow = 5000;
+  run.hearts = 3;
+  run.invulnerable = 0;
+  const before = run.bonusPoints;
+  // Miss the first stone on purpose (splash, no heart), clear the second,
+  // then miss the third for real: no set bonus, one heart lost, and coaching
+  // that names the stones.
+  let guard = 0;
+  while (run.distance < 32 && guard++ < 2000) step(run, 1 / 120);
+  assert.ok(run.events.includes('wade-splash'));
+  guard = 0;
+  while (run.distance < 67 && guard++ < 2000) step(run, 1 / 120);
+  act(run, 'jump');
+  guard = 0;
+  while (run.distance < 72 && guard++ < 2000) step(run, 1 / 120);
+  guard = 0;
+  while (run.distance < 112 && guard++ < 2000) step(run, 1 / 120);
+  assert.equal(run.hearts, 2);
+  assert.ok(!run.events.includes('wade-end'));
+  assert.ok(run.bonusPoints < before + 120);
+  assert.match(runLesson(run), /stepping stones/);
+});
+
+test('wade and rail announce themselves as encounters', () => {
+  const run = createRun(29, {}, 6);
+  run.objects = [
+    {id: 30, type: 'wade-start', lane: 1, at: 100, used: false},
+    {id: 31, type: 'rail-start', lane: 1, at: 300, used: false},
+  ];
+  run.nextRow = 5000;
+  run.distance = 50;
+  assert.match(encounterFor(run).title, /Stepping stones/);
+  run.distance = 250;
+  assert.match(encounterFor(run).title, /Root rail/);
 });
