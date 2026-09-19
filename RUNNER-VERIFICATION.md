@@ -1,5 +1,24 @@
 # Runner verification
 
+## Destination kits and new scenery roles (2026-09-18)
+
+- Shipped the visual-identity overhaul steps 1–4: hazard-cast registry,
+  four-character procedural cast, destination kits as a pure refactor, and
+  all four scenery roles (overhead, ground, far, built) across all six
+  destinations. New roles reuse shared box/sphere/cone/cylinder geometry
+  through the existing instanced batches: zero new geometries, textures or
+  draw calls by construction; the far band stays available to shed first if
+  a measured budget complains.
+- Full check: 783 tests passed (new kit-role coverage, staged-cast rotation,
+  live 40-seed survival probe, per-type clearable/wrong-action pins and
+  template-exists audits), plus lint, build and distribution verification.
+- Headless-Chrome boot of the built game renders camp with zero JS errors;
+  a CDP-driven gameplay capture shows lanes clear with new shoulder/canopy
+  pieces visible and the HUD readable. Same-build screenshot variance
+  (3–12%) rules out pixel-diff as a refactor gate; structural inspection
+  was used instead. No physical-device FPS claim; road-surface treatments
+  (boardwalk/cut stone) remain a follow-up slice.
+
 ## Adaptive-resolution recovery backoff (2026-09-12)
 
 - A high-resolution retry that cannot sustain smooth rendering now doubles

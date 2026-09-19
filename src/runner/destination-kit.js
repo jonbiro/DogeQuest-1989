@@ -1,19 +1,16 @@
 // Destination kits: one record per landscape, owning its look.
 //
-// Step 3 of the visual identity overhaul. Today's destination scenery moves
-// onto kits as a pure refactor: the four builders below are the renderer's
-// former per-area branches, relocated verbatim and parameterized only by a
-// helpers object, so the seeded random stream and every mesh are unchanged.
-// The renderer keeps placement (counts, offsets, shoulder zones); the kit
-// owns the per-destination parameters for the shoulder family plus reserved
-// slots for the overhead, ground-clutter, far-band and built roles that the
-// next slice fills area by area. Textures stay at zero new; no geometry is
-// added or removed here.
+// Step 3 of the visual identity overhaul moved today's destination scenery
+// onto kits as a pure refactor; step 4 populates the overhead,
+// ground-clutter, far-band and built roles below. Builders take a helpers
+// object with the shared geometry/material closures (and the seeded random
+// where today's families use it), so no new geometries or textures are added.
+// The renderer keeps placement; the kit owns per-destination parameters.
 import {AREAS} from './areas.js';
 
-// Role vocabulary for destination kits. Only `shoulder` is populated in
-// this slice; the rest are explicitly reserved (null) so a half-authored
-// area fails the kit test instead of shipping an empty destination.
+// Role vocabulary for destination kits. All five roles are populated: the
+// shoulder family below plus the overhead, ground-clutter, far-band and
+// built layers added area by area.
 export const KIT_ROLES = Object.freeze(['shoulder', 'overhead', 'ground', 'far', 'built']);
 
 export const DESTINATION_KITS = Object.freeze(AREAS.map((area, index) => Object.freeze({
@@ -21,15 +18,21 @@ export const DESTINATION_KITS = Object.freeze(AREAS.map((area, index) => Object.
   name: area.name,
   roles: Object.freeze({
     shoulder: Object.freeze({count: 12, spacing: 8.4, offset: index * 17}),
-    overhead: null,
-    ground: null,
-    far: null,
-    built: null,
+    overhead: Object.freeze({count: 3, spacing: 61, offset: index * 41 + 7, variant: 6}),
+    ground: Object.freeze({count: 8, spacing: 23, offset: index * 17 + 5, variant: 7}),
+    far: Object.freeze({count: 3, spacing: 61, offset: index * 53 + 11, variant: 8}),
+    built: Object.freeze({count: 3, spacing: 59, offset: index * 47 + 29, variant: 9}),
   }),
 })));
 
 export function kitFor(area) {
   return DESTINATION_KITS[area] ?? null;
+}
+
+// Which roadside a kit instance stands on. Shared by the renderer loops and
+// the builders so leans and arrangements stay on the outward side.
+export function sideFor(area, index) {
+  return (index + area) % 2 ? 1 : -1;
 }
 
 // Today's shoulder landmark family (pooled variant 2). Moved verbatim from
@@ -275,4 +278,263 @@ export function buildSetPiece(area, group, helpers) {
       }
       mesh(group, mushroomCapGeometry, '#ae91c4', 0, .32, -.16, .42, .25, .38);
     }
+}
+
+// Overhead role: tall pieces rooted at the shoulder with interest up high,
+// leaning outward so nothing crosses the lane window. Fixed variants keep the
+// recycled instances deterministic; frond/cap pieces sway through the
+// existing motion path.
+export function buildOverhead(area, group, index, helpers) {
+  const {box, ball, cone, mesh, trunkGeometry, featheredPalmGeometry, mushroomCapGeometry} = helpers;
+  const side = sideFor(area, index);
+  if (area === 0) {
+    // Sunleaf: a tall trunk with its crown pushed out over the verge.
+    mesh(group, trunkGeometry, '#4e5a38', 0, 2.75, 0, .34, 5.5, .34);
+    ball(group, '#2c6b4c', side * 1.1, 5.6, 0, 1.5, 1.1, 1.3);
+    ball(group, '#41805a', side * 1.9, 5.0, .2, 1.1, .85, 1.0);
+    ball(group, '#ffe49a', side * .6, 4.6, -.6, .11, .11, .11);
+  } else if (area === 1) {
+    // Bamboo: a lantern post with a short crossarm and a hanging lantern.
+    mesh(group, trunkGeometry, '#5f7f47', 0, 3.1, 0, .16, 6.2, .16);
+    box(group, '#6b5a41', side * .45, 5.3, 0, 1.5, .14, .16);
+    box(group, '#8a6a45', side * .45, 5.3, 0, 1.54, .05, .2);
+    box(group, '#c08a4e', side * .9, 4.75, 0, .1, .5, .1);
+    box(group, '#c89154', side * .9, 4.35, 0, .3, .42, .26);
+    ball(group, '#ffe09a', side * .9, 4.35, -.2, .1, .12, .1);
+  } else if (area === 2) {
+    // Redrock: a stone leg with a cap band leaning away from the road.
+    box(group, '#8e443b', 0, 2.25, 0, .55, 4.5, .6);
+    const cap = box(group, '#df9562', side * .3, 4.7, 0, 2.3, .26, .7);
+    cap.rotation.z = side * .1;
+    box(group, '#f2bd77', side * .3, 4.35, 0, 1.7, .08, .5);
+  } else if (area === 3) {
+    // Oasis: a palm leaning out over the verge, crown held high.
+    const trunk = mesh(group, trunkGeometry, '#7a5c3e', side * .45, 2.6, 0, .26, 5.2, .26);
+    trunk.rotation.z = side * .17;
+    for (let frond = 0; frond < 4; frond++) {
+      const angle = frond * Math.PI * 2 / 4 + .4;
+      const leaf = mesh(group, featheredPalmGeometry, frond % 2 ? '#4d8458' : '#75aa68',
+        side * .9 + Math.cos(angle) * 1.1, 5.2, Math.sin(angle) * 1.1, 1.5, .95, 1.0);
+      leaf.rotation.y = -angle;
+    }
+  } else if (area === 4) {
+    // Crystal Reach: twin shards branching up and outward.
+    const tall = cone(group, '#5fc5d9', side * .2, 2.6, 0, .5, 5.2, .55);
+    tall.rotation.z = side * .1;
+    const short = cone(group, '#8e82d9', side * .9, 1.9, 0, .4, 3.8, .45);
+    short.rotation.z = side * .22;
+    ball(group, '#b9eaff', 0, .35, -.3, .5, .3, .3);
+  } else {
+    // Mooncap: a tall stem with its cap tipped toward the verge.
+    mesh(group, trunkGeometry, '#5d5170', 0, 2.1, 0, .26, 4.2, .26);
+    mesh(group, mushroomCapGeometry, '#745fa0', side * .5, 4.35, 0, 1.7, .95, 1.4);
+    ball(group, '#d8cae8', side * .5, 3.9, -.85, .13, .13, .13);
+  }
+}
+
+// Ground role: low scatter hugging the verge, never above knee height so it
+// cannot read as a hazard. Muted tones only — no bone cream, no clearance
+// mint, nothing that competes with pickups or cues.
+export function buildGround(area, group, helpers) {
+  const {box, ball, cone, mesh, trunkGeometry, palmFrondGeometry, mushroomCapGeometry} = helpers;
+  if (area === 0) {
+    // Sunleaf: fern tufts and a pebble.
+    for (const tuft of [-.3, .1, .42]) {
+      const frond = mesh(group, palmFrondGeometry, tuft > .3 ? '#6e9b5b' : '#557f49',
+        tuft, .22, .05, .3, .3, .35);
+      frond.rotation.z = tuft * .8;
+    }
+    ball(group, '#8a8a6a', -.15, .08, .3, .22, .12, .18);
+  } else if (area === 1) {
+    // Bamboo: reed shoots.
+    for (const shoot of [-.28, 0, .3]) {
+      mesh(group, trunkGeometry, '#68884f', shoot, .26, 0, .07, .52, .07);
+      box(group, '#a4b56d', shoot, .3, 0, .1, .04, .1);
+    }
+  } else if (area === 2) {
+    // Redrock: dust pebbles.
+    for (let rock = 0; rock < 3; rock++) {
+      const pebble = cone(group, rock === 1 ? '#c07a4e' : '#96502f',
+        (rock - 1) * .3, .12 + rock * .1, .05, .3 - rock * .04, .24 + rock * .1, .26);
+      pebble.rotation.z = (rock - 1) * .18;
+    }
+  } else if (area === 3) {
+    // Oasis: shells and a grass tuft.
+    ball(group, '#d9c08a', -.25, .07, .1, .16, .09, .13);
+    ball(group, '#c8a878', .05, .06, -.15, .13, .08, .11);
+    const tuft = cone(group, '#6da05d', .32, .2, .1, .16, .4, .16);
+    tuft.rotation.z = .2;
+  } else if (area === 4) {
+    // Crystal Reach: glimmer stones in cool muted tones.
+    const shard = cone(group, '#6ea8bd', -.2, .2, 0, .16, .4, .18);
+    shard.rotation.z = -.14;
+    ball(group, '#8fa9bd', .18, .09, .1, .2, .11, .16);
+  } else {
+    // Mooncap: a tiny cap and a night pebble.
+    mesh(group, trunkGeometry, '#665a7d', -.15, .15, 0, .07, .3, .07);
+    mesh(group, mushroomCapGeometry, '#7d78b0', -.15, .32, 0, .3, .17, .26);
+    ball(group, '#5c5878', .25, .07, .1, .18, .1, .15);
+  }
+}
+
+// Far role: a second depth layer far behind the shoulder. Big simple shapes
+// in muted destination tones; the existing haze and narrow portrait frustum
+// keep them as backdrop, never as lane clutter.
+export function buildFar(area, group, helpers) {
+  const {box, ball, cone, mesh, trunkGeometry, featheredPalmGeometry, mushroomCapGeometry} = helpers;
+  if (area === 0) {
+    // Sunleaf: a giant tree.
+    mesh(group, trunkGeometry, '#3d4c30', 0, 4.5, 0, .9, 9, .9);
+    ball(group, '#234f38', -.8, 9.2, 0, 2.6, 2.1, 2.3);
+    ball(group, '#356b4b', 1.1, 8.4, .3, 2.1, 1.7, 1.9);
+    ball(group, '#2c5f43', 0, 10.2, -.3, 1.8, 1.5, 1.6);
+  } else if (area === 1) {
+    // Bamboo: a tall cluster.
+    for (const stalk of [-1.2, -.4, .4, 1.2]) {
+      const height = 8 + ((stalk + 1.2) % 2) * 1.6;
+      mesh(group, trunkGeometry, '#4e7040', stalk, height / 2, 0, .3, height, .3);
+    }
+    ball(group, '#5d8148', -.6, 9.4, 0, 1.1, .7, .9);
+    ball(group, '#6d9155', .7, 8.8, .2, .9, .6, .8);
+  } else if (area === 2) {
+    // Redrock: a far mesa.
+    cone(group, '#8e443b', 0, 4.5, 0, 3.1, 9, 2.6);
+    box(group, '#df9562', 0, 9.1, 0, 2.1, .4, 1.7);
+    ball(group, '#c07a52', -2.2, .6, .4, 1.6, .7, 1.2);
+  } else if (area === 3) {
+    // Oasis: leaning palms and a dune.
+    for (const lean of [-1, 1]) {
+      const trunk = mesh(group, trunkGeometry, '#6b5138', lean * 1.4, 3.2, 0, .4, 6.4, .4);
+      trunk.rotation.z = lean * .14;
+      for (let frond = 0; frond < 3; frond++) {
+        const angle = frond * Math.PI * 2 / 3;
+        const leaf = mesh(group, featheredPalmGeometry, frond % 2 ? '#4d8458' : '#69965c',
+          lean * 1.4 + Math.cos(angle) * 1.6 + lean * .9, 6.4, Math.sin(angle) * 1.6, 1.9, 1.2, 1.4);
+        leaf.rotation.y = -angle;
+      }
+    }
+    ball(group, '#c2a05e', 0, .1, 1.6, 2.6, .8, 1.8);
+  } else if (area === 4) {
+    // Crystal Reach: a distant spire cluster.
+    for (let shard = 0; shard < 3; shard++) {
+      const height = 7 + shard * 1.1;
+      const crystal = cone(group, ['#4e9db4', '#7a6fc0', '#93c9d8'][shard],
+        (shard - 1) * 1.1, height / 2, 0, .8, height, .85);
+      crystal.rotation.z = (shard - 1) * .08;
+    }
+    ball(group, '#7ba5c0', 0, .4, .4, 1.7, .5, 1.3);
+  } else {
+    // Mooncap: giant rings on the horizon.
+    for (const ring of [-1, 1]) {
+      mesh(group, trunkGeometry, '#524a68', ring * 1.2, 2.6, 0, .5, 5.2, .5);
+      mesh(group, mushroomCapGeometry, ring < 0 ? '#6a5f96' : '#8f7fb8',
+        ring * 1.2, 5.4, 0, 2.1, 1.2, 1.8);
+    }
+  }
+}
+
+// Built role: the storytelling layer, where the cast and the world meet.
+// Small fences, signs, shelters and markers at the shoulder — compact pieces
+// in wood, canvas and muted paint, never in pickup or hazard colors, and low
+// enough to stay out of the cue sightlines. Three pieces per destination,
+// dealt out by index.
+export function buildBuilt(area, group, index, helpers) {
+  const {box, ball, cone, mesh, trunkGeometry} = helpers;
+  const piece = index % 3;
+  if (area === 0) {
+    // Sunleaf: shelter fence, notice board, hitch rail with lantern.
+    if (piece === 0) {
+      for (const post of [-.8, 0, .8]) box(group, '#6b543a', post, .6, 0, .12, 1.2, .12);
+      for (const rail of [.45, .85]) box(group, '#8a6c48', 0, rail, 0, 1.75, .09, .09);
+    } else if (piece === 1) {
+      for (const post of [-.45, .45]) box(group, '#5d4a34', post, .8, 0, .12, 1.6, .12);
+      box(group, '#cdbb92', 0, 1.15, 0, 1.05, .68, .08);
+      box(group, '#b45f45', 0, 1.15, .06, .6, .1, .03);
+    } else {
+      for (const post of [-.6, .6]) box(group, '#5d4a34', post, .55, 0, .12, 1.1, .12);
+      box(group, '#8a6c48', 0, 1.05, 0, 1.35, .09, .09);
+      box(group, '#7a5c3f', 0, .82, .1, .22, .3, .18);
+      ball(group, '#ffe09a', 0, .82, -.06, .09, .1, .09);
+    }
+  } else if (area === 1) {
+    // Bamboo: mini torii, stone lantern, pole rack.
+    if (piece === 0) {
+      for (const post of [-.7, .7]) mesh(group, trunkGeometry, '#67784a', post, 1.1, 0, .16, 2.2, .16);
+      box(group, '#6b5a41', 0, 2.25, 0, 1.75, .18, .2);
+      box(group, '#c08a4e', 0, 1.5, -.2, .3, .42, .2);
+    } else if (piece === 1) {
+      box(group, '#8b8d7d', 0, .15, 0, .5, .3, .5);
+      box(group, '#9a9c8b', 0, .65, 0, .24, .7, .24);
+      box(group, '#c8a05e', 0, 1.1, 0, .3, .32, .3);
+      box(group, '#7d7f72', 0, 1.42, 0, .48, .12, .48);
+    } else {
+      for (const post of [-.8, .8]) mesh(group, trunkGeometry, '#67784a', post, .8, 0, .14, 1.6, .14);
+      mesh(group, trunkGeometry, '#7d8b58', 0, 1.55, 0, .1, 1.9, .1).rotation.z = Math.PI / 2;
+    }
+  } else if (area === 2) {
+    // Redrock: trail cairn, ranger flag, supply crates.
+    if (piece === 0) {
+      for (let rock = 0; rock < 3; rock++) {
+        const cairn = cone(group, rock === 1 ? '#c07a4e' : '#96502f',
+          0, .3 + rock * .42, 0, .55 - rock * .09, .55 + rock * .1, .5);
+        cairn.rotation.y = rock * 1.1;
+      }
+      box(group, '#e8b478', 0, 1.75, 0, .4, .1, .34);
+    } else if (piece === 1) {
+      mesh(group, trunkGeometry, '#59423d', 0, 1.5, 0, .09, 3, .09);
+      const pennant = box(group, '#d88a4e', .42, 2.6, 0, .68, .36, .05);
+      pennant.rotation.z = -.1;
+    } else {
+      box(group, '#8a6844', 0, .35, 0, .7, .7, .7);
+      box(group, '#75593a', .08, .95, 0, .55, .55, .55);
+      box(group, '#5d4a34', 0, .62, .36, .6, .08, .03);
+    }
+  } else if (area === 3) {
+    // Oasis: market awning, water jar, mooring post.
+    if (piece === 0) {
+      for (const post of [-.7, -.23, .23, .7]) box(group, '#6b5138', post, 1, 0, .11, 2, .11);
+      for (const stripe of [-.55, 0, .55]) {
+        box(group, stripe === 0 ? '#c8b183' : '#b45f45', stripe, 2.05, 0, .62, .1, 1.0);
+      }
+      box(group, '#6b5138', 0, 1.92, 0, 1.85, .08, 1.0);
+    } else if (piece === 1) {
+      ball(group, '#b08954', 0, .5, 0, .62, .72, .55);
+      mesh(group, trunkGeometry, '#8a6844', 0, 1.0, 0, .2, .3, .2);
+      ball(group, '#7ec2b2', 0, 1.12, 0, .16, .08, .16);
+    } else {
+      mesh(group, trunkGeometry, '#6b5138', 0, .7, 0, .14, 1.4, .14);
+      box(group, '#8a6c48', 0, 1.28, 0, .3, .12, .3);
+      ball(group, '#d9c08a', 0, 1.05, .2, .14, .16, .14);
+    }
+  } else if (area === 4) {
+    // Crystal Reach: survey plinth, shard marker, beacon post.
+    if (piece === 0) {
+      mesh(group, trunkGeometry, '#5a6b8c', 0, .6, 0, .4, 1.2, .4);
+      box(group, '#7c8dab', 0, 1.28, 0, .9, .14, .9);
+      ball(group, '#b9eaff', 0, 1.5, 0, .14, .14, .14);
+    } else if (piece === 1) {
+      ball(group, '#5f6f96', 0, .15, 0, .7, .3, .6);
+      const shard = cone(group, '#6ec6d8', .1, .9, 0, .34, 1.4, .36);
+      shard.rotation.z = .14;
+    } else {
+      mesh(group, trunkGeometry, '#5a6b8c', 0, 1.1, 0, .12, 2.2, .12);
+      ball(group, '#cfe8ef', 0, 2.3, 0, .17, .2, .17);
+      cone(group, '#7c8dab', 0, 2.55, 0, .24, .3, .24);
+    }
+  } else {
+    // Mooncap: trail tent, lamp post, log bench.
+    if (piece === 0) {
+      cone(group, '#5d557f', 0, .8, 0, .95, 1.6, .85).rotation.y = Math.PI / 4;
+      box(group, '#3c3752', 0, .45, .72, .4, .6, .06);
+      ball(group, '#e4c77d', 0, 1.15, .3, .16, .2, .12);
+    } else if (piece === 1) {
+      mesh(group, trunkGeometry, '#564e70', 0, 1.1, 0, .11, 2.2, .11);
+      ball(group, '#cbb8e8', 0, 2.3, 0, .2, .22, .2);
+      ball(group, '#564e70', 0, 2.52, 0, .24, .08, .24);
+    } else {
+      const bench = mesh(group, trunkGeometry, '#5d4f42', 0, .4, 0, .28, 1.6, .28);
+      bench.rotation.z = Math.PI / 2;
+      for (const leg of [-.55, .55]) box(group, '#4c4136', leg, .18, 0, .24, .36, .24);
+    }
+  }
 }

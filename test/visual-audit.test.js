@@ -410,6 +410,21 @@ test('quiet trail stretches carry area-specific shoulder motifs without entering
   assert.match(kit, /Mooncap: a pair of tiny caps/);
 });
 
+test('kit roles add overhead, verge, far and built layers without touching lanes', () => {
+  const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
+  const kit = readFileSync(new URL('../src/runner/destination-kit.js', import.meta.url), 'utf8');
+  for (const role of ['buildOverhead', 'buildGround', 'buildFar', 'buildBuilt'])
+    assert.match(render, new RegExp(`${role}\\(area, group`));
+  assert.match(render, /variant: overhead\.variant/);
+  assert.match(render, /variant: ground\.variant/);
+  assert.match(render, /variant: far\.variant/);
+  assert.match(render, /variant: built\.variant/);
+  assert.match(kit, /Overhead role: tall pieces rooted at the shoulder/);
+  assert.match(kit, /Ground role: low scatter hugging the verge/);
+  assert.match(kit, /Far role: a second depth layer/);
+  assert.match(kit, /Built role: the storytelling layer/);
+});
+
 test('ended mobile sheets keep the details affordance above the fixed action shelf', () => {
   assert.match(css, /#overlay\[data-kind="ended"\] \.modal-content \{\s*padding-bottom: 42px;/);
   assert.match(css, /#overlay\[data-kind="ended"\] \.modal h2 \{\s*font-size: 30px;/);

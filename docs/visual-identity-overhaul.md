@@ -178,3 +178,25 @@ committed or parked before implementation starts.
   better than all four characters appearing at once.
 - Does the officer need an idle animation, or is a static sweep pose enough at
   chase distance? Animation costs no textures but does cost per-frame work.
+
+## Implementation status (2026-09-18)
+
+- Steps 1–3 shipped as pure refactors: `hazard-cast.js` (rules/appearance
+  split), the cast registry consumed by world/palette/cues/practice/fairness,
+  and `destination-kit.js` with today's scenery moved onto it byte-identical.
+- Step 2 shipped the four-character cast procedurally: `pound-officer`
+  (slide) and `crate-cart` (jump) rotate through staged shelter beats, with
+  `warden-gate` (Sunleaf) and `feed-sacks` (Oasis) as zero-taxonomy re-dresses.
+  Staging is by encounter order (worker, officer, then the trio rotates).
+  The officer keeps the crew uniform and a translucent net; tone stays
+  pantomime. A 40-seed live probe to 3,200m proves survivability with the
+  full cast in the mix.
+- Step 4 shipped all four roles for all six destinations: overhead (tall,
+  outward-leaning), ground clutter (below knee height, muted), far band
+  (second depth layer) and built storytelling pieces (three per destination:
+  fences, signs, shrines, stalls, cairns, tents). All reuse shared geometry
+  through the existing instanced batches: zero new geometries, textures or
+  draw calls. Road-surface treatments (Oasis boardwalk, Redrock cut stone)
+  remain a follow-up slice.
+- Open questions resolved: the officer joined second by encounter order with
+  a small net-sway animation (frozen under reduced motion).

@@ -11,7 +11,7 @@ import { PUPPIES, DEFAULT_PUPPY } from "./collection.js";
 import { puppyVisual } from "./puppy-visuals.js";
 import { REGIONS, regionAt, horizonProfile } from "./regions.js";
 import {AREAS,areaAt,areaBlend,worldMoodAt,WORLD_MOODS,landmarkSway,landmarkVariation,LANDMARK_SHOULDER_MIN,LANDMARK_SHOULDER_SPREAD} from './areas.js';
-import {DESTINATION_KITS,buildShoulderFamily,buildSignature,buildTrailMotif,buildSetPiece} from './destination-kit.js';
+import {DESTINATION_KITS,buildShoulderFamily,buildSignature,buildTrailMotif,buildSetPiece,buildOverhead,buildGround,buildFar,buildBuilt,sideFor} from './destination-kit.js';
 import {createBoneGeometry} from './bone-model.js';
 import {createCapeGeometry} from './cape-model.js';
 import {createSky} from './sky.js';
@@ -475,6 +475,65 @@ export function createView(canvas) {
     buildSetPiece(area, group, kitHelpers);
     scenery.add(group);
     decorations.push(group);
+  }
+  // Kit roles: overhead silhouettes, verge-level clutter, a far depth band
+  // and the built storytelling layer. Every piece reuses the shared geometry
+  // batches above, so density costs instances rather than draws, and each
+  // role keeps its own x zone outside the playable lanes by construction.
+  for (const kit of DESTINATION_KITS) {
+    const area = kit.area;
+    const overhead = kit.roles.overhead;
+    for (let i = 0; i < overhead.count; i++) {
+      const group = new THREE.Group();
+      group.position.x = sideFor(area, i) * (5.6 + (i % 2) * .7);
+      Object.assign(group.userData, {
+        area,
+        offset: i * overhead.spacing + overhead.offset,
+        variant: overhead.variant,
+      });
+      buildOverhead(area, group, i, kitHelpers);
+      scenery.add(group);
+      decorations.push(group);
+    }
+    const ground = kit.roles.ground;
+    for (let i = 0; i < ground.count; i++) {
+      const group = new THREE.Group();
+      group.position.x = sideFor(area, i) * (4.3 + (i % 4) * .4);
+      Object.assign(group.userData, {
+        area,
+        offset: i * ground.spacing + ground.offset,
+        variant: ground.variant,
+      });
+      buildGround(area, group, kitHelpers);
+      scenery.add(group);
+      decorations.push(group);
+    }
+    const far = kit.roles.far;
+    for (let i = 0; i < far.count; i++) {
+      const group = new THREE.Group();
+      group.position.x = sideFor(area, i) * (15 + (i % 3) * 3.5);
+      Object.assign(group.userData, {
+        area,
+        offset: i * far.spacing + far.offset,
+        variant: far.variant,
+      });
+      buildFar(area, group, kitHelpers);
+      scenery.add(group);
+      decorations.push(group);
+    }
+    const built = kit.roles.built;
+    for (let i = 0; i < built.count; i++) {
+      const group = new THREE.Group();
+      group.position.x = sideFor(area, i) * (6.2 + (i % 3) * 1.1);
+      Object.assign(group.userData, {
+        area,
+        offset: i * built.spacing + built.offset,
+        variant: built.variant,
+      });
+      buildBuilt(area, group, i, kitHelpers);
+      scenery.add(group);
+      decorations.push(group);
+    }
   }
   for (let i = 0; i < 12; i++) {
     const group = new THREE.Group();
