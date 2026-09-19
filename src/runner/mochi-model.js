@@ -248,7 +248,6 @@ export function createMochiModel(initialStyle = 'mochi') {
   ellipsoid(head, 'dark-nose-bridge', initial.solids.noseBridge, [0, 1.285, -1.126], [.124, .15, .185]);
   ellipsoid(head, 'nose', initial.solids.nose, [0, 1.19, -1.405], [.145, .10, .08], .34);
   for (const side of [-1, 1]) ellipsoid(head, 'nostril', initial.solids.nostril, [side * .066, 1.177, -1.473], [.035, .024, .012], .55);
-  ellipsoid(head, 'nose-highlight', '#5a6256', [-.03, 1.23, -1.471], [.045, .014, .007], .4);
   ellipsoid(head, 'mouth', initial.solids.mouth, [0, 1.01, -1.319], [.104, .014, .025]);
 
   const legs = [];
@@ -269,6 +268,29 @@ export function createMochiModel(initialStyle = 'mochi') {
   collar.name = 'leather-collar'; collar.position.set(0, 1.13, -.38); collar.scale.y = .82; group.add(collar);
   collar.userData.styleRole = 'collar'; styleMeshes.push(collar);
   ellipsoid(group, 'small-brass-tag', initial.solids.tag, [0, .85, -.68], [.055, .07, .018], .45);
+
+  // Traversal beats get a tiny costume language of their own. These two
+  // shared meshes are re-positioned by the renderer instead of creating a
+  // second character for every ride: a rounded safety ring and a soft accent
+  // cap/goggle plate make rafting, skiing, minecarts and ziplines read as
+  // authored moments while staying inside the mobile mesh budget.
+  const actionGear = new THREE.Group();
+  actionGear.name = 'action-gear';
+  actionGear.visible = false;
+  group.add(actionGear);
+  const actionRing = new THREE.Mesh(collarGeometry, material('#ee7b55', .62));
+  actionRing.name = 'action-safety-ring';
+  actionRing.rotation.x = Math.PI / 2;
+  actionRing.position.set(0, 1.05, .14);
+  actionRing.scale.set(1.34, 1.34, 1.34);
+  actionRing.castShadow = false;
+  actionGear.add(actionRing);
+  const actionAccent = new THREE.Mesh(sphere, material('#f4d27f', .68));
+  actionAccent.name = 'action-accent';
+  actionAccent.position.set(0, 1.94, -.56);
+  actionAccent.scale.set(.29, .08, .29);
+  actionAccent.castShadow = false;
+  actionGear.add(actionAccent);
 
   const roleForMesh = {
     'gray-saddle': 'saddle',
@@ -333,5 +355,5 @@ export function createMochiModel(initialStyle = 'mochi') {
     group.userData.style = id;
   }
   setStyle(initialStyle);
-  return {group, legs, eyes, ears, tail, head, setStyle};
+  return {group, legs, eyes, ears, tail, head, actionGear, actionRing, actionAccent, setStyle};
 }

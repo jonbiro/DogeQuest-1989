@@ -7,7 +7,7 @@ test('protective bubble preserves a transparent center without extra textures',(
   assert.equal(material.transparent,true);
   assert.equal(material.depthWrite,false);
   assert.deepEqual(Object.keys(material.uniforms),['shieldColor']);
-  assert.match(material.fragmentShader,/0\.025\+0\.82\*rim/);
+  assert.match(material.fragmentShader,/0\.018\+0\.46\*rim/);
   assert.match(material.vertexShader,/normalMatrix\*normal/);
   assert.match(material.fragmentShader,/colorspace_fragment/);
   material.dispose();

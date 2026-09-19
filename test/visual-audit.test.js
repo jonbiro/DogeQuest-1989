@@ -234,6 +234,9 @@ test('the live runner uses one connected puppy rig while keeping paintings for c
   assert.match(render, /activeRig = is3DPuppy \? mochi : classicRig/);
   assert.match(render, /rasterArtwork\.group\.visible = !is3DPuppy/);
   assert.match(render, /const live3DPuppy = activeRig === mochi/);
+  assert.match(render, /const actionGear = live3DPuppy \? mochi\.actionGear : null/);
+  assert.match(render, /actionMode === 'raft'/);
+  assert.match(render, /actionMode === 'ski'/);
   assert.match(render, /live3DPuppy\s*\? \(menu \? Math\.PI : 0\)/);
   assert.match(render, /ghostArtwork\.name = 'painted-puppy-ghost'/);
   assert.match(render, /rasterArtwork\.spriteForPose\?\.\(ghostSample\.posture\)/);
@@ -253,6 +256,9 @@ test('the mobile menu keeps the featured puppy visible without competing with th
   assert.doesNotMatch(render, /rgba\(255,239,184,\.68\)/);
   assert.match(render, /menuContrast\.visible = hero/);
   assert.match(render, /menuGlow\.visible = hero/);
+  assert.match(render, /menuGlow\.renderOrder = -\.20/);
+  assert.match(render, /menuContrast\.renderOrder = -\.19/);
+  assert.match(render, /puppyFocus\.renderOrder = -\.18/);
   assert.match(render, /if \(entry\.gateway && menu\) instanceMatrix\.scale\(bendScale\.set\(0,0,0\)\)/);
   assert.match(render, /const mobileHero = hero && camera\.aspect < \.85/);
   assert.match(render, /const compactHero = mobileHero && canvas\.clientHeight <= 600/);

@@ -1350,7 +1350,10 @@ export function createView(canvas) {
   menuGlow.name = "menu-puppy-spotlight";
   menuGlow.position.set(0, 1.08, -.08);
   menuGlow.scale.set(3.9, 3.25, 1);
-  menuGlow.renderOrder = 1.9;
+  // Draw the pool before the connected puppy. These sprites have depth test
+  // disabled so they can sit on the road, but a late render order would wash
+  // the character itself in translucent mint and make the coat look faded.
+  menuGlow.renderOrder = -.20;
   scene.add(menuGlow);
   // A soft dark falloff gives Mochi a clear figure/ground break when the camp
   // road carries the same cream and sage values as his coat. Keep this behind
@@ -1376,7 +1379,7 @@ export function createView(canvas) {
   menuContrast.name = "menu-puppy-contrast";
   menuContrast.position.set(0, 1.08, .01);
   menuContrast.scale.set(3.05, 3.15, 1);
-  menuContrast.renderOrder = 1.88;
+  menuContrast.renderOrder = -.19;
   scene.add(menuContrast);
   // Keep the running puppy legible when the trail and the coat share a pale
   // value. This is a soft, scene-locked contrast pool behind the dog rather
@@ -1392,11 +1395,11 @@ export function createView(canvas) {
     opacity: 0,
   }));
   puppyFocus.name = "runner-puppy-focus";
-  puppyFocus.renderOrder = 1.92;
+  puppyFocus.renderOrder = -.18;
   puppyFocus.scale.set(2.35, 2.55, 1);
   scene.add(puppyFocus);
   const aura = new THREE.Mesh(
-    new THREE.SphereGeometry(1.4, 20, 12),
+    new THREE.SphereGeometry(1.22, 20, 12),
     createShieldMaterial(),
   );
   aura.position.y = 0.9;
@@ -2782,13 +2785,69 @@ export function createView(canvas) {
         (hero ? heroVisualY : menu ? 0 : y) +
           Math.abs(Math.sin(time * 12)) *
             (reducedMotion || (!menu && (state !== "playing" || y>.05 || run.slide>0 || run.zipline || run.raft || run.minecart)) ? 0 : 0.045),
-        0,
+        // Pull the camp character a little toward the camera. The old origin
+        // left the connected puppy behind the nearest foliage and atmosphere,
+        // so its coat read as a faded background prop instead of the hero the
+        // player is choosing. Gameplay keeps the original depth.
+        hero ? .72 : 0,
       );
       // The connected puppy greets the player in camp/portraits, then turns
       // down-trail for the chase camera. All selectable dogs share this same
       // articulation, so a roster swap never changes the presentation rules.
       const live3DPuppy = activeRig === mochi;
       const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:(y>.1&&!run.minecart)||Boolean(!menu&&(run.glide||run.climb)),sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline||run.climb||run.glide),rafting:!menu&&Boolean(run.raft),skiing:!menu&&Boolean(run.ski)});
+      // Give the connected puppy a readable action silhouette during authored
+      // traversal beats. The same two tiny meshes are dressed differently so
+      // a raft reads as a safety ring and sailor cap, a ski descent as a cool
+      // harness/goggle accent, and a cart or zipline as protective gear. It is
+      // visual-only: collision, lane width and the pose contract stay intact.
+      const actionGear = live3DPuppy ? mochi.actionGear : null;
+      const actionMode = !menu && live3DPuppy
+        ? run.raft ? 'raft'
+          : run.ski ? 'ski'
+            : run.minecart ? 'minecart'
+              : run.zipline || run.climb || run.glide ? 'hanging' : null
+        : null;
+      if (actionGear) {
+        const ring = mochi.actionRing;
+        const accent = mochi.actionAccent;
+        actionGear.visible = Boolean(actionMode);
+        ring.visible = Boolean(actionMode);
+        accent.visible = Boolean(actionMode);
+        if (actionMode === 'raft') {
+          ring.material.color.set('#ef8156');
+          ring.position.set(0, 1.05, .14);
+          ring.rotation.set(Math.PI / 2, 0, 0);
+          ring.scale.setScalar(1.34);
+          accent.material.color.set('#f3e4b1');
+          accent.position.set(0, 1.94, -.56);
+          accent.scale.set(.29, .08, .29);
+        } else if (actionMode === 'ski') {
+          ring.material.color.set('#7fd9f0');
+          ring.position.set(0, 1.12, .10);
+          ring.rotation.set(Math.PI / 2, 0, 0);
+          ring.scale.setScalar(1.10);
+          accent.material.color.set('#4d82c7');
+          accent.position.set(0, 1.53, -.94);
+          accent.scale.set(.38, .055, .07);
+        } else if (actionMode === 'minecart') {
+          ring.material.color.set('#f3c463');
+          ring.position.set(0, 1.11, .10);
+          ring.rotation.set(Math.PI / 2, 0, 0);
+          ring.scale.setScalar(1.08);
+          accent.material.color.set('#f3c463');
+          accent.position.set(0, 1.96, -.54);
+          accent.scale.set(.34, .10, .26);
+        } else {
+          ring.material.color.set('#74d7c8');
+          ring.position.set(0, 1.12, -.04);
+          ring.rotation.set(Math.PI / 2, 0, 0);
+          ring.scale.setScalar(1.02);
+          accent.material.color.set('#74d7c8');
+          accent.position.set(0, 1.34, -.56);
+          accent.scale.set(.20, .07, .08);
+        }
+      }
       dog.rotation.y = live3DPuppy
         ? (menu ? Math.PI : 0)
         : (menu ? 0 : lean);

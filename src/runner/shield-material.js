@@ -19,7 +19,12 @@ export function createShieldMaterial(){
       varying vec3 shieldView;
       void main(){
         float rim=pow(1.0-clamp(dot(normalize(shieldNormal),normalize(shieldView)),0.0,1.0),3.0);
-        gl_FragColor=vec4(shieldColor,0.025+0.82*rim);
+        // Keep the center almost invisible and reserve the strongest value for
+        // the edge.  A full translucent sphere reads as a blue cage on a
+        // phone and hides the puppy's legs, nearby bones and the next hazard.
+        // The power HUD already explains the state; the world effect only
+        // needs to say “protected” at a glance.
+        gl_FragColor=vec4(shieldColor,0.018+0.46*rim);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`,
