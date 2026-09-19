@@ -6,6 +6,25 @@ export const PUPPIES = {
   // clubhouse copy aligned with what players actually see in the roster.
   luna: { name:'Luna', breed:'Moonlit doodle', description:'A cool silver curl with a moonlit stride.', cost:2500, fur:'#6b8190', head:'#8fa6b1', muzzle:'#eff1e6', paws:'#f4f2e5', ears:'floppy' },
 };
+// Roster growth signals skill, not just savings: Pepper asks for a Trail
+// friend bond (10 clears with any pup) and Luna for an Adventure partner bond
+// (40). Thresholds mirror DOG_TIERS in mastery.js; a test below pins them to
+// those tiers so the two files cannot drift apart.
+export const PUPPY_BOND_REQ = Object.freeze({pepper: 10, luna: 40});
+export function puppyBondBest(profile) {
+  const dogs = profile?.mastery?.dogs;
+  if (!dogs || typeof dogs !== 'object') return 0;
+  let best = 0;
+  for (const value of Object.values(dogs)) {
+    const count = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+    if (count > best) best = count;
+  }
+  return best;
+}
+export function puppyBondLocked(profile, id) {
+  const req = PUPPY_BOND_REQ[id] || 0;
+  return req > 0 && puppyBondBest(profile) < req;
+}
 // Mochi is the face of the runner and the most familiar starter. Keep both
 // starter puppies unlocked, but make a missing/invalid selection land on him
 // so a fresh browser and older saves get the same welcoming first run.
@@ -57,6 +76,7 @@ export function equipOrBuy(profile,kind,id) {
   if(!catalog||!Object.hasOwn(catalog,id))return false;
   const owned=profile.collection[kind==='puppy'?'puppies':'costumes'];
   if(!owned.includes(id)) {
+    if(kind==='puppy'&&puppyBondLocked(profile,id))return false;
     const cost=catalog[id].cost;
     if(!Number.isFinite(cost)||profile.credits<cost)return false;
     profile.credits-=cost;owned.push(id);

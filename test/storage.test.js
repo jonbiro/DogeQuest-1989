@@ -23,3 +23,9 @@ test("valid progress is read without writing or changing it",()=>{
   const result=readStoredProfile({getItem(key){assert.equal(key,"biscuit-dash-v1");return JSON.stringify(profile);}});
   assert.deepEqual(result,{available:true,readable:true,value:profile});
 });
+
+test("one-time coaching flags persist as plain numbers",()=>{
+  const calls=[];const storage={getItem(){return null;},setItem(...args){calls.push(args);}};
+  assert.equal(writeStoredProfile(storage,{best:0,fetchHint:1},true),true);
+  assert.deepEqual(calls,[["biscuit-dash-v1",'{"best":0,"fetchHint":1}']]);
+});

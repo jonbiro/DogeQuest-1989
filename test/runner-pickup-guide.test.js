@@ -27,6 +27,10 @@ test('every special pickup has a plain-language effect and distinct visual ident
 
 test('the help key is rebuilt from the pickup definitions instead of drifting in the HTML shell', () => {
   assert.match(shellSource, /id="pickup-key-grid"/);
+  assert.match(shellSource, /id="hazard-key-grid"/);
+  assert.match(shellSource, /data-hazard="jump"/);
+  assert.match(shellSource, /data-hazard="slide"/);
+  assert.match(shellSource, /data-hazard="steer"/);
   assert.match(appSource, /import \{PICKUP_DEFINITIONS,PICKUP_TYPES,pickupGuideFor/);
   assert.match(appSource, /function syncPickupKey\(\)/);
   assert.match(appSource, /const items = PICKUP_TYPES\.map\(type =>/);

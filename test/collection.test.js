@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {collectionFrom, equipOrBuy, awardPrizes} from "../src/runner/collection.js";
+import {collectionFrom, equipOrBuy, awardPrizes, PUPPY_BOND_REQ, puppyBondBest, puppyBondLocked} from "../src/runner/collection.js";
+import {DOG_TIERS} from "../src/runner/mastery.js";
 import {createRun, step} from "../src/runner/world.js";
 test("old and malformed saves receive safe collection defaults", () => {
   for (const value of [undefined,null,5,"bad",{}]) {
@@ -17,7 +18,7 @@ test("old and malformed saves receive safe collection defaults", () => {
   assert.equal(c.gifts,0); assert.deepEqual(c.prizes,["long-run"]);
 });
 test("puppies and outfits buy once, persist and reject locked prizes", () => {
-  const p = {credits:2200,collection:collectionFrom()};
+  const p = {credits:2200,collection:collectionFrom(),mastery:{dogs:{mochi:12}}};
   assert.ok(equipOrBuy(p,"puppy","pepper"));
   assert.equal(p.collection.puppySelected,true);
   assert.ok(equipOrBuy(p,"costume","explorer"));
@@ -70,4 +71,26 @@ test("unclaimed or unknown prize records never unlock prize costumes",()=>{
   assert.deepEqual(collection.costumes,["scarf"]);
   assert.equal(collection.costume,"scarf");
   assert.equal(equipOrBuy({credits:99999,collection},"costume","royal"),false);
+});
+
+test("roster growth signals skill: pepper and luna need bonds plus credits", () => {
+  // Bond thresholds always name a real mastery tier so copy cannot drift.
+  for (const [id, req] of Object.entries(PUPPY_BOND_REQ))
+    assert.ok(DOG_TIERS.some(tier => tier.target === req), `${id} bond names a mastery tier`);
+  assert.equal(puppyBondBest({}), 0);
+  assert.equal(puppyBondBest({mastery:{dogs:{biscuit:9,mochi:40}}}), 40);
+  const skilled = {credits:5000, collection:collectionFrom(), mastery:{dogs:{biscuit:41}}};
+  assert.equal(puppyBondLocked(skilled, 'pepper'), false);
+  assert.equal(puppyBondLocked(skilled, 'luna'), false);
+  assert.ok(equipOrBuy(skilled, 'puppy', 'pepper'));
+  assert.ok(equipOrBuy(skilled, 'puppy', 'luna'));
+  assert.equal(skilled.credits, 1000);
+  const rich = {credits:5000, collection:collectionFrom(), mastery:{dogs:{biscuit:9}}};
+  assert.equal(puppyBondLocked(rich, 'pepper'), true);
+  assert.equal(equipOrBuy(rich, 'puppy', 'pepper'), false);
+  assert.equal(rich.credits, 5000, 'a refused purchase never charges');
+  assert.equal(equipOrBuy(rich, 'puppy', 'luna'), false);
+  const mid = {credits:5000, collection:collectionFrom(), mastery:{dogs:{luna:10}}};
+  assert.ok(equipOrBuy(mid, 'puppy', 'pepper'));
+  assert.equal(equipOrBuy(mid, 'puppy', 'luna'), false, 'luna still needs the bigger bond');
 });

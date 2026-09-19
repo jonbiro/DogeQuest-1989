@@ -11,7 +11,7 @@ import { UPGRADES, levels, price, purchase, refundUpgrade } from "./progression.
 import { missionFor, missionProgress, missionTip, missionPackFor } from "./missions.js";
 import { bankRun } from "./rewards.js";
 import {resultRecord,resultChallenge} from './result-record.js';
-import {masteryFrom,masteryCards,orderedMasteryCards,nextMasteryHint} from './mastery.js';
+import {masteryFrom,masteryCards,orderedMasteryCards,nextMasteryHint,DOG_TIERS} from './mastery.js';
 import {fetchReady} from './ability.js';
 import {createPowerHud} from './power-hud.js';
 import {readTrailSeed,readTrailVersion,readTrailTarget,validTrailTarget,trailLink} from './trail-link.js';
@@ -39,7 +39,7 @@ import {turnPrompt} from "./turns.js";
 import {swipeAction,canStartSwipe,canPressAction,ownsSwipe,tapAction} from "./gestures.js";
 import {hudReserve,hudReserveApplies} from "./hud-layout.js";
 import {graphicsFailureKind,graphicsFailureCopy,graphicsDiagnostic} from "./graphics-failure.js";
-import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress } from "./collection.js";
+import { PUPPIES, COSTUMES, PRIZES, collectionFrom, equipOrBuy, prizeProgress, PUPPY_BOND_REQ, puppyBondLocked, puppyBondBest } from "./collection.js";
 import { puppyArtworkUrl } from "./puppy-artwork.js";
 const $ = (id) => document.getElementById(id);
 const updatePowerHud = createPowerHud($('power'));
@@ -101,6 +101,7 @@ let saved = {
   adventureStreak: adventureStreakFrom(null),
   runModifier: DEFAULT_RUN_MODIFIER,
   preferences: preferencesFrom(null,reducedMotion),
+  fetchHint: 0,
 };
 try {
   const {value,available,readable} = readStoredProfile(localStorage);
@@ -294,9 +295,16 @@ function kennel() {
       image.alt=`${item.name}, ${previewRear?'running view':'front view'}`;image.width=image.height=96;
       copy.textContent = `${item.name}${item.breed ? ` · ${item.breed}` : ""} — ${item.description}`;
       button.dataset[kind] = id;
-      button.textContent = saved.collection[kind] === id ? "Equipped" : owned ? "Equip" : item.prize ? "Prize locked" : `${item.cost.toLocaleString()} pts`;
-      button.setAttribute('aria-label',`${button.textContent} · ${item.name}`);
-      button.disabled = saved.collection[kind] === id || (!owned && (item.prize || saved.credits < item.cost));
+      // A roster pup can be credit-ready but bond-locked: name the milestone
+      // so the lock reads as a goal, not a paywall.
+      const bondReq = kind === 'puppy' ? (PUPPY_BOND_REQ[id] || 0) : 0;
+      const bondLocked = bondReq > 0 && puppyBondLocked(saved, id);
+      const tierName = bondReq > 0 ? (DOG_TIERS.find(tier => tier.target === bondReq)?.name || 'bond') : '';
+      button.textContent = saved.collection[kind] === id ? "Equipped" : owned ? "Equip" : item.prize ? "Prize locked" : bondLocked ? `🔒 ${tierName} bond` : `${item.cost.toLocaleString()} pts`;
+      button.setAttribute('aria-label', bondLocked
+        ? `${item.name} · Requires ${tierName} bond (${bondReq} clears with any pup, have ${puppyBondBest(saved)})`
+        : `${button.textContent} · ${item.name}`);
+      button.disabled = saved.collection[kind] === id || (!owned && (item.prize || bondLocked || saved.credits < item.cost));
       button.onclick = () => {
         if (equipOrBuy(saved, kind, id)) {
           persist(); updateRecords(); kennel(); tone(880, .15);
@@ -2480,7 +2488,18 @@ function frame(now) {
           : run.magnet > 0
             ? 'magnet'
             : ready ? 'ready' : 'charging';
-        if (fetchButton.disabled && ready) tone('ready');
+        if (fetchButton.disabled && ready) {
+          tone('ready');
+          // First-charge coaching: the button label flips to FETCH READY, but
+          // first-timers otherwise never learn what the burst does. One
+          // low-priority edge-dock prompt per saved profile; it never preempts
+          // damage or shield notices and never repeats.
+          if (!saved.fetchHint) {
+            saved.fetchHint = 1;
+            persist();
+            toast('FETCH READY · tap FETCH or press F for a 4-second magnet burst', 3.5, 1);
+          }
+        }
         fetchButton.disabled = !ready;
         fetchButton.classList.toggle('ready', !fetchButton.disabled);
         fetchButton.classList.toggle('charging', !ready && run.fetchTime <= 0 && run.magnet <= 0);

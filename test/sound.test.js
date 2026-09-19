@@ -13,13 +13,20 @@ test('HUD chimes once per usable Fetch transition, never on every frame',()=>{
   const end=source.indexOf("fetchButton.classList.toggle",start);
   assert.ok(start>=0 && end>start);
   const run=createRun(1),fetchButton={disabled:true},notes=[];
-  const update=()=>runInNewContext(`{${source.slice(start,end)}}`,{run,fetchButton,fetchReady,tone:cue=>notes.push(cue)});
+  const saved={fetchHint:0},toasts=[];
+  let persisted=0;
+  const update=()=>runInNewContext(`{${source.slice(start,end)}}`,{run,fetchButton,fetchReady,tone:cue=>notes.push(cue),
+    saved,persist:()=>{persisted++;},toast:(message=>toasts.push(message))});
   update();run.fetchCharge=100;update();update();update();
   assert.deepEqual(notes,['ready']);
+  assert.equal(saved.fetchHint,1,'first ready state coaches once');
+  assert.equal(persisted,1);
+  assert.match(toasts[0],/FETCH READY/);
   run.magnet=1;update();update();
   assert.deepEqual(notes,['ready'],'charge alone is not enough during a magnet');
   run.magnet=0;update();update();
   assert.deepEqual(notes,['ready','ready']);
+  assert.equal(toasts.length,1,'the coaching never repeats');
   run.ended=true;update();
   assert.equal(fetchButton.disabled,true);
 });
