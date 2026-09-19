@@ -24,9 +24,9 @@ import {AREA_LENGTH,areaAt,areaGameplayAt} from './areas.js';
 import {encounterFor,recoveryUntilFor,encounterPhaseAt} from './encounter-director.js';
 import {raftIntersecting,raftEncounter,advanceRaft,moveRaft} from './rafts.js';
 import {
-  MINECART_FIRST,
   MINECART_PERIOD,
   MINECART_CHOICE_VERSION,
+  minecartFirst,
   minecartByIndex,
   minecartIntersecting,
   minecartEncounter,
@@ -34,8 +34,8 @@ import {
   moveMinecart,
 } from './minecart.js';
 import {
-  MOVING_GATE_FIRST,
   MOVING_GATE_PERIOD,
+  movingGateFirst,
   movingGateByIndex,
   movingGateEncounter,
   movingGateIntersecting,
@@ -54,8 +54,8 @@ import {
   dogChaseByIndex,
 } from './dog-chase.js';
 import {
-  SKI_FIRST,
   SKI_PERIOD,
+  skiFirst,
   skiByIndex,
   skiIntersecting,
   skiEncounter,
@@ -91,7 +91,7 @@ export const SLIDE_UPGRADE_DURATION = .07;
 // A destination run is a deliberate, finishable outing through the six
 // authored areas.  Endless remains available for players who want to chase a
 // distance record and keeps the long traversal chapters in rotation.
-export const ADVENTURE_DISTANCE = 1450;
+export const ADVENTURE_DISTANCE = 2600;
 export const RUN_MODES = Object.freeze(['adventure', 'endless']);
 // Re-exported so existing `world.js` import sites keep working while the
 // canonical lists live in `hazard-cast.js`.
@@ -227,19 +227,21 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     nextGlide: generatorVersion>=6 ? GLIDE_FIRST : Infinity,
     glide: null,
     glides: 0,
-    nextMinecart: generatorVersion>=4 ? MINECART_FIRST : Infinity,
+    nextMinecart: generatorVersion>=4 ? minecartFirst(generatorVersion) : Infinity,
     minecart: null,
     minecartChoice: null,
     minecarts: 0,
     minecartGemChoices: 0,
     minecartBoneChoices: 0,
-    nextMovingGate: generatorVersion >= 4 ? MOVING_GATE_FIRST : Infinity,
+    // See skiSkipped: chapters jumped over without emitting must never board.
+    minecartSkipped: [],
+    nextMovingGate: generatorVersion >= 4 ? movingGateFirst(generatorVersion) : Infinity,
     movingGates: 0,
     nextDogChase: generatorVersion >= 4 ? DOG_CHASE_FIRST : Infinity,
     dogChaseUpcoming: null,
     dogChase: null,
     dogChases: 0,
-    nextSki: generatorVersion >= 5 ? SKI_FIRST : Infinity,
+    nextSki: generatorVersion >= 5 ? skiFirst(generatorVersion) : Infinity,
     ski: null,
     skis: 0,
     skiJumps: 0,
@@ -254,6 +256,11 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     skiSnowmanEncounters: 0,
     skiObstaclePoints: 0,
     skiUpcoming: null,
+    // Chapters skipped by reservations (or jumped over by the frontier) must
+    // never board positionally: an empty ski with live ordinary hazards
+    // underneath is unfair and invisible to every policy. Boarding consults
+    // this registry; generation records every skip.
+    skiSkipped: [],
     // Collapsing bridges are version-four spectacle beats. They reuse the
     // proven full-width gap collision, but carry their own metadata so the
     // renderer, guidance, sound and results can describe the set piece.
@@ -323,6 +330,9 @@ function dogChaseByNext(run) {
 
 function dogChaseReserved(run, chase) {
   if (!chase) return true;
+  const mgFirst = movingGateFirst(run.generatorVersion);
+  const mcFirst = minecartFirst(run.generatorVersion);
+  const skFirst = skiFirst(run.generatorVersion);
   const start = chase.approach;
   const end = chase.recovery;
   const courseOverlap = run.course && run.course.end >= start && run.course.start <= end;
@@ -334,9 +344,9 @@ function dogChaseReserved(run, chase) {
   return Boolean(
     cornerIntersecting(start, end) ||
     (run.raftPrototype && raftIntersecting(start, end)) ||
-    (run.minecartPrototype && minecartIntersecting(start, end)) ||
-    (run.movingGatePrototype && movingGateIntersecting(start, end)) ||
-    (run.skiPrototype && skiIntersecting(start, end)) ||
+    (run.minecartPrototype && minecartIntersecting(start, end, mcFirst)) ||
+    (run.movingGatePrototype && movingGateIntersecting(start, end, mgFirst)) ||
+    (run.skiPrototype && skiIntersecting(start, end, skFirst)) ||
     (run.climbPrototype && climbIntersecting(start, end)) ||
     (run.glidePrototype && glideIntersecting(start, end)) ||
     bridgeCollapseIntersecting(start, end) ||
@@ -433,6 +443,12 @@ function scheduleRouteTrail(run) {
 }
 export function fillTrack(run) {
   if (run.practice) return;
+  // Versioned chapter grids: v6 debuts gates/carts/ski earlier while legacy
+  // trails keep their established slots. Every byIndex/intersecting call below
+  // uses these so generation, boarding and reservations agree on one grid.
+  const mgFirst = movingGateFirst(run.generatorVersion);
+  const mcFirst = minecartFirst(run.generatorVersion);
+  const skFirst = skiFirst(run.generatorVersion);
   // A chase can fit before a pending fork. Schedule that quiet reward beat
   // first, then leave the fork's own clear approach untouched. Other pending
   // choices keep the historical early return so ordinary rows never crowd the
@@ -447,17 +463,17 @@ export function fillTrack(run) {
   // Restored fixtures from before the cart rollout may not carry the new
   // scheduler field. Keep those runs deterministic and opt them in only when
   // their generator version explicitly supports carts.
-  if (run.minecartPrototype && !Number.isFinite(run.nextMinecart)) run.nextMinecart = MINECART_FIRST;
+  if (run.minecartPrototype && !Number.isFinite(run.nextMinecart)) run.nextMinecart = minecartFirst(run.generatorVersion);
   // Restored version-four runs created before the moving-gate rollout may not
   // carry the scheduler field. Opt them in deterministically without changing
   // legacy trail versions or manufacturing a gate behind the runner.
-  if (run.movingGatePrototype && !Number.isFinite(run.nextMovingGate)) run.nextMovingGate = MOVING_GATE_FIRST;
+  if (run.movingGatePrototype && !Number.isFinite(run.nextMovingGate)) run.nextMovingGate = movingGateFirst(run.generatorVersion);
   // Older restored version-four sessions may not carry the chase scheduler.
   // Opt them into the first deterministic beat without changing legacy trails.
   if (run.dogChasePrototype && !Number.isFinite(run.nextDogChase)) run.nextDogChase = DOG_CHASE_FIRST;
   // Restored version-five sessions may predate the Frostpeak rollout. Opt
   // them into the first deterministic descent without touching older trails.
-  if (run.skiPrototype && !Number.isFinite(run.nextSki)) run.nextSki = SKI_FIRST;
+  if (run.skiPrototype && !Number.isFinite(run.nextSki)) run.nextSki = skiFirst(run.generatorVersion);
   // Older restored version-four sessions may not carry the bridge scheduler.
   // Opt them into the first deterministic beat without changing legacy trail
   // versions or manufacturing a collapse behind the runner.
@@ -506,13 +522,14 @@ export function fillTrack(run) {
       continue;
     }
     const minecart = run.minecartPrototype && Number.isFinite(run.nextMinecart)
-      ? minecartByIndex(Math.round((run.nextMinecart - MINECART_FIRST) / MINECART_PERIOD))
+      ? minecartByIndex(Math.round((run.nextMinecart - mcFirst) / MINECART_PERIOD), mcFirst)
       : null;
     // A restored/shared run can resume after a cart's recovery window. Advance
     // its scheduler rather than re-inserting an already-passed ride in front
     // of the next authored cable or course.
     if (minecart && run.nextRow > minecart.recovery) {
       run.nextMinecart = minecart.start + MINECART_PERIOD;
+      (run.minecartSkipped ??= []).push(minecart.start);
       continue;
     }
     if (minecart && run.nextRow >= minecart.approach) {
@@ -526,10 +543,11 @@ export function fillTrack(run) {
       continue;
     }
     const ski = run.skiPrototype && Number.isFinite(run.nextSki)
-      ? skiByIndex(Math.round((run.nextSki - SKI_FIRST) / SKI_PERIOD))
+      ? skiByIndex(Math.round((run.nextSki - skFirst) / SKI_PERIOD), skFirst)
       : null;
     if (ski && run.nextRow > ski.recovery) {
       run.nextSki = ski.start + SKI_PERIOD;
+      (run.skiSkipped ??= []).push(ski.start);
       continue;
     }
     if (ski && run.nextRow >= ski.approach) {
@@ -542,8 +560,8 @@ export function fillTrack(run) {
         run.nextChoice >= ski.approach - 45 && run.nextChoice <= ski.recovery + 45;
       const reserved = cornerIntersecting(ski.approach, ski.recovery) ||
         (run.raftPrototype && raftIntersecting(ski.approach, ski.recovery)) ||
-        (run.minecartPrototype && minecartIntersecting(ski.approach, ski.recovery)) ||
-        (run.movingGatePrototype && movingGateIntersecting(ski.approach, ski.recovery)) ||
+        (run.minecartPrototype && minecartIntersecting(ski.approach, ski.recovery, mcFirst)) ||
+        (run.movingGatePrototype && movingGateIntersecting(ski.approach, ski.recovery, mgFirst)) ||
         bridgeCollapseIntersecting(ski.approach, ski.recovery) ||
         courseOverlap || ziplineOverlap || choiceOverlap;
       if (!reserved) {
@@ -562,11 +580,12 @@ export function fillTrack(run) {
         run.row++;
         continue;
       }
+      (run.skiSkipped ??= []).push(ski.start);
       run.nextSki = ski.start + SKI_PERIOD;
       continue;
     }
     const movingGate = run.movingGatePrototype && Number.isFinite(run.nextMovingGate)
-      ? movingGateByIndex(Math.round((run.nextMovingGate - MOVING_GATE_FIRST) / MOVING_GATE_PERIOD))
+      ? movingGateByIndex(Math.round((run.nextMovingGate - mgFirst) / MOVING_GATE_PERIOD), mgFirst)
       : null;
     // Moving gates reserve their approach and recovery just like a ride. If a
     // course, corner or traversal beat already owns that space, skip this
@@ -586,7 +605,7 @@ export function fillTrack(run) {
         ziplineStart + ZIPLINE_LENGTH + 45 >= movingGate.approach;
       const reserved = cornerIntersecting(movingGate.approach, movingGate.recovery) ||
         (run.raftPrototype && raftIntersecting(movingGate.approach, movingGate.recovery)) ||
-        (run.minecartPrototype && minecartIntersecting(movingGate.approach, movingGate.recovery)) ||
+        (run.minecartPrototype && minecartIntersecting(movingGate.approach, movingGate.recovery, mcFirst)) ||
         courseOverlap || ziplineOverlap;
       if (!reserved) {
         const challenge = run.route?.kind === 'challenge' && movingGate.start < run.route.until;
@@ -621,8 +640,8 @@ export function fillTrack(run) {
         run.nextChoice <= bridgeCollapse.recovery + 45;
       const reserved = cornerIntersecting(bridgeCollapse.approach, bridgeCollapse.recovery) ||
         (run.raftPrototype && raftIntersecting(bridgeCollapse.approach, bridgeCollapse.recovery)) ||
-        (run.minecartPrototype && minecartIntersecting(bridgeCollapse.approach, bridgeCollapse.recovery)) ||
-        (run.movingGatePrototype && movingGateIntersecting(bridgeCollapse.approach, bridgeCollapse.recovery)) ||
+        (run.minecartPrototype && minecartIntersecting(bridgeCollapse.approach, bridgeCollapse.recovery, mcFirst)) ||
+        (run.movingGatePrototype && movingGateIntersecting(bridgeCollapse.approach, bridgeCollapse.recovery, mgFirst)) ||
         courseOverlap || ziplineOverlap || choiceOverlap;
       if (!reserved) {
         for (const lane of [0, 1, 2]) {
@@ -689,9 +708,9 @@ export function fillTrack(run) {
         glideIntersecting(start - 30, end + 30) ||
         (Number.isFinite(run.nextChoice) && run.nextChoice - 45 > run.nextRow && run.nextChoice - 45 < end + 30 && run.nextChoice + 40 > start - 30) ||
         (run.raftPrototype && raftIntersecting(start - 30, end + 30)) ||
-        (run.minecartPrototype && minecartIntersecting(start - 30, end + 30)) ||
-        (run.skiPrototype && skiIntersecting(start - 30, end + 30)) ||
-        (run.movingGatePrototype && movingGateIntersecting(start - 30, end + 30)) ||
+        (run.minecartPrototype && minecartIntersecting(start - 30, end + 30, mcFirst)) ||
+        (run.skiPrototype && skiIntersecting(start - 30, end + 30, skFirst)) ||
+        (run.movingGatePrototype && movingGateIntersecting(start - 30, end + 30, mgFirst)) ||
         bridgeCollapseIntersecting(start - 30, end + 30) ||
         (run.course && run.course.end >= start - 30 && run.course.start <= end + 30);
       if (!reserved) {
@@ -714,9 +733,9 @@ export function fillTrack(run) {
         climbIntersecting(start - 36, end + 30) ||
         (Number.isFinite(run.nextChoice) && run.nextChoice - 45 > run.nextRow && run.nextChoice - 45 < end + 30 && run.nextChoice + 40 > start - 36) ||
         (run.raftPrototype && raftIntersecting(start - 36, end + 30)) ||
-        (run.minecartPrototype && minecartIntersecting(start - 36, end + 30)) ||
-        (run.skiPrototype && skiIntersecting(start - 36, end + 30)) ||
-        (run.movingGatePrototype && movingGateIntersecting(start - 36, end + 30)) ||
+        (run.minecartPrototype && minecartIntersecting(start - 36, end + 30, mcFirst)) ||
+        (run.skiPrototype && skiIntersecting(start - 36, end + 30, skFirst)) ||
+        (run.movingGatePrototype && movingGateIntersecting(start - 36, end + 30, mgFirst)) ||
         bridgeCollapseIntersecting(start - 36, end + 30) ||
         (run.course && run.course.end >= start - 36 && run.course.start <= end + 30);
       if (!reserved) {
@@ -750,9 +769,9 @@ export function fillTrack(run) {
         glideIntersecting(start - 10, end + 10) ||
         (Number.isFinite(run.nextChoice) && run.nextChoice - 45 > run.nextRow && run.nextChoice - 45 < end + 10 && run.nextChoice + 40 > start - 10) ||
         (run.raftPrototype && raftIntersecting(start - 10, end + 10)) ||
-        (run.minecartPrototype && minecartIntersecting(start - 10, end + 10)) ||
-        (run.skiPrototype && skiIntersecting(start - 10, end + 10)) ||
-        (run.movingGatePrototype && movingGateIntersecting(start - 10, end + 10)) ||
+        (run.minecartPrototype && minecartIntersecting(start - 10, end + 10, mcFirst)) ||
+        (run.skiPrototype && skiIntersecting(start - 10, end + 10, skFirst)) ||
+        (run.movingGatePrototype && movingGateIntersecting(start - 10, end + 10, mgFirst)) ||
         bridgeCollapseIntersecting(start - 10, end + 10) ||
         (run.course && run.course.end >= start - 10 && run.course.start <= end + 10);
       if (!reserved) {
@@ -783,9 +802,9 @@ export function fillTrack(run) {
         glideIntersecting(start - 10, end + 10) ||
         (Number.isFinite(run.nextChoice) && run.nextChoice - 45 > run.nextRow && run.nextChoice - 45 < end + 10 && run.nextChoice + 40 > start - 10) ||
         (run.raftPrototype && raftIntersecting(start - 10, end + 10)) ||
-        (run.minecartPrototype && minecartIntersecting(start - 10, end + 10)) ||
-        (run.skiPrototype && skiIntersecting(start - 10, end + 10)) ||
-        (run.movingGatePrototype && movingGateIntersecting(start - 10, end + 10)) ||
+        (run.minecartPrototype && minecartIntersecting(start - 10, end + 10, mcFirst)) ||
+        (run.skiPrototype && skiIntersecting(start - 10, end + 10, skFirst)) ||
+        (run.movingGatePrototype && movingGateIntersecting(start - 10, end + 10, mgFirst)) ||
         bridgeCollapseIntersecting(start - 10, end + 10) ||
         (run.course && run.course.end >= start - 10 && run.course.start <= end + 10);
       if (!reserved) {
@@ -835,8 +854,8 @@ export function fillTrack(run) {
         (run.raftPrototype || sequenceEnd <= (visit+1)*REGION_LENGTH) &&
         !cornerIntersecting(start, sequenceEnd) &&
         (!run.raftPrototype||!raftIntersecting(start,sequenceEnd)) &&
-        (!run.minecartPrototype||!minecartIntersecting(start,sequenceEnd)) &&
-        (!run.movingGatePrototype||!movingGateIntersecting(start,sequenceEnd)) &&
+        (!run.minecartPrototype||!minecartIntersecting(start,sequenceEnd, mcFirst)) &&
+        (!run.movingGatePrototype||!movingGateIntersecting(start,sequenceEnd, mgFirst)) &&
         (!run.route || start >= run.route.until || sequenceEnd - COURSE_RECOVERY <= run.route.until)) {
       const region=regionAt(start);
       const ordinal=run.raftPrototype?(run.courseOrdinals?.[region]??0):null;
@@ -1183,14 +1202,19 @@ export function step(run, dt) {
     run.ended = true;
     run.retired = true;
     run.finishReason = 'destination';
-    // Never carry an active traversal ride behind the results modal: a climb,
-    // glide or rail straddling the finish marker ends quietly with the run.
+    // Never carry an active traversal ride behind the results modal: any ride
+    // straddling the finish marker ends quietly with the run.
     // No completion bonus is paid for an unfinished ride; the arrival is the
     // reward. Rendering keys its pose off the same flags, so the puppy stands
     // down behind the modal instead of hanging mid-air.
     run.climb = null;
     run.glide = null;
     run.rail = null;
+    run.raft = null;
+    run.zipline = null;
+    run.minecart = null;
+    run.minecartChoice = null;
+    run.ski = null;
     run.events.push('destination');
     run.score = Math.floor(run.distance) + run.bonePoints + run.bonusPoints;
     return;

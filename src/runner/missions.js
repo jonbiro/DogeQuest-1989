@@ -43,7 +43,7 @@ const TIPS = {
   ziplines:'The first zipline starts at 650 m. Jump as the turquoise handle reaches your puppy, then ride to the end. Zipline bones belong to the cable, not a normal jump.',
   regionalCourses:'Complete all three beats of a named course: jump and duck in the jungle, cross gaps in the canyon, or follow the open lanes in the glade. A missed beat means that course does not count.',
   bestCombo:'Collect consecutive bones without letting one pass. Missing a bone resets the streak; your best streak during this run counts toward the goal.',
-  rides:'Finish river crossings, cable rides or mine-cart rides in one run; any completed ride counts. Rivers board automatically at 1,150 m, mine-carts at 7,200 m, and the first cable starts at 650 m. Reach each landing; unfinished rides and practice do not count. Older shared trails can complete this goal using cables.',
+  rides:'Finish river crossings, cable rides, mine-cart rides or Frostpeak descents in one run; any completed ride counts. Rivers board automatically at 1,150 m and mine-carts roll in on longer trails, while Frostpeak waits in endless. Reach each landing; unfinished rides and practice do not count. Older shared trails can complete this goal using cables.',
 };
 export function missionTip(mission) {
   return TIPS[mission.metric] || 'Complete the target in one run, then finish the run to bank the reward.';

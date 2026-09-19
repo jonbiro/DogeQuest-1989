@@ -70,7 +70,7 @@ test('ski steering is smooth, frame-rate independent and bounded', () => {
 });
 
 test('ski lifecycle enters once, clears actions and rewards on exit', () => {
-  const run = createRun(1989);
+  const run = createRun(1989, {}, 5);
   const section = skiByIndex(0);
   Object.assign(run, { time: 40, y: 2, jumpBuffer: .3, slideNext: .7 });
   assert.equal(advanceSki(run, section.start - .2, section.start + .1), 'entered');

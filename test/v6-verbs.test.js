@@ -6,6 +6,9 @@ import {glideAt, glideByIndex, GLIDE_FIRST} from "../src/runner/glide.js";
 import {CURRENT_TRAIL_VERSION} from "../src/runner/trail-version.js";
 import {actionCue, eventNotice, runLesson} from "../src/runner/guidance.js";
 import {encounterFor} from "../src/runner/encounter-director.js";
+import {movingGateFirst, movingGateByIndex, MOVING_GATE_FIRST} from "../src/runner/moving-gate.js";
+import {minecartFirst, minecartByIndex, MINECART_FIRST} from "../src/runner/minecart.js";
+import {skiFirst, skiByIndex, SKI_FIRST} from "../src/runner/ski.js";
 
 function advance(run, seconds) {
   for (let i = 0; i < Math.ceil(seconds * 120); i++) {
@@ -151,4 +154,41 @@ test('wade and rail announce themselves as encounters', () => {
   assert.match(encounterFor(run).title, /Stepping stones/);
   run.distance = 250;
   assert.match(encounterFor(run).title, /Root rail/);
+});
+
+test('v6 debuts gates, carts and ski earlier while legacy grids stay frozen', () => {
+  assert.equal(movingGateFirst(6), 1900);
+  assert.equal(minecartFirst(6), 4960);
+  assert.equal(skiFirst(6), 3350);
+  for (const v of [1, 2, 3, 4, 5]) {
+    assert.equal(movingGateFirst(v), MOVING_GATE_FIRST);
+    assert.equal(minecartFirst(v), MINECART_FIRST);
+    assert.equal(skiFirst(v), SKI_FIRST);
+  }
+  assert.equal(movingGateByIndex(0, movingGateFirst(6)).start, 1900);
+  assert.equal(minecartByIndex(0, minecartFirst(6)).start, 4960);
+  assert.equal(skiByIndex(0, skiFirst(6)).start, 3350);
+  // Default (v6) runs schedule the early chapters; v5 keeps legacy slots.
+  const v6 = createRun(11, {}, 6);
+  assert.equal(v6.nextMovingGate, 1900);
+  assert.equal(v6.nextMinecart, 4960);
+  assert.equal(v6.nextSki, 3350);
+  const v5 = createRun(11, {}, 5);
+  assert.equal(v5.nextMovingGate, MOVING_GATE_FIRST);
+  assert.equal(v5.nextMinecart, MINECART_FIRST);
+  assert.equal(v5.nextSki, SKI_FIRST);
+});
+
+test('skipped chapters never board positionally (no phantom ski)', () => {
+  // Seed 4 skips the 6950 ski on the river recovery yet keeps ordinary rows
+  // there: crossing the window must not board an empty descent.
+  const run = createRun(4, {}, 6);
+  let guard = 0;
+  while (run.distance < 6940 && guard++ < 60000) { run.hearts = 99; run.invulnerable = 1000; step(run, 1 / 120); }
+  assert.ok(run.nextSki > 6950, 'the overlapped ski is skipped in generation');
+  assert.ok(run.skiSkipped.includes(6950));
+  guard = 0;
+  while (run.distance < 7100 && guard++ < 60000) { run.hearts = 99; run.invulnerable = 1000; step(run, 1 / 120); }
+  assert.equal(run.ski, null, 'no phantom ride without emitted content');
+  assert.equal(run.skis, 0);
 });

@@ -19,6 +19,13 @@ export const MINECART_RECOVERY = 8;
 export const MINECART_REWARD = 250;
 export const MINECART_BANK_LIMIT = 3.15;
 export const MINECART_CHOICE_VERSION = 5;
+// Version-six trails board the first cart at 4960, while the 2160 window
+// stays with the zipline landing and the 2350 corner leave no fair room;
+// later trails keep the established 7200 opening and every shared link replays.
+export const MINECART_V6_FIRST = 4960;
+export function minecartFirst(version) {
+  return version >= 6 ? MINECART_V6_FIRST : MINECART_FIRST;
+}
 
 const SCENIC_SAFE_LANES = Object.freeze([1, 0, 2]);
 const SCENIC_BLOCKED_LANES = Object.freeze([0, 2, 1]);
@@ -51,9 +58,9 @@ const FREQUENCY = 13;
 const DAMPING = 7.8;
 const DAMPED_FREQUENCY = Math.sqrt(FREQUENCY * FREQUENCY - DAMPING * DAMPING);
 
-export function minecartByIndex(index) {
+export function minecartByIndex(index, first = MINECART_FIRST) {
   if (!Number.isSafeInteger(index) || index < 0) return null;
-  const start = MINECART_FIRST + index * MINECART_PERIOD;
+  const start = first + index * MINECART_PERIOD;
   if (!Number.isSafeInteger(start + MINECART_LENGTH + MINECART_RECOVERY)) return null;
   return {
     index,
@@ -64,25 +71,25 @@ export function minecartByIndex(index) {
   };
 }
 
-export function minecartAt(distance) {
-  if (!Number.isFinite(distance) || distance < MINECART_FIRST) return null;
-  const index = Math.floor((distance - MINECART_FIRST) / MINECART_PERIOD);
-  const section = minecartByIndex(index);
+export function minecartAt(distance, first = MINECART_FIRST) {
+  if (!Number.isFinite(distance) || distance < first) return null;
+  const index = Math.floor((distance - first) / MINECART_PERIOD);
+  const section = minecartByIndex(index, first);
   // The exit plane belongs to the dismount step, not a fresh boarding event.
   // Keeping this half-open mirrors the raft contract and prevents a large
   // restored step that lands exactly on `end` from manufacturing a ride.
   return section && distance < section.end ? section : null;
 }
 
-export function minecartIntersecting(start, end) {
+export function minecartIntersecting(start, end, first = MINECART_FIRST) {
   if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
   const index = Math.max(
     0,
-    Math.floor((start - MINECART_FIRST - MINECART_LENGTH - MINECART_RECOVERY) / MINECART_PERIOD),
+    Math.floor((start - first - MINECART_LENGTH - MINECART_RECOVERY) / MINECART_PERIOD),
   );
   if (!Number.isSafeInteger(index)) return null;
   for (let i = index; i <= index + 1; i++) {
-    const section = minecartByIndex(i);
+    const section = minecartByIndex(i, first);
     if (section && end >= section.approach && start <= section.recovery) return section;
   }
   return null;
@@ -90,8 +97,8 @@ export function minecartIntersecting(start, end) {
 
 // A gentle rail vibration gives the cart momentum without teleporting the
 // puppy. It returns to zero at both ends so entering and dismounting stay calm.
-export function minecartCurrent(distance) {
-  const section = minecartAt(distance);
+export function minecartCurrent(distance, first = MINECART_FIRST) {
+  const section = minecartAt(distance, first);
   if (!section) return 0;
   const t = (distance - section.start) / MINECART_LENGTH;
   return 0.16 * Math.pow(Math.sin(Math.PI * t), 2) * Math.sin(Math.PI * t * 3);
@@ -146,8 +153,9 @@ export function advanceMinecart(run, from, to) {
     run.events.push('minecart-end');
     return 'exited';
   }
-  const section = minecartAt(to);
-  if (!section || from > section.start || section.index <= (run.lastMinecartIndex ?? -1) || run.zipline || run.raft) return null;
+  const section = minecartAt(to, minecartFirst(run.generatorVersion));
+  if (!section || from > section.start || section.index <= (run.lastMinecartIndex ?? -1) ||
+    (run.minecartSkipped ?? []).includes(section.start) || run.zipline || run.raft) return null;
   run.lastMinecartIndex = section.index;
   const choiceObjects = (run.objects || []).filter(object =>
     object.minecartChoice === 'gem' && object.at >= section.start && object.at < section.end);
@@ -162,7 +170,7 @@ export function advanceMinecart(run, from, to) {
 
 export function moveMinecart(run, target, dt) {
   if (!run?.minecart || run.ended || !Number.isFinite(dt) || dt <= 0) return false;
-  steerMinecart(run, target + minecartCurrent(run.distance), dt);
+  steerMinecart(run, target + minecartCurrent(run.distance, minecartFirst(run.generatorVersion)), dt);
   clearMinecartGroundActions(run);
   return true;
 }

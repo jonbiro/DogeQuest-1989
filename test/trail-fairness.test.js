@@ -56,14 +56,18 @@ function perfectPolicy(run, done) {
       act(run, turn.direction);
     }
   }
-  // Aboard a raft or minecart no jump or slide is possible; the only answer to
-  // a hazard is to steer into its safe lane.
-  if (run.raft || run.minecart) {
+  // Aboard a raft, minecart or ski descent no ordinary jump or slide answer
+  // applies the same way; the only answer is the ride's safe lane, plus a
+  // short hop for jumpable snow. Frostpeak rides at 3350, so the probe must
+  // play them like the other rides instead of reading them as trail rows.
+  if (run.raft || run.minecart || run.ski) {
     const ride = run.objects
-      .filter(object => (object.raftHazard || object.minecartHazard) && object.at > run.distance + .01)
+      .filter(object => (object.raftHazard || object.minecartHazard || object.skiHazard || object.skiObstacle) && object.at > run.distance + .01)
       .sort((a, b) => a.at - b.at)[0];
-    const safe = ride?.raftSafeLane ?? ride?.minecartSafeLane;
+    const safe = ride?.raftSafeLane ?? ride?.minecartSafeLane ?? ride?.skiSafeLane;
     if (safe !== undefined && run.lane !== safe) act(run, safe < run.lane ? 'left' : 'right');
+    else if (ride && (ride.type === 'mogul' || ride.type === 'snowball') &&
+      ride.at - run.distance < run.speed * .4 && ride.at - run.distance > .05 && (run.skiHop || 0) <= 0) act(run, 'jump');
     return;
   }
   const row = nextRow(run);

@@ -45,9 +45,9 @@ import {createMushroomCapGeometry} from './mushroom-cap.js';
 import {createTerrainMaterial,terrainStation} from './terrain-material.js';
 import {raftAt,raftIntersecting} from './rafts.js';
 import {createRaftModel} from './raft-model.js';
-import {minecartIntersecting} from './minecart.js';
+import {minecartIntersecting, minecartFirst} from './minecart.js';
 import {createMinecartModel} from './minecart-model.js';
-import {skiIntersecting, skiVisualBlend, skiYetiX, skiSnowballX} from './ski.js';
+import {skiIntersecting, skiVisualBlend, skiYetiX, skiSnowballX, skiFirst} from './ski.js';
 import {createSkiModel} from './ski-model.js';
 import {movingGateX} from './moving-gate.js';
 import {createRiverBanks} from './river-banks.js';
@@ -2437,7 +2437,7 @@ export function createView(canvas) {
       ground.position.y = -12;
       const smooth = 1 - Math.exp(-18 * dt);
       const skiSection = !menu && run.skiPrototype
-        ? skiIntersecting(distance - 70, distance + 260)
+        ? skiIntersecting(distance - 70, distance + 260, skiFirst(run.generatorVersion))
         : null;
       const skiBlend = skiSection ? skiVisualBlend(distance, skiSection) : 0;
       const weight = bodyMotion({vx:run.vx,vy:run.vy,y,time:run.time,landing:run.landing,
@@ -2737,7 +2737,7 @@ export function createView(canvas) {
       if(river)raftWater.update(distance,frameAt,false,dt,state==='playing'&&!reducedMotion,river,run.raft?x:null);
       else raftWater.mesh.visible=false;
       riverBanks.update(distance,frameAt,river);
-      const cartSection=!menu&&run.minecartPrototype?minecartIntersecting(distance-12,distance+170):null;
+      const cartSection=!menu&&run.minecartPrototype?minecartIntersecting(distance-12,distance+170,minecartFirst(run.generatorVersion)):null;
       skiLandscape.visible = Boolean(skiSection) && !menu;
       if (skiSection && !menu) {
         const skiOrigin = skiSection.start - 34;

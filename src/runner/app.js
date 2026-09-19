@@ -193,7 +193,7 @@ function updateRecords() {
     }
     const detail = $('run-mode-detail');
     if (detail) detail.textContent = selectedRunMode === 'adventure'
-      ? 'Adventure · reach the destination in about 1.5 km, then bank your haul.'
+      ? 'Adventure · reach the destination in about 2.6 km, then bank your haul.'
       : 'Endless · keep running through every chapter and chase your best distance.';
   }
 }

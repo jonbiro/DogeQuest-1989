@@ -13,6 +13,13 @@ export const SKI_PERIOD = 3600;
 export const SKI_LENGTH = 210;
 export const SKI_APPROACH = 46;
 export const SKI_RECOVERY = 42;
+// Version-six trails drop in at 3350, the first 300m gap that clears corners,
+// choices,raft, gates and the other v6 beats; later trails keep the 8700
+// opening and every shared link replays.
+export const SKI_V6_FIRST = 3350;
+export function skiFirst(version) {
+  return version >= 6 ? SKI_V6_FIRST : SKI_FIRST;
+}
 export const SKI_REWARD = 360;
 export const SKI_BANK_LIMIT = 3.35;
 export const SKI_HOP_DURATION = 0.52;
@@ -35,9 +42,9 @@ function lerp(from, to, amount) {
   return from + (to - from) * amount;
 }
 
-export function skiByIndex(index) {
+export function skiByIndex(index, first = SKI_FIRST) {
   if (!Number.isSafeInteger(index) || index < 0) return null;
-  const start = SKI_FIRST + index * SKI_PERIOD;
+  const start = first + index * SKI_PERIOD;
   if (!Number.isSafeInteger(start + SKI_LENGTH + SKI_RECOVERY)) return null;
   return {
     index,
@@ -48,21 +55,21 @@ export function skiByIndex(index) {
   };
 }
 
-export function skiAt(distance) {
-  if (!Number.isFinite(distance) || distance < SKI_FIRST) return null;
-  const section = skiByIndex(Math.floor((distance - SKI_FIRST) / SKI_PERIOD));
+export function skiAt(distance, first = SKI_FIRST) {
+  if (!Number.isFinite(distance) || distance < first) return null;
+  const section = skiByIndex(Math.floor((distance - first) / SKI_PERIOD), first);
   return section && distance < section.end ? section : null;
 }
 
-export function skiIntersecting(start, end) {
+export function skiIntersecting(start, end, first = SKI_FIRST) {
   if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
   const index = Math.max(
     0,
-    Math.floor((start - SKI_FIRST - SKI_LENGTH - SKI_RECOVERY) / SKI_PERIOD),
+    Math.floor((start - first - SKI_LENGTH - SKI_RECOVERY) / SKI_PERIOD),
   );
   if (!Number.isSafeInteger(index)) return null;
   for (let i = index; i <= index + 2; i++) {
-    const section = skiByIndex(i);
+    const section = skiByIndex(i, first);
     if (section && end >= section.approach && start <= section.recovery) return section;
   }
   return null;
@@ -70,8 +77,8 @@ export function skiIntersecting(start, end) {
 
 // A shallow carved line gives the descent a visible rhythm without moving the
 // puppy away from the player's lane.  It eases to zero at the trail edges.
-export function skiCurrent(distance) {
-  const section = skiAt(distance);
+export function skiCurrent(distance, first = SKI_FIRST) {
+  const section = skiAt(distance, first);
   if (!section) return 0;
   const progress = clamp((distance - section.start) / SKI_LENGTH, 0, 1);
   return 0.24 * Math.pow(Math.sin(Math.PI * progress), 2) * Math.sin(progress * Math.PI * 5);
@@ -166,8 +173,9 @@ export function advanceSki(run, from, to) {
     run.lastSkiIndex = section.index;
     return 'exited';
   }
-  const section = skiAt(to);
+  const section = skiAt(to, skiFirst(run.generatorVersion));
   if (!section || from > section.start || section.index <= (run.lastSkiIndex ?? -1) ||
+      (run.skiSkipped ?? []).includes(section.start) ||
       run.zipline || run.raft || run.minecart) return null;
   run.lastSkiIndex = section.index;
   run.ski = { ...section, boardedAt: run.time };
@@ -178,7 +186,7 @@ export function advanceSki(run, from, to) {
 
 export function moveSki(run, target, dt) {
   if (!run?.ski || run.ended || !Number.isFinite(dt) || dt <= 0) return false;
-  steerSki(run, target + skiCurrent(run.distance), dt);
+  steerSki(run, target + skiCurrent(run.distance, skiFirst(run.generatorVersion)), dt);
   run.slide = 0;
   run.slideNext = 0;
   run.diving = false;

@@ -85,7 +85,7 @@ test('mine-cart steering is frame-rate independent and bounded during reversals'
 });
 
 test('mine-cart lifecycle boards once, clears ground actions and pays on exit', () => {
-  const run = createRun(1989);
+  const run = createRun(1989, {}, 5);
   Object.assign(run, {time: 40, y: 2, jumpBuffer: .3, slideNext: .7});
   const section = minecartByIndex(0);
   assert.equal(advanceMinecart(run, section.start - .2, section.start + .1), 'entered');
@@ -108,7 +108,7 @@ test('mine-cart lifecycle boards once, clears ground actions and pays on exit', 
 
 test('skipped, ended, teleported or competing traversals cannot manufacture a cart ride', () => {
   const section = minecartByIndex(0);
-  const skipped = createRun(1989);
+  const skipped = createRun(1989, {}, 5);
   assert.equal(advanceMinecart(skipped, section.start - 2, section.end + 2), null);
   assert.equal(skipped.minecarts, 0);
   for (const configure of [
@@ -116,12 +116,12 @@ test('skipped, ended, teleported or competing traversals cannot manufacture a ca
     run => {run.raft = {start: section.start - 1, end: section.end};},
     run => {run.zipline = {start: section.start - 1, end: section.end};},
   ]) {
-    const run = createRun(1989);
+    const run = createRun(1989, {}, 5);
     configure(run);
     assert.equal(advanceMinecart(run, section.start - .2, section.start + .1), null);
     assert.equal(run.minecarts, 0);
   }
-  const run = createRun(1989);
+  const run = createRun(1989, {}, 5);
   assert.equal(advanceMinecart(run, section.start, section.start), null);
   assert.equal(advanceMinecart(run, section.start + 1, section.start + 2), null);
   assert.equal(run.minecarts, 0);
@@ -160,7 +160,7 @@ test('version-five scenic carts add a visible gem shortcut without changing chal
 });
 
 test('generated prototype trails reserve the cart and older versions stay unchanged', () => {
-  const run = createRun(1989);
+  const run = createRun(1989, {}, 5);
   const section = minecartByIndex(0);
   Object.assign(run, {
     distance: section.start - MINECART_APPROACH - 1,
@@ -227,7 +227,7 @@ test('scenic cart boarding exposes the choice to guidance and clears it on exit'
 
 test('following cart cues collects the bone line without jump or slide inputs', () => {
   const section = minecartByIndex(0);
-  const run = createRun(1989);
+  const run = createRun(1989, {}, 5);
   Object.assign(run, {
     distance: section.start - MINECART_APPROACH - 1,
     nextRow: section.start - MINECART_APPROACH - 1,
@@ -260,7 +260,7 @@ test('following cart cues collects the bone line without jump or slide inputs', 
 });
 
 test('cart motion clears queued actions while preserving powers', () => {
-  const run = createRun(1989);
+  const run = createRun(1989, {}, 5);
   const section = minecartByIndex(0);
   assert.equal(advanceMinecart(run, section.start - .1, section.start + .1), 'entered');
   Object.assign(run, {distance: section.start + 20, jumpBuffer: .3, slide: .4, slideNext: .5, magnet: 4, shield: 1, zoomies: 3});

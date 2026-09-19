@@ -7,6 +7,7 @@ import {
   missionTip,
 } from "../src/runner/missions.js";
 import { createRun, act, step } from "../src/runner/world.js";
+import { ADVENTURE_DISTANCE } from "../src/runner/world.js";
 test('later traversal challenges accept either ride without stranding old shared trails',()=>{
   const mission=missionFor(30);
   assert.equal(mission.metric,'rides');assert.equal(mission.target,2);
@@ -115,4 +116,12 @@ test("a clean slide awards skill points and mission credit only once", () => {
   assert.equal(run.hearts, 3);
   assert.equal(run.clears, 1);
   assert.equal(run.bonusPoints, 20);
+});
+
+test('distance goals stay completable inside an adventure', () => {
+  for (let completed = 0; completed < 80; completed++) {
+    const mission = missionFor(completed);
+    if (mission.metric === 'distance') assert.ok(mission.target <= ADVENTURE_DISTANCE,
+      `goal #${completed} wants ${mission.target}m in a ${ADVENTURE_DISTANCE}m adventure`);
+  }
 });

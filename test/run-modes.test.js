@@ -60,5 +60,6 @@ test('a cue-following player finishes v6 adventures with full hearts and all tra
     assert.ok(run.climbs >= 1, `seed ${seed} never met the wall`);
     assert.ok(run.glides >= 1, `seed ${seed} never rode the shimmer`);
     assert.ok(run.rafts >= 1, `seed ${seed} never rode the river`);
+    assert.ok(run.movingGates >= 1, `seed ${seed} never met the moving gate`);
   }
 });

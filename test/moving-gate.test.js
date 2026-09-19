@@ -44,7 +44,7 @@ test('moving gate sweeps smoothly between outside lanes and always leaves an ope
 });
 
 test('version-four trails add a moving gate without changing legacy streams', () => {
-  const run = createRun(1989);
+  const run = createRun(1989, {}, 4);
   const section = movingGateByIndex(1);
   run.distance = section.approach - 1;
   run.nextRow = run.distance;

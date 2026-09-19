@@ -228,6 +228,19 @@ test("a lane-following runner survives a long seeded route at maximum difficulty
   for (let tick = 0; tick < 120 * 120; tick++) {
     const turn = turnPrompt(run);
     if (turn && turn.status !== 'accepted') act(run, turn.direction);
+    // Frostpeak uses its own hazard flags and safe lanes; steer those and hop
+    // jumpable snow instead of reading ski rows as ordinary trail hazards.
+    if (run.ski) {
+      const hz = run.objects
+        .filter((o) => (o.skiHazard || o.skiObstacle) && o.at > run.distance + .01)
+        .sort((a, b) => a.at - b.at)[0];
+      if (hz) {
+        if (hz.skiSafeLane !== undefined && run.lane !== hz.skiSafeLane) run.lane = hz.skiSafeLane;
+        else if ((hz.type === 'mogul' || hz.type === 'snowball') && hz.at - run.distance < run.speed * .4 && run.y === 0) act(run, 'jump');
+      }
+      step(run, 1 / 120);
+      continue;
+    }
     const next = run.objects.find(
       (o) =>
         HAZARDS.includes(o.type) &&

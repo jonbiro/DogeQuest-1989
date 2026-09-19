@@ -9,6 +9,12 @@ export const MOVING_GATE_PERIOD = 1800;
 export const MOVING_GATE_LENGTH = 56;
 export const MOVING_GATE_APPROACH = 32;
 export const MOVING_GATE_RECOVERY = 28;
+// Version-six trails debut the gate at 1900 so adventures meet it; later
+// trails keep the established 2850 opening and every shared link replays.
+export const MOVING_GATE_V6_FIRST = 1900;
+export function movingGateFirst(version) {
+  return version >= 6 ? MOVING_GATE_V6_FIRST : MOVING_GATE_FIRST;
+}
 
 // Keep this local instead of importing `LANES` from world.js: world owns the
 // scheduler and importing it here would create a module cycle.
@@ -22,9 +28,9 @@ function laneX(lane) {
   return MOVING_GATE_LANES[clamp(Math.round(lane), 0, 2)];
 }
 
-export function movingGateByIndex(index) {
+export function movingGateByIndex(index, first = MOVING_GATE_FIRST) {
   if (!Number.isSafeInteger(index) || index < 0) return null;
-  const start = MOVING_GATE_FIRST + index * MOVING_GATE_PERIOD;
+  const start = first + index * MOVING_GATE_PERIOD;
   if (!Number.isSafeInteger(start + MOVING_GATE_LENGTH + MOVING_GATE_RECOVERY)) return null;
   // Alternating sweeps keep the visual rhythm learnable without making every
   // encounter a fixed left-to-right metronome.
@@ -43,22 +49,22 @@ export function movingGateByIndex(index) {
   };
 }
 
-export function movingGateAt(distance) {
-  if (!Number.isFinite(distance) || distance < MOVING_GATE_FIRST) return null;
-  const index = Math.floor((distance - MOVING_GATE_FIRST) / MOVING_GATE_PERIOD);
-  const section = movingGateByIndex(index);
+export function movingGateAt(distance, first = MOVING_GATE_FIRST) {
+  if (!Number.isFinite(distance) || distance < first) return null;
+  const index = Math.floor((distance - first) / MOVING_GATE_PERIOD);
+  const section = movingGateByIndex(index, first);
   return section && distance < section.end ? section : null;
 }
 
-export function movingGateIntersecting(start, end) {
+export function movingGateIntersecting(start, end, first = MOVING_GATE_FIRST) {
   if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
   const index = Math.max(
     0,
-    Math.floor((start - MOVING_GATE_FIRST - MOVING_GATE_LENGTH - MOVING_GATE_RECOVERY) / MOVING_GATE_PERIOD),
+    Math.floor((start - first - MOVING_GATE_LENGTH - MOVING_GATE_RECOVERY) / MOVING_GATE_PERIOD),
   );
   if (!Number.isSafeInteger(index)) return null;
   for (let i = index; i <= index + 1; i++) {
-    const section = movingGateByIndex(i);
+    const section = movingGateByIndex(i, first);
     if (section && end >= section.approach && start <= section.recovery) return section;
   }
   return null;
