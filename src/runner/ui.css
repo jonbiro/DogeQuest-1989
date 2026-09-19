@@ -3716,6 +3716,9 @@ canvas:focus-visible {
   }
   #game[data-state="playing"] #hud .score {
     display: flex;
+    justify-self: start;
+    max-width: 100%;
+    width: fit-content;
     align-items: center;
     gap: 7px;
     min-width: 0;

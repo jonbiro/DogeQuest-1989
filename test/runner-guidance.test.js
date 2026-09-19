@@ -14,6 +14,32 @@ const HAZARD_ACTION = {
   rock: "jump",
 };
 
+test('the closest hazard owns the cue even when objects arrive out of order', () => {
+  const run = createRun(1989);
+  run.distance = 50;
+  run.objects = [
+    {type:'log', lane:1, at:run.distance + run.speed * .45},
+    {type:'gate', lane:1, at:run.distance + run.speed * .3},
+  ];
+  assert.equal(actionCue(run), '↓ SLIDE');
+  run.objects.reverse();
+  assert.equal(actionCue(run), '↓ SLIDE');
+  run.objects[0].passed = true;
+  assert.equal(actionCue(run), '↑ JUMP');
+});
+
+test('character cues teach the available move and acknowledge a successful slide', () => {
+  const run = createRun(1989);
+  run.distance = 50;
+  run.objects = [{type:'pound-officer', lane:1, safeLane:0, at:run.distance + run.speed * .3}];
+  assert.equal(actionCue(run), '↓ SLIDE UNDER NET');
+  run.slide = .6;
+  assert.equal(actionCue(run), '');
+  run.slide = 0;
+  run.objects[0].type = 'crate-cart';
+  assert.equal(actionCue(run), '↑ JUMP CART');
+});
+
 test('course introduction never hides a jump/slide deadline and slaloms request lanes',()=>{
   const run=createRun(1989);
   run.distance=170;run.nextCorner=1;run.course=courseAt(200);run.objects=[];

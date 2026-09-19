@@ -131,7 +131,7 @@ export function actionCue(run) {
   const relicLaneBlocked=relic&&run.objects.some(object=>
     TRAIL_HAZARDS.includes(object.type)&&!object.used&&
     object.at>run.distance&&object.at-run.distance<run.speed*1.25&&object.lane===relic.lane);
-  const danger = run.objects.find(object => !object.used && !object.passed &&
+  const danger = run.objects.reduce((nearest, object) => !object.used && !object.passed &&
     TRAIL_HAZARDS.includes(object.type) &&
     object.at > run.distance && object.at - run.distance < run.speed*.58 &&
     // A moving gate is a shared timing beat: announce it even when its bar is
@@ -140,7 +140,8 @@ export function actionCue(run) {
     (object.movingGate
       ? object.at - run.distance < run.speed * .5 || onApproach(run, object)
       : onApproach(run, object)) &&
-    (object.at-run.distance<run.speed*.5 || object.at-run.distance<run.speed*warningLead(object)));
+    (object.at-run.distance<run.speed*.5 || object.at-run.distance<run.speed*warningLead(object)) &&
+    (!nearest || object.at < nearest.at) ? object : nearest, null);
   // Jumping already answers low hazards, but an overhead row needs a new
   // downward input. Keep that escape visible until the dive is underway.
   if (run.y > 0 || run.vy > 0) {
@@ -160,9 +161,9 @@ export function actionCue(run) {
   if (danger?.type === 'pound-worker')
     return laneCue(run.lane, danger.safeLane, 'SHELTER') || 'SHELTER WORKER · CLEAR LANE';
   if (danger?.type === 'pound-officer')
-    return laneCue(run.lane, danger.safeLane, 'OFFICER') || 'OFFICER NET · CLEAR LANE';
+    return '↓ SLIDE UNDER NET';
   if (danger?.type === 'crate-cart')
-    return laneCue(run.lane, danger.safeLane, 'CART') || 'CRATE CART · CLEAR LANE';
+    return '↑ JUMP CART';
   const intro = run.course && run.course.start-run.distance < 40 &&
     run.course.start-run.distance > run.speed*.5 ? `${run.course.name} · ${run.course.scenic?'open lanes':'+180 clean'}` : '';
   if (!danger && run.dogChase) {
