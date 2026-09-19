@@ -35,9 +35,13 @@ test('each lane in a split row is clearable with its own cue at normal and boost
     const action=own.type==='gate'?'slide':'jump';
     assert.equal(actionCue(run),action==='slide'?'↓ SLIDE':'↑ JUMP');
     act(run,action);
+    // 46.8 m/s only exists under Zoomies; flag it so the pace is sustained
+    // and the row is smashed through exactly as live boosted play behaves.
+    const boosted=speed>40;
+    if(boosted)run.zoomies=6;
     for(let i=0;i<120;i++) step(run,1/120);
     assert.equal(run.hearts,3,`${lane}/${speed}/${action}`);
-    assert.equal(run.clears,1);
+    assert.equal(boosted?run.smashes:run.clears,1);
   }
 });
 

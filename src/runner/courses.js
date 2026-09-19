@@ -95,8 +95,12 @@ export function courseCue(run) {
   const course = run.course;
   if (!course || course.scenic) return '';
   const beat = course.beats[course.checked];
+  // Weave hints read earlier than ordinary cues: a ×2 hint needs two drag
+  // segments plus recognition, so the lead covers ~1.05s of travel instead of
+  // the usual 0.8s. The cue still clears the moment the puppy holds the open
+  // lane, so it never masks a nearer hazard on the single-rail dock.
   if (!beat || beat.safeLane === undefined || beat.at < run.distance ||
-      beat.at-run.distance > run.speed*.8 || run.lane === beat.safeLane) return '';
+      beat.at-run.distance > run.speed*1.05 || run.lane === beat.safeLane) return '';
   return laneCue(run.lane,beat.safeLane,'WEAVE');
 }
 

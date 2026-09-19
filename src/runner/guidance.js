@@ -215,7 +215,11 @@ export function actionCue(run) {
   }
   if (!danger && relic && !relicLaneBlocked) return laneCue(run.lane,relic.lane,'RELIC') || '✦ RELIC AHEAD';
   return !danger ? intro : OVERHEAD_HAZARDS.includes(danger.type)
-    ? (danger.type === 'moving-gate' ? movingGateCue(run, danger) : '↓ SLIDE')
+    ? (danger.type === 'moving-gate' ? movingGateCue(run, danger)
+      // A renewal reads differently from a fresh cue: under a continuous
+      // slide hint neither players nor cue-following bots would otherwise
+      // know the current slide expires before impact.
+      : run.slide > 0 ? '↓ SLIDE AGAIN' : '↓ SLIDE')
     : danger.type === 'gap' ? (danger.bridgeCollapse ? 'BRIDGE COLLAPSING · ↑ JUMP' : '↑ JUMP GAP') : '↑ JUMP';
 }
 

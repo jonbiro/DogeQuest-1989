@@ -6,9 +6,9 @@ function fixture(){const r=createRun(1);r.objects=[];r.nextRow=99999;return r;}
 test("tennis ball activates once; speed ramps smoothly and returns after expiry",()=>{
   const r=fixture();r.objects=[{id:1,type:"zoomies",lane:1,at:2}];
   advance(r,.2);assert.ok(r.zoomies>5.8);assert.ok(r.speed>22&&r.speed<28.6);
-  advance(r,1);assert.ok(r.speed>28);
+  advance(r,1);assert.ok(r.speed>25);
   advance(r,6);assert.equal(r.zoomies,0);
-  assert.ok(Math.abs(r.speed-Math.min(36,22+r.distance/90))<.2);
+  assert.ok(Math.abs(r.speed-Math.min(36,20+r.distance/100))<.2);
 });
 test("zoomies smashes all obstacle types once without consuming shield",()=>{
   for(const type of HAZARDS.filter(type=>type!=="gap")){

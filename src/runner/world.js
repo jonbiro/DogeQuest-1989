@@ -1115,8 +1115,15 @@ export function act(run, action) {
   }
 }
 
-function syncUnvisitedCorners(run) {
-  // Test fixtures and restored sessions may begin far down-trail. Only a corner
+// A slide that expired within the last 80ms still reads as low at the
+// collision plane: this forgives expiry-coincidence deaths (and fixed-step
+// float error) the same way coyote time and jump buffering forgive takeoff
+// timing. Standing up earlier than that is a real miss.
+function slideFreshlyExpired(run) {
+  return Number.isFinite(run.slideExpiredAt) && run.time - run.slideExpiredAt < .08;
+}
+
+function syncUnvisitedCorners(run) {  // Test fixtures and restored sessions may begin far down-trail. Only a corner
   // actually crossed by this simulation step can penalize the runner.
   let corner = cornerByIndex(run.nextCorner);
   while (corner && corner.at < run.distance - 1e-9) {
@@ -1186,7 +1193,10 @@ export function step(run, dt) {
   // Other lessons stay gentle; mistakes never trigger another speed increase.
   const practiceSpeed=run.practice&&(run.practice.kind==='jump'||run.practice.kind==='slide')
     ? 12+5*Math.min(2,run.practice.correct) : 12;
-  const baseSpeed = run.practice ? practiceSpeed : Math.min(36, 22 + run.distance / 90);
+  // Pace opens a touch gentler and reaches full speed at 1600m instead of
+  // 1260m: early rows grant ~10% more reaction time per meter while late-game
+  // teeth (36 m/s cap, Zoomies and ski multipliers) are untouched.
+  const baseSpeed = run.practice ? practiceSpeed : Math.min(36, 20 + run.distance / 100);
   const targetSpeed = baseSpeed * (run.ski ? 1.18 : 1) * (run.zoomies > 0 ? 1.3 : 1);
   run.speed += (targetSpeed - run.speed) * (1 - Math.exp(-6 * dt));
   if (wasZooming && run.zoomies === 0) {
@@ -1561,9 +1571,8 @@ export function step(run, dt) {
         (Number.isFinite(jumpClearHeight) && run.y > jumpClearHeight) ||
         (object.skiHazard && object.type === 'mogul' && run.y > HAZARD_CAST.mogul.jumpHeight) ||
         (object.skiObstacle && object.skiJumpable && run.y > HAZARD_CAST.snowball.jumpHeight) ||
-        (HAZARD_CAST[object.type]?.clear === 'slide' &&
-          run.slide > 0 &&
-          run.y < 0.2);
+        (HAZARD_CAST[object.type]?.clear === 'slide' && run.y < 0.2 &&
+          (run.slide > 0 || slideFreshlyExpired(run)));
       if (sameLane && cleared) {
         run.clears++;
         // Wade stones score as a set: three clean hops in one stretch earn a
