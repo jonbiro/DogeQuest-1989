@@ -7,6 +7,7 @@
 // where today's families use it), so no new geometries or textures are added.
 // The renderer keeps placement; the kit owns per-destination parameters.
 import {AREAS} from './areas.js';
+import {BANK_SURFACE_Y} from './terrain.js';
 
 // Role vocabulary for destination kits. All five roles are populated: the
 // shoulder family below plus the overhead, ground-clutter, far-band and
@@ -23,6 +24,14 @@ export const DESTINATION_KITS = Object.freeze(AREAS.map((area, index) => Object.
     far: Object.freeze({count: 3, spacing: 61, offset: index * 53 + 11, variant: 8}),
     built: Object.freeze({count: 3, spacing: 59, offset: index * 47 + 29, variant: 9}),
   }),
+  // Road-surface treatments. Only Oasis (boardwalk) and Redrock (cut stone)
+  // dress the ribbon; other destinations keep the shared slabs. Counts times
+  // spacing stay inside one 190m recycle period so rows never double up.
+  surface: index === 3
+    ? Object.freeze({kind: 'boardwalk', count: 220, spacing: 0.85, offset: 130, edgeCount: 12, edgeSpacing: 15.2, edgeOffset: 144, edgeLen: 15.0, variant: 10})
+    : index === 2
+      ? Object.freeze({kind: 'cut-stone', count: 79, spacing: 2.4, offset: 91, edgeCount: 12, edgeSpacing: 15.2, edgeOffset: 97, edgeLen: 15.0, variant: 10})
+      : null,
 })));
 
 export function kitFor(area) {
@@ -33,6 +42,44 @@ export function kitFor(area) {
 // the builders so leans and arrangements stay on the outward side.
 export function sideFor(area, index) {
   return (index + area) % 2 ? 1 : -1;
+}
+
+// Decorations plant on the bank below the road; surface treatments ride the
+// ribbon itself, so their local heights lift by the bank depth.
+const ROAD_LIFT = -BANK_SURFACE_Y;
+
+// Boardwalk rows: alternating bridge-deck tones across the lanes, with slab
+// showing between the planks. Same language as the river decks.
+export function buildBoardwalk(area, group, index, helpers) {
+  const {box} = helpers;
+  box(group, index % 2 ? '#b77c4c' : '#c9915e', 0, ROAD_LIFT + .115, 0, 6.9, .03, .62);
+}
+
+// Flat wooden edge bands frame the boardwalk without adding verticality that
+// could read as a hazard or cue.
+export function buildBoardwalkEdge(area, group, helpers) {
+  const {box} = helpers;
+  const kit = DESTINATION_KITS[area]?.surface;
+  const length = kit?.edgeLen ?? 15.0;
+  for (const side of [-1, 1])
+    box(group, '#6e4f30', side * 3.7, ROAD_LIFT + .10, 0, .5, .025, length);
+}
+
+// Cut-stone joints: dark across strips with staggered along-segments, plus
+// flat stone edge bands. Geometry only — the Redrock palette already warms
+// the slabs underneath.
+export function buildCutStone(area, group, index, helpers) {
+  const {box} = helpers;
+  box(group, '#4a2c24', 0, ROAD_LIFT + .105, 0, 6.9, .02, .09);
+  box(group, '#4a2c24', index % 2 ? -1.2 : 1.2, ROAD_LIFT + .105, 0, .09, .02, 3.4);
+}
+
+export function buildCutStoneEdge(area, group, helpers) {
+  const {box} = helpers;
+  const kit = DESTINATION_KITS[area]?.surface;
+  const length = kit?.edgeLen ?? 15.0;
+  for (const side of [-1, 1])
+    box(group, '#3d2721', side * 3.7, ROAD_LIFT + .10, 0, .5, .025, length);
 }
 
 // Today's shoulder landmark family (pooled variant 2). Moved verbatim from

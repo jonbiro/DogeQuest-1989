@@ -11,7 +11,7 @@ import { PUPPIES, DEFAULT_PUPPY } from "./collection.js";
 import { puppyVisual } from "./puppy-visuals.js";
 import { REGIONS, regionAt, horizonProfile } from "./regions.js";
 import {AREAS,areaAt,areaBlend,worldMoodAt,WORLD_MOODS,landmarkSway,landmarkVariation,LANDMARK_SHOULDER_MIN,LANDMARK_SHOULDER_SPREAD} from './areas.js';
-import {DESTINATION_KITS,buildShoulderFamily,buildSignature,buildTrailMotif,buildSetPiece,buildOverhead,buildGround,buildFar,buildBuilt,sideFor} from './destination-kit.js';
+import {DESTINATION_KITS,buildShoulderFamily,buildSignature,buildTrailMotif,buildSetPiece,buildOverhead,buildGround,buildFar,buildBuilt,buildBoardwalk,buildBoardwalkEdge,buildCutStone,buildCutStoneEdge,sideFor} from './destination-kit.js';
 import {createBoneGeometry} from './bone-model.js';
 import {createCapeGeometry} from './cape-model.js';
 import {createSky} from './sky.js';
@@ -535,6 +535,43 @@ export function createView(canvas) {
       decorations.push(group);
     }
   }
+  // Road-surface treatments ride the ribbon itself: Oasis boardwalk planks
+  // and Redrock cut-stone joints with flat edge bands. They bake like road
+  // slabs (area-filtered, hidden at corners/gaps/bridges) but keep their
+  // authored wood/stone colors instead of the area-blended trail palette.
+  for (const kit of DESTINATION_KITS) {
+    const surface = kit.surface;
+    if (!surface) continue;
+    const area = kit.area;
+    const buildRow = surface.kind === 'boardwalk' ? buildBoardwalk : buildCutStone;
+    const buildEdge = surface.kind === 'boardwalk' ? buildBoardwalkEdge : buildCutStoneEdge;
+    for (let i = 0; i < surface.count; i++) {
+      const group = new THREE.Group();
+      Object.assign(group.userData, {
+        area,
+        offset: i * surface.spacing + surface.offset,
+        variant: surface.variant,
+        road: true,
+        surface: true,
+      });
+      buildRow(area, group, i, kitHelpers);
+      scenery.add(group);
+      decorations.push(group);
+    }
+    for (let i = 0; i < surface.edgeCount; i++) {
+      const group = new THREE.Group();
+      Object.assign(group.userData, {
+        area,
+        offset: i * surface.edgeSpacing + surface.edgeOffset,
+        variant: surface.variant,
+        road: true,
+        surface: true,
+      });
+      buildEdge(area, group, kitHelpers);
+      scenery.add(group);
+      decorations.push(group);
+    }
+  }
   for (let i = 0; i < 12; i++) {
     const group = new THREE.Group();
     for (const side of [-1, 1]) {
@@ -765,7 +802,9 @@ export function createView(canvas) {
   // Keep a wider visual corridor around playable lanes without moving hazards.
   for (const group of decorations) {
     group.position.y = BANK_SURFACE_Y;
-    if (!group.userData.gateway) {
+    // Surface treatments skip the shoulder shrink: their children are authored
+    // in exact road coordinates (centered, full lane width, road-riding lift).
+    if (!group.userData.gateway && !group.userData.surface) {
       group.position.x *= 1.4;
       group.scale.setScalar(.82);
     }
@@ -793,8 +832,10 @@ export function createView(canvas) {
             markSlot: item.userData.markSlot || 0,
           });
       });
+    // Regular plank/joint rhythms must survive intact: exempt road-surface
+    // treatments from the foliage thinning below.
     for (const group of decorations.filter(
-      (group, index) => group.userData.gateway || index % 3 !== 1,
+      (group, index) => group.userData.gateway || group.userData.surface || index % 3 !== 1,
     ))
       group.traverse((item) => {
         if (item.geometry === geometry)
@@ -809,6 +850,9 @@ export function createView(canvas) {
             area: group.userData.area,
             setPiece: group.userData.setPiece,
             gateway: group.userData.gateway === true,
+            road: group.userData.road === true,
+            bridge: group.userData.bridge === true,
+            surface: group.userData.surface === true,
             motion: group.userData.area !== undefined &&
               (geometry === palmFrondGeometry ||
                 geometry === featheredPalmGeometry ||
@@ -2616,7 +2660,7 @@ export function createView(canvas) {
             // tiles and avoids another palette allocation in this hot loop.
             areaGroundColor.lerp(moodGroundColor,moodStrength*.42);
             instanced.setColorAt(i,areaGroundColor);
-          }else if(entry.road && !entry.bridge && !entry.cable){
+          }else if(entry.road && !entry.surface && !entry.bridge && !entry.cable){
             if(entry.areaMark) instanced.setColorAt(i,sampleTrailMarkColor(menu?0:distance-z,areaGroundColor,entry.markSlot));
             else
             instanced.setColorAt(i,sampleTrailColor(entry.trailColors,menu?0:distance-z,areaGroundColor,entry.edge));

@@ -425,6 +425,20 @@ test('kit roles add overhead, verge, far and built layers without touching lanes
   assert.match(kit, /Built role: the storytelling layer/);
 });
 
+test('road-surface treatments behave like slabs but keep authored colors', () => {
+  const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
+  const kit = readFileSync(new URL('../src/runner/destination-kit.js', import.meta.url), 'utf8');
+  assert.match(render, /buildBoardwalk : buildCutStone/);
+  assert.match(render, /buildBoardwalkEdge : buildCutStoneEdge/);
+  assert.match(render, /road: true,\n\s*surface: true,/);
+  assert.match(render, /!group\.userData\.gateway && !group\.userData\.surface/);
+  assert.match(render, /group\.userData\.gateway \|\| group\.userData\.surface \|\| index % 3 !== 1/);
+  assert.match(render, /entry\.road && !entry\.surface && !entry\.bridge && !entry\.cable/);
+  assert.match(kit, /kind: 'boardwalk'/);
+  assert.match(kit, /kind: 'cut-stone'/);
+  assert.match(kit, /ROAD_LIFT = -BANK_SURFACE_Y/);
+});
+
 test('ended mobile sheets keep the details affordance above the fixed action shelf', () => {
   assert.match(css, /#overlay\[data-kind="ended"\] \.modal-content \{\s*padding-bottom: 42px;/);
   assert.match(css, /#overlay\[data-kind="ended"\] \.modal h2 \{\s*font-size: 30px;/);

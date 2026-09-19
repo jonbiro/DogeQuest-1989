@@ -1,5 +1,26 @@
 # Runner verification
 
+## Oasis boardwalk and Redrock cut stone (2026-09-18)
+
+- The road is no longer one ribbon: Oasis lays alternating bridge-deck
+  boardwalk planks with wooden edge bands, Redrock lays dark cut-stone
+  joints with staggered along-segments and stone edge bands. Both bake as
+  area-filtered instanced strips that hide exactly like road slabs at
+  corners, gaps, bridges and rafts (new `road` + `surface` entry flags) but
+  keep authored colors outside the area-blended trail palette. Treatments
+  lift by the bank depth so rows ride the ribbon; counts times spacing stay
+  inside one recycle period so rhythms never double up.
+- Full check: 787 tests passed (surface-record, road-hugging lift and
+  pipeline source pins added), plus lint, build and distribution
+  verification. No simulation change: fairness digests and gameplay timing
+  are untouched.
+- CDP-driven desktop play verified Redrock joints in place with lanes clear
+  and the HUD readable; the cue-following bot could not survive to Oasis
+  (390m best), so the boardwalk rests on boot construction, unit contracts
+  and the shared Redrock-proven pipeline. Same-build screenshot variance
+  (3–12%) rules out pixel-diff gates. No device frame-rate claim; the
+  per-frame batch loop grows by roughly 500 entries.
+
 ## Destination kits and new scenery roles (2026-09-18)
 
 - Shipped the visual-identity overhaul steps 1–4: hazard-cast registry,

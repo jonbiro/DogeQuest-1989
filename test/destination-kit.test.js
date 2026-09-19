@@ -14,8 +14,13 @@ import {
   buildGround,
   buildFar,
   buildBuilt,
+  buildBoardwalk,
+  buildBoardwalkEdge,
+  buildCutStone,
+  buildCutStoneEdge,
 } from '../src/runner/destination-kit.js';
 import {AREAS} from '../src/runner/areas.js';
+import {BANK_SURFACE_Y} from '../src/runner/terrain.js';
 
 test('all six destinations declare every kit role', () => {
   assert.deepEqual([...KIT_ROLES], ['shoulder', 'overhead', 'ground', 'far', 'built']);
@@ -91,7 +96,6 @@ const BUILDERS = [
   ['far', 1, (area, group, helpers, index) => buildFar(area, group, helpers)],
   ['built', 3, (area, group, helpers, index) => buildBuilt(area, group, index, helpers)],
 ];
-
 test('every builder covers every destination deterministically', () => {
   for (const [name, variants, build] of BUILDERS) {
     for (let area = 0; area < AREAS.length; area++) {
@@ -115,8 +119,7 @@ function tops(log) {
   return log.filter(entry => entry.length === 8).map(entry => entry[3] + entry[6] / 2);
 }
 
-test('roles keep their vertical identities', () => {
-  for (let area = 0; area < AREAS.length; area++) {
+test('roles keep their vertical identities', () => {  for (let area = 0; area < AREAS.length; area++) {
     const ground = stubContext([0.5]);
     buildGround(area, new THREE.Group(), ground.helpers);
     assert.ok(Math.max(...tops(ground.log)) <= 0.8, `area ${area} ground clutter must stay low`);
@@ -143,4 +146,38 @@ test('builders reject an unknown destination instead of shipping empty', () => {
     // is the dispatch never silently produces nothing.
     assert.ok(group.children.length > 0, `${name} must not produce an empty group`);
   }
+});
+
+test('only Oasis and Redrock dress the road ribbon', () => {
+  for (const kit of DESTINATION_KITS) {
+    if (kit.area === 3) {
+      assert.equal(kit.surface?.kind, 'boardwalk');
+      assert.ok(kit.surface.count * kit.surface.spacing <= 190, 'plank rows must not double up in one period');
+    } else if (kit.area === 2) {
+      assert.equal(kit.surface?.kind, 'cut-stone');
+      assert.ok(kit.surface.count * kit.surface.spacing <= 190, 'joint rows must not double up in one period');
+    } else {
+      assert.equal(kit.surface, null, `${kit.name} keeps the shared slabs`);
+    }
+  }
+});
+
+test('surface treatments ride the road, not the bank', () => {
+  // Decorations plant BANK_SURFACE_Y below the road; surface pieces lift by
+  // exactly that depth so planks and joints sit on the ribbon. Tops must
+  // clear the lane inlays (~0.1) without reaching hazards or bones.
+  const roadLift = -BANK_SURFACE_Y;
+  const check = (build, args, label) => {
+    const ctx = stubContext([0.5]);
+    const group = new THREE.Group();
+    build(...args, group, ctx.helpers);
+    assert.ok(group.children.length > 0, `${label} must add meshes`);
+    for (const top of tops(ctx.log))
+      assert.ok(top > roadLift && top < roadLift + 0.35, `${label} top ${top.toFixed(3)} must hug the ribbon`);
+  };
+  check((area, group, helpers) => buildBoardwalk(area, group, 0, helpers), [3], 'boardwalk row');
+  check((area, group, helpers) => buildBoardwalk(area, group, 1, helpers), [3], 'boardwalk alternate tone');
+  check((area, group, helpers) => buildBoardwalkEdge(area, group, helpers), [3], 'boardwalk edge');
+  check((area, group, helpers) => buildCutStone(area, group, 0, helpers), [2], 'cut-stone joints');
+  check((area, group, helpers) => buildCutStoneEdge(area, group, helpers), [2], 'cut-stone edge');
 });

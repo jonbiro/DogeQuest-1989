@@ -197,6 +197,7 @@ committed or parked before implementation starts.
   fences, signs, shrines, stalls, cairns, tents). All reuse shared geometry
   through the existing instanced batches: zero new geometries, textures or
   draw calls. Road-surface treatments (Oasis boardwalk, Redrock cut stone)
-  remain a follow-up slice.
+  shipped as a follow-up: area-filtered instanced strips that hide like road
+  slabs at corners, gaps and bridges but keep authored wood/stone colors.
 - Open questions resolved: the officer joined second by encounter order with
   a small net-sway animation (frozen under reduced motion).
