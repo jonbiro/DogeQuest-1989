@@ -830,6 +830,9 @@ export function createView(canvas) {
             edge: item.userData.edge === true,
             areaMark: item.userData.areaMark === true,
             markSlot: item.userData.markSlot || 0,
+            // Hot-loop cache state lives on the entry from birth so every
+            // entry shares one hidden class instead of transitioning later.
+            hidden: false,
           });
       });
     // Regular plank/joint rhythms must survive intact: exempt road-surface
@@ -857,6 +860,9 @@ export function createView(canvas) {
               (geometry === palmFrondGeometry ||
                 geometry === featheredPalmGeometry ||
                 geometry === mushroomCapGeometry),
+            // Hot-loop cache state lives on the entry from birth so every
+            // entry shares one hidden class instead of transitioning later.
+            hidden: false,
           });
       });
     for (const groupEntries of [
@@ -2556,16 +2562,25 @@ export function createView(canvas) {
               entry.period);
           const region = regionAt(menu ? 0 : distance-z);
           const destination = areaBlend(menu ? 0 : distance-z);
-          if(entry.region!==undefined&&(entry.region!==region||entry.variant!==areaAt(menu?0:distance-z)%2)){
-            instanced.setMatrixAt(i,instanceMatrix.makeScale(0,0,0));return;
+          // Region- and destination-filtered scenery is hidden most of the
+          // time. Persistently filtered entries keep their last scale-0
+          // write and skip the compose below; the write happens once on the
+          // transition, exactly as the original early-returns did.
+          const filteredOut = (entry.region !== undefined &&
+            (entry.region !== region || entry.variant !== areaAt(menu ? 0 : distance-z) % 2)) ||
+            // Landmark families belong to one destination and stay visible for
+            // the first part of a blend so a new area arrives as a handoff,
+            // rather than a single-frame pop at the 225m boundary.
+            (entry.area !== undefined && entry.area !== destination.index &&
+              !(entry.area === destination.previous && destination.blend < .78));
+          if (filteredOut) {
+            if (!entry.hidden) {
+              instanced.setMatrixAt(i, instanceMatrix.makeScale(0,0,0));
+              entry.hidden = true;
+            }
+            return;
           }
-          // Landmark families belong to one destination and stay visible for
-          // the first part of a blend so a new area arrives as a handoff,
-          // rather than a single-frame pop at the 225m boundary.
-          if (entry.area !== undefined && entry.area !== destination.index &&
-              !(entry.area === destination.previous && destination.blend < .78)) {
-            instanced.setMatrixAt(i,instanceMatrix.makeScale(0,0,0));return;
-          }
+          entry.hidden = false;
           const cableClip = entry.cable ? cableSegment(z) : null;
           const frame = frameAt(cableClip ? cableClip.z : z);
           bendEuler.set(frame.pitch, frame.yaw, 0, 'YXZ');

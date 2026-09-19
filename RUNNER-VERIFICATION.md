@@ -1,5 +1,29 @@
 # Runner verification
 
+## Batch-loop write skipping (2026-09-18)
+
+- The per-frame instanced-batch loop skipped redundant work: entries
+  filtered out by region/destination keep their scale-0 write and skip the
+  compose, with the write happening once on the transition. Everything else
+  runs verbatim, so the change is pixel-identical by construction (skipped
+  frames wrote identical values). A source pin test guards the mechanism.
+- A fuller restructure was tried first (all hide conditions folded into one
+  flag, static colors painted once, conditional color uploads). It measured
+  2.3x SLOWER across three runs (game loop 0.74ms to 1.42-1.67ms) and was
+  reverted outright; baking the flags in did not save it. Thermal drift was
+  ruled out by rerunning the baseline on the hot machine (0.56/0.75ms,
+  unchanged). Lesson recorded: keep the hot callback small and let the JIT
+  see the same code it already optimized.
+- Shipped minimal variant, same CDP harness and machine as the visual
+  before/after: camp loop 0.508ms vs 0.560/0.563ms (-9%), game loop
+  0.752ms vs 0.740/0.753ms (neutral, inside run noise). Draw calls,
+  triangles, geometries and textures identical in both phases. As before,
+  SwiftShader numbers do not predict phone GPUs; the win, if any, lands on
+  slower mobile JS threads, unmeasured here.
+- Full check: 788 tests passed, plus lint, build and distribution
+  verification. Headless boot and CDP-driven gameplay render with zero JS
+  errors and structurally identical frames.
+
 ## Before/after render measurement for the visual overhaul (2026-09-18)
 
 - Measured the pre-overhaul baseline (`5d35e16`) against the finished stack

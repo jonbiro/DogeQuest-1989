@@ -439,6 +439,18 @@ test('road-surface treatments behave like slabs but keep authored colors', () =>
   assert.match(kit, /ROAD_LIFT = -BANK_SURFACE_Y/);
 });
 
+test('batch instances skip redundant writes without changing pixels', () => {
+  const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
+  // Persistently region/area-filtered entries keep their scale-0 write and
+  // skip the compose; the write happens once on the transition, exactly as
+  // the original early-returns did. Everything else runs verbatim.
+  assert.match(render, /const filteredOut = \(entry\.region !== undefined/);
+  assert.match(render, /if \(filteredOut\) \{\s*if \(!entry\.hidden\) \{/);
+  assert.match(render, /entry\.hidden = false;/);
+  assert.match(render, /hidden: false,/);
+  assert.doesNotMatch(render, /wroteColor/);
+});
+
 test('ended mobile sheets keep the details affordance above the fixed action shelf', () => {
   assert.match(css, /#overlay\[data-kind="ended"\] \.modal-content \{\s*padding-bottom: 42px;/);
   assert.match(css, /#overlay\[data-kind="ended"\] \.modal h2 \{\s*font-size: 30px;/);
