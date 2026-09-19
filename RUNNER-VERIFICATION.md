@@ -1,5 +1,46 @@
 # Runner verification
 
+## Before/after render measurement for the visual overhaul (2026-09-18)
+
+- Measured the pre-overhaul baseline (`5d35e16`) against the finished stack
+  (`e3d44ef`) in headless desktop Chrome with SwiftShader WebGL, 390x844,
+  using a temporary local-only frame hook in disposable worktrees (never
+  committed; the main tree is untouched). Camp 15s idle plus a cue-following
+  bot for gameplay. Same machine, same harness, same day.
+
+  | Phase | Base | Current |
+  | --- | --- | --- |
+  | Camp frames / interval mean / p95 | 82–83 / 182–185ms / 204–207ms | 79 / 193ms / 211ms |
+  | Camp draw calls (mean/p95/max) | 38 / 38 / 38 | 38 / 38 / 38 |
+  | Camp triangles | 2.67M | 2.92M (+9%) |
+  | Camp geometries / textures | 16 / 10 | 16 / 10 |
+  | Game draw calls max (all runs) | 193 | 193 |
+  | Game draw calls mean (835m runs) | 102 | 110 |
+  | Game triangles (835m runs) | 2.72M | 2.99M (+10%) |
+  | Game geometries, 390m / 835m | 32 / 35 | — / 37 |
+  | Game textures (all runs) | 12 | 12 |
+
+- Draw calls are identical at peak (193) and in camp (38): the new density
+  costs instances, not draws, as designed. Triangles rise ~10% from the
+  roles and treatments actually rendering. Geometry peaks at 37 of the 37
+  budget in the longest run; +2 is statically attributable to the officer
+  net (torus hoop + disc, the only new geometries in the stack) and the
+  rest is run-length lazy upload, confirmed by the baseline's own 32 → 35
+  across its two runs (390m vs 835m). No new textures in either build.
+- Frame pacing on this software rasterizer slows 3–6% on the mean, tracking
+  the triangle growth; p95/max sit inside run-to-run noise. SwiftShader is
+  CPU-rasterized, so this does not predict any phone GPU. No mobile,
+  low-end or sustained-session claim is made; device-side timing remains
+  the standing validation gate.
+- Observation, not a regression: headless reports 12 textures in both
+  builds, above the 9-texture design budget (the repo fixture measured 8).
+  Identical before/after, so it is pre-existing or headless-specific, but
+  it deserves a device-side recheck on the next hardware pass.
+- Gameplay runs used the same cue-following bot for both builds (slide on
+  gate cues, double-press on ×2). It reached 835m twice and 390m once;
+  deaths are bot skill, not trail fairness, which the deterministic
+  40-seed probe covers separately.
+
 ## Oasis boardwalk and Redrock cut stone (2026-09-18)
 
 - The road is no longer one ribbon: Oasis lays alternating bridge-deck
