@@ -22,7 +22,11 @@ test("actual lane position selects challenge, with scenic as safe center default
 });
 test("route choice changes obstacle density and locks skill rewards onto generated objects",()=>{
   const scenic=choose(0),challenge=choose(2);
-  const hazards=r=>r.objects.filter(o=>HAZARDS.includes(o.type));
+  // Density is a sustained property of the 220m route window, not of a single
+  // row: v6 stations (glide at 420) displace individual rows, so compare the
+  // whole window up to the route rejoin instead of one step.
+  for(const r of [scenic,challenge]){let n=0;while(r.distance<560&&n++<5000){r.hearts=99;r.invulnerable=1000;step(r,1/120);}}
+  const hazards=r=>r.objects.filter(o=>HAZARDS.includes(o.type)&&o.at>=390&&o.at<570);
   assert.ok(hazards(challenge).length>hazards(scenic).length);
   assert.ok(hazards(scenic).every(o=>hazards(scenic).filter(other=>other.at===o.at).length===1));
   assert.ok(hazards(challenge).every(o=>o.skillReward===60));

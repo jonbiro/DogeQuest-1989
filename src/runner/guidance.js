@@ -99,28 +99,38 @@ export function actionCue(run) {
   }
   const cart = run.objects.find(object => object.type === 'minecart-start' && !object.used &&
     object.at > run.distance && object.at - run.distance < run.speed * 1.6);
-  if (cart) return cart.at - run.distance >= run.speed * .35
+  // A station approach cue must never mask an imminent hazard cue. Generation
+  // keeps approaches clear, but a hazard can still sit just outside a station
+  // window; when one is inside its reaction window it owns the dock and the
+  // far station cue waits. Catch-window cues (under .45x speed) keep priority:
+  // missing a catch is safe, but they fire only when the catch itself is due.
+  const imminent = run.objects.find(object =>
+    TRAIL_HAZARDS.includes(object.type) && !object.used && !object.passed &&
+    object.at > run.distance && object.at - run.distance < run.speed * .5 &&
+    onApproach(run, object));
+  const farSuppressed = object => imminent && object.at - run.distance >= run.speed * .45;
+  if (cart && !farSuppressed(cart)) return cart.at - run.distance >= run.speed * .35
     ? 'MINE-CART AHEAD · AUTO-BOARD'
     : 'MINE-CART AHEAD · GET READY';
   const cable = run.objects.find(object => object.type === 'zipline-start' && !object.caught &&
     object.at > run.distance && object.at - run.distance < run.speed * 1.6);
   const climbStart = run.objects.find(object => object.type === 'climb-start' && !object.used &&
     object.at > run.distance && object.at - run.distance < run.speed * 1.6);
-  if (climbStart) return climbStart.at - run.distance >= run.speed * .45
+  if (climbStart && !farSuppressed(climbStart)) return climbStart.at - run.distance >= run.speed * .45
     ? 'CLIMB WALL AHEAD · PUMP UP'
     : 'WALL AHEAD · ↑ PUMP TO CLIMB';
   const glideStart = run.objects.find(object => object.type === 'glide-start' && !object.used &&
     object.at > run.distance && object.at - run.distance < run.speed * 1.8);
-  if (glideStart) return glideStart.at - run.distance >= run.speed * .45
+  if (glideStart && !farSuppressed(glideStart)) return glideStart.at - run.distance >= run.speed * .45
     ? 'GLIDE SHIMMER AHEAD · JUMP IN'
     : 'SHIMMER AHEAD · ↑ JUMP + HOLD';
-  if (cable) {
+  if (cable && !farSuppressed(cable)) {
     if (cable.at - run.distance >= run.speed * .45) return 'ZIPLINE AHEAD · zipline bones';
     return run.y > .05 || run.vy > 0 ? 'CATCH THE TURQUOISE HANDLE' : '↑ JUMP · ZIPLINE';
   }
   const skiStart = run.objects.find(object => object.type === 'ski-start' && !object.used &&
     object.at > run.distance && object.at - run.distance < run.speed * 1.8);
-  if (skiStart) return skiStart.at - run.distance >= run.speed * .45
+  if (skiStart && !farSuppressed(skiStart)) return skiStart.at - run.distance >= run.speed * .45
     ? 'FROSTPEAK AHEAD · GET READY'
     : 'SKI DESCENT AHEAD · CARVE + HOP';
   // A chase is a reward beat, not a new hazard. Point at the next authored

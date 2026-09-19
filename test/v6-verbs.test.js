@@ -15,8 +15,8 @@ function advance(run, seconds) {
   }
 }
 
-test('trail version supports climb/glide prototypes opt-in (v6)', () => {
-  assert.equal(CURRENT_TRAIL_VERSION, 5);
+test('trail version 6 carries climb/glide prototypes', () => {
+  assert.equal(CURRENT_TRAIL_VERSION, 6);
   const run = createRun(1, {}, 6);
   assert.equal(run.climbPrototype, true);
   assert.equal(run.glidePrototype, true);

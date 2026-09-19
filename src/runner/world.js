@@ -16,8 +16,8 @@ import {cleanMove} from './flow.js';
 import {mistakeDetail} from './mistakes.js';
 import { jump, steer, moveVertical, JUMP_BUFFER, SLIDE_BUFFER } from "./motion.js";
 import { ZIPLINE_FIRST, ZIPLINE_PERIOD, ZIPLINE_LENGTH, ZIPLINE_HEIGHT } from "./ziplines.js";
-import {CLIMB_FIRST, CLIMB_PERIOD, CLIMB_LENGTH, CLIMB_HEIGHT, CLIMB_REWARD} from "./climb.js";
-import {GLIDE_FIRST, GLIDE_PERIOD, GLIDE_LENGTH, GLIDE_REWARD} from "./glide.js";
+import {CLIMB_FIRST, CLIMB_PERIOD, CLIMB_LENGTH, CLIMB_HEIGHT, CLIMB_REWARD, climbIntersecting} from "./climb.js";
+import {GLIDE_FIRST, GLIDE_PERIOD, GLIDE_LENGTH, GLIDE_REWARD, glideIntersecting} from "./glide.js";
 import {courseAt, COURSE_LENGTH, COURSE_RECOVERY, advanceCourse} from './courses.js';
 import {REGION_LENGTH,regionAt} from './regions.js';
 import {AREA_LENGTH,areaAt,areaGameplayAt} from './areas.js';
@@ -227,7 +227,7 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     nextGlide: generatorVersion>=6 ? GLIDE_FIRST : Infinity,
     glide: null,
     glides: 0,
-    nextMinecart: generatorVersion>=6 ? 3200 : generatorVersion>=4 ? MINECART_FIRST : Infinity,
+    nextMinecart: generatorVersion>=4 ? MINECART_FIRST : Infinity,
     minecart: null,
     minecartChoice: null,
     minecarts: 0,
@@ -239,7 +239,7 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     dogChaseUpcoming: null,
     dogChase: null,
     dogChases: 0,
-    nextSki: generatorVersion>=6 ? 4500 : generatorVersion >= 5 ? SKI_FIRST : Infinity,
+    nextSki: generatorVersion >= 5 ? SKI_FIRST : Infinity,
     ski: null,
     skis: 0,
     skiJumps: 0,
@@ -337,6 +337,8 @@ function dogChaseReserved(run, chase) {
     (run.minecartPrototype && minecartIntersecting(start, end)) ||
     (run.movingGatePrototype && movingGateIntersecting(start, end)) ||
     (run.skiPrototype && skiIntersecting(start, end)) ||
+    (run.climbPrototype && climbIntersecting(start, end)) ||
+    (run.glidePrototype && glideIntersecting(start, end)) ||
     bridgeCollapseIntersecting(start, end) ||
     courseOverlap || ziplineOverlap || choiceOverlap,
   );
@@ -679,7 +681,13 @@ export function fillTrack(run) {
     if (run.climbPrototype && run.nextRow >= run.nextClimb - 30) {
       const start = run.nextClimb;
       const end = start + CLIMB_LENGTH;
+      // A scheduler that fell behind the generation frontier (long corner /
+      // ride skip) must not emit in the past: rewinding nextRow would generate
+      // duplicate rows over live content. Advance past the spoiled slot.
+      if (start < run.nextRow) { run.nextClimb += CLIMB_PERIOD; continue; }
       const reserved = cornerIntersecting(start - 30, end + 30) ||
+        glideIntersecting(start - 30, end + 30) ||
+        (Number.isFinite(run.nextChoice) && run.nextChoice - 45 > run.nextRow && run.nextChoice - 45 < end + 30 && run.nextChoice + 40 > start - 30) ||
         (run.raftPrototype && raftIntersecting(start - 30, end + 30)) ||
         (run.minecartPrototype && minecartIntersecting(start - 30, end + 30)) ||
         (run.skiPrototype && skiIntersecting(start - 30, end + 30)) ||
@@ -701,7 +709,10 @@ export function fillTrack(run) {
     if (run.glidePrototype && run.nextRow >= run.nextGlide - 36) {
       const start = run.nextGlide;
       const end = start + GLIDE_LENGTH;
+      if (start < run.nextRow) { run.nextGlide += GLIDE_PERIOD; continue; }
       const reserved = cornerIntersecting(start - 36, end + 30) ||
+        climbIntersecting(start - 36, end + 30) ||
+        (Number.isFinite(run.nextChoice) && run.nextChoice - 45 > run.nextRow && run.nextChoice - 45 < end + 30 && run.nextChoice + 40 > start - 36) ||
         (run.raftPrototype && raftIntersecting(start - 36, end + 30)) ||
         (run.minecartPrototype && minecartIntersecting(start - 36, end + 30)) ||
         (run.skiPrototype && skiIntersecting(start - 36, end + 30)) ||
@@ -723,35 +734,83 @@ export function fillTrack(run) {
       run.nextGlide += GLIDE_PERIOD;
       continue;
     }
-    // v6 wade stones (Oasis water-break flavor): 5 hop gaps, forgiving.
-    // Reuses gap collision; first miss costs streak, not a heart.
-    if (run.climbPrototype && run.nextRow >= 2200 && (run.row % 37 === 0)) {
+    // v6 wade stones (Oasis water-break flavor): 3 hop gaps, forgiving.
+    // Reuses gap collision; first miss costs streak, not a heart. Gaps sit
+    // 40m apart so a full 26m top-speed jump always has a landing zone, and
+    // Scenic never sees them (its contract promises no full-width gaps).
+    const inScenicRoute = run.route?.kind === 'scenic' && run.nextRow < run.route.until;
+    if (run.climbPrototype && !inScenicRoute && run.nextRow >= 2200 && (run.row % 37 === 0)) {
       const start = Math.ceil(run.nextRow / 5) * 5;
-      add(run, "wade-start", 1, start);
-      for (let i = 0; i < 5; i++) {
-        const g = add(run, "gap", 1, start + 10 + i * 12);
-        g.wade = true;
-        add(run, "bone", 1, start + 14 + i * 12);
+      const end = start + 110;
+      // Wade gaps are real hazards: never overlap corners, rides, gates,
+      // bridges, chases, courses or choices. On overlap, skip a beat (advance
+      // row and road) and let the reserved owner emit instead.
+      const reserved = cornerIntersecting(start - 10, end + 10) ||
+        climbIntersecting(start - 10, end + 10) ||
+        glideIntersecting(start - 10, end + 10) ||
+        (Number.isFinite(run.nextChoice) && run.nextChoice - 45 > run.nextRow && run.nextChoice - 45 < end + 10 && run.nextChoice + 40 > start - 10) ||
+        (run.raftPrototype && raftIntersecting(start - 10, end + 10)) ||
+        (run.minecartPrototype && minecartIntersecting(start - 10, end + 10)) ||
+        (run.skiPrototype && skiIntersecting(start - 10, end + 10)) ||
+        (run.movingGatePrototype && movingGateIntersecting(start - 10, end + 10)) ||
+        bridgeCollapseIntersecting(start - 10, end + 10) ||
+        (run.course && run.course.end >= start - 10 && run.course.start <= end + 10);
+      if (!reserved) {
+        add(run, "wade-start", 1, start);
+        for (let i = 0; i < 3; i++) {
+          const g = add(run, "gap", 1, start + 10 + i * 40);
+          g.wade = true;
+          add(run, "bone", 1, start + 14 + i * 40);
+        }
+        add(run, "wade-end", 1, end);
+        run.nextRow = end + 30;
+        run.row++;
+        continue;
       }
-      add(run, "wade-end", 1, start + 80);
-      run.nextRow = start + 110;
+      run.row++;
+      run.nextRow += 5;
       continue;
     }
-    // v6 root rail (Bamboo/Sunleaf flavor): 40m steer-only log.
+    // v6 root rail (Bamboo/Sunleaf flavor): 40m steer-only log. Harmless
+    // aboard (no hazards inside), but the stretch itself still reserves its
+    // window so it never covers another beat's approach.
     if (run.climbPrototype && run.nextRow >= 2600 && (run.row % 41 === 0)) {
       const start = Math.ceil(run.nextRow / 5) * 5;
-      add(run, "rail-start", 1, start);
-      add(run, "rail-end", 1, start + 40);
-      for (let i = 0; i < 4; i++) add(run, "bone", [0,1,2,1][i], start + 8 + i * 8);
-      add(run, "gift", 1, start + 36);
-      run.nextRow = start + 70;
+      const end = start + 40;
+      const reserved = cornerIntersecting(start - 10, end + 10) ||
+        climbIntersecting(start - 10, end + 10) ||
+        glideIntersecting(start - 10, end + 10) ||
+        (Number.isFinite(run.nextChoice) && run.nextChoice - 45 > run.nextRow && run.nextChoice - 45 < end + 10 && run.nextChoice + 40 > start - 10) ||
+        (run.raftPrototype && raftIntersecting(start - 10, end + 10)) ||
+        (run.minecartPrototype && minecartIntersecting(start - 10, end + 10)) ||
+        (run.skiPrototype && skiIntersecting(start - 10, end + 10)) ||
+        (run.movingGatePrototype && movingGateIntersecting(start - 10, end + 10)) ||
+        bridgeCollapseIntersecting(start - 10, end + 10) ||
+        (run.course && run.course.end >= start - 10 && run.course.start <= end + 10);
+      if (!reserved) {
+        add(run, "rail-start", 1, start);
+        add(run, "rail-end", 1, end);
+        for (let i = 0; i < 4; i++) add(run, "bone", [0,1,2,1][i], start + 8 + i * 8);
+        add(run, "gift", 1, start + 36);
+        run.nextRow = end + 30;
+        run.row++;
+        continue;
+      }
+      run.row++;
+      run.nextRow += 5;
       continue;
     }
-    if(run.nextRow>=run.nextChoice-45) {
+    // Gates emit once: while choicePending awaits the runner's decision the
+    // frontier must keep advancing past them. Re-emitting here used to rewind
+    // nextRow by 70m every step until resolution, duplicating rows over live
+    // content with fresh random draws.
+    if(run.choicePending===null&&run.nextRow>=run.nextChoice-45) {
       add(run,"choice-left",0,run.nextChoice);
       add(run,"choice-right",2,run.nextChoice);
       run.choicePending=run.nextChoice;
-      run.nextRow=run.nextChoice+40;
+      // Late gates (frontier already past the landing) must not rewind it:
+      // the runner still gets full warning since gates sit far ahead.
+      run.nextRow=Math.max(run.nextRow,run.nextChoice+40);
       break;
     }
     const route=run.route && run.nextRow<run.route.until ? run.route.kind : null;
@@ -767,6 +826,8 @@ export function fillTrack(run) {
           Number.isFinite(run.nextMinecart) ? run.nextMinecart : Infinity,
           Number.isFinite(run.nextSki) ? run.nextSki : Infinity,
           Number.isFinite(run.nextMovingGate) ? run.nextMovingGate : Infinity,
+          Number.isFinite(run.nextClimb) ? run.nextClimb : Infinity,
+          Number.isFinite(run.nextGlide) ? run.nextGlide : Infinity,
         ) - 45 &&
         // A landscape transition is not a gameplay hazard. Prototype courses
         // may finish across it; actual encounter reservations still take priority.
@@ -832,11 +893,17 @@ export function fillTrack(run) {
     const scenicDetour = run.encounterPacing && run.route?.kind === 'scenic';
     const gapRow = !quietPhase && !scenicDetour && run.row > 5 && run.row % 12 === 10;
     const at = gapRow ? Math.round(run.nextRow/5)*5 : run.nextRow;
+    // v6 stations keep a clear approach like corners and choices: no ordinary
+    // hazard spawns inside a climb/glide window, so a station approach cue can
+    // never mask a hazard the cue layer already promised to announce.
+    const stationApproach = Boolean(run.climbPrototype &&
+      (climbIntersecting(at, at + 19) || glideIntersecting(at, at + 19)));
+    const quiet = quietPhase || stationApproach;
     const pattern = run.generatorVersion >= 4 ? areaPattern(at, run.row) : null;
     // Later rows force a lane decision instead of rewarding camping in one lane.
     let safe;
     if(run.generatorVersion>=4) {
-      if (quietPhase) safe = run.lane;
+      if (quiet) safe = run.lane;
       else if(run.row>5&&route!=="scenic") {
         const profile=areaGameplayAt(at);
         const preferred=profile.safeLanes[(run.row+Math.floor(at/AREA_LENGTH)+(pattern?.safeShift||0))%profile.safeLanes.length];
@@ -852,7 +919,7 @@ export function fillTrack(run) {
     // row instead of every 4th, and the same clear-type never repeats 3x.
     // Tracked via run.lastClearKind; v5 and earlier keep exact cadence.
     const v6Dense = run.generatorVersion >= 6 && run.distance >= 1350;
-    const actionRow = !quietPhase && route!=="scenic" && run.row > 5 && (route==="challenge" ? run.row%2===0 : v6Dense ? run.row % 3 === 2 : run.row % 4 === 2);
+    const actionRow = !quiet && route!=="scenic" && run.row > 5 && (route==="challenge" ? run.row%2===0 : v6Dense ? run.row % 3 === 2 : run.row % 4 === 2);
     // Shelter beats are short character encounters, not a new ruleset: each
     // occupies one lane, clears by its own familiar move, and arrives with a
     // second ordinary hazard so the open lane remains legible. The live pacing
@@ -861,7 +928,7 @@ export function fillTrack(run) {
     // a staged cast (see shelterCast) so the trail is not just a long sequence
     // of rocks with a single shelter cameo.
     const shelterBeat = run.encounterPacing && run.generatorVersion >= 5 &&
-      route !== 'scenic' && !actionRow && !quietPhase && !gapRow && at >= 135 && run.row % 7 === 4;
+      route !== 'scenic' && !actionRow && !quiet && !gapRow && at >= 135 && run.row % 7 === 4;
     const shelterType = shelterBeat ? shelterCast(run) : null;
     if (actionRow) {
       let type = gapRow ? "gap" : run.generatorVersion>=4
@@ -882,7 +949,7 @@ export function fillTrack(run) {
         if(split) obstacle.splitChoice=true;
         if (pattern?.label) obstacle.encounter = pattern.label;
       }
-    } else if (run.row > 0 && !quietPhase) {
+    } else if (run.row > 0 && !quiet) {
       const primary=shelterBeat ? shelterType : run.generatorVersion>=4
         ? areaHazard(run,at,run.row)
         : SOLID_HAZARDS[Math.floor(run.random() * SOLID_HAZARDS.length)];
@@ -904,8 +971,8 @@ export function fillTrack(run) {
         if (pattern?.label) second.encounter = pattern.label;
       }
     }
-    const offsets = quietPhase ? [0] : (pattern?.boneOffsets || [0]);
-    const boneLane = quietPhase || run.row < 3 || run.random() < 0.4 ? safe : blocked;
+    const offsets = quiet ? [0] : (pattern?.boneOffsets || [0]);
+    const boneLane = quiet || run.row < 3 || run.random() < 0.4 ? safe : blocked;
     for (let i = 0; i < 4; i++) {
       const laneOffset = pattern && run.row >= 3 ? offsets[i % offsets.length] : 0;
       const lane = pattern && run.row >= 3 ? (safe + laneOffset) % 3 : boneLane;
@@ -936,7 +1003,7 @@ export function fillTrack(run) {
         pickup.encounter = 'Recovery reward';
         pickup.recovery = true;
       }
-      if (pattern?.cluster && !quietPhase) {
+      if (pattern?.cluster && !quiet) {
         // Four short bones frame the special item as a deliberate reward line,
         // making its purpose readable before the player reaches the pickup.
         for (const [index, offset] of [8, 11, 19, 22].entries()) {
@@ -964,7 +1031,7 @@ export function fillTrack(run) {
     // Keep the seeded meter cadence stable in the quiet beats; the pacing
     // change is the removal of ordinary hazards, not a hidden speed-up of the
     // authored row clock. This preserves reaction margins for long replays.
-    const phaseGap = quietPhase ? 26 - pressure * 4 : null;
+    const phaseGap = quiet ? 26 - pressure * 4 : null;
     run.nextRow += (phaseGap ?? (actionRow ? 42 : 26 - pressure * 4)) + run.random() * 6;
   }
 }
@@ -1115,6 +1182,14 @@ export function step(run, dt) {
     run.ended = true;
     run.retired = true;
     run.finishReason = 'destination';
+    // Never carry an active traversal ride behind the results modal: a climb,
+    // glide or rail straddling the finish marker ends quietly with the run.
+    // No completion bonus is paid for an unfinished ride; the arrival is the
+    // reward. Rendering keys its pose off the same flags, so the puppy stands
+    // down behind the modal instead of hanging mid-air.
+    run.climb = null;
+    run.glide = null;
+    run.rail = null;
     run.events.push('destination');
     run.score = Math.floor(run.distance) + run.bonePoints + run.bonusPoints;
     return;

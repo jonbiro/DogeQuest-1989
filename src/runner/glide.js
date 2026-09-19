@@ -2,7 +2,10 @@
 // Jump into the shimmer (y > .65) to float; hold Jump to stay up, release to
 // drop. Steer between airborne bones + gift like the zipline trail. Miss =
 // safe ground route. Reuses zipline air physics + atmosphere particles.
-export const GLIDE_FIRST = 1400;
+//
+// Slot 1 sits at 420: after the 350 choice resolves (nextRow 390) and before
+// the zipline approach (605), so adventure runs always meet the shimmer.
+export const GLIDE_FIRST = 420;
 export const GLIDE_PERIOD = 2000;
 export const GLIDE_LENGTH = 60;
 export const GLIDE_REWARD = 150;

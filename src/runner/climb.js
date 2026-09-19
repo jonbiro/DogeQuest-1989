@@ -2,7 +2,10 @@
 // Jump-pump to climb, steer to stay under the leaf cue. No damage on miss:
 // a missed pump slides to the base and forfeits the bonus. Reuses jump/
 // steer verbs and instanced box/trunk batches — zero new geometries.
-export const CLIMB_FIRST = 900;
+//
+// Slot 1 sits at 850: after the zipline recovery (835) and before the 950
+// corner approach (905), so adventure runs always meet the wall.
+export const CLIMB_FIRST = 850;
 export const CLIMB_PERIOD = 1800;
 export const CLIMB_LENGTH = 24;
 export const CLIMB_HEIGHT = 2.6;

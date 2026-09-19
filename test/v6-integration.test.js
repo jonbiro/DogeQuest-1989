@@ -58,5 +58,34 @@ test('v6 long run stays deterministic with all verbs present', () => {
   }
   assert.equal(a.distance, b.distance);
   assert.deepEqual(a.objects.map(o => o.type), b.objects.map(o => o.type));
-  assert.ok(a.nextClimb > 900 && a.nextGlide > 1400);
+  assert.ok(a.nextClimb > 850 && a.nextGlide > 420);
+});
+
+test('v6 generation never rewinds nextRow (no duplicate rows over live content)', () => {
+  // A stale station slot once emitted behind the frontier, dragging nextRow
+  // backward and double-generating hazards inside the zipline aerial route.
+  for (const seed of [1, 42]) {
+    const run = createRun(seed, {}, 6);
+    let floor = run.nextRow;
+    let guard = 0;
+    while (run.distance < 8000 && guard++ < 60000) {
+      run.hearts = 3; run.invulnerable = 1000;
+      step(run, 1 / 120);
+      assert.ok(run.nextRow >= floor - 1e-9, `seed ${seed}: nextRow rewound ${floor} -> ${run.nextRow}`);
+      floor = Math.max(floor, run.nextRow);
+    }
+  }
+});
+
+test('v6 adventure always meets the climb wall and the glide shimmer', () => {
+  for (const seed of [42, 7, 99, 1234]) {
+    const run = createRun(seed, {}, 6, null, {encounterPacing: true, mode: 'adventure'});
+    let guard = 0;
+    while (!run.ended && guard++ < 20000) { run.hearts = 3; run.invulnerable = 1000; step(run, 1 / 120); }
+    assert.equal(run.finishReason, 'destination');
+    assert.ok(run.nextClimb > 850, `seed ${seed}: climb never emitted`);
+    assert.ok(run.nextGlide > 420, `seed ${seed}: glide never emitted`);
+    assert.equal(run.climb, null, 'no stranded climb behind the results modal');
+    assert.equal(run.glide, null, 'no stranded glide behind the results modal');
+  }
 });
