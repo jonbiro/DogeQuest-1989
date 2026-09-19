@@ -2,6 +2,8 @@ import {createRun, fillTrack, step, LANES} from './world.js';
 import {clearedBy} from './hazard-cast.js';
 import {actionCue} from './guidance.js';
 import {ZIPLINE_FIRST,ZIPLINE_LENGTH} from './ziplines.js';
+import {CLIMB_FIRST,CLIMB_LENGTH} from './climb.js';
+import {GLIDE_FIRST,GLIDE_LENGTH} from './glide.js';
 import {cornerByIndex,turnPrompt} from './turns.js';
 import {courseAt,courseCue} from './courses.js';
 import {raftByIndex,raftEncounter} from './rafts.js';
@@ -120,6 +122,36 @@ export function createTurnPracticeRun(upgrades = {}, cornerIndex = 0) {
     direction:corner.direction,end:corner.end+15,correct:0,outcomes:[]};
   return run;
 }
+export function createClimbPracticeRun(upgrades = {}) {
+  const run = createRun(1989, upgrades);
+  const start = CLIMB_FIRST;
+  Object.assign(run, {distance:start-40, nextRow:start-40, nextClimb:start,
+    nextChoice:start+400, nextZipline:start+400, nextGlide:start+400, nextCorner:999,
+    choicePending:null, objects:[]});
+  run.previous = {x:run.x,y:run.y,distance:run.distance};
+  fillTrack(run);
+  // Keep the wall, its bone line and the gift; ordinary rows past the exit
+  // would only add unrelated hazards to a 24-meter lesson.
+  run.objects = run.objects.filter(object =>
+    object.type.startsWith('climb-') ||
+    (['bone','gift'].includes(object.type) && object.at >= start && object.at <= start + CLIMB_LENGTH));
+  run.practice = {kind:'climb', start:run.distance, end:start+CLIMB_LENGTH+20, correct:0, outcomes:[], topped:false};
+  run.speed = 12;
+  return run;
+}
+export function createGlidePracticeRun(upgrades = {}) {
+  const run = createRun(1989, upgrades);
+  const start = GLIDE_FIRST;
+  Object.assign(run, {distance:start-40, nextRow:start-40, nextGlide:start,
+    nextChoice:start+400, nextZipline:start+400, nextClimb:start+400, nextCorner:999,
+    choicePending:null, objects:[]});
+  run.previous = {x:run.x,y:run.y,distance:run.distance};
+  fillTrack(run);
+  run.objects = run.objects.filter(object => object.type.startsWith('glide-') || object.airborne);
+  run.practice = {kind:'glide', start:run.distance, correct:0, outcomes:[], caught:false};
+  run.speed = 12;
+  return run;
+}
 export function stepPractice(run, dt) {
   if (!run.practice || run.ended) return;
   if(run.practice.kind==='raft') {
@@ -176,6 +208,34 @@ export function stepPractice(run, dt) {
         run.distance>=ZIPLINE_FIRST+ZIPLINE_LENGTH+20) run.ended=true;
     return;
   }
+  if (run.practice.kind === 'climb') {
+    step(run,dt);
+    run.practice.topped ||= run.events.includes('climb-end');
+    // Wall bones sit 3m apart: too tight to chase across lanes, so holding a
+    // good lane (3 bones) counts as following the line, not full collection.
+    run.practice.outcomes=[run.practice.topped,run.bones>=3,run.climbs>0];
+    run.practice.correct=run.practice.outcomes.filter(Boolean).length;
+    run.hearts=3;
+    run.fetchCharge=0;
+    run.events=run.events.filter(event=>!['hit','flow','end'].includes(event));
+    // Sliding out early ends the lesson quickly instead of idling at the base.
+    if ((!run.climb && !run.climbs && run.distance>CLIMB_FIRST+4) ||
+        run.distance>=CLIMB_FIRST+CLIMB_LENGTH+20) run.ended=true;
+    return;
+  }
+  if (run.practice.kind === 'glide') {
+    step(run,dt);
+    run.practice.caught ||= Boolean(run.glide) || run.glides>0;
+    run.practice.outcomes=[run.practice.caught,run.bones>=8,run.glides>0];
+    run.practice.correct=run.practice.outcomes.filter(Boolean).length;
+    run.hearts=3;
+    run.fetchCharge=0;
+    run.events=run.events.filter(event=>!['hit','flow','end'].includes(event));
+    // A missed shimmer is a quick retry, not a long walk under unreachable treats.
+    if ((!run.practice.caught && run.distance>GLIDE_FIRST+4) ||
+        run.distance>=GLIDE_FIRST+GLIDE_LENGTH+20) run.ended=true;
+    return;
+  }
   const lesson = (run.practice.kind==='gap' ? [GAP_LESSON] : moveLessons(run.practice.kind))[run.practice.index];
   const clears = run.clears;
   step(run, dt);
@@ -219,6 +279,16 @@ export function practiceCue(run) {
     if (run.ziplines) return '✓ LANDED · zipline bones belong to the cable';
     return actionCue(run) || (run.zipline ? 'Steer toward the zipline bones' : 'ZIPLINE AHEAD · wait for jump cue');
   }
+  if (run.practice.kind === 'climb') {
+    if (run.climbs) return run.practice.topped
+      ? '✓ Topped out · wall bones belong to the climb'
+      : 'Wall exited · pump with jump next time';
+    return actionCue(run) || 'WALL AHEAD · pump with ↑ JUMP';
+  }
+  if (run.practice.kind === 'glide') {
+    if (run.glides) return '✓ LANDED · glide bones belong to the shimmer';
+    return actionCue(run) || (run.glide ? 'Steer toward the glide bones' : 'SHIMMER AHEAD · wait for jump cue');
+  }
   if (run.practice.feedback?.until>run.time) return run.practice.feedback.text;
   const lesson = moveLessons(run.practice.kind)[run.practice.index];
   if (!lesson) return `${run.practice.correct}/3 moves practiced · trail complete`;
@@ -233,7 +303,10 @@ export function practiceProgress(run) {
   if(run.practice.kind==='weave')return `${run.practice.correct}/3 weaves cleared`;
   if (run.practice.kind==='gap') return `${run.practice.correct}/1 gap cleared`;
   if (run.practice.kind==='turn') return `${run.practice.direction} corner · ${run.practice.correct}/1 cleared`;
-  return run.practice.kind==='zipline' ? `${run.bones}/18 zipline bones · ${run.ziplines ? 'landed' : run.practice.caught ? 'cable caught' : 'catch the cable'}` : `${run.practice.correct}/3 ${moveName(run)} cleared`;
+  return run.practice.kind==='zipline' ? `${run.bones}/18 zipline bones · ${run.ziplines ? 'landed' : run.practice.caught ? 'cable caught' : 'catch the cable'}`
+    : run.practice.kind==='climb' ? `${run.bones}/6 wall bones · ${run.climbs ? (run.practice.topped ? 'topped out' : 'exited early') : 'pump with jump'}`
+    : run.practice.kind==='glide' ? `${run.bones}/12 glide bones · ${run.glides ? 'landed' : run.practice.caught ? 'shimmer caught' : 'catch the shimmer'}`
+    : `${run.practice.correct}/3 ${moveName(run)} cleared`;
 }
 export function practiceResult(run) {
   if(run.practice.kind==='raft')return {
@@ -265,6 +338,18 @@ export function practiceResult(run) {
     lesson:!run.practice.caught ? 'Wait for the jump prompt, then jump to grab the turquoise handle. Zipline bones can only be collected while riding the cable.'
       : run.bones===18 ? 'Every zipline bone collected! Steer on the cable; landing happens automatically. The adventure uses these same moves.'
       : 'Handle caught! Follow the left and right bone prompts while riding. Landing is automatic; jumping from the ground cannot reach these bones.',
+  };
+  if (run.practice.kind==='climb') return {
+    title:run.practice.topped ? `${run.bones} of 6 wall bones` : 'Try pumping upward',
+    lesson:!run.climbs ? 'Walk into the vine wall — it grabs automatically — then tap jump repeatedly to pump upward. Sliding out ends the climb early.'
+      : run.practice.topped ? 'Topped out! Steer under the leaf cue while pumping; the gift waits at the top. The adventure wall works exactly like this.'
+      : 'You left the wall early. Keep pumping with jump until the exit; each pump climbs almost a meter.',
+  };
+  if (run.practice.kind==='glide') return {
+    title:run.practice.caught ? `${run.bones} of 12 glide bones` : 'Try catching the shimmer',
+    lesson:!run.practice.caught ? 'Wait for the jump prompt, then jump into the shimmer and hold jump to float. Glide bones can only be collected while floating.'
+      : run.bones>=8 ? 'Lovely floating! Steer between the bones while holding jump; landing happens automatically. The adventure uses these same moves.'
+      : 'Shimmer caught! Hold jump to stay up and follow the bone prompts. Landing is automatic; bones on the ground belong to a different line.',
   };
   return {title:`${run.practice.correct} of 3 ${moveName(run)} cleared`,lesson:run.practice.correct===3
     ? 'Nice paws! You are ready to take these moves onto the adventure trail.'

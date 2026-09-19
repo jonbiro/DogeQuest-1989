@@ -64,8 +64,26 @@ export function actionCue(run) {
   const turn = turnPrompt(run);
   if (turn) return turn.status === 'accepted' ? '✓ TURN SET'
     : turn.direction === 'left' ? '← TURN LEFT' : '→ TURN RIGHT';
-  if (run.climb) return run.climb.progress >= 2.3 ? 'CLIMB EXIT AHEAD' : '↑ PUMP TO CLIMB';
-  if (run.glide) return 'HOLD JUMP TO FLOAT · STEER BONES';
+  if (run.climb) {
+    if (run.climb.progress >= 2.3) return 'CLIMB EXIT AHEAD';
+    // The bone line bends across lanes on the way up; point at the next bone
+    // so pumping and steering combine like they do on the cable.
+    const bone = run.objects.filter(object => object.type === 'bone' &&
+      !object.used && !object.pull && object.at > run.distance &&
+      object.at-run.distance < run.speed*.8).sort((a,b)=>a.at-b.at)[0];
+    if (bone && bone.lane !== run.lane) return laneCue(run.lane,bone.lane,'BONES') || '↑ PUMP TO CLIMB';
+    return '↑ PUMP TO CLIMB';
+  }
+  if (run.glide) {
+    // Steerable like the zipline cable: point at the next aerial pickup so a
+    // player (or practice drill) can follow the bone line while floating.
+    const bone = run.objects.filter(object => object.airborne && ['bone','gift'].includes(object.type) &&
+      (object.type === 'gift' || run.magnet === 0) &&
+      !object.used && !object.pull && object.at > run.distance &&
+      object.at-run.distance < run.speed*.8).sort((a,b)=>a.at-b.at)[0];
+    if (!bone) return 'HOLD JUMP TO FLOAT · STEER BONES';
+    return laneCue(run.lane,bone.lane,bone.type==='gift'?'GIFT':'BONES') || 'HOLD JUMP TO FLOAT';
+  }
   if (run.rail) return 'RAIL · STEER CENTER · STAY ON';
   if(run.raft){
     const obstacle=run.objects.find(object=>object.raftHazard&&!object.used&&object.at>run.distance&&object.at-run.distance<run.speed*1.35);

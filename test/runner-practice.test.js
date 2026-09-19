@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createPracticeRun,createZiplinePracticeRun,stepPractice,practiceCue,practiceProgress,practiceResult} from '../src/runner/practice.js';
+import {createPracticeRun,createZiplinePracticeRun,createClimbPracticeRun,createGlidePracticeRun,stepPractice,practiceCue,practiceProgress,practiceResult} from '../src/runner/practice.js';
 import {act} from '../src/runner/world.js';
 import {bankRun} from '../src/runner/rewards.js';
 for(const kind of ['jump','slide'])test(`focused ${kind} drill teaches three real actions at all upgrade levels`,()=>{
@@ -156,6 +156,63 @@ test('zipline practice uses real catch, steering, collection and automatic landi
     assert.deepEqual(run.practice.outcomes,[true,true,true]);
     assert.match(practiceProgress(run),/18\/18.*landed/);
   assert.match(practiceResult(run).lesson,/Every zipline bone collected/);
+    assert.equal(bankRun({},run,[]),null);
+  }
+});
+
+test('climb practice teaches pumps with a quick retry on early exit',()=>{
+  const run=createClimbPracticeRun();
+  assert.equal(run.distance-run.practice.start,0);
+  assert.match(practiceCue(run),/WALL AHEAD/);
+  // Walk into the wall (it grabs automatically), then slide out: the lesson
+  // ends quickly without banking anything.
+  for(let i=0;i<500&&!run.climb;i++)stepPractice(run,1/120);
+  assert.ok(run.climb,'wall grabs automatically');
+  act(run,'slide');
+  for(let i=0;i<500&&!run.ended;i++)stepPractice(run,1/120);
+  assert.equal(run.ended,true);
+  assert.equal(bankRun({},run,[]),null);
+});
+
+test('climb practice tops out by pumping and holding a bone lane',()=>{
+  for(let level=0;level<=3;level++) {
+    const run=createClimbPracticeRun({leap:level});let nextInput=0;
+    for(let i=0;i<1500&&!run.ended;i++) {
+      if(run.time>=nextInput) {
+        const cue=practiceCue(run);
+        if(/PUMP|JUMP/.test(cue))act(run,'jump');
+        else if(/LEFT/.test(cue))act(run,'left');
+        else if(/RIGHT/.test(cue))act(run,'right');
+        nextInput=run.time+.12;
+      }
+      stepPractice(run,1/120);
+    }
+    assert.equal(run.ended,true);assert.equal(run.climbs,1);
+    assert.equal(run.hearts,3);assert.equal(run.y,0);assert.equal(run.fetchCharge,0);
+    assert.deepEqual(run.practice.outcomes,[true,true,true]);
+    assert.match(practiceProgress(run),/topped out/);
+    assert.match(practiceResult(run).lesson,/Topped out/);
+    assert.equal(bankRun({},run,[]),null);
+  }
+});
+
+test('glide practice uses real catch, float steering and automatic landing',()=>{
+  for(let level=0;level<=3;level++) {
+    const run=createGlidePracticeRun({leap:level});let nextInput=0;
+    for(let i=0;i<1500&&!run.ended;i++) {
+      if(run.time>=nextInput) {
+        const cue=practiceCue(run);
+        if(/JUMP/.test(cue))act(run,'jump');
+        else if(/LEFT/.test(cue))act(run,'left');
+        else if(/RIGHT/.test(cue))act(run,'right');
+        nextInput=run.time+.12;
+      }
+      stepPractice(run,1/120);
+    }
+    assert.equal(run.ended,true);assert.equal(run.glides,1);
+    assert.equal(run.hearts,3);assert.equal(run.y,0);assert.equal(run.fetchCharge,0);
+    assert.deepEqual(run.practice.outcomes,[true,true,true]);
+    assert.match(practiceProgress(run),/landed/);
     assert.equal(bankRun({},run,[]),null);
   }
 });
