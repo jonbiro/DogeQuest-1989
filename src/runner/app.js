@@ -1,4 +1,4 @@
-import { createRun, act, step } from "./world.js";
+import { createRun, act, step, RUN_MODES } from "./world.js";
 import {createPracticeRun,createZiplinePracticeRun,createRaftPracticeRun,createTurnPracticeRun,createGapPracticeRun,createWeavePracticeRun,stepPractice,practiceCue,practiceResult,practiceOffer} from './practice.js';
 import {runHudLabels,missionSummaryLabel,boneStreakLabel,cleanFlowLabel} from './hud-labels.js';
 import {courseProgress,activeCourse} from './courses.js';
@@ -49,6 +49,10 @@ const turnButtons=document.querySelectorAll('#controls [data-action="left"], #co
 let sharedSeed = readTrailSeed(window.location.search);
 let sharedVersion = readTrailVersion(window.location.search);
 let sharedTarget = readTrailTarget(window.location.search);
+// Adventure is the welcoming default: one complete destination loop with a
+// clear finish. Endless is an explicit choice for score chasing and long
+// traversal chapters.
+let selectedRunMode = 'adventure';
 $('shared-trail').hidden = sharedSeed === null;
 const playLabel = () => sharedSeed === null ? `Run with ${PUPPIES[saved.collection.puppy].name} ↗︎` : 'Run shared trail ↗︎';
 let run = createRun(),
@@ -178,6 +182,19 @@ function updateRecords() {
     }
     const detail = $('trail-perk-detail');
     if (detail) detail.textContent = `${perk.name} · ${perk.effect}`;
+  }
+  const modePicker = $('run-modes');
+  if (modePicker) {
+    modePicker.dataset.mode = selectedRunMode;
+    for (const button of modePicker.querySelectorAll('[data-run-mode]')) {
+      const selected = button.dataset.runMode === selectedRunMode;
+      button.setAttribute('aria-pressed', String(selected));
+      button.dataset.selected = String(selected);
+    }
+    const detail = $('run-mode-detail');
+    if (detail) detail.textContent = selectedRunMode === 'adventure'
+      ? 'Adventure · reach the destination in about 1.5 km, then bank your haul.'
+      : 'Endless · keep running through every chapter and chase your best distance.';
   }
 }
 let clubhouseCategory = 'puppy';
@@ -873,7 +890,7 @@ function start() {
   const encounterPacing = typeof window !== 'undefined';
   run = createRun(retry ? retry.seed : sharedSeed ?? Date.now(), saved.upgrades,
     retry ? retry.generatorVersion : sharedSeed === null ? undefined : sharedVersion,
-    saved.runModifier, {encounterPacing});
+    saved.runModifier, {encounterPacing, mode: typeof selectedRunMode === 'string' ? selectedRunMode : 'adventure'});
   run.rematchBest=rematchBest;
   run.challengeTarget=challengeTarget;
   run.localDailyTarget=retry?Boolean(retry.localDailyTarget):localDailyTarget;
@@ -1047,7 +1064,7 @@ function finish() {
   if (rehearsal) $('practice-again').textContent = rehearsal.label;
   if (run.retired) {
     $('overlay-label').textContent = 'A GOOD RUN. ON YOUR TERMS.';
-    $('overlay-title').textContent = 'Home safe.';
+    $('overlay-title').textContent = run.finishReason === 'destination' ? 'Destination reached!' : 'Home safe.';
   }
   $("overlay-copy").textContent = receipt.personalBest
     ? "New personal best. Very good dog!" : "The next great run is one tap away.";
@@ -1169,6 +1186,15 @@ for (const button of document.querySelectorAll('#trail-perks [data-modifier]')) 
     persist();
     updateRecords();
     tone(820, .12);
+  };
+}
+for (const button of document.querySelectorAll('#run-modes [data-run-mode]')) {
+  button.onclick = () => {
+    const next = button.dataset.runMode;
+    if (!RUN_MODES.includes(next) || selectedRunMode === next) return;
+    selectedRunMode = next;
+    updateRecords();
+    tone(760, .1);
   };
 }
 function chooseDailyTrail() {

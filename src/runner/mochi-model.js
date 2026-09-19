@@ -32,7 +32,10 @@ export function createMochiModel() {
   const materials = new Map();
   function material(color, roughness = .94) {
     const key = `${color}:${roughness}`;
-    if (!materials.has(key)) materials.set(key, new THREE.MeshStandardMaterial({color, roughness,
+    if (!materials.has(key)) materials.set(key, new THREE.MeshStandardMaterial({color, roughness, fog: false,
+      // A restrained lift keeps Mochi's expression readable in the foggy camp
+      // hero shot without making the coat look like a flat unlit sticker.
+      emissive: color, emissiveIntensity: roughness >= .9 ? .055 : .025,
       ...(roughness >= .9 ? {map: undercoat, bumpMap: undercoat, bumpScale: .035} : {})}));
     return materials.get(key);
   }
@@ -61,8 +64,8 @@ export function createMochiModel() {
   const hairTexture = new THREE.DataTexture(strands, 128, 128);
   hairTexture.magFilter = THREE.LinearFilter; hairTexture.minFilter = THREE.LinearMipmapLinearFilter;
   hairTexture.generateMipmaps = true; hairTexture.needsUpdate = true;
-  const furMaterial = new THREE.MeshStandardMaterial({color:'#ffffff',map:hairTexture,
-    roughness:1,side:THREE.DoubleSide,alphaTest:.015,transparent:true,
+  const furMaterial = new THREE.MeshStandardMaterial({color:'#ffffff',map:hairTexture, fog: false,
+    roughness:1,emissive:'#fff5df',emissiveIntensity:.035,side:THREE.DoubleSide,alphaTest:.015,transparent:true,
     depthWrite:false,forceSinglePass:true});
   function ellipsoid(parent, name, color, position, scale, roughness) {
     const mesh = new THREE.Mesh(sphere, material(color, roughness));
@@ -98,15 +101,22 @@ export function createMochiModel() {
     entries.forEach((entry, i) => { mesh.setMatrixAt(i, entry.matrix); mesh.setColorAt(i, entry.color); });
     mesh.computeBoundingSphere(); parent.add(mesh); return mesh;
   }
-  const coat = ['#56595d', '#5b5e62', '#626569', '#65686b', '#5c5f63'];
-  const silver = ['#989a9c', '#a4a5a5', '#909498', '#afb0af', '#9b9fa0'];
+  // Mochi is a warm salt-and-pepper doodle, not a charcoal silhouette. A
+  // cream undercoat with slate and taupe curls keeps his coat readable from
+  // the rear chase camera while preserving the gray mask around his face.
+  const coat = ['#b6a38b', '#c8b89d', '#9a948e', '#7d7c7b', '#d2c2a4', '#8c8986'];
+  const silver = ['#aeb0ae', '#c0beb8', '#979a9b', '#d0c8b6', '#9b9fa0'];
   const dark = ['#303236', '#34373a', '#3d4043', '#393c40'];
   const cream = ['#c3b08b', '#c8b58f', '#cbb893', '#bda985', '#c6b28d'];
 
-  ellipsoid(group, 'ribcage', '#55585c', [0, .99, .17], [.405, .345, .79]);
+  ellipsoid(group, 'ribcage', '#b8a891', [0, .99, .17], [.405, .345, .79]);
   fur(group, 'salt-and-pepper-body-curls', [0, .99, .17], [.42, .36, .80], 610, coat, .078);
-  ellipsoid(group, 'chest', '#606266', [0, 1.05, -.39], [.33, .35, .34]);
-  fur(group, 'soft-chest-curls', [0, 1.05, -.39], [.335, .35, .34], 180, coat, .046);
+  ellipsoid(group, 'chest', '#c7b494', [0, 1.05, -.39], [.33, .35, .34]);
+  fur(group, 'soft-chest-curls', [0, 1.05, -.39], [.335, .35, .34], 180, ['#c7b494', '#d6c4a4', '#a29a90'], .046);
+  // A soft saddle breaks up the torso volume and gives Mochi the gray patch
+  // pattern visible in the reference photos without adding a second rig.
+  ellipsoid(group, 'gray-saddle', '#888783', [0, 1.16, .38], [.38, .26, .47]);
+  fur(group, 'saddle-curls', [0, 1.16, .38], [.385, .265, .475], 190, ['#777676', '#96918b', '#a9a092'], .044);
   ellipsoid(group, 'dark-face', '#33363a', [0, 1.39, -.64], [.405, .385, .43]);
   fur(group, 'short-face-fur', [0, 1.39, -.64], [.406, .386, .431], 320, dark, .025);
   ellipsoid(group, 'curly-crown-base', '#979b9e', [0, 1.67, -.59], [.425, .225, .385]);
@@ -117,8 +127,8 @@ export function createMochiModel() {
   for (const side of [-1, 1]) {
     const ear = new THREE.Group(); ear.name = side < 0 ? 'left-floppy-ear' : 'right-floppy-ear';
     ear.position.set(side * .40, 1.58, -.50); ear.rotation.z = side * .07; group.add(ear);
-    ellipsoid(ear, 'long-dark-ear', '#34373a', [side * .025, -.27, .015], [.165, .375, .18]);
-    fur(ear, 'ear-curls', [side * .025, -.27, .015], [.168, .375, .183], 200, dark, .035);
+    ellipsoid(ear, 'long-dark-ear', '#4d4b4b', [side * .025, -.27, .015], [.165, .375, .18]);
+    fur(ear, 'ear-curls', [side * .025, -.27, .015], [.168, .375, .183], 200, [...dark, '#716b65', '#8b8278'], .035);
     ears.push({ear, side});
 
     const eye = new THREE.Group(); eye.name = side < 0 ? 'left-eye' : 'right-eye';
@@ -157,8 +167,8 @@ export function createMochiModel() {
   const tail = new THREE.Group(); tail.name = 'curled-tail'; tail.position.set(0, 1.08, .88); group.add(tail);
   ellipsoid(tail, 'tail-base', '#595c60', [0, .17, .12], [.095, .25, .14]);
   fur(tail, 'tail-curls', [0, .17, .12], [.10, .25, .145], 110, coat, .034);
-  const collar = new THREE.Mesh(collarGeometry, material('#514536'));
+  const collar = new THREE.Mesh(collarGeometry, material('#2879b8'));
   collar.name = 'leather-collar'; collar.position.set(0, 1.13, -.38); collar.scale.y = .82; group.add(collar);
-  ellipsoid(group, 'small-brass-tag', '#ac925a', [0, .85, -.68], [.055, .07, .018], .45);
+  ellipsoid(group, 'small-brass-tag', '#8ed6f1', [0, .85, -.68], [.055, .07, .018], .45);
   return {group, legs, eyes, ears, tail};
 }

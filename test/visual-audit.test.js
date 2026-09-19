@@ -226,10 +226,13 @@ test('hanging poses keep the raised-paw opening readable over dark scenery', () 
   assert.match(artwork, /hangOpening\.material\.opacity = reducedMotion \? \.50 : \.62/);
 });
 
-test('the live runner never layers Mochi’s legacy polygon rig under the paintings', () => {
+test('the live runner uses one connected Mochi rig while keeping paintings for companions', () => {
   const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
   assert.match(render, /mochi\.group\.visible = false/);
-  assert.doesNotMatch(render, /mochi\.group\.visible = isMochi/);
+  assert.match(render, /mochi\.group\.visible = isMochi/);
+  assert.match(render, /rasterArtwork\.group\.visible = !isMochi/);
+  assert.match(render, /const live3DMochi = activeRig === mochi/);
+  assert.match(render, /live3DMochi\s*\? \(menu \? Math\.PI : 0\)/);
   assert.match(render, /ghostArtwork\.name = 'painted-puppy-ghost'/);
   assert.match(render, /rasterArtwork\.spriteForPose\?\.\(ghostSample\.posture\)/);
   assert.match(render, /ghostWake\.name = 'personal-ghost-wake'/);
@@ -254,10 +257,10 @@ test('the mobile menu keeps the featured puppy visible without competing with th
   assert.match(render, /const shortHero = mobileHero && !compactHero && canvas\.clientHeight <= 700/);
   assert.match(render, /const heroOffsetX = mobileHero \? \(compactHero \? \.58 : \.46\) : 0/);
   assert.match(render, /const heroOffsetY = mobileHero \? \(compactHero \? \.44 : shortHero \? 3\.25 : 2\.35\) : 0/);
-  assert.match(render, /const heroVisualX = heroOffsetX \+ \(mobileHero \? \(compactHero \? \.22 : shortHero \? \.55 : \.24\) : 0\)/);
-  assert.match(render, /const heroVisualY = heroOffsetY \+ \(mobileHero \? \(compactHero \? \.08 : 0\) : 0\)/);
-  assert.match(render, /const menuHeroScale = hero && mobileHero && !compactHero \? \.65 : 1/);
-  assert.match(render, /if \(hero\) dog\.scale\.multiplyScalar\(menuHeroScale \* \(compactHero \? 1\.08 : camera\.aspect < \.85 \? 1\.10 : 1\.09\)\)/);
+  assert.match(render, /const heroVisualX = heroOffsetX \+ \(mobileHero \? \(compactHero \? \.34 : shortHero \? \.70 : \.52\) : 0\)/);
+  assert.match(render, /const heroVisualY = heroOffsetY \+ \(mobileHero \? \(compactHero \? \.10 : \.16\) : 0\)/);
+  assert.match(render, /const menuHeroScale = hero && mobileHero && !compactHero \? \.82 : 1/);
+  assert.match(render, /if \(hero\) dog\.scale\.multiplyScalar\(menuHeroScale \* \(compactHero \? 1\.12 : camera\.aspect < \.85 \? 1\.18 : 1\.09\)\)/);
   assert.match(render, /menuGlow\.position\.set\(heroVisualX, 1\.08 \+ heroVisualY, -\.08\)/);
   assert.match(render, /if \(entry\.gateway && camera\.aspect < \.85\)/);
   assert.match(render, /instanceMatrix\.scale\(bendScale\.set\(\.78, \.78, \.78\)\)/);

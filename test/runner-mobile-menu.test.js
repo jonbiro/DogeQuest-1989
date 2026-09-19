@@ -33,6 +33,6 @@ test('the portrait menu moves Less motion out of the challenge card', () => {
 test('the normal portrait hero uses a smaller, higher Mochi stage mark', () => {
   assert.match(render, /const heroOffsetY = mobileHero \? \(compactHero \? \.44 : shortHero \? 3\.25 : 2\.35\) : 0/);
   assert.match(render, /const shortHero = mobileHero && !compactHero && canvas\.clientHeight <= 700/);
-  assert.match(render, /const heroVisualX = heroOffsetX \+ \(mobileHero \? \(compactHero \? \.22 : shortHero \? \.55 : \.24\) : 0\)/);
-  assert.match(render, /const menuHeroScale = hero && mobileHero && !compactHero \? \.65 : 1/);
+  assert.match(render, /const heroVisualX = heroOffsetX \+ \(mobileHero \? \(compactHero \? \.34 : shortHero \? \.70 : \.52\) : 0\)/);
+  assert.match(render, /const menuHeroScale = hero && mobileHero && !compactHero \? \.82 : 1/);
 });

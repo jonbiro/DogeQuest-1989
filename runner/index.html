@@ -9,7 +9,7 @@
     <title>Puppy Run — Run wild. Fetch bones.</title>
     <meta
       name="description"
-      content="An original 3D endless runner starring Mochi. Tap the movement buttons or drag through jungle ruins and a snowy mountain descent, jump logs, slide under gates, and chase glowing bones. A Puppy Quest companion."
+      content="An original 3D puppy adventure starring Mochi. Choose a short destination run or endless score chase, tap the movement buttons or drag through jungle ruins and a snowy mountain descent, jump logs, slide under gates, and chase glowing bones."
     />
     <meta name="theme-color" content="#102a28" />
     <meta
@@ -89,6 +89,25 @@
             </button>
           </div>
           <p id="trail-perk-detail" class="trail-perk-detail">Treat pouch · Start with a shield that blocks your first collision.</p>
+        </section>
+        <section id="run-modes" class="run-modes" aria-labelledby="run-modes-title">
+          <div class="run-modes-heading">
+            <strong id="run-modes-title">RUN TYPE</strong>
+            <small>Choose your pace</small>
+          </div>
+          <div class="run-mode-options" role="group" aria-label="Choose a run type">
+            <button type="button" class="run-mode" data-run-mode="adventure" aria-pressed="true">
+              <span class="run-mode-icon" aria-hidden="true">✦</span>
+              <strong>Adventure</strong>
+              <small>Reach the destination</small>
+            </button>
+            <button type="button" class="run-mode" data-run-mode="endless" aria-pressed="false">
+              <span class="run-mode-icon" aria-hidden="true">∞</span>
+              <strong>Endless</strong>
+              <small>Chase your best</small>
+            </button>
+          </div>
+          <p id="run-mode-detail" class="run-mode-detail">Adventure · reach the destination in about 1.5 km, then bank your haul.</p>
         </section>
         <div class="start-actions">
           <p id="menu-save-notice" class="save-notice" role="status" hidden>Saving is unavailable. You can play, but new points and unlocks last only for this visit.</p>
@@ -202,6 +221,7 @@
             <details><summary>Sound atmosphere</summary><label class="trail-target-option"><input id="ambience" type="checkbox" checked> Area musical accents</label><p>Quiet phrases give each landscape its own sound. Turn sound on with ♫ to hear them, or switch this off for gameplay effects only. Practice stays quiet apart from action feedback.</p></details>
             <details id="mission-help"><summary id="mission-help-title">Your current challenge</summary><p id="mission-help-copy"></p></details>
             <details id="daily-help"><summary>Today's shared trail</summary><p>A fresh starting layout every day at midnight UTC. Everyone gets the same seed and uses their own upgrades; route choices can change later obstacles. No rankings, streak penalties or special currency. Select it, run, then share your score from the results. Older links remain replayable.</p><div class="backup-actions"><button id="daily-trail" type="button">Choose today's trail ↗︎</button></div></details>
+            <details id="mode-help"><summary>Adventure or Endless</summary><p>Adventure is a short destination run through the six areas and ends with a clean arrival. Endless keeps generating new chapters, including the river, mine-cart and Frostpeak sections, until you run out of hearts.</p></details>
             <details id="ghost-help"><summary>Race your local ghost</summary><p>Finish a seeded trail once and Puppy Run keeps a small replay on this device. Retry the same trail to see a mint ghost pacing 24 meters ahead; match its lanes and action timing to chase your best. Ghosts never collide, change scores or leave this browser.</p></details>
             <details id="weekly-help"><summary>Weekly fetch</summary><p>A fresh local goal rotates every Monday at midnight UTC. Complete adventures to build progress across the week, then finish the target to earn the points shown on the menu. It is saved only in this browser, never ranked, and practice runs do not count.</p></details>
             <details id="streak-help"><summary>Adventure streaks</summary><p>Finish one scored adventure on consecutive UTC days to keep your local streak alive. Missed days simply reset it to one on your next run—there are no penalties. Three, seven, fourteen and thirty-day milestones award the points shown in your results. Everything stays in this browser; practice runs do not count.</p></details>

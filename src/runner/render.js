@@ -1045,17 +1045,12 @@ export function createView(canvas) {
   const outfitPositions = Object.fromEntries(Object.entries(outfits).map(([id, group]) => [id, group.children.map(part => part.position.clone())]));
   const mochi = createMochiModel();
   dog.add(mochi.group);
-  // Mochi's old procedural rig remains allocated for pose diagnostics and
-  // backwards-compatible helpers, but it must never enter the live render.
-  // Keeping it visible for the default puppy layered a low-poly second dog
-  // underneath the authored paintings: ears and paws could peek through the
-  // transparent gaps, and clubhouse outfit portraits picked up the same
-  // polygon silhouette. Every selectable puppy now has one visual source.
+  // Mochi is the default 3D hero. The sculpted model is kept as one connected
+  // anatomy source for camp, gameplay and portraits, so ears, paws, fur and
+  // collar share the same lighting and never drift apart like layered cutouts.
+  // The authored paintings remain resident for ghosts, chase beats and the
+  // other selectable puppies while their own 3D rigs are being upgraded.
   mochi.group.visible = false;
-  // The shipped puppy look is hand-painted raster artwork. Keep the old rig
-  // alive for compatibility with the pose/diagnostic helpers, but take every
-  // procedural dog part out of the render path so no low-poly pieces can peek
-  // through the illustrated sprite during a swap or a costume preview.
   const rasterArtwork = createPuppyArtwork({mobile});
   dog.add(rasterArtwork.group);
   // Keep the painted dog as the only anatomy source, but let the progression
@@ -1066,7 +1061,7 @@ export function createView(canvas) {
   // the low-poly anatomy remains hidden.
   const outfitGroups = new Set(Object.values(outfits));
   const legacyDogParts = dog.children.filter(
-    part => part !== rasterArtwork.group && !outfitGroups.has(part),
+    part => part !== rasterArtwork.group && part !== mochi.group && !outfitGroups.has(part),
   );
   const classicRig = {legs, eyes, ears, tail};
   const markingBase = markingParts.map(part => ({position:part.position.clone(),scale:part.scale.clone()}));
@@ -1080,11 +1075,10 @@ export function createView(canvas) {
     const puppy = PUPPIES[puppyId];
     const isMochi = puppyId === "mochi";
     const visual = puppyVisual(puppyId);
-    // The active rig still supplies inexpensive timing data for diagnostics,
-    // but the illustrated stack is the only anatomy rendered for Mochi too.
-    // Do not re-enable the legacy procedural mesh when the default puppy is
-    // selected; it creates a duplicate silhouette behind the painting.
-    mochi.group.visible = false;
+    // The active rig supplies both pose timing and the live anatomy for Mochi.
+    // Other puppies continue to use their authored painting until their own
+    // connected rigs are ready.
+    mochi.group.visible = isMochi;
     for (const part of originalParts) part.visible = !isMochi;
     classicFur.group.visible = !isMochi;
     activeRig = isMochi ? mochi : classicRig;
@@ -1206,12 +1200,12 @@ export function createView(canvas) {
       group.scale.set(1, 1, 1); group.position.set(0, 0, 0);
       group.children.forEach((part, index) => part.position.copy(outfitPositions[id][index]));
     }
-    // Costumes are rendered as transparent raster accessory plates that share
-    // the same source illustration and stay aligned through pose changes.
+    // Costumes are rendered as transparent raster accessory plates for the
+    // painted roster. Mochi's 3D collar/model owns his live costume surface.
     rasterArtwork.apply(puppyId);
     rasterArtwork.setCostume(appearance.costume);
     for (const part of legacyDogParts) part.visible = false;
-    rasterArtwork.group.visible = true;
+    rasterArtwork.group.visible = !isMochi;
   }
   // A personal ghost reuses the already-resident authored puppy painting. The
   // old box-and-sphere silhouette was cheap, but it made the replay look like
@@ -2362,7 +2356,10 @@ export function createView(canvas) {
         // The painted illustrations already carry a friendly three-quarter
         // view. Avoid the old procedural rig's near-sideways turn here: a
         // large Y rotation makes billboarded raster layers drift apart.
-        dog.position.set(0,0,0); dog.rotation.set(0,rear ? .35 : 0,0);
+        dog.position.set(0,0,0);
+        // Camp and clubhouse portraits greet the player; the run itself keeps
+        // Mochi facing down-trail so his back, tail and stride sell the chase.
+        dog.rotation.set(0, activeRig === mochi ? (rear ? .18 : Math.PI) : (rear ? .35 : 0), 0);
         // Outfit cards are rendered from the same full-body painting as the
         // runner. A slightly tighter portrait lens gives the visible coat
         // enough scale to match the puppy cards; the older wide lens left a
@@ -2388,14 +2385,14 @@ export function createView(canvas) {
       // portrait composition keeps the gentler offset used on normal phones.
       const compactHero = mobileHero && canvas.clientHeight <= 600;
       const shortHero = mobileHero && !compactHero && canvas.clientHeight <= 700;
-      // Action paintings are warmed when a trail actually starts, not while the
-      // menu idles. Streaming them on the menu uploaded textures the player had
-      // not asked for and pushed mobile GPUs toward a context loss; deferring
-      // them to the first jump instead made that first silhouette pop.
-      if (!menu && state === 'playing') rasterArtwork.warmActionPoses();
       const fov=menu ? 52 : gameplayFov(camera.aspect);
       if(camera.fov!==fov) { camera.fov=fov;camera.updateProjectionMatrix(); }
       dress(menu ? collection : run.appearance);
+      // Painted action sheets are only needed for the non-Mochi roster and
+      // ghosts/chase companions. The connected hero already has articulated
+      // legs, ears and tail, so avoid streaming an unused texture catalog on
+      // the first mobile frame.
+      if (!menu && state === 'playing' && activeRig !== mochi) rasterArtwork.warmActionPoses();
       if (visualRun !== run) {
         // IDs restart on a new route; never reuse an old obstacle under a new type.
         for (const item of active.values()) {
@@ -2776,8 +2773,8 @@ export function createView(canvas) {
       // screens. The title owns the left side; lifting Mochi a little keeps
       // his face out of the bottom control shelf and gives the contrast pool
       // a clean, scene-locked backdrop instead of tree foliage.
-      const heroVisualX = heroOffsetX + (mobileHero ? (compactHero ? .22 : shortHero ? .55 : .24) : 0);
-      const heroVisualY = heroOffsetY + (mobileHero ? (compactHero ? .08 : 0) : 0);
+      const heroVisualX = heroOffsetX + (mobileHero ? (compactHero ? .34 : shortHero ? .70 : .52) : 0);
+      const heroVisualY = heroOffsetY + (mobileHero ? (compactHero ? .10 : .16) : 0);
       dog.position.set(
         hero ? heroVisualX : menu ? 0 : x,
         (hero ? heroVisualY : menu ? 0 : y) +
@@ -2785,16 +2782,21 @@ export function createView(canvas) {
             (reducedMotion || (!menu && (state !== "playing" || y>.05 || run.slide>0 || run.zipline || run.raft || run.minecart)) ? 0 : 0.045),
         0,
       );
-      // Keep the illustrated artwork front-facing in camp. The source pose
-      // already has a natural three-quarter angle; a 135° procedural turn
-      // would mirror the tail and make the articulated raster layers read as
-      // detached pieces. Gameplay still banks with the route via `lean`.
-      dog.rotation.y = menu ? 0 : lean;
+      // Connected Mochi greets the player in camp/portraits, then turns down
+      // trail for the chase camera. Painted roster dogs keep their authored
+      // front-facing camp treatment and bank with the route in gameplay.
+      const live3DMochi = activeRig === mochi;
+      dog.rotation.y = live3DMochi
+        ? (menu ? Math.PI : 0)
+        : (menu ? 0 : lean);
       dog.rotation.z = menu || reducedMotion ? 0 : lean * 0.3;
       dog.rotation.x = menu ? 0 : groundFrame.pitch + (reducedMotion ? 0 : pitch);
       dog.scale.setScalar(1);
       const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:(y>.1&&!run.minecart)||Boolean(!menu&&(run.glide||run.climb)),sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline||run.climb||run.glide),rafting:!menu&&Boolean(run.raft),skiing:!menu&&Boolean(run.ski)});
-      const menuHeroScale = hero && mobileHero && !compactHero ? .65 : 1;
+      // The connected 3D Mochi has a tighter silhouette than the old raster
+      // sheet, so the portrait camp composition can give him real presence
+      // without letting transparent canvas padding swallow the scene.
+      const menuHeroScale = hero && mobileHero && !compactHero ? .82 : 1;
       const crouch=activeRig===mochi?mochiCrouch((1-pose)/.54):null;
       dog.scale.y = ((crouch?.scaleY ?? pose) + personality.breathe) * (1-weight.compression);
       dog.scale.x = dog.scale.z = 1+weight.compression*.4;
@@ -2808,7 +2810,7 @@ export function createView(canvas) {
       // phones without changing collision dimensions or run timing. The
       // gameplay lift is deliberately smaller than the menu treatment so the
       // dog never crowds the fixed thumb controls.
-      if (hero) dog.scale.multiplyScalar(menuHeroScale * (compactHero ? 1.08 : camera.aspect < .85 ? 1.10 : 1.09));
+      if (hero) dog.scale.multiplyScalar(menuHeroScale * (compactHero ? 1.12 : camera.aspect < .85 ? 1.18 : 1.09));
       // The rear chase frame carries a lot of transparent breathing room so
       // its tail and paw line stay natural. Give the complete puppy a modest
       // presentation lift on phones; this improves action recognition without

@@ -88,6 +88,11 @@ import {
 const SOLID_HAZARDS = CAST_SOLID_HAZARDS;
 export const BASE_SLIDE_DURATION = .58;
 export const SLIDE_UPGRADE_DURATION = .07;
+// A destination run is a deliberate, finishable outing through the six
+// authored areas.  Endless remains available for players who want to chase a
+// distance record and keeps the long traversal chapters in rotation.
+export const ADVENTURE_DISTANCE = 1450;
+export const RUN_MODES = Object.freeze(['adventure', 'endless']);
 // Re-exported so existing `world.js` import sites keep working while the
 // canonical lists live in `hazard-cast.js`.
 export const HAZARDS = CAST_HAZARDS;
@@ -102,9 +107,12 @@ export const PICKUPS = ["bone", "magnet", "shield", "gem", "double", "heart", 'g
 export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = CURRENT_TRAIL_VERSION, modifier = null, options = {}) {
   generatorVersion=supportsTrailVersion(generatorVersion)?generatorVersion:CURRENT_TRAIL_VERSION;
   const encounterPacing = options?.encounterPacing === true && generatorVersion >= 5;
+  const mode = RUN_MODES.includes(options?.mode) ? options.mode : 'endless';
   const run = {
     seed,
     generatorVersion,
+    mode,
+    adventureGoal: mode === 'adventure' ? ADVENTURE_DISTANCE : Infinity,
     // The live app opts current trails into authored warm-up/recovery pacing.
     // Keeping this explicit lets deterministic unit/replay fixtures compare
     // historical streams without silently rewriting their opening rows.
@@ -1099,6 +1107,18 @@ export function step(run, dt) {
     run.events.push("zoomies-end");
   }
   run.distance += run.speed * dt;
+  // Adventure is the short, destination-based default in the browser. Stop
+  // on the exact finish marker before generating another row so the result is
+  // a clean arrival rather than an arbitrary collision at the end of a run.
+  if (run.mode === 'adventure' && Number.isFinite(run.adventureGoal) && run.distance >= run.adventureGoal) {
+    run.distance = run.adventureGoal;
+    run.ended = true;
+    run.retired = true;
+    run.finishReason = 'destination';
+    run.events.push('destination');
+    run.score = Math.floor(run.distance) + run.bonePoints + run.bonusPoints;
+    return;
+  }
   const currentArea = areaAt(run.distance);
   if (currentArea !== run.lastArea) {
     run.lastArea = currentArea;
