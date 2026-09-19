@@ -1,5 +1,5 @@
 import { createRun, act, step, RUN_MODES } from "./world.js";
-import {createPracticeRun,createZiplinePracticeRun,createRaftPracticeRun,createTurnPracticeRun,createGapPracticeRun,createWeavePracticeRun,createClimbPracticeRun,createGlidePracticeRun,stepPractice,practiceCue,practiceResult,practiceOffer} from './practice.js';
+import {createPracticeRun,createZiplinePracticeRun,createRaftPracticeRun,createTurnPracticeRun,createGapPracticeRun,createWeavePracticeRun,createClimbPracticeRun,createGlidePracticeRun,createMinecartPracticeRun,createSkiPracticeRun,stepPractice,practiceCue,practiceResult,practiceOffer} from './practice.js';
 import {runHudLabels,missionSummaryLabel,boneStreakLabel,cleanFlowLabel} from './hud-labels.js';
 import {courseProgress,activeCourse} from './courses.js';
 import {RESUME_DURATION,resumeStep} from './resume.js';
@@ -1267,7 +1267,9 @@ function startPractice(kind, cornerIndex=0) {
     : kind==='turn' ? createTurnPracticeRun(saved.upgrades,cornerIndex)
     : kind==='zipline' ? createZiplinePracticeRun(saved.upgrades)
     : kind==='climb' ? createClimbPracticeRun(saved.upgrades)
-    : kind==='glide' ? createGlidePracticeRun(saved.upgrades) : createPracticeRun(saved.upgrades,kind);
+    : kind==='glide' ? createGlidePracticeRun(saved.upgrades)
+    : kind==='cart' ? createMinecartPracticeRun(saved.upgrades)
+    : kind==='ski' ? createSkiPracticeRun(saved.upgrades) : createPracticeRun(saved.upgrades,kind);
   run.puppy = saved.collection.puppy;
   run.appearance = appearance;
   if(returnTrail)run.practice.returnTrail=returnTrail;
@@ -1282,6 +1284,8 @@ $('practice-weave').onclick = () => startPractice('weave');
 $('practice-zipline').onclick = () => startPractice('zipline');
 $('practice-climb').onclick = () => startPractice('climb');
 $('practice-glide').onclick = () => startPractice('glide');
+$('practice-cart').onclick = () => startPractice('cart');
+$('practice-ski').onclick = () => startPractice('ski');
 $('practice-raft').onclick = () => startPractice('raft');
 $('practice-turn').onclick = () => startPractice('turn');
 $('practice-again').onclick = () => {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createPracticeRun,createZiplinePracticeRun,createClimbPracticeRun,createGlidePracticeRun,stepPractice,practiceCue,practiceProgress,practiceResult} from '../src/runner/practice.js';
+import {createPracticeRun,createZiplinePracticeRun,createClimbPracticeRun,createGlidePracticeRun,createMinecartPracticeRun,createSkiPracticeRun,stepPractice,practiceCue,practiceProgress,practiceResult,practiceOffer} from '../src/runner/practice.js';
 import {act} from '../src/runner/world.js';
 import {bankRun} from '../src/runner/rewards.js';
 for(const kind of ['jump','slide'])test(`focused ${kind} drill teaches three real actions at all upgrade levels`,()=>{
@@ -215,4 +215,56 @@ test('glide practice uses real catch, float steering and automatic landing',()=>
     assert.match(practiceProgress(run),/landed/);
     assert.equal(bankRun({},run,[]),null);
   }
+});
+
+test('cart practice steers the bone line with a clean completion',()=>{
+  const run=createMinecartPracticeRun();
+  assert.match(practiceCue(run),/bone lanes/);
+  let nextInput=0;
+  for(let i=0;i<3000&&!run.ended;i++) {
+    if(run.time>=nextInput) {
+      const cue=practiceCue(run);
+      if(/LEFT/.test(cue))act(run,'left');
+      else if(/RIGHT/.test(cue))act(run,'right');
+      nextInput=run.time+.1;
+    }
+    stepPractice(run,1/120);
+  }
+  assert.equal(run.ended,true);assert.equal(run.minecarts,1);
+  assert.equal(run.hearts,3);assert.equal(run.fetchCharge,0);
+  assert.deepEqual(run.practice.outcomes,[true,true,true]);
+  assert.match(practiceProgress(run),/cart bones/);
+  assert.match(practiceResult(run).lesson,/Boarding and landing are automatic/);
+  assert.equal(bankRun({},run,[]),null);
+});
+
+test('ski practice carves, hops and finishes without banking',()=>{
+  const run=createSkiPracticeRun();
+  assert.match(practiceCue(run),/open lane|hop/i);
+  // Hop physics clears only when pressed 0.1-0.42s before the crest, so the
+  // drill bot answers cues with a human-like 0.15s reaction delay instead of
+  // jumping on sight (which would land back on the mogul).
+  let pending=null,previous='';
+  for(let i=0;i<4000&&!run.ended;i++) {
+    const cue=practiceCue(run);
+    if(cue!==previous) {
+      previous=cue;
+      const action=/LEFT/.test(cue)?'left':/RIGHT/.test(cue)?'right'
+        :/HOP|JUMP/.test(cue)?'jump':null;
+      if(action)pending={action,at:run.time+.15};
+    }
+    if(pending&&run.time>=pending.at){act(run,pending.action);pending=null;}
+    stepPractice(run,1/120);
+  }
+  assert.equal(run.ended,true);assert.equal(run.skis,1);
+  assert.equal(run.hearts,3);assert.equal(run.y,0);assert.equal(run.fetchCharge,0);
+  assert.deepEqual(run.practice.outcomes,[true,true,true]);
+  assert.match(practiceProgress(run),/finished/);
+  assert.equal(bankRun({},run,[]),null);
+});
+
+test('cart and ski failures offer the matching drill',()=>{
+  assert.equal(practiceOffer({ended:true,lastMistake:{type:'rock',minecartHazard:true}}).kind,'cart');
+  assert.equal(practiceOffer({ended:true,lastMistake:{type:'mogul',skiHazard:true}}).kind,'ski');
+  assert.equal(practiceOffer({ended:true,lastMistake:{type:'yeti',skiObstacle:true}}).kind,'ski');
 });

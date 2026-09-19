@@ -19,12 +19,14 @@ function skiHazardCue(run) {
   if (hazard.type === 'mogul') {
     const gap = hazard.at - run.distance;
     if (run.y > .4 || run.skiHop > 0) return '';
-    return gap < run.speed * .75 ? '↑ HOP MOGUL' : 'MOGUL AHEAD · GET READY';
+    // The hop lasts 0.52s: commanding it earlier lands the puppy back on the
+    // mogul. Cue inside the hop window so any sub-half-second reaction works.
+    return gap < run.speed * .5 ? '↑ HOP MOGUL' : 'MOGUL AHEAD · GET READY';
   }
   if (hazard.type === 'snowball') {
     if (run.y > .4 || run.skiHop > 0) return '';
     const gap = hazard.at - run.distance;
-    return gap < run.speed * .78
+    return gap < run.speed * .5
       ? '↑ HOP SNOWBALL'
       : 'SNOWBALL AHEAD · HOP OR CARVE';
   }

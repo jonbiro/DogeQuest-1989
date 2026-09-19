@@ -7,6 +7,8 @@ import {GLIDE_FIRST,GLIDE_LENGTH} from './glide.js';
 import {cornerByIndex,turnPrompt} from './turns.js';
 import {courseAt,courseCue} from './courses.js';
 import {raftByIndex,raftEncounter} from './rafts.js';
+import {minecartByIndex,minecartEncounter,minecartFirst} from './minecart.js';
+import {skiByIndex,skiEncounter,skiFirst} from './ski.js';
 
 const LESSONS = [
   {at:35,type:'log',hint:'Logs ahead · wait for the cue'},
@@ -24,6 +26,8 @@ export function practiceOffer(run) {
   if (!run.ended || run.practice || run.retired) return null;
   const mistake=run.lastMistake;
   if(mistake?.raftHazard)return {kind:'raft',cornerIndex:0,label:'Practice river steering'};
+  if(mistake?.minecartHazard)return {kind:'cart',cornerIndex:0,label:'Practice cart steering'};
+  if(mistake?.skiHazard||mistake?.skiObstacle)return {kind:'ski',cornerIndex:0,label:'Practice Frostpeak skiing'};
   if (mistake?.type==='rock' && mistake.courseWeave)
     return {kind:'weave',cornerIndex:0,label:'Practice lane weaves'};
   if (mistake?.type==='gap') return {kind:'gap',cornerIndex:0,label:'Practice gap jumps'};
@@ -111,6 +115,26 @@ export function createRaftPracticeRun(upgrades = {}) {
   run.practice={kind:'raft',start:run.distance,end:section.end+15,correct:0,outcomes:[],hits:0};
   return run;
 }
+export function createMinecartPracticeRun(upgrades = {}) {
+  const run=createRun(1989,upgrades),section=minecartByIndex(0,minecartFirst(run.generatorVersion));
+  Object.assign(run,{minecartPrototype:true,distance:section.approach,speed:12,
+    nextRow:Infinity,nextChoice:Infinity,nextZipline:Infinity,nextCorner:999,
+    choicePending:null,objects:[]});
+  run.previous={x:run.x,y:run.y,distance:run.distance};
+  run.objects=minecartEncounter(section,false).map(object=>({...object,id:run.id++,used:false}));
+  run.practice={kind:'cart',start:run.distance,end:section.end+15,correct:0,outcomes:[],hits:0};
+  return run;
+}
+export function createSkiPracticeRun(upgrades = {}) {
+  const run=createRun(1989,upgrades),section=skiByIndex(0,skiFirst(run.generatorVersion));
+  Object.assign(run,{skiPrototype:true,distance:section.approach,speed:12,
+    nextRow:Infinity,nextChoice:Infinity,nextZipline:Infinity,nextCorner:999,
+    choicePending:null,objects:[]});
+  run.previous={x:run.x,y:run.y,distance:run.distance};
+  run.objects=skiEncounter(section,false).map(object=>({...object,id:run.id++,used:false}));
+  run.practice={kind:'ski',start:run.distance,end:section.end+15,correct:0,outcomes:[],hits:0};
+  return run;
+}
 export function createTurnPracticeRun(upgrades = {}, cornerIndex = 0) {
   const run = createRun(1989, upgrades);
   const corner = cornerByIndex(cornerIndex === 1 ? 1 : 0);
@@ -158,6 +182,28 @@ export function stepPractice(run, dt) {
     step(run,dt);
     run.practice.hits+=run.events.filter(event=>event==='hit').length;
     run.practice.outcomes=[Boolean(run.rafts),run.practice.hits===0,run.bones===12];
+    run.practice.correct=run.practice.outcomes.filter(Boolean).length;
+    run.hearts=3;run.fetchCharge=0;
+    run.events=run.events.filter(event=>!['hit','flow','end'].includes(event));
+    if(run.distance>=run.practice.end)run.ended=true;
+    return;
+  }
+  if(run.practice.kind==='cart') {
+    step(run,dt);
+    run.practice.hits+=run.events.filter(event=>event==='hit').length;
+    // Beat-edge bones can slip past cue-latency steering; the lesson is the
+    // clean completion, so most of the line counts.
+    run.practice.outcomes=[Boolean(run.minecarts),run.practice.hits===0,run.bones>=10];
+    run.practice.correct=run.practice.outcomes.filter(Boolean).length;
+    run.hearts=3;run.fetchCharge=0;
+    run.events=run.events.filter(event=>!['hit','flow','end'].includes(event));
+    if(run.distance>=run.practice.end)run.ended=true;
+    return;
+  }
+  if(run.practice.kind==='ski') {
+    step(run,dt);
+    run.practice.hits+=run.events.filter(event=>event==='hit').length;
+    run.practice.outcomes=[Boolean(run.skis),run.practice.hits===0,run.bones>=12];
     run.practice.correct=run.practice.outcomes.filter(Boolean).length;
     run.hearts=3;run.fetchCharge=0;
     run.events=run.events.filter(event=>!['hit','flow','end'].includes(event));
@@ -258,6 +304,10 @@ export function stepPractice(run, dt) {
 export function practiceCue(run) {
   if(run.practice.kind==='raft')return run.rafts ? '✓ Shore reached · crossing complete'
     : actionCue(run) || 'Follow the bone lanes · boarding is automatic';
+  if(run.practice.kind==='cart')return run.minecarts ? '✓ Cart reached · ride complete'
+    : actionCue(run) || 'Follow the bone lanes · boarding is automatic';
+  if(run.practice.kind==='ski')return run.skis ? '✓ Slope finished · descent complete'
+    : actionCue(run) || 'Carve the open lane · hop white moguls';
   if(run.practice.kind==='weave') {
     if(run.practice.feedback?.until>run.time)return run.practice.feedback.text;
     return courseCue(run) || (run.practice.index===3?'Weave practice complete':'Open lane ahead · ×2 means two drag segments');
@@ -300,6 +350,8 @@ export function practiceCue(run) {
 
 export function practiceProgress(run) {
   if(run.practice.kind==='raft')return `${run.bones}/12 river bones · ${run.rafts?'landed':'steer around rocks'}`;
+  if(run.practice.kind==='cart')return `${run.bones}/12 cart bones · ${run.minecarts?'landed':'steer between rocks'}`;
+  if(run.practice.kind==='ski')return `${run.bones} slope bones · ${run.skis?'finished':'carve and hop'}`;
   if(run.practice.kind==='weave')return `${run.practice.correct}/3 weaves cleared`;
   if (run.practice.kind==='gap') return `${run.practice.correct}/1 gap cleared`;
   if (run.practice.kind==='turn') return `${run.practice.direction} corner · ${run.practice.correct}/1 cleared`;
@@ -313,6 +365,16 @@ export function practiceResult(run) {
     title:`${run.bones} of 12 river bones`,
     lesson:run.practice.hits ? 'Steer earlier toward the open lane. The raft carries momentum; jumping and sliding cannot clear river rocks. Try again without spending hearts.'
       : 'Follow the bone lanes with drag or buttons. Boarding and landing are automatic; jump and slide return at shore. Practice does not award points.',
+  };
+  if(run.practice.kind==='cart')return {
+    title:`${run.bones} of 12 cart bones`,
+    lesson:run.practice.hits ? 'Steer earlier toward the open lane. The cart carries momentum and jumping or sliding cannot clear its rocks. Try again without spending hearts.'
+      : 'Follow the bone lanes with drag or buttons. Boarding and landing are automatic; jump and slide return at the exit. Practice does not award points.',
+  };
+  if(run.practice.kind==='ski')return {
+    title:`${run.bones} slope bones collected`,
+    lesson:run.practice.hits ? 'Carve into the highlighted open lane before each patch, and hop white moguls and rolling snowballs as their crests reach you. Sliding cannot help on the slope.'
+      : 'Carve between lanes, hop moguls and snowballs, and dodge blue ice, patrols and snowmen. The descent ends automatically; practice does not award points.',
   };
   if(run.practice.kind==='weave')return {
     title:`${run.practice.correct} of 3 weaves cleared`,
