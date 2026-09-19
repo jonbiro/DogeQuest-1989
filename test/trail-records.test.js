@@ -8,11 +8,11 @@ import {collectionFrom} from '../src/runner/collection.js';
 
 test('trail records sanitize input, merge duplicates and remain bounded',()=>{
   const input=[{seed:0,version:4,best:120},{seed:0,version:4,best:240},
-    {seed:-1,version:4,best:900},{seed:1,version:6,best:900},{seed:2,version:4,best:NaN},
+    {seed:-1,version:4,best:900},{seed:1,version:7,best:900},{seed:2,version:4,best:NaN},
     ...Array.from({length:60},(_,i)=>({seed:i+10,version:4,best:i}))];
   const records=trailRecordsFrom(input);
   assert.equal(records.length,32);assert.equal(trailBest(records,0,4),240);
-  assert.equal(trailBest(records,0,3),0);assert.equal(trailBest(records,1,6),0);
+  assert.equal(trailBest(records,0,3),0);assert.equal(trailBest(records,1,7),0);
   assert.equal(input[0].best,120);assert.deepEqual(trailRecordsFrom({}),[]);
 });
 

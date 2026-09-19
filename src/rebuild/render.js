@@ -52,7 +52,7 @@ export function draw(c, world, t, particles, attract = false) {
   }
   for (let i = 0; i < 18; i++) {
     const x = i * 240 - cam * 0.55;
-    rect(c, x, 267, 14, 165, "#657c67");
+    rect(c, x, 267, 14, 165, "#3d5147");
     oval(c, x + 7, 265, 49, 67, spec.far);
     oval(c, x - 22, 292, 37, 44, spec.far);
   }
@@ -91,19 +91,24 @@ export function draw(c, world, t, particles, attract = false) {
     const y = b.y + Math.sin(t * 3 + b.x) * 3,
       color = b.gold ? "#f4ba47" : "#fff9df";
     oval(c, b.x + 10, y + 8, 16, 13, b.gold ? "#e9c87666" : "#ffffff22");
+    // Dark edge keeps bones legible on bright Honeyhill paving.
+    rect(c, b.x + 2, y + 4, 17, 8, "#5b341b");
     rect(c, b.x + 3, y + 5, 15, 6, color);
     for (const [x, dy] of [
       [0, 1],
       [0, 9],
       [17, 1],
       [17, 9],
-    ])
+    ]) {
+      rect(c, b.x + x - 1, y + dy - 1, 8, 8, "#5b341b");
       rect(c, b.x + x, y + dy, 6, 6, color);
+    }
   }
   for (const e of world.enemies)
     if (e.alive) {
+      oval(c, e.x + 15, e.y + 15, 19, 13, "#283b34");
       oval(c, e.x + 15, e.y + 15, 18, 12, "#ae614c");
-      rect(c, e.x, e.y + 18, 30, 6, "#704b42");
+      rect(c, e.x, e.y + 18, 30, 6, "#3d2b23");
       rect(c, e.x + 5, e.y + 5, 4, 5, "#fff1d7");
       rect(c, e.x + 20, e.y + 5, 4, 5, "#fff1d7");
     }

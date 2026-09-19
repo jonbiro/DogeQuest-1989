@@ -5,8 +5,12 @@ const $ = (id) => document.getElementById(id);
 const canvas = $("world"),
   ctx = canvas.getContext("2d");
 function resize() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
   canvas.width = window.innerWidth <= 600 ? 640 : 960;
+  canvas.height = 540;
+  canvas.style.aspectRatio = "16 / 9";
   ctx.imageSmoothingEnabled = false;
+  void dpr;
 }
 resize();
 window.addEventListener("resize", resize);

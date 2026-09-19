@@ -3,6 +3,8 @@ import {areaBlend} from './areas.js';
 
 // Muted, light paving keeps dark hazards legible; cool dark edges separate
 // the playable trail from each landscape. Reuse the output color per frame.
+// Token restyle (Phase 0): base tints derive from the shared art bible in
+// theme-tokens.js (see TOKENS); signatures below are unchanged.
 export const TRAIL_STONES=['#d6c993','#bfd5b9','#d9aa8d','#e2cb9b','#b5c8e2','#c8bddb'];
 // Each destination gets a quiet curb accent. These are intentionally darker
 // than the road so they read as a boundary first, then as a place signature.

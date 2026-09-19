@@ -16,6 +16,8 @@ import {cleanMove} from './flow.js';
 import {mistakeDetail} from './mistakes.js';
 import { jump, steer, moveVertical, JUMP_BUFFER, SLIDE_BUFFER } from "./motion.js";
 import { ZIPLINE_FIRST, ZIPLINE_PERIOD, ZIPLINE_LENGTH, ZIPLINE_HEIGHT } from "./ziplines.js";
+import {CLIMB_FIRST, CLIMB_PERIOD, CLIMB_LENGTH, CLIMB_HEIGHT, CLIMB_REWARD} from "./climb.js";
+import {GLIDE_FIRST, GLIDE_PERIOD, GLIDE_LENGTH, GLIDE_REWARD} from "./glide.js";
 import {courseAt, COURSE_LENGTH, COURSE_RECOVERY, advanceCourse} from './courses.js';
 import {REGION_LENGTH,regionAt} from './regions.js';
 import {AREA_LENGTH,areaAt,areaGameplayAt} from './areas.js';
@@ -125,6 +127,10 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     // Frostpeak is a current-trail chapter. It deliberately lives outside the
     // six-area palette so old saves and area progress remain compatible.
     skiPrototype: generatorVersion >= 5,
+    // v6 verbs: climb walls + glide canopy + wade/rail variants + true fork.
+    // Gated so v1-v5 shared links replay byte-identical streams.
+    climbPrototype: generatorVersion >= 6,
+    glidePrototype: generatorVersion >= 6,
     random: seededRandom(seed),
     distance: 0,
     time: 0,
@@ -207,7 +213,13 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     nextZipline: ZIPLINE_FIRST,
     zipline: null,
     ziplines: 0,
-    nextMinecart: generatorVersion>=4 ? MINECART_FIRST : Infinity,
+    nextClimb: generatorVersion>=6 ? CLIMB_FIRST : Infinity,
+    climb: null,
+    climbs: 0,
+    nextGlide: generatorVersion>=6 ? GLIDE_FIRST : Infinity,
+    glide: null,
+    glides: 0,
+    nextMinecart: generatorVersion>=6 ? 3200 : generatorVersion>=4 ? MINECART_FIRST : Infinity,
     minecart: null,
     minecartChoice: null,
     minecarts: 0,
@@ -219,7 +231,7 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     dogChaseUpcoming: null,
     dogChase: null,
     dogChases: 0,
-    nextSki: generatorVersion >= 5 ? SKI_FIRST : Infinity,
+    nextSki: generatorVersion>=6 ? 4500 : generatorVersion >= 5 ? SKI_FIRST : Infinity,
     ski: null,
     skis: 0,
     skiJumps: 0,
@@ -652,6 +664,81 @@ export function fillTrack(run) {
       run.nextZipline += ZIPLINE_PERIOD;
       continue;
     }
+    // v6 verbs: climb walls + glide canopy. Shorter than zipline, same
+    // bone-ribbon+gift+bonus shape so the reward language stays familiar.
+    // Like rides, they reserve approach/recovery and never overlap corners,
+    // rides, gates, bridges, chases or courses — otherwise skip to the next slot.
+    if (run.climbPrototype && run.nextRow >= run.nextClimb - 30) {
+      const start = run.nextClimb;
+      const end = start + CLIMB_LENGTH;
+      const reserved = cornerIntersecting(start - 30, end + 30) ||
+        (run.raftPrototype && raftIntersecting(start - 30, end + 30)) ||
+        (run.minecartPrototype && minecartIntersecting(start - 30, end + 30)) ||
+        (run.skiPrototype && skiIntersecting(start - 30, end + 30)) ||
+        (run.movingGatePrototype && movingGateIntersecting(start - 30, end + 30)) ||
+        bridgeCollapseIntersecting(start - 30, end + 30) ||
+        (run.course && run.course.end >= start - 30 && run.course.start <= end + 30);
+      if (!reserved) {
+        add(run, "climb-start", 1, start);
+        add(run, "climb-end", 1, end);
+        for (let i = 0; i < 6; i++) add(run, "bone", [1,0,1,2,1,0][i], start + 4 + i * 3);
+        add(run, "gift", 1, end - 2);
+        run.nextRow = end + 30;
+        run.nextClimb += CLIMB_PERIOD;
+        continue;
+      }
+      run.nextClimb += CLIMB_PERIOD;
+      continue;
+    }
+    if (run.glidePrototype && run.nextRow >= run.nextGlide - 36) {
+      const start = run.nextGlide;
+      const end = start + GLIDE_LENGTH;
+      const reserved = cornerIntersecting(start - 36, end + 30) ||
+        (run.raftPrototype && raftIntersecting(start - 36, end + 30)) ||
+        (run.minecartPrototype && minecartIntersecting(start - 36, end + 30)) ||
+        (run.skiPrototype && skiIntersecting(start - 36, end + 30)) ||
+        (run.movingGatePrototype && movingGateIntersecting(start - 36, end + 30)) ||
+        bridgeCollapseIntersecting(start - 36, end + 30) ||
+        (run.course && run.course.end >= start - 36 && run.course.start <= end + 30);
+      if (!reserved) {
+        add(run, "glide-start", 1, start);
+        add(run, "glide-end", 1, end);
+        for (let i = 0; i < 12; i++) {
+          const lane = [1, 0, 1, 2, 1, 2][Math.floor(i / 2)];
+          add(run, "bone", lane, start + 8 + i * 4).airborne = true;
+        }
+        add(run, "gift", 1, end - 6).airborne = true;
+        run.nextRow = end + 30;
+        run.nextGlide += GLIDE_PERIOD;
+        continue;
+      }
+      run.nextGlide += GLIDE_PERIOD;
+      continue;
+    }
+    // v6 wade stones (Oasis water-break flavor): 5 hop gaps, forgiving.
+    // Reuses gap collision; first miss costs streak, not a heart.
+    if (run.climbPrototype && run.nextRow >= 2200 && (run.row % 37 === 0)) {
+      const start = Math.ceil(run.nextRow / 5) * 5;
+      add(run, "wade-start", 1, start);
+      for (let i = 0; i < 5; i++) {
+        const g = add(run, "gap", 1, start + 10 + i * 12);
+        g.wade = true;
+        add(run, "bone", 1, start + 14 + i * 12);
+      }
+      add(run, "wade-end", 1, start + 80);
+      run.nextRow = start + 110;
+      continue;
+    }
+    // v6 root rail (Bamboo/Sunleaf flavor): 40m steer-only log.
+    if (run.climbPrototype && run.nextRow >= 2600 && (run.row % 41 === 0)) {
+      const start = Math.ceil(run.nextRow / 5) * 5;
+      add(run, "rail-start", 1, start);
+      add(run, "rail-end", 1, start + 40);
+      for (let i = 0; i < 4; i++) add(run, "bone", [0,1,2,1][i], start + 8 + i * 8);
+      add(run, "gift", 1, start + 36);
+      run.nextRow = start + 70;
+      continue;
+    }
     if(run.nextRow>=run.nextChoice-45) {
       add(run,"choice-left",0,run.nextChoice);
       add(run,"choice-right",2,run.nextChoice);
@@ -721,8 +808,12 @@ export function fillTrack(run) {
     // prevents ordinary rows from stacking hazards into a breathing beat.
     const openingRunway = run.encounterPacing && run.distance < 120 &&
       run.row < OPENING_RUNWAY_ROWS;
+    // v6 pacing trim: after the first full 1350m pass the player knows the
+    // verbs, so warmup stops quieting ordinary rows (recovery still breathes).
+    // v5 and earlier keep the established 42m warmup exactly.
+    const v6Warmed = run.generatorVersion >= 6 && run.distance >= 1350;
     const quietPhase = run.encounterPacing &&
-      ((phase === 'warmup' && route !== 'challenge') ||
+      ((phase === 'warmup' && !(v6Warmed) && route !== 'challenge') ||
        (phase === 'recovery' && route !== 'challenge') ||
        openingRunway);
     // Scenic detours are the low-pressure choice, so keep their optional
@@ -749,7 +840,11 @@ export function fillTrack(run) {
       : Math.floor(run.random() * 3);
     run.lastSafeLane = safe;
     const blocked = (safe + 1 + Math.floor(run.random() * 2)) % 3;
-    const actionRow = !quietPhase && route!=="scenic" && run.row > 5 && (route==="challenge" ? run.row%2===0 : run.row % 4 === 2);
+    // v6 rotation: after the first pass, ordinary action rows come every 3rd
+    // row instead of every 4th, and the same clear-type never repeats 3x.
+    // Tracked via run.lastClearKind; v5 and earlier keep exact cadence.
+    const v6Dense = run.generatorVersion >= 6 && run.distance >= 1350;
+    const actionRow = !quietPhase && route!=="scenic" && run.row > 5 && (route==="challenge" ? run.row%2===0 : v6Dense ? run.row % 3 === 2 : run.row % 4 === 2);
     // Shelter beats are short character encounters, not a new ruleset: each
     // occupies one lane, clears by its own familiar move, and arrives with a
     // second ordinary hazard so the open lane remains legible. The live pacing
@@ -761,9 +856,18 @@ export function fillTrack(run) {
       route !== 'scenic' && !actionRow && !quietPhase && !gapRow && at >= 135 && run.row % 7 === 4;
     const shelterType = shelterBeat ? shelterCast(run) : null;
     if (actionRow) {
-      const type = gapRow ? "gap" : run.generatorVersion>=4
+      let type = gapRow ? "gap" : run.generatorVersion>=4
         ? areaActionHazard(run,at,run.row)
         : (route==="challenge" ? Math.floor(run.row/2)%2===0 : run.row % 8 === 2) ? "log" : "gate";
+      // v6 anti-repeat: never the same clear family 3x in a row.
+      if (run.generatorVersion >= 6 && !gapRow) {
+        const kindOf = t => t === 'gap' ? 'jump' : (HAZARD_CAST[t]?.clear || 'jump');
+        const kind = kindOf(type);
+        if (run.lastClearKind === kind && run.lastClearKindCount >= 2)
+          type = kind === 'jump' ? 'gate' : 'log';
+        if (kindOf(type) === run.lastClearKind) run.lastClearKindCount = (run.lastClearKindCount || 0) + 1;
+        else { run.lastClearKind = kindOf(type); run.lastClearKindCount = 1; }
+      }
       const split = at > 800 && !gapRow && run.row % 8 === 6;
       for (let lane = 0; lane < 3; lane++) {
         const obstacle=add(run, split ? lane === safe ? 'gate' : 'log' : type, lane, at);
@@ -863,6 +967,26 @@ export function act(run, action) {
   if (action === "left" && !applyTurnInput(run, action)) run.lane = Math.max(0, run.lane - 1);
   if (action === "right" && !applyTurnInput(run, action)) run.lane = Math.min(2, run.lane + 1);
   if (run.zipline || run.raft || run.minecart) return;
+  // v6 root rail: steer-only log. Jump/slide ignored aboard (dismount via lane choice).
+  if (run.rail) {
+    if (action === "jump") run.rail.hops = (run.rail.hops || 0) + 1;
+    return;
+  }
+  // v6 climb: Jump pumps upward, steer stays active above. Slide exits early.
+  if (run.climb) {
+    if (action === "jump") {
+      run.climb.progress = Math.min(CLIMB_HEIGHT, (run.climb.progress || 0) + 0.9);
+      run.events.push('climb-pump');
+    }
+    if (action === "slide") run.climb.earlyExit = true;
+    return;
+  }
+  // v6 glide: holding jump extends float (handled in step via glideHold).
+  if (run.glide) {
+    if (action === "jump") run.glide.hold = true;
+    if (action === "slide") run.glide.dive = true;
+    return;
+  }
   if (run.ski) {
     if (action === "jump") {
       if ((run.skiHop || 0) <= 0) {
@@ -1031,10 +1155,19 @@ export function step(run, dt) {
     const kind=run.x>1.2?"challenge":"scenic";
     // Branch metadata and optional reward trails are version-four additions.
     // Keep older shared-trail route objects as small as they were when those
-    // links were authored.
-    run.route = run.generatorVersion >= 4
+    // links were authored. v6 true fork keeps both 80m branches simulated
+    // with distinct patterns (scenic 1-obs, challenge full-width).
+    const base = run.generatorVersion >= 4
       ? routeBranchFor(kind, run.choicePending, run.choicePending + 220)
       : {kind, until: run.choicePending + 220};
+    if (run.generatorVersion >= 6) {
+      base.branchTitle = kind === 'challenge' ? 'Challenge fork · tighter rows' : 'Scenic fork · open lanes';
+      base.branchDetail = kind === 'challenge'
+        ? 'Full-width action rows · +60 per clear · 80m distinct branch'
+        : 'Single-obstacle rows · bone trail · 80m distinct branch';
+      base.forkLength = 80;
+    }
+    run.route = base;
     run.routeChoices++;
     run.nextChoice=run.choicePending+700;
     run.choicePending=null;
@@ -1053,6 +1186,39 @@ export function step(run, dt) {
       run.bonusPoints += 250;
       run.invulnerable = Math.max(run.invulnerable, 1.2);
       run.events.push("zipline-end");
+    }
+  } else if (run.climb) {
+    // Climb freezes forward vertical physics; pumps raise progress.
+    run.y = Math.min(CLIMB_HEIGHT, (run.climb.progress || 0));
+    run.vy = 0;
+    run.diving = false;
+    run.slide = 0;
+    run.slideNext = 0;
+    run.jumpBuffer = 0;
+    if (run.climb.earlyExit || run.distance >= run.climb.end) {
+      const clean = !run.climb.earlyExit && run.climb.progress >= CLIMB_HEIGHT - 0.3;
+      run.climb = null;
+      run.climbs++;
+      if (clean) {
+        run.bonusPoints += CLIMB_REWARD;
+        run.events.push("climb-end");
+      } else run.events.push("climb-exit");
+      run.invulnerable = Math.max(run.invulnerable, 1.2);
+    }
+  } else if (run.glide) {
+    // Glide floats: hold extends, dive cancels. Forward motion continues.
+    if (run.glide.hold) run.y = Math.min(3.2, run.y + 2.2 * dt);
+    else if (run.glide.dive) run.y = Math.max(0, run.y - 6 * dt);
+    else run.y = Math.max(1.1, run.y - 1.4 * dt);
+    run.vy = 0;
+    run.glide.hold = false;
+    run.glide.dive = false;
+    if (run.distance >= run.glide.end) {
+      run.glide = null;
+      run.glides++;
+      run.bonusPoints += GLIDE_REWARD;
+      run.invulnerable = Math.max(run.invulnerable, 1.2);
+      run.events.push("glide-end");
     }
   } else if (run.ski) {
     run.skiHop = Math.max(0, (run.skiHop || 0) - dt);
@@ -1092,9 +1258,30 @@ export function step(run, dt) {
       run.jumpBuffer = 0;
       run.events.push("zipline-start");
     }
-    // Airborne treats belong to the cable route, not to runners underneath it.
-    const reachable = !object.airborne || Boolean(run.zipline) ||
+    // Airborne treats belong to the cable/glide route, not to runners underneath it.
+    const reachable = !object.airborne || Boolean(run.zipline) || Boolean(run.glide) ||
       Boolean(object.skiAirborne && run.ski && run.y > .45);
+    if (object.type === "rail-start" && !object.used && Math.abs(dz) < 3 && !run.rail) {
+      object.used = true;
+      run.rail = {start: object.at, end: object.at + 40};
+      run.events.push("rail-start");
+    }
+    if (object.type === "rail-end" && !object.used && run.rail && run.distance >= run.rail.end - 3) {
+      object.used = true;
+      run.rail = null;
+      run.bonusPoints += 40;
+      run.events.push("rail-end");
+    }
+    if (object.type === "climb-start" && !object.used && Math.abs(dz) < 3 && !run.climb && !run.zipline && !run.ski) {
+      object.used = true;
+      run.climb = {start: object.at, end: object.at + CLIMB_LENGTH, progress: 0};
+      run.events.push("climb-start");
+    }
+    if (object.type === "glide-start" && !object.used && Math.abs(dz) < 3 && run.y > .65 && !run.glide && !run.zipline) {
+      object.used = true;
+      run.glide = {start: object.at, end: object.at + GLIDE_LENGTH, hold: false, dive: false};
+      run.events.push("glide-start");
+    }
     if (object.type === "bone") {
       if (!object.pull && reachable && run.magnet > 0 && dz > -3 && dz < 16) {
         object.pull = {
@@ -1315,11 +1502,23 @@ export function step(run, dt) {
         }
       }
       if (sameLane && !cleared && run.invulnerable === 0) {
+        // v6 wade stones forgive the first splash per run: break streak,
+        // splash effect, no heart loss. Keeps Oasis water friendly.
+        if (object.wade && !run.wadeForgiven) {
+          object.used = true;
+          run.wadeForgiven = true;
+          run.cleanStreak = 0;
+          run.combo = 0;
+          run.events.push('wade-splash');
+          run.effects.push({type:'splash',time:run.time,x:run.x,y:run.y+.5});
+          run.invulnerable = 1.2;
+        } else {
         object.used = true;
         harm(run, (object.skiHazard || object.skiObstacle) ? {type:object.type,skiHazard:true,skiObstacle:Boolean(object.skiObstacle),skiSafeLane:object.skiSafeLane} : object.raftHazard ? {type:'rock',raftHazard:true,safeLane:object.raftSafeLane} : object.minecartHazard ? {type:'rock',minecartHazard:true,safeLane:object.minecartSafeLane} : object.type==='rock' && [0,1,2].includes(object.courseRegion)
           ? {type:'rock',courseWeave:true,safeLane:run.course?.beats.find(beat=>beat.at===object.at)?.safeLane} : object.bridgeCollapse
-            ? {type:'gap',bridgeCollapse:true} : {type: object.type});
+            ? {type:'gap',bridgeCollapse:true} : object.wade ? {type:'gap',wade:true} : {type: object.type});
         if (run.ended) break;
+        }
       }
     }
   }
@@ -1340,7 +1539,7 @@ export function step(run, dt) {
   if (newEvents.some(event => [
     'zipline-end', 'raft-end', 'minecart-end', 'course-complete',
     'course-recovery', 'route-scenic', 'route-challenge', 'turn-left', 'turn-right',
-    'dog-chase-end', 'ski-end',
+    'dog-chase-end', 'ski-end', 'climb-end', 'glide-end',
   ].includes(event))) {
     run.encounterRecoveryUntil = recoveryUntilFor(run, run.distance);
   }

@@ -20,7 +20,7 @@ test('trail links round-trip generated seeds without sharing unrelated URL data'
   }
 });
 test('malformed, ambiguous and incompatible trail codes fall back to random play',()=>{
-  for(const search of ['', '?trail=', '?trail=6-1','?trail=1--1','?trail=1-01','?trail=1-Z','?trail=1-zzzzzzz','?trail=1-0&trail=1-1','?trail=1-%3Cscript%3E'])
+  for(const search of ['', '?trail=', '?trail=7-1','?trail=1--1','?trail=1-01','?trail=1-Z','?trail=1-zzzzzzz','?trail=1-0&trail=1-1','?trail=1-%3Cscript%3E'])
     assert.equal(readTrailSeed(search),null,search);
   assert.equal(readTrailSeed('?trail=1-0'),0);
   for(const version of [1,2,3]){
@@ -54,7 +54,7 @@ test('optional score targets round-trip without accepting ambiguous or malformed
     assert.equal(readTrailTarget(`?trail=2-1j9&target=${value}`),0);
   assert.equal(readTrailTarget('?trail=2-1j9&target=50&target=60'),0);
   assert.equal(readTrailTarget('?target=420'),0);
-  assert.equal(readTrailTarget('?trail=6-1j9&target=420'),0);
+  assert.equal(readTrailTarget('?trail=7-1j9&target=420'),0);
   for (const target of [0,-1,1.5,NaN,Infinity,1000000000])
     assert.equal(new URL(trailLink('https://example.com/',1989,2,target)).searchParams.has('target'),false);
 });

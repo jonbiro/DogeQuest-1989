@@ -64,6 +64,9 @@ export function actionCue(run) {
   const turn = turnPrompt(run);
   if (turn) return turn.status === 'accepted' ? '✓ TURN SET'
     : turn.direction === 'left' ? '← TURN LEFT' : '→ TURN RIGHT';
+  if (run.climb) return run.climb.progress >= 2.3 ? 'CLIMB EXIT AHEAD' : '↑ PUMP TO CLIMB';
+  if (run.glide) return 'HOLD JUMP TO FLOAT · STEER BONES';
+  if (run.rail) return 'RAIL · STEER CENTER · STAY ON';
   if(run.raft){
     const obstacle=run.objects.find(object=>object.raftHazard&&!object.used&&object.at>run.distance&&object.at-run.distance<run.speed*1.35);
     return obstacle?laneCue(run.lane,obstacle.raftSafeLane,'RAFT'):
@@ -101,6 +104,16 @@ export function actionCue(run) {
     : 'MINE-CART AHEAD · GET READY';
   const cable = run.objects.find(object => object.type === 'zipline-start' && !object.caught &&
     object.at > run.distance && object.at - run.distance < run.speed * 1.6);
+  const climbStart = run.objects.find(object => object.type === 'climb-start' && !object.used &&
+    object.at > run.distance && object.at - run.distance < run.speed * 1.6);
+  if (climbStart) return climbStart.at - run.distance >= run.speed * .45
+    ? 'CLIMB WALL AHEAD · PUMP UP'
+    : 'WALL AHEAD · ↑ PUMP TO CLIMB';
+  const glideStart = run.objects.find(object => object.type === 'glide-start' && !object.used &&
+    object.at > run.distance && object.at - run.distance < run.speed * 1.8);
+  if (glideStart) return glideStart.at - run.distance >= run.speed * .45
+    ? 'GLIDE SHIMMER AHEAD · JUMP IN'
+    : 'SHIMMER AHEAD · ↑ JUMP + HOLD';
   if (cable) {
     if (cable.at - run.distance >= run.speed * .45) return 'ZIPLINE AHEAD · zipline bones';
     return run.y > .05 || run.vy > 0 ? 'CATCH THE TURQUOISE HANDLE' : '↑ JUMP · ZIPLINE';
@@ -245,6 +258,11 @@ export function eventNotice(event, run) {
     'route-scenic': {text: 'Scenic trail', priority: 1},
     'route-challenge': {text: 'Challenge trail · +60 per clear', priority: 1},
     'zipline-end': {text: 'Zipline complete · +250', priority: 1},
+    'climb-end': {text: 'Wall climbed · +180', priority: 1},
+    'climb-exit': {text: 'Climb finished', priority: 0},
+    'glide-end': {text: 'Glide complete · +150', priority: 1},
+    'rail-end': {text: 'Rail ridden · +40', priority: 0},
+    'wade-splash': {text: 'Splashed · streak reset, no heart lost', priority: 2},
     'raft-end': {text: 'Shore reached · +250', priority: 1},
     'minecart-end': {text: 'Cart reached · +250', priority: 1},
     'ski-start': {text: 'Frostpeak descent · hop moguls', priority: 1},

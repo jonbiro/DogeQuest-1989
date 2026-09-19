@@ -68,9 +68,9 @@ export function createPowerHud(container) {
   });
   container.hidden=true;
   return run=>{
-    const ride=run.raft||run.zipline||run.minecart;
+    const ride=run.raft||run.zipline||run.minecart||run.climb||run.glide;
     const cable=ride?Math.max(0,ride.end-run.distance):0;
-    const rideLabel=run.raft?'Raft ride':run.minecart?'Mine-cart ride':'Zipline ride';
+    const rideLabel=run.raft?'Raft ride':run.minecart?'Mine-cart ride':run.climb?'Clamber wall':run.glide?'Glide canopy':'Zipline ride';
     const rideChoice=run.minecart&&run.minecartChoice?'gem-line':'';
     const rideState=`${rideLabel}:${rideChoice}`;
     if(chips[0].rideLabel!==rideState){
@@ -84,6 +84,8 @@ export function createPowerHud(container) {
       ? 'RAFT'
       : run.minecart
         ? (rideChoice ? 'CART · GEM / BONE' : 'CART')
+        : run.climb ? 'CLIMB'
+        : run.glide ? 'GLIDE'
         : 'ZIPLINE';
     const values=[
       // The old zipline chip used a paw glyph (`🐾 · 90m`). That looked like

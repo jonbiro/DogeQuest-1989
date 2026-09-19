@@ -15,6 +15,8 @@
 // (warden's gate, feed sacks) and is intentionally unused beyond the crystal
 // row, so the seam exists before the art does.
 
+import {hazardTone} from './theme-tokens.js';
+
 export const HAZARD_CAST = Object.freeze({
   rock: Object.freeze({clear: 'jump', jumpHeight: 1.25, width: 0.95, palette: 'stone', legacy: true, label: 'Boulder'}),
   log: Object.freeze({clear: 'jump', jumpHeight: 0.65, width: 0.95, palette: 'organic', legacy: true, label: 'Fallen log'}),
@@ -86,6 +88,10 @@ export const CLEARED_BY_SLIDE = Object.freeze(
 
 export function clearedBy(type) {
   return HAZARD_CAST[type]?.clear ?? null;
+}
+
+export function toneFor(type) {
+  return hazardTone(type);
 }
 
 export function jumpHeightFor(type) {

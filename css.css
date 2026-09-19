@@ -195,7 +195,7 @@ h1 em {
   border: 1px solid #bdcbb5;
   border-radius: 100px 100px 8px 8px;
   padding: 31px 18px 21px;
-  transform: rotate(3deg);
+  transform: rotate(1deg);
 }
 .card-top {
   display: flex;

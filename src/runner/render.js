@@ -78,6 +78,11 @@ const SPECTACLE_BEACON_COLORS = Object.freeze([
   ['mine-cart', '#ffd27a'],
   ['minecart', '#ffd27a'],
   ['zipline', '#a2ffde'],
+  ['clamber', '#a2ffde'],
+  ['climb', '#a2ffde'],
+  ['glide', '#9fe4ff'],
+  ['wade', '#8fd8ff'],
+  ['rail', '#ffd27a'],
   ['frostpeak', '#9fe4ff'],
   ['ski', '#9fe4ff'],
   ['moving gate', '#f4d58a'],
@@ -2192,6 +2197,40 @@ export function createView(canvas) {
       lamp.userData.lantern = true;
     }
   }
+  // v6 traversal stations reuse shared box/ball helpers (zero new geometries).
+  // Climb: vine wall with turquoise grips. Glide: shimmer posts. Wade: striped
+  // stone markers. Rail: low log beam. Ends are quieter green variants.
+  for (const type of ["climb-start", "climb-end", "glide-start", "glide-end", "wade-start", "wade-end", "rail-start", "rail-end"]) {
+    const station = new THREE.Group();
+    templates[type] = station;
+    const isEnd = type.endsWith('-end');
+    if (type.startsWith('climb')) {
+      const accent = isEnd ? '#a7e59e' : '#a2ffde';
+      for (const x of [-3.6, 3.6]) box(station, '#5c493d', x, 1.5, 0, .24, 3, .26);
+      box(station, '#3f6b4a', 0, 1.6, 0, 7.6, 3.0, .3);
+      for (const y of [0.7, 1.5, 2.3]) for (const x of [-2.4, 0, 2.4])
+        box(station, accent, x, y, .2, .6, .28, .12);
+      if (!isEnd) box(station, '#f2c56d', 0, 3.3, .1, 3.4, .3, .12);
+    } else if (type.startsWith('glide')) {
+      const accent = isEnd ? '#a7e59e' : '#9fe4ff';
+      for (const x of [-3.8, 3.8]) {
+        box(station, '#5c93a8', x, 1.6, 0, .18, 3.2, .2);
+        box(station, accent, x, 3.0, .05, .5, .5, .12);
+      }
+      box(station, accent, 0, 3.4, 0, 8.0, .16, .12);
+    } else if (type.startsWith('wade')) {
+      const accent = isEnd ? '#a7e59e' : '#8fd8ff';
+      for (const x of [-2.4, 0, 2.4]) {
+        box(station, '#eaf5f8', x, .12, 0, 1.1, .18, 1.6);
+        box(station, accent, x, .3, .05, 1.14, .08, 1.64);
+      }
+    } else {
+      const accent = isEnd ? '#a7e59e' : '#f2c56d';
+      box(station, '#6d4934', 0, .55, 0, 8.0, .3, .4);
+      box(station, accent, 0, .85, .05, 3.2, .14, .12);
+      for (const x of [-3.8, 3.8]) box(station, '#5c493d', x, .5, 0, .2, 1, .2);
+    }
+  }
   // The hang paintings leave a deliberate opening between the raised paws.
   // Build the handle as a small piece of readable equipment behind that
   // opening instead of a single dark bar: the warm grip gives the eye a clear
@@ -2754,7 +2793,7 @@ export function createView(canvas) {
       dog.rotation.z = menu || reducedMotion ? 0 : lean * 0.3;
       dog.rotation.x = menu ? 0 : groundFrame.pitch + (reducedMotion ? 0 : pitch);
       dog.scale.setScalar(1);
-      const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:y>.1&&!run.minecart,sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline),rafting:!menu&&Boolean(run.raft),skiing:!menu&&Boolean(run.ski)});
+      const personality = puppyPose(time,distance,{menu,reducedMotion,airborne:(y>.1&&!run.minecart)||Boolean(!menu&&(run.glide||run.climb)),sliding:run.slide>0,ziplining:!menu && Boolean(run.zipline||run.climb||run.glide),rafting:!menu&&Boolean(run.raft),skiing:!menu&&Boolean(run.ski)});
       const menuHeroScale = hero && mobileHero && !compactHero ? .65 : 1;
       const crouch=activeRig===mochi?mochiCrouch((1-pose)/.54):null;
       dog.scale.y = ((crouch?.scaleY ?? pose) + personality.breathe) * (1-weight.compression);
@@ -3062,9 +3101,9 @@ export function createView(canvas) {
           -1,
           1,
         ),
-        airborne:y>.1 && !run.zipline && !run.raft && !run.minecart,
+        airborne:y>.1 && !run.zipline && !run.raft && !run.minecart && !run.climb && !run.glide,
         sliding:run.slide>0,
-        hanging:!menu && Boolean(run.zipline),
+        hanging:!menu && Boolean(run.zipline||run.climb||run.glide),
         rafting:!menu && Boolean(run.raft),
         skiing:!menu && Boolean(run.ski),
         // Keep the ordinary chase camera on Mochi's two authored side-gallop
@@ -3075,7 +3114,7 @@ export function createView(canvas) {
         // each lane change. The rear beat remains available for a future
         // authored rear-view encounter instead of being discarded.
         away:false,
-        side:!menu && activeRig===mochi && !run.zipline && !run.raft,
+        side:!menu && activeRig===mochi && !run.zipline && !run.raft && !run.climb && !run.glide,
         menu,
         reducedMotion,
       });
@@ -3346,6 +3385,7 @@ export function createView(canvas) {
               (object.type === 'gift' && object.chasePickup) ||
               ['zipline-start', 'raft-start', 'minecart-start', 'moving-gate',
                 'choice-left', 'choice-right', 'ski-start', 'ski-end', 'ski-gate',
+                'climb-start', 'glide-start', 'wade-start', 'rail-start',
                 'yeti', 'snowball', 'snowman'].includes(object.type);
             const approach = object.at - distance;
             if (spectacleObject && approach >= 0 && approach < 64 &&
@@ -3523,6 +3563,10 @@ export function createView(canvas) {
               : object.type === 'choice-left' || object.type === 'choice-right' ? 3.86
                   : object.type === 'ski-gate' ? 2.82
                   : object.type === 'ski-start' || object.type === 'ski-end' ? 3.18
+                    : object.type === 'climb-start' ? 3.6
+                    : object.type === 'glide-start' ? 3.4
+                    : object.type === 'wade-start' ? .9
+                    : object.type === 'rail-start' ? 1.2
                     : object.type === 'yeti' ? 2.52
                       : object.type === 'snowman' ? 2.35 : 1.65;
         // Three floating lozenges read as an arrival marker at a glance. They
@@ -3608,7 +3652,7 @@ export function createView(canvas) {
       } else {
         if (state === "playing") {
           cameraX += (x - cameraX) * (1 - Math.exp(-5 * dt));
-          cameraLift += ((run.zipline ? y * .7 : 0) - cameraLift) * (1 - Math.exp(-4 * dt));
+          cameraLift += (((run.zipline||run.glide) ? y * .7 : run.climb ? .8 : 0) - cameraLift) * (1 - Math.exp(-4 * dt));
         }
         camera.position.set(
           cameraX * (camera.aspect < 0.85 ? 0.45 : 0.13),

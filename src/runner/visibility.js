@@ -1,6 +1,6 @@
 import {OVERHEAD_HAZARDS} from './hazard-cast.js';
 
-const OVERHEAD = new Set([...OVERHEAD_HAZARDS, 'choice-left', 'choice-right', 'corner-left', 'corner-right', 'zipline-start', 'zipline-end', 'minecart-start', 'minecart-end', 'ski-start', 'ski-end', 'ski-gate']);
+const OVERHEAD = new Set([...OVERHEAD_HAZARDS, 'choice-left', 'choice-right', 'corner-left', 'corner-right', 'zipline-start', 'zipline-end', 'minecart-start', 'minecart-end', 'ski-start', 'ski-end', 'ski-gate', 'climb-start', 'climb-end', 'glide-start', 'glide-end', 'wade-start', 'wade-end', 'rail-start', 'rail-end']);
 // The camera's fog ends at 145 m. Keep a small margin for approach silhouettes
 // while avoiding allocation and shadow work for objects hidden in the haze.
 export const OBJECT_HORIZON = 140;

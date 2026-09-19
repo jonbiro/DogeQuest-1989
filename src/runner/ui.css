@@ -5,6 +5,23 @@
   color-scheme: dark;
   --lime: #e2f7a5;
   --muted: #b6cbc0;
+  /* Phase 0 restyle tokens — single art bible, see theme-tokens.js. */
+  --pq-ink: #102a28;
+  --pq-ink-deep: #0a202b;
+  --pq-paper: #f4f5e8;
+  --pq-lime: #e2f7a5;
+  --pq-lime-strong: #dcf78c;
+  --pq-muted: #b6cbc0;
+  --pq-bone-face: #fff2ca;
+  --pq-bone-edge: #5b341b;
+  --pq-hazard-jump: #ff9b78;
+  --pq-hazard-slide: #9bded6;
+  --pq-hazard-steer: #ffd27a;
+  --pq-dock-bg: #102a28f2;
+  --pq-dock-border: #d5edb633;
+  --pq-hud-min: 12px;
+  --pq-chip: 12px;
+  --pq-caption: 10px;
   --safe-top: env(safe-area-inset-top,0px);
   --safe-right: env(safe-area-inset-right,0px);
   --safe-bottom: env(safe-area-inset-bottom,0px);
@@ -3873,3 +3890,39 @@ canvas:focus-visible {
   #game[data-state="playing"] #bone-counter,
   #game[data-state="playing"] #hearts { padding-inline: 6px; font-size: 12px; }
 }
+
+/* === Phase 1-2 restyle overrides (cozy readable, single-rail HUD) === */
+/* Type floor: HUD 12px min, chips 12px, captions 10px single-line. */
+#game[data-state="playing"] #hud .score > span,
+#game[data-state="playing"] #region-name { font-size: 12px !important; }
+#game[data-state="playing"] #area-rhythm,
+#game[data-state="playing"] #encounter-beat,
+#game[data-state="playing"] #ghost-status { font-size: 10px !important; }
+#game[data-state="playing"] #cue,
+#game[data-state="playing"] #route-choice,
+#game[data-state="playing"] #toast,
+#game[data-state="playing"] #mission-label { font-size: 12px !important; }
+#game[data-state="playing"] #power .power-chip { font-size: 12px !important; }
+/* HUD backing: dark pill so canvas never decides legibility. */
+#game[data-state="playing"] #hud .score,
+#game[data-state="playing"] #bone-counter,
+#game[data-state="playing"] #hearts {
+  background: var(--pq-dock-bg, #102a28f2) !important;
+  border: 1px solid var(--pq-dock-border, #d5edb633) !important;
+  border-radius: 12px !important;
+}
+/* Single reaction rail: one 38px dock, never stacked. */
+#game[data-state="playing"] #mission-hud {
+  min-height: 38px !important;
+  max-height: 38px !important;
+  overflow: hidden !important;
+}
+/* Camp restyle: single-column portrait, h1 capped, buddy as static pocket. */
+#game[data-state="menu"] .menu { max-width: 520px; }
+#game[data-state="menu"] h1 { font-size: clamp(34px, 8vw, 40px) !important; letter-spacing: -1.5px !important; }
+#game[data-state="menu"] #buddy {
+  position: static !important;
+  margin-top: 16px !important;
+  max-width: 420px !important;
+}
+#game[data-state="menu"] .start-actions #play { min-height: 48px !important; }
