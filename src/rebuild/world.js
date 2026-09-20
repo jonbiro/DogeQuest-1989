@@ -23,6 +23,7 @@ export const WORLDS = [
     ],
     enemies: [1310, 2040],
     vines: [2500],
+    movers: [],
     checkpoint: 1780,
   },
   {
@@ -51,6 +52,7 @@ export const WORLDS = [
     ],
     enemies: [{x: 1030, kind: 'hopper'}, 1850, 2650],
     vines: [1200, 2400],
+    movers: [[1900, 2050, 340, 110]],
     checkpoint: 1660,
   },
   {
@@ -81,6 +83,7 @@ export const WORLDS = [
     ],
     enemies: [1040, {x: 1770, kind: 'hopper'}, 2510, {x: 3220, kind: 'hopper'}],
     vines: [1200, 1950, 2650],
+    movers: [[2320, 2470, 340, 110]],
     checkpoint: 1550,
   },
   {
@@ -111,6 +114,7 @@ export const WORLDS = [
     ],
     enemies: [960, 1620, {x: 2410, kind: 'charger'}, 3240],
     vines: [1100, 1850, 2650],
+    movers: [[2190, 2340, 340, 110]],
     checkpoint: 2190,
   },
   {
@@ -144,6 +148,7 @@ export const WORLDS = [
     ],
     enemies: [1010, {x: 1680, kind: 'charger'}, {x: 2360, kind: 'hopper'}, {x: 3070, kind: 'charger'}, 3700],
     vines: [1150, 1800, 2550, 3200],
+    movers: [[2900, 3050, 340, 110], [3260, 3410, 300, 110]],
     checkpoint: 2160,
   },
 ];
@@ -199,6 +204,10 @@ export function createWorld(index) {
     bones,
     vines: (spec.vines || []).map((x) => ({x, y: VINE_TOP, w: 26, h: VINE_BOTTOM - VINE_TOP})),
     signs: vineSigns(spec),
+    // Moving platforms patrol horizontally on a fixed 5s period from world
+    // time, so they stay deterministic. They are one-way shortcuts, never
+    // required: every gap beneath them stays directly jumpable.
+    movers: (spec.movers || []).map(([x0, x1, y, w]) => ({x0, x1, y, w, h: 22, x: x0, dx: 0, mover: true})),
     enemies: spec.enemies.map((entry) => {
       // Plain numbers stay classic patrols; objects add a kind. Unknown kinds
       // fall back to patrol so old and hand-made levels keep working.
@@ -231,6 +240,7 @@ export function createWorld(index) {
       vx: 0,
       vy: 0,
       grounded: false,
+      groundMover: null,
       ducking: false,
       coyote: 0,
       buffer: 0,
@@ -312,6 +322,15 @@ export function update(world, input, dt) {
   if (input.direction) p.face = input.direction;
   p.x += p.vx * dt;
   p.x = Math.max(0, Math.min(world.spec.length - p.w, p.x));
+  // Movers glide on world time before anything lands, so riders and landing
+  // checks share this frame's positions.
+  for (const m of world.movers) {
+    const mid = (m.x0 + m.x1) / 2;
+    const amp = (m.x1 - m.x0) / 2;
+    const x = mid + amp * Math.sin((2 * Math.PI * world.time) / 5);
+    m.dx = x - m.x;
+    m.x = x;
+  }
   // Elevated platforms are one-way; solid ground resolves on both axes.
   for (const s of world.solids.filter((s) => s.y === 430))
     if (overlaps(p, s)) {
@@ -322,7 +341,8 @@ export function update(world, input, dt) {
   p.vy = Math.min(850, p.vy + 1550 * dt);
   p.y += p.vy * dt;
   p.grounded = false;
-  for (const s of world.solids) {
+  p.groundMover = null;
+  for (const s of world.solids.concat(world.movers)) {
     if (
       p.vy >= 0 &&
       previousBottom <= s.y + 2 &&
@@ -335,7 +355,13 @@ export function update(world, input, dt) {
       p.grounded = true;
       p.coyote = 0.11;
       p.jumps = 0;
+      if (s.mover) p.groundMover = s;
     }
+  }
+  // Riders keep the platform delta they landed on, so movers ferry the puppy
+  // instead of sliding out from underfoot.
+  if (p.grounded && p.groundMover) {
+    p.x = Math.max(0, Math.min(world.spec.length - p.w, p.x + p.groundMover.dx));
   }
   if (!p.grounded && p.coyote === 0 && p.jumps === 0) p.jumps = 1;
   // Tucking engages on the landing frame itself, so a held duck that meets

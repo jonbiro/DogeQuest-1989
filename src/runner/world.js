@@ -727,7 +727,10 @@ export function fillTrack(run) {
       if (!reserved) {
         add(run, "climb-start", 1, start);
         add(run, "climb-end", 1, end);
-        for (let i = 0; i < 6; i++) add(run, "bone", [1,0,1,2,1,0][i], start + 4 + i * 3);
+        // Three well-spaced bones bend across lanes with the pump rhythm:
+        // close enough to chase while pumping, far enough apart to steer to.
+        for (const [offset, lane] of [[5, 1], [12, 0], [19, 2]])
+          add(run, "bone", lane, start + offset);
         add(run, "gift", 1, end - 2);
         run.nextRow = end + 30;
         run.nextClimb += CLIMB_PERIOD;
@@ -822,6 +825,12 @@ export function fillTrack(run) {
         add(run, "rail-start", 1, start);
         add(run, "rail-end", 1, end);
         for (let i = 0; i < 4; i++) add(run, "bone", [0,1,2,1][i], start + 8 + i * 8);
+        // Two breaks in the log demand hops: one well-timed jump clears both,
+        // and each break spans all three lanes so steering around is impossible.
+        for (const offset of [14, 28]) for (let lane = 0; lane < 3; lane++) {
+          const brk = add(run, "gap", lane, start + offset);
+          brk.railGap = true;
+        }
         add(run, "gift", 1, start + 36);
         run.nextRow = end + 30;
         run.row++;
@@ -1073,10 +1082,10 @@ export function act(run, action) {
   if (action === "left" && !applyTurnInput(run, action)) run.lane = Math.max(0, run.lane - 1);
   if (action === "right" && !applyTurnInput(run, action)) run.lane = Math.min(2, run.lane + 1);
   if (run.zipline || run.raft || run.minecart) return;
-  // v6 root rail: steer-only log. Jump/slide ignored aboard (dismount via lane choice).
+  // v6 root rail: steering log with hop-able breaks. Jumps count hops and
+  // behave normally so the breaks clear; slides are harmless aboard.
   if (run.rail) {
     if (action === "jump") run.rail.hops = (run.rail.hops || 0) + 1;
-    return;
   }
   // v6 climb: Jump pumps upward, steer stays active above. Slide exits early.
   if (run.climb) {
@@ -1671,7 +1680,7 @@ export function step(run, dt) {
         if (object.wade) run.wadeClean = 0;
         harm(run, (object.skiHazard || object.skiObstacle) ? {type:object.type,skiHazard:true,skiObstacle:Boolean(object.skiObstacle),skiSafeLane:object.skiSafeLane} : object.raftHazard ? {type:'rock',raftHazard:true,safeLane:object.raftSafeLane} : object.minecartHazard ? {type:'rock',minecartHazard:true,safeLane:object.minecartSafeLane} : object.type==='rock' && [0,1,2].includes(object.courseRegion)
           ? {type:'rock',courseWeave:true,safeLane:run.course?.beats.find(beat=>beat.at===object.at)?.safeLane} : object.bridgeCollapse
-            ? {type:'gap',bridgeCollapse:true} : object.wade ? {type:'gap',wade:true} : {type: object.type});
+            ? {type:'gap',bridgeCollapse:true} : object.wade ? {type:'gap',wade:true} : object.railGap ? {type:'gap',railGap:true} : {type: object.type});
         if (run.ended) break;
         }
       }

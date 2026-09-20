@@ -277,3 +277,43 @@ test("a duck signpost stands before each world's first vines", () => {
     assert.ok(w.signs[0].x > 300, 'not at the spawn doorstep');
   }
 });
+
+test("moving platforms patrol deterministically and ferry riders", () => {
+  const a = createWorld(1);
+  const b = createWorld(1);
+  assert.equal(a.movers.length, 1);
+  for (let i = 0; i < 600; i++) {
+    update(a, {direction: 0}, 1 / 120);
+    update(b, {direction: 0}, 1 / 120);
+  }
+  assert.equal(a.movers[0].x, b.movers[0].x, 'same world time, same platform');
+  assert.ok(a.movers[0].x >= 1900 && a.movers[0].x <= 2050, 'stays on its patrol beat');
+  // Stand on the mover and ride without touching input.
+  const m = a.movers[0];
+  a.player.x = m.x + 40;
+  a.player.y = m.y - a.player.h;
+  a.player.vy = 10;
+  a.player.grounded = false;
+  for (let i = 0; i < 120; i++) update(a, {direction: 0}, 1 / 120);
+  assert.ok(a.player.grounded, 'lands on the moving platform');
+  const carried = a.player.x;
+  for (let i = 0; i < 120; i++) update(a, {direction: 0}, 1 / 120);
+  assert.notEqual(a.player.x.toFixed(2), carried.toFixed(2), 'rider keeps the platform delta');
+  assert.equal(a.deaths, 0);
+});
+
+test("movers are shortcuts: trails finish for runners who ignore them", () => {
+  for (let n = 1; n < 5; n++) {
+    const w = createWorld(n);
+    assert.ok(w.movers.length > 0);
+    for (let i = 0; i < 120 * 60 && !w.finished; i++) {
+      const p = w.player;
+      const ground = w.spec.ground.find(([x, width]) => p.x >= x && p.x < x + width);
+      const enemy = w.enemies.find((e) => e.alive && e.x > p.x && e.x - p.x < 100);
+      const vine = w.vines.find((v) => v.x + v.w > p.x && v.x - p.x < 110);
+      const jump = (p.grounded && ((ground && ground[0] + ground[1] - p.x < 95) || enemy)) || (!p.grounded && p.jumps === 1 && p.vy > 30);
+      update(w, {direction: 1, run: true, jumpPressed: Boolean(jump && !vine), duck: Boolean(vine)}, 1 / 120);
+    }
+    assert.equal(w.finished, true, `trail ${n + 1} needs no ferry`);
+  }
+});

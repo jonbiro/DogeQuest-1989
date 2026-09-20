@@ -194,3 +194,38 @@ test('skipped chapters never board positionally (no phantom ski)', () => {
   assert.equal(run.ski, null, 'no phantom ride without emitted content');
   assert.equal(run.skis, 0);
 });
+
+test('rail breaks demand hops across every lane', () => {
+  const run = createRun(31, {}, 6);
+  run.objects = [];
+  for (const lane of [0, 1, 2]) {
+    const brk = {id: 40 + lane, type: 'gap', lane, at: 25, used: false, railGap: true};
+    run.objects.push(brk);
+  }
+  run.nextRow = 5000;
+  run.rail = {start: 0, end: 40};
+  run.hearts = 3;
+  // Off-center lanes are no escape: the break spans the whole log.
+  run.lane = 0; run.x = -2.4;
+  assert.equal(actionCue(run), '↑ JUMP GAP');
+  let guard = 0;
+  while (run.distance < 22 && guard++ < 2000) step(run, 1 / 120);
+  act(run, 'jump');
+  guard = 0;
+  while (run.distance < 28 && guard++ < 2000) step(run, 1 / 120);
+  assert.equal(run.hearts, 3);
+  assert.equal(run.clears, 1, 'exactly the ridden lane-break clears; others pass by lane');
+});
+
+test('missing a rail break costs a heart and coaches the hop', () => {
+  const run = createRun(33, {}, 6);
+  run.objects = [{id: 50, type: 'gap', lane: 1, at: 30, used: false, railGap: true}];
+  run.nextRow = 5000;
+  run.rail = {start: 0, end: 40};
+  run.hearts = 3;
+  run.invulnerable = 0;
+  let guard = 0;
+  while (run.distance < 33 && guard++ < 2000) step(run, 1 / 120);
+  assert.equal(run.hearts, 2);
+  assert.match(runLesson(run), /rail break/);
+});

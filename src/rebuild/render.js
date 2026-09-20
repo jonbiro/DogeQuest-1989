@@ -73,6 +73,14 @@ export function draw(c, world, t, particles, attract = false) {
         rect(c, x - 3, s.y - 14, 8, 5, x % 2 ? "#f6d778" : "#fff1d7");
       }
   }
+  // Moving platforms share the plank look with a pale rim so the motion reads
+  // before the ferry does.
+  for (const m of world.movers || []) {
+    if (m.x + m.w < cam || m.x > cam + width) continue;
+    rect(c, m.x, m.y, m.w, m.h, spec.dirt);
+    rect(c, m.x, m.y, m.w, 9, "#e8e4c8");
+    rect(c, m.x, m.y + 9, m.w, 5, "#47684f");
+  }
   // Fences and hand-painted signs give the opening a readable direction.
   for (let x = 20; x < 240; x += 26) {
     rect(c, x, 400, 7, 30, "#efe4c4");

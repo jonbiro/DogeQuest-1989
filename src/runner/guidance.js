@@ -67,13 +67,15 @@ export function actionCue(run) {
   if (turn) return turn.status === 'accepted' ? '✓ TURN SET'
     : turn.direction === 'left' ? '← TURN LEFT' : '→ TURN RIGHT';
   if (run.climb) {
-    if (run.climb.progress >= 2.3) return 'CLIMB EXIT AHEAD';
     // The bone line bends across lanes on the way up; point at the next bone
-    // so pumping and steering combine like they do on the cable.
+    // first, since steering needs action while the exit is automatic. Pumps
+    // come second: three quick taps top out early, leaving the rest of the
+    // ride for steering.
     const bone = run.objects.filter(object => object.type === 'bone' &&
       !object.used && !object.pull && object.at > run.distance &&
       object.at-run.distance < run.speed*.8).sort((a,b)=>a.at-b.at)[0];
     if (bone && bone.lane !== run.lane) return laneCue(run.lane,bone.lane,'BONES') || '↑ PUMP TO CLIMB';
+    if (run.climb.progress >= 2.3) return 'CLIMB EXIT AHEAD';
     return '↑ PUMP TO CLIMB';
   }
   if (run.glide) {
@@ -86,7 +88,13 @@ export function actionCue(run) {
     if (!bone) return 'HOLD JUMP TO FLOAT · STEER BONES';
     return laneCue(run.lane,bone.lane,bone.type==='gift'?'GIFT':'BONES') || 'HOLD JUMP TO FLOAT';
   }
-  if (run.rail) return 'RAIL · STEER CENTER · STAY ON';
+  if (run.rail) {
+    // Breaks in the log outrank steering: hop them like any striped edge.
+    const brk = run.objects.find(object => object.railGap && !object.used &&
+      object.at > run.distance && object.at - run.distance < run.speed * 1.35);
+    if (brk) return '↑ JUMP GAP';
+    return 'RAIL · STEER CENTER · STAY ON';
+  }
   if(run.raft){
     const obstacle=run.objects.find(object=>object.raftHazard&&!object.used&&object.at>run.distance&&object.at-run.distance<run.speed*1.35);
     return obstacle?laneCue(run.lane,obstacle.raftSafeLane,'RAFT'):
@@ -353,7 +361,9 @@ export function runLesson(run) {
     ? 'The bridge gave way. Jump at the bright striped edge and stay airborne until the far plank.'
     : mistake.wade
       ? 'Splashed on the stepping stones. Hop each stone with room to land; the first splash is forgiven, but three clean hops earn a bonus.'
-      : 'Missed a broken trail section. Jump at the striped edge, not far in advance.';
+      : mistake.railGap
+        ? 'Hopped the rail break too late. Jump as the striped edge reaches you; one timed hop clears both breaks.'
+        : 'Missed a broken trail section. Jump at the striped edge, not far in advance.';
   return 'Clipped a low obstacle. Jump shortly before it reaches your puppy, or take an open lane.';
 }
 
