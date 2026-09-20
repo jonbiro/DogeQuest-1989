@@ -52,7 +52,20 @@ import {
   DOG_CHASE_REWARD,
   dogChaseByIndex,
   dogChaseFirst,
+  dogChaseIntersecting,
 } from './dog-chase.js';
+import {
+  WADE_FIRST,
+  WADE_PERIOD,
+  wadeByIndex,
+  wadeIntersecting,
+} from './wade.js';
+import {
+  RAIL_FIRST,
+  RAIL_PERIOD,
+  railByIndex,
+  railIntersecting,
+} from './rail.js';
 import {
   SKI_PERIOD,
   skiFirst,
@@ -244,6 +257,8 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     nextSki: generatorVersion >= 5 ? skiFirst(generatorVersion) : Infinity,
     ski: null,
     skis: 0,
+    nextWade: generatorVersion >= 6 ? WADE_FIRST : Infinity,
+    nextRail: generatorVersion >= 6 ? RAIL_FIRST : Infinity,
     skiJumps: 0,
     skiDodges: 0,
     skiGates: 0,
@@ -350,6 +365,7 @@ function dogChaseReserved(run, chase) {
     (run.skiPrototype && skiIntersecting(start, end, skFirst)) ||
     (run.climbPrototype && climbIntersecting(start, end)) ||
     (run.glidePrototype && glideIntersecting(start, end)) ||
+    (run.climbPrototype && (wadeIntersecting(start, end) || railIntersecting(start, end))) ||
     bridgeCollapseIntersecting(start, end) ||
     courseOverlap || ziplineOverlap || choiceOverlap,
   );
@@ -450,6 +466,7 @@ export function fillTrack(run) {
   const mgFirst = movingGateFirst(run.generatorVersion);
   const mcFirst = minecartFirst(run.generatorVersion);
   const skFirst = skiFirst(run.generatorVersion);
+  const dcFirst = dogChaseFirst(run.generatorVersion);
   // A chase can fit before a pending fork. Schedule that quiet reward beat
   // first, then leave the fork's own clear approach untouched. Other pending
   // choices keep the historical early return so ordinary rows never crowd the
@@ -475,6 +492,10 @@ export function fillTrack(run) {
   // Restored version-five sessions may predate the Frostpeak rollout. Opt
   // them into the first deterministic descent without touching older trails.
   if (run.skiPrototype && !Number.isFinite(run.nextSki)) run.nextSki = skiFirst(run.generatorVersion);
+  // Restored version-six sessions may predate the scheduled wade/rail grids.
+  // Opt them into the first deterministic stretch without touching older trails.
+  if (run.climbPrototype && !Number.isFinite(run.nextWade)) run.nextWade = WADE_FIRST;
+  if (run.climbPrototype && !Number.isFinite(run.nextRail)) run.nextRail = RAIL_FIRST;
   // Older restored version-four sessions may not carry the bridge scheduler.
   // Opt them into the first deterministic beat without changing legacy trail
   // versions or manufacturing a collapse behind the runner.
@@ -772,15 +793,29 @@ export function fillTrack(run) {
     // Reuses gap collision; first miss costs streak, not a heart. Gaps sit
     // 40m apart so a full 26m top-speed jump always has a landing zone, and
     // Scenic never sees them (its contract promises no full-width gaps).
-    // Wade starts at 2200: no 140m window exists in the furnished adventure,
-    // so it remains an endless chapter like the rail, cart and Frostpeak.
+    // Scheduled on a fixed grid (first 4160, every 1400m) instead of a row
+    // lottery: the lottery starved the chapter to ~zero emissions per 9000m.
+    // Stale or reserved slots advance quietly like any other chapter. The
+    // 40m trigger window matches chapter-sized frontier jumps; longer jumps
+    // (courses, forks) still leapfrog the slot into a safe skip.
     const inScenicRoute = run.route?.kind === 'scenic' && run.nextRow < run.route.until;
-    if (run.climbPrototype && !inScenicRoute && run.nextRow >= 2200 && (run.row % 37 === 0)) {
-      const start = Math.ceil(run.nextRow / 5) * 5;
-      const end = start + 110;
+    const wade = run.climbPrototype && !inScenicRoute && Number.isFinite(run.nextWade)
+      ? wadeByIndex(Math.round((run.nextWade - WADE_FIRST) / WADE_PERIOD), WADE_FIRST)
+      : null;
+    if (wade && run.nextRow > wade.end + 10) {
+      run.nextWade = wade.start + WADE_PERIOD;
+      continue;
+    }
+    if (wade && run.nextRow >= wade.start - 40 && wade.start < run.nextRow) {
+      run.nextWade = wade.start + WADE_PERIOD;
+      continue;
+    }
+    if (wade && run.nextRow >= wade.start - 40) {
+      const start = wade.start;
+      const end = wade.end;
       // Wade gaps are real hazards: never overlap corners, rides, gates,
-      // bridges, chases, courses or choices. On overlap, skip a beat (advance
-      // row and road) and let the reserved owner emit instead.
+      // bridges, chases, courses or choices. On overlap, skip a beat and let
+      // the reserved owner emit instead.
       const reserved = cornerIntersecting(start - 10, end + 10) ||
         climbIntersecting(start - 10, end + 10) ||
         glideIntersecting(start - 10, end + 10) ||
@@ -789,6 +824,7 @@ export function fillTrack(run) {
         (run.minecartPrototype && minecartIntersecting(start - 10, end + 10, mcFirst)) ||
         (run.skiPrototype && skiIntersecting(start - 10, end + 10, skFirst)) ||
         (run.movingGatePrototype && movingGateIntersecting(start - 10, end + 10, mgFirst)) ||
+        dogChaseIntersecting(start - 10, end + 10, dcFirst) ||
         bridgeCollapseIntersecting(start - 10, end + 10) ||
         (run.course && run.course.end >= start - 10 && run.course.start <= end + 10);
       if (!reserved) {
@@ -801,19 +837,34 @@ export function fillTrack(run) {
       }
         add(run, "wade-end", 1, end);
         run.nextRow = end + 30;
+        run.nextWade = start + WADE_PERIOD;
         run.row++;
         continue;
       }
-      run.row++;
-      run.nextRow += 5;
+      run.nextWade = start + WADE_PERIOD;
       continue;
     }
     // v6 root rail (Bamboo/Sunleaf flavor): 40m steer-only log. Harmless
     // aboard (no hazards inside), but the stretch itself still reserves its
-    // window so it never covers another beat's approach.
-    if (run.climbPrototype && run.nextRow >= 2600 && (run.row % 41 === 0)) {
-      const start = Math.ceil(run.nextRow / 5) * 5;
-      const end = start + 40;
+    // window so it never covers another beat's approach. Scheduled on a fixed
+    // grid (first 3310, every 1400m); the old row lottery emitted ~once per
+    // 9000m. Stale or reserved slots advance quietly like any other chapter.
+    // The 40m trigger window matches chapter-sized frontier jumps; longer
+    // jumps (courses, forks) still leapfrog the slot into a safe skip.
+    const rail = run.climbPrototype && Number.isFinite(run.nextRail)
+      ? railByIndex(Math.round((run.nextRail - RAIL_FIRST) / RAIL_PERIOD), RAIL_FIRST)
+      : null;
+    if (rail && run.nextRow > rail.end + 10) {
+      run.nextRail = rail.start + RAIL_PERIOD;
+      continue;
+    }
+    if (rail && run.nextRow >= rail.start - 40 && rail.start < run.nextRow) {
+      run.nextRail = rail.start + RAIL_PERIOD;
+      continue;
+    }
+    if (rail && run.nextRow >= rail.start - 40) {
+      const start = rail.start;
+      const end = rail.end;
       const reserved = cornerIntersecting(start - 10, end + 10) ||
         climbIntersecting(start - 10, end + 10) ||
         glideIntersecting(start - 10, end + 10) ||
@@ -822,6 +873,7 @@ export function fillTrack(run) {
         (run.minecartPrototype && minecartIntersecting(start - 10, end + 10, mcFirst)) ||
         (run.skiPrototype && skiIntersecting(start - 10, end + 10, skFirst)) ||
         (run.movingGatePrototype && movingGateIntersecting(start - 10, end + 10, mgFirst)) ||
+        dogChaseIntersecting(start - 10, end + 10, dcFirst) ||
         bridgeCollapseIntersecting(start - 10, end + 10) ||
         (run.course && run.course.end >= start - 10 && run.course.start <= end + 10);
       if (!reserved) {
@@ -839,11 +891,11 @@ export function fillTrack(run) {
         }
         add(run, "gift", 1, start + 36);
         run.nextRow = end + 30;
+        run.nextRail = start + RAIL_PERIOD;
         run.row++;
         continue;
       }
-      run.row++;
-      run.nextRow += 5;
+      run.nextRail = start + RAIL_PERIOD;
       continue;
     }
     // Gates emit once: while choicePending awaits the runner's decision the
@@ -875,6 +927,9 @@ export function fillTrack(run) {
           Number.isFinite(run.nextClimb) ? run.nextClimb : Infinity,
           Number.isFinite(run.nextGlide) ? run.nextGlide : Infinity,
         ) - 45 &&
+        // Courses stay oblivious to wade/rail grids: a course that lands on
+        // their approach makes that period skip instead (their reserved lists
+        // yield to the active course), which keeps course cadence untouched.
         // A landscape transition is not a gameplay hazard. Prototype courses
         // may finish across it; actual encounter reservations still take priority.
         (run.raftPrototype || sequenceEnd <= (visit+1)*REGION_LENGTH) &&
@@ -882,6 +937,10 @@ export function fillTrack(run) {
         (!run.raftPrototype||!raftIntersecting(start,sequenceEnd)) &&
         (!run.minecartPrototype||!minecartIntersecting(start,sequenceEnd, mcFirst)) &&
         (!run.movingGatePrototype||!movingGateIntersecting(start,sequenceEnd, mgFirst)) &&
+        // Wade and rail never emit before v6, so legacy courses keep their
+        // exact historical spans.
+        (!(run.climbPrototype && wadeIntersecting(start, sequenceEnd)) &&
+         !(run.climbPrototype && railIntersecting(start, sequenceEnd))) &&
         (!run.route || start >= run.route.until || sequenceEnd - COURSE_RECOVERY <= run.route.until)) {
       const region=regionAt(start);
       const ordinal=run.raftPrototype?(run.courseOrdinals?.[region]??0):null;

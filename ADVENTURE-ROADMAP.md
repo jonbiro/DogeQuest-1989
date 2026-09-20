@@ -1,6 +1,29 @@
 # Puppy adventure goal
 
-## Latest increment: climb walls, glide canopy, and a finishable adventure
+## Latest increment: minute-one Frostpeak and scheduled water breaks
+
+Current trails are version six. The Frostpeak descent boards at 1,667 meters,
+riding before the 60-second mark, with the 1,750 fork resolving passively by
+lane mid-descent. The moving gate slides into the old chase slot at 1,400 and
+the puppy chase moves out to 2,780, so every adventure keeps all verbs and
+nothing overlaps; legacy replay streams stay byte-identical.
+
+A survey found no 130-meter wade window anywhere in the furnished adventure
+even after the reshuffle, so wade stones stay an endless chapter — but the
+survey also found wade and rails emitting ~zero times per 9,000 meters under
+the old row lottery. Both now run on fixed grids (wade water at 4,160, root
+rails at 3,310, every 1,400 meters) with emit-or-skip reservations, and every
+seed meets both. Courses yield only on true overlap so scenic density holds.
+
+Fairness fixes ship with it: every third yeti crossing walked its wide body
+through its own safe lane (crossings now step to the neighboring lane), the
+ski approach cue commanded early jumps (renamed), rail-break pairs demanded
+sub-200ms precision at fourteen meters apart (ten apart now, ~280ms window),
+and the rail-break cue fired from 48 meters out (precision-timed like the ski
+hop now). Cue-following harnesses learned hop timing, gate/yeti/ice/snowman
+steering and rail-early jumps. All 860 checks pass.
+
+## Previous increment: climb walls, glide canopy, and a finishable adventure
 
 Current trails are version six. Two new traversal verbs join the run: vine
 **clamber walls** (jump-pump upward, steer under the leaf cue, +180) and

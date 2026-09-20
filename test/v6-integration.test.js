@@ -91,7 +91,9 @@ test('v6 adventure always meets the climb wall and the glide shimmer', () => {  
 
 test('v6 adventure boards the minute-one ski and still reaches home', () => {
   // The slope must EMIT on every seed, not merely advance past: a skip means
-  // some reservation stole the minute-one slot.
+  // some reservation stole the minute-one slot. The 1750 fork resolves
+  // passively mid-descent (the ride owns the banner), so all three early
+  // forks still count and none strands pending behind the results modal.
   for (const seed of [42, 7, 99, 1234, 11, 5, 2024, 9001]) {
     const run = createRun(seed, {}, 6, null, {encounterPacing: true, mode: 'adventure'});
     let guard = 0;
@@ -100,5 +102,7 @@ test('v6 adventure boards the minute-one ski and still reaches home', () => {
     assert.ok(!(run.skiSkipped || []).includes(1667), `seed ${seed}: minute-one ski emitted`);
     assert.equal(run.skis, 1, `seed ${seed}: slope boarded`);
     assert.equal(run.ski, null, 'no stranded ski behind the results modal');
+    assert.ok(run.routeChoices >= 3, `seed ${seed}: early forks resolve, including mid-ski`);
+    assert.equal(run.choicePending, null, 'no stranded fork behind the results modal');
   }
 });

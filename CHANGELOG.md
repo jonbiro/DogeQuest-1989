@@ -4,6 +4,15 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Scheduled wade stones and root rails on fixed endless grids (water at
+  4,160, rails at 3,310, every 1,400 meters) after a survey found the row
+  lottery emitting ~zero of either per 9,000 meters and no 130-meter wade
+  window anywhere in adventures. Courses yield on true overlap only, chase
+  reservations cover both chapters, and legacy trail hashes are untouched.
+- Narrowed rail-break pairs from fourteen meters apart to ten so one
+  well-timed jump honestly clears both inside a ~280ms window.
+- Locked the mid-ski fork in tests: the 1,750 fork resolves passively while
+  the ride owns the banner, all early forks count, and none strands pending.
 - Board the minute-one Frostpeak slope: version-six trails ski at 1,667 m
   (riding before the 60-second mark) with the 1,750 fork resolving passively
   mid-descent. The moving gate slides into the old chase slot at 1,400 and the

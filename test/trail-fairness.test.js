@@ -58,8 +58,8 @@ function perfectPolicy(run, done) {
   }
   // Aboard a raft, minecart or ski descent no ordinary jump or slide answer
   // applies the same way; the only answer is the ride's safe lane, plus a
-  // short hop for jumpable snow. Frostpeak rides at 3350, so the probe must
-  // play them like the other rides instead of reading them as trail rows.
+  // short hop for jumpable snow. Frostpeak boards at 1667, so the probe must
+  // play it like the other rides instead of reading it as trail rows.
   if (run.raft || run.minecart || run.ski) {
     const ride = run.objects
       .filter(object => (object.raftHazard || object.minecartHazard || object.skiHazard || object.skiObstacle) && object.at > run.distance + .01)
