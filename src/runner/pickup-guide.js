@@ -129,7 +129,7 @@ function laneLabel(run, object) {
 
 // Return only the nearest readable special pickup. The guide deliberately
 // starts late enough to stay useful instead of becoming another permanent
-// banner: at the opening 22 m/s, 58m is roughly 2.5 seconds of notice. Urgent
+// banner: at the opening 20 m/s, 58m is roughly 2.9 seconds of notice. Urgent
 // jump/slide/turn cues retain the single message slot and the player still
 // has time to move for the reward.
 export function pickupGuideFor(run, maxDistance = 58) {

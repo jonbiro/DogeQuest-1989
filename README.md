@@ -2,7 +2,7 @@
 
 [Play in your browser](https://jonbiro.github.io/DogeQuest-1989/)
 
-Meet Mochi: a soft, silver-curled dog with a red scarf and five handcrafted trails to explore. Reach the doghouse to finish each trail. Bones are optional; elevated routes reward exploration. Checkpoint flags save your place, and retries are unlimited.
+Meet Biscuit: a brave little golden dog with a red scarf and five handcrafted trails to explore. Reach the doghouse to finish each trail. Bones are optional; elevated routes reward exploration. Hop on beetles, duck under vines, and ride the moving platforms. Checkpoint flags save your place, and retries are unlimited.
 
 ## New companion: Puppy Run
 
@@ -22,7 +22,7 @@ The run HUD now keeps a small **clean flow** meter alongside the bone streak. It
 
 Movement uses interpolated rendering, momentum-aware lane changes, smooth camera follow and accelerated airborne dives. A jump pressed just before landing is buffered for the next takeoff; diving preserves the full ground-slide duration. Velocity-driven leaning and a brief landing compression add weight without changing obstacle clearance. Decorative weight effects respect reduced-motion mode. Magnet bones curve toward Mochi from all three lanes within 16 meters ahead; points are credited on arrival, once per bone. Already-attracted bones finish their trip if the magnet expires. Magnetic field rings, pickup halos, collection sparkles, and timer bars make power-up states visible.
 
-Jumps return to the ground in 0.72 seconds at every upgrade level; Spring paws adds 10% height per level instead of longer airtime. Standard slides last 0.58 seconds, rising to 0.79 seconds with all three upgrades. Action hints anticipate the puppy's physical lane and disappear when the current move already covers the obstacle. Touch input uses a simple rule: one swipe equals one move. Pause briefly before another same-direction drag if you keep your finger down; lifting is always okay. Natural thumb diagonals, reversals and cross-axis moves remain supported, while overlong swipes are bounded so one stroke cannot skip across the trail.
+Jumps return to the ground in 0.72 seconds at every upgrade level; Spring paws adds 10% height per level instead of longer airtime. Standard slides last 0.58 seconds, rising to 0.86 seconds at the fourth level. Action hints anticipate the puppy's physical lane and disappear when the current move already covers the obstacle. Touch input uses a simple rule: one swipe equals one move. Pause briefly before another same-direction drag if you keep your finger down; lifting is always okay. Natural thumb diagonals, reversals and cross-axis moves remain supported, while overlong swipes are bounded so one stroke cannot skip across the trail.
 
 [Play Puppy Run in 3D](https://jonbiro.github.io/DogeQuest-1989/runner/)
 
@@ -44,9 +44,9 @@ A separate mobile-first endless runner through jungle ruins, a sunlit canyon and
 - Three hearts per run. A shield absorbs one hit; collecting another while protected awards 100 points instead of stacking protection. Magnets collect nearby bones for ten seconds.
 - Purple gems award 250 points; gold tokens double bone points for ten seconds; pink hearts restore one heart (up to three), or award 100 points at full health. Magnets and shields still appear along the trail.
 - Tennis balls trigger six seconds of **Zoomies**: faster running, protected obstacle smashes and automatic gap jumps. Presents give 100 points and count toward the party outfit when the run ends.
-- Score is distance in meters plus bone points and treasure bonuses. Bones start at 25 points. Completed runs bank their full score as upgrade points; spend them in **Paw upgrades** at camp. Four permanent upgrades improve jump lift, slide duration, magnet duration, and bone value. Each has three levels costing 500, 1,000, and 1,800 points. Purchases apply to the next run and save in this browser. No real money is involved.
+- Score is distance in meters plus bone points and treasure bonuses. Bones start at 25 points. Completed runs bank their full score as upgrade points; spend them in **Paw upgrades** at camp. Four permanent upgrades improve jump lift, slide duration, magnet duration, and bone value. Each has four levels costing 500, 1,000, 1,800, and 3,000 points. Purchases apply to the next run and save in this browser. No real money is involved.
 - Personal best, lifetime bones, points, and upgrades save locally after completed runs or purchases. Existing records are preserved; upgrade points begin accruing with this update. Leaving an unfinished run does not bank its bones or score.
-- The pace starts at 22 meters/second and reaches 36, with earlier hazards, more two-lane blockages, and denser ordinary rows. Full-width action rows have extra space afterward for recovery. Backgrounding the page pauses the run. Sound is opt-in; reduced-motion mode removes decorative movement, though running remains a visual motion-based game.
+- The pace starts at 20 meters/second and reaches 36 at full stride, with earlier hazards, more two-lane blockages, and denser ordinary rows. Full-width action rows have extra space afterward for recovery. Backgrounding the page pauses the run. Sound is opt-in; reduced-motion mode removes decorative movement, though running remains a visual motion-based game.
 
 Requires WebGL2. If 3D is unavailable, the page explains the requirement and links back to Puppy Quest. No accounts, real-money purchases, analytics, or remote artwork/font requests.
 
@@ -56,6 +56,7 @@ Click **Let’s go outside** or press Enter with the start button focused.
 
 - A/D or arrow keys: move.
 - Space, W, or Up: jump. Press again for a double jump; release early for a shorter hop.
+- S or Down: duck under hanging vines. Hold to stay tucked; jumping stands up first.
 - Shift: run.
 - Escape: pause/resume.
 - Touch controls appear below the game on small screens and touch devices.
