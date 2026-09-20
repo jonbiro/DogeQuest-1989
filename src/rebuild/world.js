@@ -185,12 +185,14 @@ export const DUCK_H = 18;
 export const VINE_TOP = 300;
 export const VINE_BOTTOM = 404;
 export const ENEMY_KINDS = {
-  // Patrols amble; hoppers bounce on a fixed timer; chargers sweep fast and
-  // wide. Collision and stomp rules are identical for all three: only the
-  // movement rhythm differs, so every world teaches a new timing.
-  patrol: {speed: 55, range: 65, hopPeriod: 0, hopVelocity: 0},
-  hopper: {speed: 35, range: 45, hopPeriod: 1.6, hopVelocity: -380},
-  charger: {speed: 95, range: 110, hopPeriod: 0, hopVelocity: 0},
+  // Patrols amble; hoppers bounce on a fixed timer; chargers stalk slowly,
+  // telegraph half a second, then dash fast across their range. Collision and
+  // stomp rules are identical for all three: only the movement rhythm differs,
+  // so every world teaches a new timing.
+  patrol: {speed: 55, range: 65, hopPeriod: 0, hopVelocity: 0, dash: null},
+  hopper: {speed: 35, range: 45, hopPeriod: 1.6, hopVelocity: -380, dash: null},
+  charger: {speed: 60, range: 110, hopPeriod: 0, hopVelocity: 0,
+    dash: {period: 3.4, windup: 0.5, duration: 0.8, speed: 230}},
 };
 export function createWorld(index) {
   const spec = WORLDS[index];
@@ -239,6 +241,10 @@ export function createWorld(index) {
         kind,
         vy: 0,
         hopTimer: 0,
+        // Dash chargers desync by origin so a pair never pulses together.
+        dashT: ((x % 100) / 100) * ((ENEMY_KINDS[entry?.kind] || {}).dash?.period || 0),
+        winding: false,
+        dashing: false,
       };
     }),
     checkpoint: false,
@@ -404,7 +410,33 @@ export function update(world, input, dt) {
   }
   for (const e of world.enemies) {
     if (!e.alive) continue;
-    const kind = ENEMY_KINDS[e.kind] || ENEMY_KINDS.patrol;    e.x += e.dir * kind.speed * dt;
+    const kind = ENEMY_KINDS[e.kind] || ENEMY_KINDS.patrol;
+    if (kind.dash) {
+      // Stalk, telegraph, dash, recover: a fixed cycle the player can learn.
+      // The wind-up shakes in place with dust; the dash itself is the threat.
+      e.dashT += dt;
+      const phase = e.dashT % kind.dash.period;
+      if (phase < kind.dash.windup) {
+        e.winding = true;
+        e.dashing = false;
+        e.x += e.dir * 10 * dt;
+      } else if (phase < kind.dash.windup + kind.dash.duration) {
+        if (!e.dashing) world.events.push({type: 'dash', x: e.x, y: e.y});
+        e.winding = false;
+        e.dashing = true;
+        e.x += e.dir * kind.dash.speed * dt;
+      } else {
+        e.winding = false;
+        e.dashing = false;
+        e.x += e.dir * kind.speed * dt;
+      }
+      if (Math.abs(e.x - e.origin) > kind.range) {
+        e.dir *= -1;
+        e.x = e.origin + Math.sign(e.x - e.origin) * kind.range;
+      }
+      continue;
+    }
+    e.x += e.dir * kind.speed * dt;
     if (Math.abs(e.x - e.origin) > kind.range) e.dir *= -1;
     // Hoppers bounce on their period and land back on the patrol line. The
     // stomp rule below reads e.y live, so mid-hop stomps work unchanged.

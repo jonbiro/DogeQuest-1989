@@ -158,10 +158,30 @@ export function draw(c, world, t, particles, attract = false, reducedMotion = fa
       // One silhouette, three coats: patrols rust, hoppers moss, chargers dusk
       // purple. All three read against every dirt palette in the five worlds.
       const coat = e.kind === 'hopper' ? '#7a9e43' : e.kind === 'charger' ? '#8a4f6d' : '#ae614c';
+      // Wind-up shivers in place so the dash never comes without warning.
+      const jx = e.winding ? (Math.floor(t * 24 + e.x) % 2 === 0 ? -2 : 2) : 0;
       const bounce = e.kind === 'hopper' && e.y < 406 ? -3 : 0;
-      oval(c, e.x + 15, e.y + 15, 19, 13, "#283b34");
-      oval(c, e.x + 15, e.y + 15 + bounce, 18, 12, coat);
-      rect(c, e.x, e.y + 18, 30, 6, "#3d2b23");
+      if (e.dashing) {
+        rect(c, e.x - e.dir * 12, e.y + 8, 14, 3, "#ffffff88");
+        rect(c, e.x - e.dir * 20, e.y + 14, 10, 2, "#ffffff55");
+      }
+      if (e.kind === 'charger') {
+        oval(c, e.x + 15 + jx, e.y + 15, 21, 13, "#283b34");
+        oval(c, e.x + 15 + jx, e.y + 15 + bounce, 20, 12, coat);
+        rect(c, e.x + 3 + jx, e.y + 1, 24, 3, "#3d2b23");
+      } else {
+        oval(c, e.x + 15 + jx, e.y + 15, 19, 13, "#283b34");
+        oval(c, e.x + 15 + jx, e.y + 15 + bounce, 18, 12, coat);
+      }
+      if (e.kind === 'hopper' && e.y >= 406) {
+        // Coiled spring legs on the ground; stretched thin mid-hop.
+        rect(c, e.x + 6, e.y + 18, 5, 4, "#3d2b23");
+        rect(c, e.x + 8, e.y + 22, 5, 4, "#3d2b23");
+        rect(c, e.x + 19, e.y + 18, 5, 4, "#3d2b23");
+        rect(c, e.x + 17, e.y + 22, 5, 4, "#3d2b23");
+      } else {
+        rect(c, e.x, e.y + 18, 30, 6, "#3d2b23");
+      }
       rect(c, e.x + 5, e.y + 5, 4, 5, "#fff1d7");
       rect(c, e.x + 20, e.y + 5, 4, 5, "#fff1d7");
     }

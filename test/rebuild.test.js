@@ -141,14 +141,16 @@ test("hoppers bounce on a fixed period and land back on the patrol line", () => 
   assert.equal(other.x, hopper.x);
 });
 
-test("chargers sweep faster and wider than patrols", () => {
+test("chargers stalk, telegraph and dash on a learnable cycle", () => {
   const w = createWorld(4);
   const charger = w.enemies.find((e) => e.kind === 'charger');
   const patrol = w.enemies.find((e) => e.kind === 'patrol');
   const cx0 = charger.x, px0 = patrol.x;
-  for (let i = 0; i < 120; i++) update(w, {direction: 0}, 1 / 120);
-  assert.ok(Math.abs(charger.x - cx0) > Math.abs(patrol.x - px0), 'charger covers more ground per second');
+  // A full 3.4s period averages faster than a patrol at any phase alignment.
+  for (let i = 0; i < Math.round(4.2 * 120); i++) update(w, {direction: 0}, 1 / 120);
+  assert.ok(Math.abs(charger.x - cx0) > Math.abs(patrol.x - px0), 'charger covers more ground per period');
   assert.ok(Math.abs(charger.x - charger.origin) <= 110);
+  assert.ok(w.events.some((e) => e.type === 'dash'), 'dashes puff dust as a tell');
   for (let i = 0; i < 600; i++) update(w, {direction: 0}, 1 / 120);
   assert.ok(Math.abs(charger.x - charger.origin) <= 110, 'charger never leaves its range');
 });
