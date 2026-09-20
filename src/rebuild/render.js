@@ -8,10 +8,13 @@ function oval(c, x, y, rx, ry, color) {
   c.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
   c.fill();
 }
-export function dog(c, x, y, face = 1, time = 0, moving = false, scale = 1) {
+export function dog(c, x, y, face = 1, time = 0, moving = false, scale = 1, crouch = false) {
   c.save();
-  c.translate(Math.round(x + 15), Math.round(y + 17));
-  c.scale(face * scale, scale);
+  // A tuck squashes vertically about planted feet: the head drops below the
+  // vine line while the paws stay on the ground. Math: feet at local +19 must
+  // land on the hitbox bottom, so the origin shifts down and Y compresses.
+  c.translate(Math.round(x + 15), Math.round(y + (crouch ? 8.5 : 17)));
+  c.scale(face * scale, scale * (crouch ? 0.5 : 1));
   const step = moving ? Math.sin(time * 22) * 3 : 0;
   rect(c, -17, 0, 28, 15, "#c47c3e");
   rect(c, -15, -3, 26, 13, "#e9ac65");
@@ -158,7 +161,7 @@ export function draw(c, world, t, particles, attract = false) {
   c.fillText("HOME", home + 18, 374);
   oval(c, p.x + 15, 430, 21, 4, "#263c3322");
   if (p.invincible <= 0 || Math.floor(t * 12) % 2 === 0)
-    dog(c, p.x, p.y, p.face, t, Math.abs(p.vx) > 20);
+    dog(c, p.x, p.y, p.face, t, Math.abs(p.vx) > 20, 1, p.ducking);
   for (const part of particles)
     rect(c, part.x, part.y, part.size, part.size, part.color);
   c.restore();
