@@ -1,30 +1,36 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createWorld, update, respawn, WORLDS } from "../src/rebuild/world.js";
+import { createWorld, update, respawn, WORLDS, botInput, enemyKindOf } from "../src/rebuild/world.js";
 import { draw, dog } from "../src/rebuild/render.js";
 import { loadSoundPreference, saveSoundPreference, prefersReducedMotion, SETTINGS_KEY } from "../src/rebuild/settings.js";
 const tick = (w, input = {}, count = 1) => {
   for (let i = 0; i < count; i++)
     update(w, { direction: 0, ...input }, 1 / 120);
 };
-test("all five handcrafted trails have safe starts, checkpoints and reachable ground gaps", () => {
+test("every dealt trail has a safe start, a grounded checkpoint and jumpable gaps", () => {
+  // Layouts are generated per game, so the invariants must hold for any seed,
+  // not one remembered arrangement.
   for (let i = 0; i < WORLDS.length; i++) {
-    const w = createWorld(i);
-    tick(w, {}, 120);
-    assert.equal(w.player.grounded, true);
-    assert.equal(w.deaths, 0);
-    assert.ok(
-      w.spec.ground.some(
-        ([x, width]) =>
-          w.spec.checkpoint >= x && w.spec.checkpoint + 30 <= x + width,
-      ),
-    );
-    for (let j = 1; j < w.spec.ground.length; j++)
+    for (const seed of [11, 222]) {
+      const w = createWorld(i, seed);
+      tick(w, {}, 120);
+      assert.equal(w.player.grounded, true);
+      assert.equal(w.deaths, 0);
       assert.ok(
-        w.spec.ground[j][0] -
-          (w.spec.ground[j - 1][0] + w.spec.ground[j - 1][1]) <=
-          180,
+        w.spec.ground.some(
+          ([x, width]) =>
+            w.spec.checkpoint >= x + 40 && w.spec.checkpoint + 30 <= x + width - 30,
+        ),
+        `biome ${i} seed ${seed}: checkpoint stands clear on solid ground`,
       );
+      for (let j = 1; j < w.spec.ground.length; j++)
+        assert.ok(
+          w.spec.ground[j][0] -
+            (w.spec.ground[j - 1][0] + w.spec.ground[j - 1][1]) <=
+            180,
+          `biome ${i} seed ${seed}: every gap stays directly jumpable`,
+        );
+    }
   }
 });
 test("jump is buffered, double jump refreshes lift, and a third jump is rejected", () => {
@@ -72,56 +78,41 @@ test("a falling player can stomp a patrol and bounce without a death", () => {
   assert.equal(w.deaths, 0);
   assert.ok(w.player.vy < 0);
 });
-test("every trail can be completed through simulated input with enemies enabled", () => {
+test("every dealt trail can be completed through simulated input with enemies enabled", () => {
+  // The shared casual-player oracle also drives the generator's verifier, so
+  // this is the same play the deal itself was proven against.
   for (let n = 0; n < 5; n++) {
-    const w = createWorld(n);
-    for (let i = 0; i < 120 * 60 && !w.finished; i++) {
-      const p = w.player;
-      const ground = w.spec.ground.find(
-        ([x, width]) => p.x >= x && p.x < x + width,
-      );
-      const enemy = w.enemies.find(
-        (e) => e.alive && e.x > p.x && e.x - p.x < 100,
-      );
-      // Tuck under any vine whose strands hang over the path ahead.
-      const vine = w.vines.find((v) => v.x + v.w > p.x && v.x - p.x < 110);
-      const jump =
-        (p.grounded &&
-          ((ground && ground[0] + ground[1] - p.x < 95) || enemy)) ||
-        (!p.grounded && p.jumps === 1 && p.vy > 30);
-      update(
-        w,
-        { direction: 1, run: true, jumpPressed: Boolean(jump && !vine), duck: Boolean(vine) },
-        1 / 120,
-      );
-    }
+    const w = createWorld(n, 11);
+    for (let i = 0; i < 120 * 60 && !w.finished; i++)
+      update(w, botInput(w), 1 / 120);
     assert.equal(w.finished, true, `trail ${n + 1} must be completable`);
   }
 });
 
-test("enemy rosters mix patrols, hoppers and chargers by world theme", () => {
-  const kinds = (n) => createWorld(n).enemies.map((e) => e.kind);
-  assert.deepEqual(kinds(0), ['patrol', 'patrol']);
-  assert.ok(kinds(1).includes('hopper'));
-  assert.ok(kinds(2).filter((k) => k === 'hopper').length >= 2);
-  assert.ok(kinds(3).includes('charger'));
-  assert.ok(kinds(4).includes('charger') && kinds(4).includes('hopper'));
-  assert.ok(createWorld(4).enemies.every((e) => ['patrol', 'hopper', 'charger'].includes(e.kind)));
-});
-
-test("plain numbers stay patrols and unknown kinds fall back safely", () => {
-  const w = createWorld(0);
-  assert.ok(w.enemies.every((e) => e.kind === 'patrol'));
-  WORLDS[0].enemies.push({x: 9999, kind: 'dragon'});
-  try {
-    assert.equal(createWorld(0).enemies.at(-1).kind, 'patrol');
-  } finally {
-    WORLDS[0].enemies.pop();
+test("enemy rosters mix patrols, hoppers and chargers by biome theme", () => {
+  // Every deal keeps its biome's rhythm: the backyard stays patrols, later
+  // trails guarantee their signature kinds.
+  for (const seed of [11, 222, 3333]) {
+    const kinds = (n) => createWorld(n, seed).enemies.map((e) => e.kind);
+    assert.ok(kinds(0).every((k) => k === 'patrol'), `seed ${seed}: backyard stays patrols`);
+    assert.ok(kinds(0).length >= 2);
+    assert.ok(kinds(1).includes('hopper'), `seed ${seed}: woods hop`);
+    assert.ok(kinds(2).filter((k) => k === 'hopper').length >= 2, `seed ${seed}: honeyhill hops twice`);
+    assert.ok(kinds(3).includes('charger'), `seed ${seed}: blue hour charges`);
+    assert.ok(kinds(4).includes('charger') && kinds(4).includes('hopper'), `seed ${seed}: home mixes`);
+    assert.ok(createWorld(4, seed).enemies.every((e) => ['patrol', 'hopper', 'charger'].includes(e.kind)));
   }
 });
 
+test("plain numbers stay patrols and unknown kinds fall back safely", () => {
+  assert.equal(enemyKindOf(1310), 'patrol');
+  assert.equal(enemyKindOf({x: 1030, kind: 'hopper'}), 'hopper');
+  assert.equal(enemyKindOf({x: 9999, kind: 'dragon'}), 'patrol');
+  assert.equal(createWorld(0, 11).enemies.at(-1).kind, 'patrol');
+});
+
 test("hoppers bounce on a fixed period and land back on the patrol line", () => {
-  const w = createWorld(1);
+  const w = createWorld(1, 11);
   const hopper = w.enemies.find((e) => e.kind === 'hopper');
   assert.ok(hopper);
   let minY = 406;
@@ -134,7 +125,7 @@ test("hoppers bounce on a fixed period and land back on the patrol line", () => 
   assert.equal(hopper.y, 406);
   assert.equal(hopper.vy, 0);
   // A second identical run hops in lockstep: the rhythm is deterministic.
-  const again = createWorld(1);
+  const again = createWorld(1, 11);
   const other = again.enemies.find((e) => e.kind === 'hopper');
   for (let i = 0; i < Math.round(4.7 * 120); i++) update(again, {direction: 0}, 1 / 120);
   assert.equal(other.y, hopper.y);
@@ -142,7 +133,7 @@ test("hoppers bounce on a fixed period and land back on the patrol line", () => 
 });
 
 test("chargers stalk, telegraph and dash on a learnable cycle", () => {
-  const w = createWorld(4);
+  const w = createWorld(4, 4);
   const charger = w.enemies.find((e) => e.kind === 'charger');
   const patrol = w.enemies.find((e) => e.kind === 'patrol');
   const cx0 = charger.x, px0 = patrol.x;
@@ -156,7 +147,7 @@ test("chargers stalk, telegraph and dash on a learnable cycle", () => {
 });
 
 test("stomps work on hopping enemies with the same rules", () => {
-  const w = createWorld(1);
+  const w = createWorld(1, 11);
   const hopper = w.enemies.find((e) => e.kind === 'hopper');
   w.player.x = hopper.x;
   w.player.y = hopper.y - w.player.h - 1;
@@ -167,15 +158,15 @@ test("stomps work on hopping enemies with the same rules", () => {
 });
 
 test("ducking tucks under vines that catch a standing puppy", () => {
-  for (const n of [0, 2, 4]) {
-    const standing = createWorld(n);
+  for (const [n, seed] of [[0, 11], [2, 222], [4, 3333]]) {
+    const standing = createWorld(n, seed);
     const vx = standing.vines[0].x;
     standing.player.x = vx + 5;
     standing.player.y = 430 - standing.player.h;
     standing.player.grounded = true;
     update(standing, {direction: 0, duck: false}, 1 / 120);
     assert.equal(standing.deaths, 1, `trail ${n + 1}: standing under a vine hurts`);
-    const ducked = createWorld(n);
+    const ducked = createWorld(n, seed);
     ducked.player.x = vx + 5;
     ducked.player.y = 430 - ducked.player.h;
     ducked.player.grounded = true;
@@ -187,7 +178,7 @@ test("ducking tucks under vines that catch a standing puppy", () => {
 });
 
 test("releasing duck under a vine keeps the tuck until headroom clears", () => {
-  const w = createWorld(0);
+  const w = createWorld(0, 11);
   const vx = w.vines[0].x;
   w.player.x = vx + 5;
   w.player.y = 430 - w.player.h;
@@ -204,24 +195,27 @@ test("releasing duck under a vine keeps the tuck until headroom clears", () => {
 });
 
 test("a held duck persists off ledges instead of popping up", () => {
-  const w = createWorld(0);
-  w.player.x = 700;
+  const w = createWorld(0, 11);
+  // Start near the end of the opening meadow and walk off its edge, wherever
+  // this deal put it.
+  const [sx, sw] = w.spec.ground[0];
+  w.player.x = sx + sw - 60;
   w.player.y = 430 - w.player.h;
   w.player.grounded = true;
   update(w, {direction: 1, duck: true}, 1 / 120);
   assert.equal(w.player.ducking, true);
   let guard = 0;
   while (w.player.grounded && guard++ < 300) update(w, {direction: 1, duck: true}, 1 / 120);
-  assert.equal(w.player.grounded, false, 'walked off the 760 edge');
+  assert.equal(w.player.grounded, false, 'walked off the meadow edge');
   assert.equal(w.player.ducking, true, 'still tucked in the air');
   assert.equal(w.deaths, 0);
 });
 
 test("landing with duck held tucks on touchdown", () => {
-  const w = createWorld(0);
+  const w = createWorld(0, 11);
   // Jump from open ground and hold duck: the landing frame tucks immediately
   // instead of standing for a frame first.
-  w.player.x = 2300;
+  w.player.x = 250;
   w.player.y = 430 - w.player.h;
   w.player.grounded = true;
   update(w, {direction: 1, run: true, jumpPressed: true}, 1 / 120);
@@ -271,9 +265,10 @@ test("jumping from a tuck needs headroom and diving accelerates falls", () => {
   assert.ok(rising.player.vy < 0, 'a rising jump is never cut into a dive');
 });
 
-test("a duck signpost stands before each world's first vines", () => {
+test("a duck signpost stands before each dealt trail's first vines", () => {
   for (let n = 0; n < 5; n++) {
-    const w = createWorld(n);
+    const w = createWorld(n, 222);
+    assert.ok(w.vines.length > 0, `trail ${n + 1} hangs vines`);
     assert.equal(w.signs.length, 1);
     assert.equal(w.signs[0].x, w.spec.vines[0] - 130);
     assert.match(w.signs[0].text, /DUCK/);
@@ -283,15 +278,15 @@ test("a duck signpost stands before each world's first vines", () => {
 });
 
 test("moving platforms patrol deterministically and ferry riders", () => {
-  const a = createWorld(1);
-  const b = createWorld(1);
-  assert.equal(a.movers.length, 1);
+  const a = createWorld(1, 11);
+  const b = createWorld(1, 11);
+  assert.ok(a.movers.length >= 1, 'bramble deals a ferry');
   for (let i = 0; i < 600; i++) {
     update(a, {direction: 0}, 1 / 120);
     update(b, {direction: 0}, 1 / 120);
   }
   assert.equal(a.movers[0].x, b.movers[0].x, 'same world time, same platform');
-  assert.ok(a.movers[0].x >= 1900 && a.movers[0].x <= 2050, 'stays on its patrol beat');
+  assert.ok(a.movers[0].x >= a.movers[0].x0 && a.movers[0].x <= a.movers[0].x1, 'stays on its patrol beat');
   // Stand on the mover and ride without touching input.
   const m = a.movers[0];
   a.player.x = m.x + 40;
@@ -308,16 +303,10 @@ test("moving platforms patrol deterministically and ferry riders", () => {
 
 test("movers are shortcuts: trails finish for runners who ignore them", () => {
   for (let n = 1; n < 5; n++) {
-    const w = createWorld(n);
+    const w = createWorld(n, 222);
     assert.ok(w.movers.length > 0);
-    for (let i = 0; i < 120 * 60 && !w.finished; i++) {
-      const p = w.player;
-      const ground = w.spec.ground.find(([x, width]) => p.x >= x && p.x < x + width);
-      const enemy = w.enemies.find((e) => e.alive && e.x > p.x && e.x - p.x < 100);
-      const vine = w.vines.find((v) => v.x + v.w > p.x && v.x - p.x < 110);
-      const jump = (p.grounded && ((ground && ground[0] + ground[1] - p.x < 95) || enemy)) || (!p.grounded && p.jumps === 1 && p.vy > 30);
-      update(w, {direction: 1, run: true, jumpPressed: Boolean(jump && !vine), duck: Boolean(vine)}, 1 / 120);
-    }
+    for (let i = 0; i < 120 * 60 && !w.finished; i++)
+      update(w, botInput(w), 1 / 120);
     assert.equal(w.finished, true, `trail ${n + 1} needs no ferry`);
   }
 });
@@ -351,6 +340,53 @@ test("every world renders sky grades, suns and night stars without a canvas", ()
     return calls.filter(([, , , , h, color]) => color === '#283b34').map(([, , y, w, h]) => `${y},${w},${h}`);
   }
   assert.notDeepEqual(eyePixels(0), eyePixels(3.65), 'blink changes the eye');
+});
+
+test("moods grade skies, fireflies glow and the tail wags", () => {
+  const calls = [];
+  const gradient = {addColorStop() {}};
+  const mock = {
+    canvas: {width: 960},
+    fillStyle: null,
+    globalAlpha: 1,
+    font: '',
+    textAlign: 'left',
+    save() {}, restore() {}, translate() {}, scale() {},
+    beginPath() {}, fill() {}, moveTo() {}, lineTo() {},
+    ellipse() {}, fillText() {},
+    createLinearGradient() { calls.push(['gradient']); return gradient; },
+    fillRect(x, y, w, h) { calls.push(['rect', x, y, w, h, this.fillStyle]); },
+  };
+  // Every lighting mood paints its own sky through the same gradient path.
+  const byMood = {};
+  for (const seed of [11, 222, 3333, 4, 5, 6, 7, 8])
+    for (let n = 0; n < 5; n++) {
+      const w = createWorld(n, seed);
+      byMood[w.spec.mood] ??= w;
+    }
+  assert.deepEqual(Object.keys(byMood).sort(), ['day', 'dusk', 'golden', 'night']);
+  for (const [mood, w] of Object.entries(byMood)) {
+    calls.length = 0;
+    draw(mock, w, 1.5, [], false);
+    assert.ok(calls.some(([k]) => k === 'gradient'), `${mood} grades its sky`);
+    if (mood === 'dusk' || mood === 'night') {
+      assert.equal(w.spec.stars, true, `${mood} brings the stars`);
+      assert.ok(
+        calls.some(([, , , , , color]) => color === '#ffe98a'),
+        `${mood} glows fireflies`,
+      );
+    }
+  }
+  // The tail wags on its own phase while running and rests when still.
+  function tailPixels(t, moving) {
+    calls.length = 0;
+    dog(mock, 0, 400, 1, t, moving, 1);
+    return calls
+      .filter(([, , , , h, color]) => h === 14 && color === '#e9ac65')
+      .map(([, x, y]) => `${x},${y}`);
+  }
+  assert.notDeepEqual(tailPixels(0, true), tailPixels(0.07, true), 'tail wags while running');
+  assert.deepEqual(tailPixels(0, false), tailPixels(0.07, false), 'tail rests when still');
 });
 
 test("sound preference persists safely and motion follows the OS", () => {

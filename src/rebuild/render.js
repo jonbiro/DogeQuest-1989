@@ -16,12 +16,13 @@ export function dog(c, x, y, face = 1, time = 0, moving = false, scale = 1, crou
   c.translate(Math.round(x + 15), Math.round(y + (crouch ? 8.5 : 17)));
   c.scale(face * scale, scale * (crouch ? 0.5 : 1));
   const step = moving ? Math.sin(time * 22) * 3 : 0;
+  const wag = moving ? Math.round(Math.sin(time * 22 + 1.3) * 2) : 0;
   rect(c, -17, 0, 28, 15, "#c47c3e");
   rect(c, -15, -3, 26, 13, "#e9ac65");
   rect(c, -14, 12 + step, 7, 7, "#fff1d7");
   rect(c, 5, 12 - step, 7, 7, "#fff1d7");
-  rect(c, -23, -8, 7, 14, "#e9ac65");
-  rect(c, -25, -10, 7, 6, "#fff1d7");
+  rect(c, -23, -8 + wag, 7, 14, "#e9ac65");
+  rect(c, -25, -10 + wag, 7, 6, "#fff1d7");
   rect(c, 0, -15, 21, 22, "#e9ac65");
   rect(c, 0, -23, 7, 12, "#c47c3e");
   rect(c, 15, -23, 7, 12, "#c47c3e");
@@ -66,22 +67,35 @@ export function draw(c, world, t, particles, attract = false, reducedMotion = fa
     c.globalAlpha = 1;
   }
   for (let i = 0; i < 8; i++) {
-    const x = ((((i * 251 - cam * 0.12) % 1200) + 1200) % 1200) - 100;
-    oval(c, x, 75 + (i % 3) * 31, 50, 13, "#edf2df");
-    oval(c, x + 30, 68 + (i % 3) * 31, 32, 20, "#edf2df");
+    const x = ((((i * 251 + (spec.props?.cloudPhase || 0) - cam * 0.12) % 1200) + 1200) % 1200) - 100;
+    oval(c, x, 75 + (i % 3) * 31, 50, 13, spec.cloud || "#edf2df");
+    oval(c, x + 30, 68 + (i % 3) * 31, 32, 20, spec.cloud || "#edf2df");
   }
   for (let i = 0; i < 10; i++) {
-    const x = i * 220 - cam * 0.22;
+    const x = i * 220 + (spec.props?.hillPhase || 0) - cam * 0.22;
     oval(c, x, 405, 180, 130 + (i % 3) * 25, spec.far);
   }
   for (let i = 0; i < 18; i++) {
-    const x = i * 240 - cam * 0.55;
+    const x = i * 240 + (spec.props?.treePhase || 0) - cam * 0.55;
     rect(c, x, 267, 14, 165, "#3d5147");
     oval(c, x + 7, 265, 49, 67, spec.far);
     oval(c, x - 22, 292, 37, 44, spec.far);
   }
   c.save();
   c.translate(-Math.round(cam), 0);
+  // Fireflies drift over Blue hour and over other trails at dusk and night.
+  // World-anchored and seed-placed, they read as part of the trail, not the
+  // weather; reduced motion holds them still but keeps them lit.
+  for (const f of spec.fireflies || []) {
+    if (f.x < cam - 20 || f.x > cam + width + 20) continue;
+    const drift = reducedMotion ? 0 : Math.sin(t * 1.4 + f.ph) * 8;
+    const lift = reducedMotion ? 0 : Math.cos(t + f.ph) * 5;
+    c.globalAlpha = reducedMotion
+      ? 0.8
+      : Math.max(0.15, Math.min(1, 0.45 + 0.35 * Math.sin(t * 2.2 + f.ph * 2)));
+    rect(c, f.x + drift, f.y + lift, 3, 3, "#ffe98a");
+  }
+  c.globalAlpha = 1;
   for (const s of world.solids) {
     if (s.x + s.w < cam || s.x > cam + width) continue;
     rect(c, s.x, s.y, s.w, s.h, spec.dirt);
@@ -185,8 +199,14 @@ export function draw(c, world, t, particles, attract = false, reducedMotion = fa
       rect(c, e.x + 5, e.y + 5, 4, 5, "#fff1d7");
       rect(c, e.x + 20, e.y + 5, 4, 5, "#fff1d7");
     }
-  // A real destination: the doghouse is always open, bones are optional.
+  // A real destination: the doghouse is always open, bones are optional. At
+  // night the porch light spills a warm pool onto the grass.
   const home = spec.length - 120;
+  if (spec.stars) {
+    c.globalAlpha = 0.22;
+    oval(c, home + 32, 390, 70, 58, "#ffd9a0");
+    c.globalAlpha = 1;
+  }
   rect(c, home - 10, 354, 84, 76, "#c87854");
   c.fillStyle = "#744b44";
   c.beginPath();

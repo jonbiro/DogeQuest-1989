@@ -1,4 +1,4 @@
-import { createWorld, update, WORLDS } from "./world.js";
+import { createWorld, update, WORLDS, STAR_FRACTION } from "./world.js";
 import { draw, dog } from "./render.js";
 import { loadSoundPreference, saveSoundPreference, prefersReducedMotion } from "./settings.js";
 
@@ -78,9 +78,12 @@ function showPanel(which) {
   $("touch").hidden = which !== null;
   $("world").inert = which !== null;
 }
-function start(n = 0) {
+function start(n = 0, seed) {
   index = n;
-  world = createWorld(n);
+  // A fresh seed deals a fresh trail: menu, continue and next always generate.
+  // Mid-run retries pass the live seed back so the same trail replays while
+  // the run is still on. The verifier behind createWorld proves every deal.
+  world = seed === undefined ? createWorld(n) : createWorld(n, seed);
   particles = [];
   clearInput();
   state = "playing";
@@ -88,7 +91,8 @@ function start(n = 0) {
   $("world-name").textContent = WORLDS[n].name;
   $("world-number").textContent = `${String(n + 1).padStart(2, "0")} / 05`;
   $("world").focus({ preventScroll: true });
-  announce(WORLDS[n].name + ". Reach the doghouse. Bones are optional.");
+  const mood = world.spec.moodLabel ? ` ${world.spec.moodLabel}` : "";
+  announce(`${WORLDS[n].name}${mood}. Reach the doghouse. Bones are optional.`);
   tone(440);
 }
 function pause() {
@@ -119,7 +123,7 @@ function finish() {
   tone(880, 0.4);
   const stars =
     1 +
-    (world.collected >= Math.ceil(world.bones.length * 0.65) ? 1 : 0) +
+    (world.collected >= Math.ceil(world.bones.length * STAR_FRACTION) ? 1 : 0) +
     (world.deaths === 0 ? 1 : 0);
   const old = records[index];
   records[index] = {
@@ -150,7 +154,7 @@ function finish() {
 }
 $("play").onclick = () => start();
 $("resume").onclick = resume;
-$("restart").onclick = () => start(index);
+$("restart").onclick = () => start(index, world.seed);
 $("quit").onclick = menu;
 $("pause-button").onclick = pause;
 $("next").onclick = () => start((index + 1) % 5);

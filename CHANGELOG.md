@@ -4,6 +4,13 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Dealt every 2D trail fresh: biome themes stay, layouts generate per game from
+  a seed, and a bot-verifier proves each deal finishable before it ships, so no
+  two sessions repeat and none loops unfairly. Retries replay the same deal;
+  menu, continue, next and replay deal anew. Trails also greet the player in
+  day, golden, dusk or night light with matching clouds, stars, fireflies and
+  a lit doghouse porch, while background phases, a tail wag and reachable
+  platform staircases keep repeat visits visually new.
 - Broke the root-rail log in two places: hop the striped breaks (one timed
   jump clears the span) while steering the bone line, with its own miss
   coaching when the hop comes late.

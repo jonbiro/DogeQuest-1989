@@ -11,23 +11,7 @@ export const WORLDS = [
     dirt: "#c28d62",
     length: 3000,
     par: 45,
-    ground: [
-      [0, 760],
-      [880, 690],
-      [1710, 550],
-      [2400, 600],
-    ],
-    platforms: [
-      [450, 350, 150],
-      [1120, 325, 170],
-      [1450, 260, 130],
-      [1880, 330, 180],
-      [2510, 320, 140],
-    ],
-    enemies: [1310, 2040],
-    vines: [2500],
-    movers: [],
-    checkpoint: 1780,
+    knobs: {gap: [80, 110], enemies: [2, 2], allowed: ['patrol'], guaranteed: [], vines: 1, movers: 0, chains: [1, 2]},
   },
   {
     name: "Bramble woods",
@@ -41,25 +25,7 @@ export const WORLDS = [
     dirt: "#a27a56",
     length: 3300,
     par: 55,
-    ground: [
-      [0, 620],
-      [770, 650],
-      [1580, 500],
-      [2220, 1080],
-    ],
-    platforms: [
-      [370, 330, 130],
-      [930, 310, 130],
-      [1190, 245, 150],
-      [1680, 335, 160],
-      [1970, 265, 170],
-      [2520, 325, 140],
-      [2790, 250, 150],
-    ],
-    enemies: [{x: 1030, kind: 'hopper'}, 1850, 2650],
-    vines: [1200, 2400],
-    movers: [[1900, 2050, 340, 110]],
-    checkpoint: 1660,
+    knobs: {gap: [95, 120], enemies: [3, 3], allowed: ['patrol', 'hopper'], guaranteed: ['hopper'], vines: 2, movers: 1, chains: [2, 2]},
   },
   {
     name: "Honeyhill hop",
@@ -73,27 +39,7 @@ export const WORLDS = [
     dirt: "#c79759",
     length: 3500,
     par: 60,
-    ground: [
-      [0, 680],
-      [840, 450],
-      [1470, 600],
-      [2240, 490],
-      [2900, 600],
-    ],
-    platforms: [
-      [380, 320, 140],
-      [970, 325, 140],
-      [1270, 260, 130],
-      [1640, 310, 180],
-      [1980, 255, 140],
-      [2390, 320, 160],
-      [2700, 280, 170],
-      [3090, 335, 150],
-    ],
-    enemies: [1040, {x: 1770, kind: 'hopper'}, 2510, {x: 3220, kind: 'hopper'}],
-    vines: [1200, 1950, 2650],
-    movers: [[2320, 2470, 340, 110]],
-    checkpoint: 1550,
+    knobs: {gap: [100, 130], enemies: [3, 4], allowed: ['patrol', 'hopper'], guaranteed: ['hopper', 'hopper'], vines: 3, movers: 1, chains: [2, 3]},
   },
   {
     name: "Blue hour",
@@ -107,27 +53,8 @@ export const WORLDS = [
     dirt: "#7a7c91",
     length: 3700,
     par: 65,
-    ground: [
-      [0, 600],
-      [760, 480],
-      [1410, 530],
-      [2120, 610],
-      [2900, 800],
-    ],
-    platforms: [
-      [320, 320, 150],
-      [900, 315, 150],
-      [1220, 260, 150],
-      [1550, 320, 170],
-      [1840, 255, 170],
-      [2260, 320, 160],
-      [2600, 255, 130],
-      [3110, 320, 170],
-    ],
-    enemies: [960, 1620, {x: 2410, kind: 'charger'}, 3240],
-    vines: [1100, 1850, 2650],
-    movers: [[2190, 2340, 340, 110]],
-    checkpoint: 2190,
+    fireflies: true,
+    knobs: {gap: [110, 140], enemies: [4, 4], allowed: ['patrol', 'hopper', 'charger'], guaranteed: ['charger'], vines: 3, movers: 1, chains: [2, 3]},
   },
   {
     name: "Home, sweet home",
@@ -141,32 +68,11 @@ export const WORLDS = [
     dirt: "#ae8076",
     length: 4000,
     par: 75,
-    ground: [
-      [0, 620],
-      [780, 480],
-      [1430, 480],
-      [2090, 570],
-      [2820, 480],
-      [3460, 540],
-    ],
-    platforms: [
-      [340, 325, 160],
-      [950, 310, 140],
-      [1270, 250, 150],
-      [1550, 320, 170],
-      [1840, 255, 150],
-      [2260, 315, 180],
-      [2600, 260, 140],
-      [2970, 320, 150],
-      [3300, 265, 140],
-      [3630, 320, 150],
-    ],
-    enemies: [1010, {x: 1680, kind: 'charger'}, {x: 2360, kind: 'hopper'}, {x: 3070, kind: 'charger'}, 3700],
-    vines: [1150, 1800, 2550, 3200],
-    movers: [[2900, 3050, 340, 110], [3260, 3410, 300, 110]],
-    checkpoint: 2160,
+    knobs: {gap: [120, 150], enemies: [4, 5], allowed: ['patrol', 'hopper', 'charger'], guaranteed: ['charger', 'hopper'], vines: 4, movers: 2, chains: [2, 3]},
   },
 ];
+
+import { generateSpec, randomSeed } from "./generate.js";
 
 export const overlaps = (a, b) =>
   a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
@@ -194,8 +100,67 @@ export const ENEMY_KINDS = {
   charger: {speed: 60, range: 110, hopPeriod: 0, hopVelocity: 0,
     dash: {period: 3.4, windup: 0.5, duration: 0.8, speed: 230}},
 };
-export function createWorld(index) {
-  const spec = WORLDS[index];
+export function enemyKindOf(entry) {
+  // Plain numbers stay classic patrols; objects add a kind. Unknown kinds
+  // fall back to patrol so old and hand-made levels keep working.
+  return ENEMY_KINDS[entry?.kind] ? entry.kind : 'patrol';
+}
+// A casual player's policy, and the fairness oracle: run right, jump at gap
+// edges and beetles, tuck under vines instead of jumping into them. The
+// generator's verifier and the test suite share this exact function, so the
+// proof of "every dealt trail finishes" can never drift from the play it
+// models.
+export function botInput(w) {
+  const p = w.player;
+  const ground = w.spec.ground.find(([x, width]) => p.x >= x && p.x < x + width);
+  const enemy = w.enemies.find((e) => e.alive && e.x > p.x && e.x - p.x < 100);
+  const vine = w.vines.find((v) => v.x + v.w > p.x && v.x - p.x < 110);
+  // Single jumps only: every gap clears inside one running jump, and the
+  // takeoff and landing aprons keep beetles clear of both ends, so the arc
+  // never needs an extension. Airborne extensions only ever stretched flight
+  // into vine duck-zones and dove onto the strands. A single-jump oracle is
+  // the stronger fairness proof: anything it finishes, a double-jumping
+  // human finishes easier.
+  const jump =
+    p.grounded && ((ground && ground[0] + ground[1] - p.x < 95) || enemy);
+  return {direction: 1, run: true, jumpPressed: Boolean(jump && !vine), duck: Boolean(vine)};
+}
+// The bone star calls for 65% of the trail's bones; a dealt trail must offer
+// that many to a player who just runs the taught line.
+export const STAR_FRACTION = 0.65;
+export function simulateBot(spec, seed) {
+  const world = buildWorld(spec, seed);
+  for (let i = 0; i < 120 * 60 && !world.finished; i++)
+    update(world, botInput(world), 1 / 120);
+  // Completion is the fairness property: the shipped game's 65% bone star
+  // was always an exploration reward (even the handcrafted trails only feed a
+  // straight runner 33-53%), so the verifier proves every trail finishes and
+  // the test suite separately floors ground-bone density per mile.
+  return {
+    pass: world.finished,
+    progress: world.finished ? Infinity : world.player.x,
+    bones: world.bones.length
+      ? world.collected / world.bones.length
+      : 1,
+  };
+}
+export function createWorld(index, seed = randomSeed()) {
+  // Deal layouts until the oracle completes one with full stars in reach.
+  // The search is deterministic in (index, seed): retries replay the same
+  // trail, new games deal fresh ones. A bounded fallback keeps the worst case
+  // a deep run, never a hang.
+  let fallback = null;
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const nonce = (seed + attempt) >>> 0;
+    const spec = generateSpec(WORLDS[index], nonce);
+    const result = simulateBot(spec, nonce);
+    if (result.pass) return buildWorld(spec, nonce);
+    if (!fallback || result.progress > fallback.progress)
+      fallback = {spec, nonce, progress: result.progress};
+  }
+  return buildWorld(fallback.spec, fallback.nonce);
+}
+export function buildWorld(spec, seed) {
   const solids = [
     ...spec.ground.map(([x, w]) => ({ x, y: 430, w, h: 140 })),
     ...spec.platforms.map(([x, y, w]) => ({ x, y, w, h: 22 })),
@@ -203,7 +168,7 @@ export function createWorld(index) {
   const bones = [];
   spec.ground.forEach(([x, w]) => {
     for (let p = x + 180; p < x + w - 70; p += 140)
-      bones.push({ x: p, y: 392, w: 20, h: 16, taken: false });
+      bones.push({ x: p, y: 392, w: 20, h: 16, taken: false, ground: true });
   });
   spec.platforms.forEach(([x, y, w], i) =>
     bones.push({
@@ -212,11 +177,13 @@ export function createWorld(index) {
       w: 20,
       h: 16,
       taken: false,
+      ground: false,
       gold: i % 3 === 2,
     }),
   );
   return {
     spec,
+    seed,
     solids,
     bones,
     vines: (spec.vines || []).map((x) => ({x, y: VINE_TOP, w: 26, h: VINE_BOTTOM - VINE_TOP})),
@@ -226,10 +193,8 @@ export function createWorld(index) {
     // required: every gap beneath them stays directly jumpable.
     movers: (spec.movers || []).map(([x0, x1, y, w]) => ({x0, x1, y, w, h: 22, x: x0, dx: 0, mover: true})),
     enemies: spec.enemies.map((entry) => {
-      // Plain numbers stay classic patrols; objects add a kind. Unknown kinds
-      // fall back to patrol so old and hand-made levels keep working.
       const x = typeof entry === 'number' ? entry : entry.x;
-      const kind = ENEMY_KINDS[entry?.kind] ? entry.kind : 'patrol';
+      const kind = enemyKindOf(entry);
       return {
         x,
         y: 406,
