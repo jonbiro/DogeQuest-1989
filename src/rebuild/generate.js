@@ -157,43 +157,11 @@ export function generateSpec(biome, seed) {
   }
   vines.sort((a, b) => a - b);
 
-  // Enemies stand on long meadows with a clear landing apron ahead and a clear
-  // takeoff apron behind, never at the spawn doorstep, and clear of vines.
-  // The trailing apron fits a full single-jump landing past a beetle hop, so
-  // a beetle hop never throws the runner into the next pit.
-  const enemies = [];
-  const poolFor = (minLen) => ground.filter(([, w]) => w >= minLen);
-  const placeEnemy = (kind, strong) => {
-    const tries = strong ? 60 : 10;
-    for (let t = 0; t < tries; t++) {
-      const tier = t < tries / 2 ? 0 : 1;
-      const pool = poolFor(tier === 0 ? 420 : 320);
-      if (!pool.length) continue;
-      const [sx, w] = pool[ri(0, pool.length - 1)];
-      const ms = tier === 0 ? 200 : 150;
-      const ex = Math.round(Math.max(450, sx + ms + rng() * (w - ms - 160)));
-      if (ex + 30 > sx + w - 130) continue;
-      if (enemies.some((e) => Math.abs((typeof e === "number" ? e : e.x) - ex) < 320))
-        continue;
-      if (vines.some((v) => Math.abs(v - ex) < 100)) continue;
-      enemies.push(kind === "patrol" ? ex : { x: ex, kind });
-      return true;
-    }
-    return false;
-  };
-  for (const kind of knobs.guaranteed) placeEnemy(kind, true);
-  const wantEnemies = ri(knobs.enemies[0], knobs.enemies[1]);
-  let guard = 0;
-  while (enemies.length < wantEnemies && guard++ < 40) {
-    const kind = knobs.allowed[ri(0, knobs.allowed.length - 1)];
-    placeEnemy(kind, false);
-  }
-  enemies.sort((a, b) => (typeof a === "number" ? a : a.x) - (typeof b === "number" ? b : b.x));
-
   // Platforms grow as reachable staircases from the meadow: the first plank
   // stays inside a single jump, each next link rises at most 80px. No plank
   // ever crosses a vine column: strands hang to y=404, so a plank under one
-  // would wall off its own walking line and trap runners up top.
+  // would wall off its own walking line and trap runners up top. Platforms
+  // come before enemies so patrolling flyers can keep clear of planks.
   const platforms = [];
   const chains = ri(knobs.chains[0], knobs.chains[1]);
   const platSegs = ground.filter(([sx, w]) => sx >= 300 && w >= 380);
@@ -222,6 +190,64 @@ export function generateSpec(biome, seed) {
     }
   }
 
+  // Enemies stand on long meadows with a clear landing apron ahead and a clear
+  // takeoff apron behind, never at the spawn doorstep, and clear of vines.
+  // The trailing apron fits a full single-jump landing past a beetle hop, so
+  // a beetle hop never throws the runner into the next pit. Flyers patrol too,
+  // so they keep extra vine distance and never cross a plank column: a plank
+  // under a flight path would ambush riders dropping from above.
+  const enemies = [];
+  const poolFor = (minLen) => ground.filter(([, w]) => w >= minLen);
+  const clearOfPlanks = (ex) =>
+    platforms.every(([px, , pw]) => ex + 110 < px || ex - 110 > px + pw);
+  const placeEnemy = (kind, strong) => {
+    const tries = strong ? 60 : 10;
+    for (let t = 0; t < tries; t++) {
+      const tier = t < tries / 2 ? 0 : 1;
+      const pool = poolFor(tier === 0 ? 420 : 320);
+      if (!pool.length) continue;
+      const [sx, w] = pool[ri(0, pool.length - 1)];
+      const ms = tier === 0 ? 200 : 150;
+      const ex = Math.round(Math.max(450, sx + ms + rng() * (w - ms - 160)));
+      if (ex + 30 > sx + w - 130) continue;
+      if (enemies.some((e) => Math.abs((typeof e === "number" ? e : e.x) - ex) < 320))
+        continue;
+      if (vines.some((v) => Math.abs(v - ex) < (kind === 'flyer' ? 180 : 100))) continue;
+      if (kind === 'flyer' && !clearOfPlanks(ex)) continue;
+      enemies.push(kind === "patrol" ? ex : { x: ex, kind });
+      return true;
+    }
+    if (strong) {
+      // Guaranteed kinds always appear: the longest meadow hosts the
+      // straggler with player-arc margins when the full rule set finds no
+      // room. The verifier still rejects the nonce if the relaxed spot makes
+      // an unfair trap (a beetle in a tuck path, a flyer over a plank), so
+      // the promise holds without weakening the common-case rules.
+      const [sx, w] = ground.slice().sort((a, b) => b[1] - a[1])[0] || [0, 0];
+      const ex = Math.round(Math.max(450, Math.min(sx + w - 160, sx + w / 2)));
+      if (w >= 320 && ex + 30 <= sx + w - 130) {
+        enemies.push(kind === "patrol" ? ex : { x: ex, kind });
+        return true;
+      }
+    }
+    return false;
+  };
+  // Most constrained first: flyers need vine distance, plank clearance and
+  // spacing all at once, while beetles only need aprons. Dealing flyers
+  // before the rest keeps every guaranteed kind appearing on every seed.
+  const ordered = [
+    ...knobs.guaranteed.filter((k) => k === 'flyer'),
+    ...knobs.guaranteed.filter((k) => k !== 'flyer'),
+  ];
+  for (const kind of ordered) placeEnemy(kind, true);
+  const wantEnemies = ri(knobs.enemies[0], knobs.enemies[1]);
+  let guard = 0;
+  while (enemies.length < wantEnemies && guard++ < 40) {
+    const kind = knobs.allowed[ri(0, knobs.allowed.length - 1)];
+    placeEnemy(kind, false);
+  }
+  enemies.sort((a, b) => (typeof a === "number" ? a : a.x) - (typeof b === "number" ? b : b.x));
+
   // Movers ferry across a real gap as one-way shortcuts; the gap beneath stays
   // directly jumpable so the ferry is never required.
   const movers = [];
@@ -233,9 +259,10 @@ export function generateSpec(biome, seed) {
 
   // The checkpoint lands on solid ground near the middle of the trail with
   // room to stand: respawns never drop the puppy into a gap, onto a strand,
-  // or inside a patrol beat, which would loop death into death.
+  // or inside a patrol beat, which would loop death into death. Its fraction
+  // drifts per deal so the breather never sits in the same spot twice.
   const enemyX = (e) => (typeof e === "number" ? e : e.x);
-  const target = length * 0.55;
+  const target = length * (0.48 + rng() * 0.12);
   const roomy = ground.filter(([, w]) => w >= 300);
   const byDistance = (roomy.length ? roomy : ground)
     .slice()
@@ -256,6 +283,20 @@ export function generateSpec(biome, seed) {
   if (checkpoint === null) {
     const bed = byDistance[0];
     checkpoint = Math.round(Math.min(bed[0] + 100, bed[0] + bed[1] - 60));
+  }
+
+  // Bone arcs reward the jump every gap demands: three pickups riding the
+  // flight tube over wide pits. Only gaps worth jumping get arcs, and the
+  // verifier proves the straight runner collects them in passing.
+  const arcs = [];
+  for (const gap of gaps) {
+    if (gap.width < 100 || rng() < 0.25) continue;
+    const [gx, gw] = [gap.start, gap.width];
+    arcs.push(
+      {x: Math.round(gx + gw * 0.3), y: 320},
+      {x: Math.round(gx + gw * 0.5), y: 305},
+      {x: Math.round(gx + gw * 0.7), y: 325},
+    );
   }
 
   const mood = pickMood(rng);
@@ -292,6 +333,7 @@ export function generateSpec(biome, seed) {
     enemies,
     vines,
     movers,
+    arcs,
     checkpoint,
   };
 }

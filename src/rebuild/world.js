@@ -54,7 +54,7 @@ export const WORLDS = [
     length: 3700,
     par: 65,
     fireflies: true,
-    knobs: {gap: [110, 140], enemies: [4, 4], allowed: ['patrol', 'hopper', 'charger'], guaranteed: ['charger'], vines: 3, movers: 1, chains: [2, 3]},
+    knobs: {gap: [110, 140], enemies: [4, 4], allowed: ['patrol', 'hopper', 'charger', 'flyer'], guaranteed: ['charger', 'flyer'], vines: 3, movers: 1, chains: [2, 3]},
   },
   {
     name: "Home, sweet home",
@@ -68,7 +68,7 @@ export const WORLDS = [
     dirt: "#ae8076",
     length: 4000,
     par: 75,
-    knobs: {gap: [120, 150], enemies: [4, 5], allowed: ['patrol', 'hopper', 'charger'], guaranteed: ['charger', 'hopper'], vines: 4, movers: 2, chains: [2, 3]},
+    knobs: {gap: [120, 150], enemies: [4, 5], allowed: ['patrol', 'hopper', 'charger', 'flyer'], guaranteed: ['charger', 'hopper', 'flyer'], vines: 4, movers: 2, chains: [2, 3]},
   },
 ];
 
@@ -92,13 +92,17 @@ export const VINE_TOP = 300;
 export const VINE_BOTTOM = 404;
 export const ENEMY_KINDS = {
   // Patrols amble; hoppers bounce on a fixed timer; chargers stalk slowly,
-  // telegraph half a second, then dash fast across their range. Collision and
-  // stomp rules are identical for all three: only the movement rhythm differs,
-  // so every world teaches a new timing.
+  // telegraph half a second, then dash fast across their range; flyers ride a
+  // slow sine above the meadow. Collision and stomp rules are identical for
+  // all four: only the movement rhythm differs, so every world teaches a new
+  // timing. A flyer clips standing puppies near its crest and clears tucked
+  // ones near its trough: read the wingbeat, tuck the dip or hop it outright.
   patrol: {speed: 55, range: 65, hopPeriod: 0, hopVelocity: 0, dash: null},
   hopper: {speed: 35, range: 45, hopPeriod: 1.6, hopVelocity: -380, dash: null},
   charger: {speed: 60, range: 110, hopPeriod: 0, hopVelocity: 0,
     dash: {period: 3.4, windup: 0.5, duration: 0.8, speed: 230}},
+  flyer: {speed: 45, range: 80, hopPeriod: 0, hopVelocity: 0, dash: null,
+    flyBase: 372, flyAmp: 22, flyPeriod: 2.2},
 };
 export function enemyKindOf(entry) {
   // Plain numbers stay classic patrols; objects add a kind. Unknown kinds
@@ -181,6 +185,11 @@ export function buildWorld(spec, seed) {
       gold: i % 3 === 2,
     }),
   );
+  // Arc bones ride the flight tube over wide pits: the straight runner
+  // collects them mid-jump without detouring.
+  (spec.arcs || []).forEach(({x, y}) =>
+    bones.push({x, y, w: 20, h: 16, taken: false, ground: false, arc: true}),
+  );
   return {
     spec,
     seed,
@@ -195,9 +204,10 @@ export function buildWorld(spec, seed) {
     enemies: spec.enemies.map((entry) => {
       const x = typeof entry === 'number' ? entry : entry.x;
       const kind = enemyKindOf(entry);
+      const fly = ENEMY_KINDS[kind]?.flyBase;
       return {
         x,
-        y: 406,
+        y: fly ?? 406,
         w: 30,
         h: 24,
         origin: x,
@@ -208,6 +218,9 @@ export function buildWorld(spec, seed) {
         hopTimer: 0,
         // Dash chargers desync by origin so a pair never pulses together.
         dashT: ((x % 100) / 100) * ((ENEMY_KINDS[entry?.kind] || {}).dash?.period || 0),
+        // Flyers desync the same way so a pair never flaps in lockstep.
+        flyT: 0,
+        flyPhase: ((x % 100) / 100) * Math.PI * 2,
         winding: false,
         dashing: false,
       };
@@ -403,9 +416,15 @@ export function update(world, input, dt) {
     }
     e.x += e.dir * kind.speed * dt;
     if (Math.abs(e.x - e.origin) > kind.range) e.dir *= -1;
-    // Hoppers bounce on their period and land back on the patrol line. The
-    // stomp rule below reads e.y live, so mid-hop stomps work unchanged.
-    if (kind.hopPeriod > 0) {
+    if (kind.flyBase !== undefined) {
+      // Crows ride their sine on a private clock, so saves, retries and
+      // replays flap identically. The stomp rule below reads e.y live, so
+      // dipping stomps work exactly like hopping ones.
+      e.flyT += dt;
+      e.y = kind.flyBase + Math.sin((2 * Math.PI * e.flyT) / kind.flyPeriod + e.flyPhase) * kind.flyAmp;
+    } else if (kind.hopPeriod > 0) {
+      // Hoppers bounce on their period and land back on the patrol line. The
+      // stomp rule below reads e.y live, so mid-hop stomps work unchanged.
       e.hopTimer += dt;
       if (e.hopTimer >= kind.hopPeriod && e.y >= 406) {
         e.vy = kind.hopVelocity;

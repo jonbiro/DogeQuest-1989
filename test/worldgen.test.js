@@ -117,6 +117,38 @@ test("every deal honors the fairness grammar", () => {
   }
 });
 
+test("flyers flap from their base and arcs ride real gaps", () => {
+  for (const seed of SEEDS) {
+    const w = createWorld(3, seed);
+    const flyer = w.enemies.find((e) => e.kind === 'flyer');
+    assert.ok(flyer, `seed ${seed}: blue hour crows`);
+    assert.equal(flyer.y, 372);
+    assert.equal(flyer.flyT, 0);
+    assert.ok(Number.isFinite(flyer.flyPhase));
+    for (const bone of w.bones.filter((b) => b.arc)) {
+      assert.equal(bone.ground, false);
+      assert.ok(bone.y >= 300 && bone.y <= 340, `arc bone at y=${bone.y} rides the tube`);
+      const gap = w.spec.ground.some(([x, width], i) => {
+        if (i === 0) return false;
+        const prev = w.spec.ground[i - 1];
+        const gs = prev[0] + prev[1];
+        return bone.x > gs && bone.x < x;
+      });
+      assert.ok(gap, `arc bone at x=${bone.x} hangs over a pit`);
+    }
+  }
+});
+
+test("the checkpoint breather drifts per deal", () => {
+  const cps = SEEDS.map((seed) => createWorld(2, seed).spec.checkpoint);
+  assert.ok(new Set(cps).size > 1, `checkpoint moves: ${cps.join(",")}`);
+  for (const seed of SEEDS) {
+    const w = createWorld(2, seed);
+    const frac = w.spec.checkpoint / w.spec.length;
+    assert.ok(frac > 0.3 && frac < 0.75, `checkpoint stays mid-trail: ${frac.toFixed(2)}`);
+  }
+});
+
 test("moods recolor skies and fireflies follow the dark", () => {
   const seen = new Set();
   for (let i = 0; i < WORLDS.length; i++) {

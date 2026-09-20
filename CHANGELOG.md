@@ -4,6 +4,12 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Added crows to the 2D night trails: flyers ride a slow deterministic sine
+  above the meadow, clipping standers at the crest and clearing tucks at the
+  trough, so every flyby answers with a hop, a timed tuck or a dipping stomp.
+  Blue hour and home biomes guarantee them; the verifier proves every deal.
+- Dealt 2D trails now string bone arcs over wide pits (collected mid-jump in
+  passing) and drift the checkpoint breather per deal.
 - Scheduled wade stones and root rails on fixed endless grids (water at
   4,160, rails at 3,310, every 1,400 meters) after a survey found the row
   lottery emitting ~zero of either per 9,000 meters and no 130-meter wade

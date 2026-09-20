@@ -58,6 +58,7 @@ test("checkpoint respawn preserves collected bones and allows unlimited retries"
 });
 test("home completes a course without requiring optional bones", () => {
   const w = createWorld(0);
+  w.bones = [];
   w.player.x = w.spec.length - 130;
   w.player.y = 250;
   tick(w);
@@ -89,9 +90,9 @@ test("every dealt trail can be completed through simulated input with enemies en
   }
 });
 
-test("enemy rosters mix patrols, hoppers and chargers by biome theme", () => {
+test("enemy rosters mix patrols, hoppers, chargers and flyers by biome theme", () => {
   // Every deal keeps its biome's rhythm: the backyard stays patrols, later
-  // trails guarantee their signature kinds.
+  // trails guarantee their signature kinds, and night trails add crows.
   for (const seed of [11, 222, 3333]) {
     const kinds = (n) => createWorld(n, seed).enemies.map((e) => e.kind);
     assert.ok(kinds(0).every((k) => k === 'patrol'), `seed ${seed}: backyard stays patrols`);
@@ -99,14 +100,16 @@ test("enemy rosters mix patrols, hoppers and chargers by biome theme", () => {
     assert.ok(kinds(1).includes('hopper'), `seed ${seed}: woods hop`);
     assert.ok(kinds(2).filter((k) => k === 'hopper').length >= 2, `seed ${seed}: honeyhill hops twice`);
     assert.ok(kinds(3).includes('charger'), `seed ${seed}: blue hour charges`);
-    assert.ok(kinds(4).includes('charger') && kinds(4).includes('hopper'), `seed ${seed}: home mixes`);
-    assert.ok(createWorld(4, seed).enemies.every((e) => ['patrol', 'hopper', 'charger'].includes(e.kind)));
+    assert.ok(kinds(3).includes('flyer'), `seed ${seed}: blue hour crows`);
+    assert.ok(kinds(4).includes('charger') && kinds(4).includes('hopper') && kinds(4).includes('flyer'), `seed ${seed}: home mixes`);
+    assert.ok(createWorld(4, seed).enemies.every((e) => ['patrol', 'hopper', 'charger', 'flyer'].includes(e.kind)));
   }
 });
 
 test("plain numbers stay patrols and unknown kinds fall back safely", () => {
   assert.equal(enemyKindOf(1310), 'patrol');
   assert.equal(enemyKindOf({x: 1030, kind: 'hopper'}), 'hopper');
+  assert.equal(enemyKindOf({x: 1050, kind: 'flyer'}), 'flyer');
   assert.equal(enemyKindOf({x: 9999, kind: 'dragon'}), 'patrol');
   assert.equal(createWorld(0, 11).enemies.at(-1).kind, 'patrol');
 });
@@ -133,7 +136,7 @@ test("hoppers bounce on a fixed period and land back on the patrol line", () => 
 });
 
 test("chargers stalk, telegraph and dash on a learnable cycle", () => {
-  const w = createWorld(4, 4);
+  const w = createWorld(4, 8);
   const charger = w.enemies.find((e) => e.kind === 'charger');
   const patrol = w.enemies.find((e) => e.kind === 'patrol');
   const cx0 = charger.x, px0 = patrol.x;
@@ -144,6 +147,51 @@ test("chargers stalk, telegraph and dash on a learnable cycle", () => {
   assert.ok(w.events.some((e) => e.type === 'dash'), 'dashes puff dust as a tell');
   for (let i = 0; i < 600; i++) update(w, {direction: 0}, 1 / 120);
   assert.ok(Math.abs(charger.x - charger.origin) <= 110, 'charger never leaves its range');
+});
+
+test("flyers ride a deterministic sine between fixed patrol ends", () => {
+  const w = createWorld(3, 11);
+  const flyer = w.enemies.find((e) => e.kind === 'flyer');
+  assert.ok(flyer);
+  assert.equal(flyer.y, 372);
+  let minY = 372, maxY = 372;
+  for (let i = 0; i < Math.round(4.4 * 120); i++) {
+    update(w, {direction: 0}, 1 / 120);
+    minY = Math.min(minY, flyer.y);
+    maxY = Math.max(maxY, flyer.y);
+  }
+  assert.ok(minY < 360, `flyer dips, reached ${minY}`);
+  assert.ok(maxY > 384, `flyer crests, reached ${maxY}`);
+  assert.ok(Math.abs(flyer.x - flyer.origin) <= 80, 'flyer holds its beat');
+  // A second identical run flaps in lockstep: the rhythm is deterministic.
+  const again = createWorld(3, 11);
+  const other = again.enemies.find((e) => e.kind === 'flyer');
+  for (let i = 0; i < Math.round(4.4 * 120); i++) update(again, {direction: 0}, 1 / 120);
+  assert.equal(other.y, flyer.y);
+  assert.equal(other.x, flyer.x);
+});
+
+test("stomps work on dipping flyers and tucks slip through troughs", () => {
+  const w = createWorld(3, 11);
+  const flyer = w.enemies.find((e) => e.kind === 'flyer');
+  // A falling puppy that meets the dip bonks it like any beetle.
+  w.player.x = flyer.x;
+  w.player.y = flyer.y - w.player.h - 1;
+  w.player.vy = 240;
+  update(w, {direction: 0}, 1 / 120);
+  assert.equal(flyer.alive, false);
+  assert.equal(w.deaths, 0);
+  // A tucked puppy slips under a trough flyer unharmed.
+  const low = createWorld(3, 11);
+  const bird = low.enemies.find((e) => e.kind === 'flyer');
+  bird.flyPhase = -Math.PI / 2;
+  bird.flyT = 0;
+  low.player.x = bird.x + 5;
+  low.player.y = 430 - low.player.h;
+  low.player.grounded = true;
+  update(low, {direction: 0, duck: true}, 1 / 120);
+  assert.equal(low.deaths, 0, 'a trough clears a tuck');
+  assert.equal(low.player.ducking, true);
 });
 
 test("stomps work on hopping enemies with the same rules", () => {
@@ -376,6 +424,18 @@ test("moods grade skies, fireflies glow and the tail wags", () => {
         `${mood} glows fireflies`,
       );
     }
+  }
+  // A crow beats amber wings over Blue hour. (Coats paint as ovals, which the
+  // mock does not record; wing rects prove the flyer renders.)
+  {
+    const w = createWorld(3, 11);
+    assert.ok(w.enemies.some((e) => e.kind === 'flyer'));
+    calls.length = 0;
+    draw(mock, w, 1.5, [], false);
+    assert.ok(
+      calls.some(([, , , , , color]) => color === '#8a6d24'),
+      'flyer beats its wings',
+    );
   }
   // The tail wags on its own phase while running and rests when still.
   function tailPixels(t, moving) {
