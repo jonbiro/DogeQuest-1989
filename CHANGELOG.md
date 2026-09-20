@@ -4,13 +4,19 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
-- Added vine walls to all five 2D trails with a new duck move (S/Down on
-  keyboard, Duck button on touch): tuck under the strands, dive mid-air, or
-  jump from a tuck where headroom allows. Releasing duck under a vine keeps
-  the tuck until it is safe to stand.
-- Gave each 2D trail its own enemy rhythm: bouncing hoppers from the woods
-  on, and fast wide-sweeping chargers haunting the blue hour and the finale.
-  Stomps and patrols work exactly as before.
+- Broke the root-rail log in two places: hop the striped breaks (one timed
+  jump clears the span) while steering the bone line, with its own miss
+  coaching when the hop comes late.
+- Rebuilt climb bone lines as three well-spaced pickups that bend across
+  lanes, so pumping and steering combine; the edge cue now points at bones
+  first since the exit needs no action.
+- Corrected stale help copy (mine-cart distance, Frostpeak availability) and
+  kept wade stones an endless chapter after verifying no fair adventure slot.
+- Added a duck move and hanging vines to all five 2D trails, with per-world
+  enemy rhythms (hoppers, chargers), moving ferry platforms, signposts
+  teaching the tuck, a visible crouch sprite, and dive-on-hold in mid-air.
+  Releasing duck under a vine keeps the tuck until headroom clears, and
+  beetles still meet the full standing height so tucking never grants immunity.
 - Added climbable vine walls and a glide canopy to runner adventures, plus
   hop-friendly wade stones and steerable root rails in endless. Adventures
   now run 2.6 km and include the moving gate; mine-carts and Frostpeak debut
