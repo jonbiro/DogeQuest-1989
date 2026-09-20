@@ -1,5 +1,6 @@
 import { createWorld, update, WORLDS } from "./world.js";
 import { draw, dog } from "./render.js";
+import { loadSoundPreference, saveSoundPreference, prefersReducedMotion } from "./settings.js";
 
 const $ = (id) => document.getElementById(id);
 const canvas = $("world"),
@@ -23,6 +24,12 @@ let world = createWorld(0),
   particles = [],
   audio = null,
   sound = true;
+const reducedMotion = prefersReducedMotion(
+  typeof window !== "undefined" && window.matchMedia
+    ? window.matchMedia.bind(window)
+    : null,
+);
+sound = loadSoundPreference(typeof localStorage !== "undefined" ? localStorage : null);
 let keys = new Set(),
   jumpPressed = false,
   jumpReleased = false;
@@ -151,10 +158,15 @@ $("replay").onclick = () => start(index);
 $("result-menu").onclick = menu;
 $("sound").onclick = () => {
   sound = !sound;
+  saveSoundPreference(typeof localStorage !== "undefined" ? localStorage : null, sound);
   $("sound").textContent = sound ? "Sound on" : "Sound off";
   $("sound").setAttribute("aria-pressed", String(sound));
   if (sound) tone(500);
 };
+if (!sound) {
+  $("sound").textContent = "Sound off";
+  $("sound").setAttribute("aria-pressed", "false");
+}
 window.addEventListener("keydown", (e) => {
   if (e.key === "Tab" && (state === "paused" || state === "result")) {
     const panel = state === "paused" ? $("pause") : $(state);
@@ -312,7 +324,7 @@ function frame(time) {
             : "Find the flag for a checkpoint. The doghouse is your goal.";
     if (world.finished) finish();
   } else accumulator = 0;
-  draw(ctx, world, clock, particles, state === "menu");
+  draw(ctx, world, clock, particles, state === "menu", reducedMotion);
   requestAnimationFrame(frame);
 }
 const portrait = $("portrait").getContext("2d");

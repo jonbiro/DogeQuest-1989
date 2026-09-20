@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createWorld, update, respawn, WORLDS } from "../src/rebuild/world.js";
+import { draw, dog } from "../src/rebuild/render.js";
+import { loadSoundPreference, saveSoundPreference, prefersReducedMotion, SETTINGS_KEY } from "../src/rebuild/settings.js";
 const tick = (w, input = {}, count = 1) => {
   for (let i = 0; i < count; i++)
     update(w, { direction: 0, ...input }, 1 / 120);
@@ -316,4 +318,52 @@ test("movers are shortcuts: trails finish for runners who ignore them", () => {
     }
     assert.equal(w.finished, true, `trail ${n + 1} needs no ferry`);
   }
+});
+
+test("every world renders sky grades, suns and night stars without a canvas", () => {
+  const calls = [];
+  const gradient = {addColorStop() {}};
+  const mock = {
+    canvas: {width: 960},
+    fillStyle: null,
+    globalAlpha: 1,
+    font: '',
+    textAlign: 'left',
+    save() {}, restore() {}, translate() {}, scale() {},
+    beginPath() {}, fill() {}, moveTo() {}, lineTo() {},
+    ellipse() {}, fillText() {},
+    createLinearGradient() { calls.push(['gradient']); return gradient; },
+    fillRect(x, y, w, h) { calls.push(['rect', x, y, w, h, this.fillStyle]); },
+  };
+  const {draw: drawWorld, dog: drawDog} = {draw, dog};
+  for (let n = 0; n < 5; n++) {
+    const w = createWorld(n);
+    calls.length = 0;
+    drawWorld(mock, w, 1.5, [], false);
+    assert.ok(calls.some(([k]) => k === 'gradient'), `trail ${n + 1} grades its sky`);
+  }
+  // The buddy blinks: eyelid pixels replace the open eye briefly.
+  function eyePixels(t) {
+    calls.length = 0;
+    drawDog(mock, 0, 400, 1, t, false, 1);
+    return calls.filter(([, , , , h, color]) => color === '#283b34').map(([, , y, w, h]) => `${y},${w},${h}`);
+  }
+  assert.notDeepEqual(eyePixels(0), eyePixels(3.65), 'blink changes the eye');
+});
+
+test("sound preference persists safely and motion follows the OS", () => {
+  assert.equal(SETTINGS_KEY, "puppy-quest-settings");
+  assert.equal(loadSoundPreference(null), true);
+  assert.equal(loadSoundPreference({getItem() { throw new Error("blocked"); }}), true);
+  assert.equal(loadSoundPreference({getItem: () => '{"sound":false}'}), false);
+  assert.equal(loadSoundPreference({getItem: () => '{bad'}), true);
+  const calls = [];
+  assert.equal(saveSoundPreference({setItem: (...a) => calls.push(a)}, false), true);
+  assert.deepEqual(calls, [[SETTINGS_KEY, '{"sound":false}']]);
+  assert.equal(saveSoundPreference({setItem() { throw new Error("quota"); }}, true), false);
+  assert.equal(saveSoundPreference(null, true), false);
+  assert.equal(prefersReducedMotion(null), false);
+  assert.equal(prefersReducedMotion(() => { throw new Error("nope"); }), false);
+  assert.equal(prefersReducedMotion((q) => ({matches: q.includes("reduce")})), true);
+  assert.equal(prefersReducedMotion(() => ({matches: false})), false);
 });

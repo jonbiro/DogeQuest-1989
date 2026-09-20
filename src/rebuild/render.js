@@ -29,21 +29,42 @@ export function dog(c, x, y, face = 1, time = 0, moving = false, scale = 1, crou
   rect(c, 17, -20, 3, 6, "#e7a08a");
   rect(c, 7, -2, 18, 9, "#fff1d7");
   rect(c, 21, -3, 5, 5, "#283b34");
-  rect(c, 14, -10, 4, 5, "#283b34");
-  rect(c, 14, -10, 2, 2, "#fff");
+  // A slow blink keeps the buddy alive between adventures. Eyelid, not glint.
+  if ((time % 3.7) < 0.12) {
+    rect(c, 14, -8, 4, 1, "#283b34");
+  } else {
+    rect(c, 14, -10, 4, 5, "#283b34");
+    rect(c, 14, -10, 2, 2, "#fff");
+  }
   rect(c, -1, 5, 18, 5, "#e35e45");
   rect(c, -6, 8, 8, 9, "#e35e45");
   c.restore();
 }
-export function draw(c, world, t, particles, attract = false) {
+export function draw(c, world, t, particles, attract = false, reducedMotion = false) {
   const { spec, player: p } = world;
   const width = c.canvas.width,
     height = 540;
   const target = Math.max(0, Math.min(spec.length - width, p.x - width * 0.32));
   world.camera = attract ? 0 : world.camera + (target - world.camera) * 0.12;
   const cam = world.camera;
-  rect(c, 0, 0, width, height, spec.sky);
-  oval(c, 780 - cam * 0.04, 96, 44, 44, "#fff0be");
+  // A vertical grade gives each world depth the flat fill lacked; night
+  // worlds get deterministic stars above the hills.
+  const grade = c.createLinearGradient(0, 0, 0, height);
+  grade.addColorStop(0, spec.sky);
+  grade.addColorStop(1, spec.horizon || spec.sky);
+  c.fillStyle = grade;
+  c.fillRect(0, 0, width, height);
+  oval(c, 780 - cam * 0.04, 96, 44, 44, spec.sun || "#fff0be");
+  if (spec.stars) {
+    for (let i = 0; i < 40; i++) {
+      const x = (((i * 197 - cam * 0.02) % (width + 40)) + width + 40) % (width + 40) - 20;
+      const y = (i * 131) % 210 + 8;
+      const twinkle = 0.45 + 0.4 * Math.sin(t * 2 + i * 1.7);
+      c.globalAlpha = Math.max(0.1, Math.min(1, twinkle));
+      rect(c, x, y, 2, 2, "#f4f1de");
+    }
+    c.globalAlpha = 1;
+  }
   for (let i = 0; i < 8; i++) {
     const x = ((((i * 251 - cam * 0.12) % 1200) + 1200) % 1200) - 100;
     oval(c, x, 75 + (i % 3) * 31, 50, 13, "#edf2df");
@@ -161,7 +182,7 @@ export function draw(c, world, t, particles, attract = false) {
   c.fillText("HOME", home + 18, 374);
   oval(c, p.x + 15, 430, 21, 4, "#263c3322");
   if (p.invincible <= 0 || Math.floor(t * 12) % 2 === 0)
-    dog(c, p.x, p.y, p.face, t, Math.abs(p.vx) > 20, 1, p.ducking);
+    dog(c, p.x, p.y, p.face, t, Math.abs(p.vx) > 20 && !reducedMotion, 1, p.ducking);
   for (const part of particles)
     rect(c, part.x, part.y, part.size, part.size, part.color);
   c.restore();
