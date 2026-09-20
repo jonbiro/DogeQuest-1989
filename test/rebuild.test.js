@@ -266,3 +266,14 @@ test("jumping from a tuck needs headroom and diving accelerates falls", () => {
   }
   assert.ok(rising.player.vy < 0, 'a rising jump is never cut into a dive');
 });
+
+test("a duck signpost stands before each world's first vines", () => {
+  for (let n = 0; n < 5; n++) {
+    const w = createWorld(n);
+    assert.equal(w.signs.length, 1);
+    assert.equal(w.signs[0].x, w.spec.vines[0] - 130);
+    assert.match(w.signs[0].text, /DUCK/);
+    // The sign stands on open ground with room to read it before tucking.
+    assert.ok(w.signs[0].x > 300, 'not at the spawn doorstep');
+  }
+});

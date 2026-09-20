@@ -83,6 +83,13 @@ export function draw(c, world, t, particles, attract = false) {
   c.fillStyle = "#385a46";
   c.font = "bold 16px monospace";
   c.fillText("HOME →", 270, 380);
+  for (const sign of world.signs || []) {
+    rect(c, sign.x + 29, 380, 6, 50, "#805d45");
+    rect(c, sign.x, 361, 64, 28, "#fff1d7");
+    c.fillStyle = "#385a46";
+    c.font = "bold 13px monospace";
+    c.fillText(sign.text, sign.x + 7, 380);
+  }
   // Hanging vines: thin strands a tucked puppy slips under. They read as
   // hazards, never footing, so they dangle without a branch to stand on.
   for (const v of world.vines || []) {

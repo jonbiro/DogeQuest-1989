@@ -150,6 +150,13 @@ export const WORLDS = [
 
 export const overlaps = (a, b) =>
   a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+// One wooden signpost before each world's first vines teaches the tuck
+// without cluttering every strand. Rendered like the HOME sign.
+export function vineSigns(spec) {
+  const first = (spec.vines || [])[0];
+  if (!Number.isFinite(first)) return [];
+  return [{x: first - 130, text: 'DUCK ↓'}];
+}
 export const STANDING_H = 34;
 export const DUCK_H = 18;
 // Ground top sits at y=430, so a standing puppy occupies 396-430 and a
@@ -191,6 +198,7 @@ export function createWorld(index) {
     solids,
     bones,
     vines: (spec.vines || []).map((x) => ({x, y: VINE_TOP, w: 26, h: VINE_BOTTOM - VINE_TOP})),
+    signs: vineSigns(spec),
     enemies: spec.enemies.map((entry) => {
       // Plain numbers stay classic patrols; objects add a kind. Unknown kinds
       // fall back to patrol so old and hand-made levels keep working.
