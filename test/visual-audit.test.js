@@ -470,3 +470,17 @@ test('ended mobile sheets keep the details affordance above the fixed action she
   assert.match(css, /#overlay\[data-kind="ended"\] \.modal h2 \{\s*font-size: 30px;/);
   assert.match(css, /#overlay\[data-kind="ended"\] #run-breakdown summary \{\s*min-height: 40px;/);
 });
+
+test('jump silhouettes stay inside their clear envelopes', () => {
+  const render = readFileSync(new URL('../src/runner/render.js', import.meta.url), 'utf8');
+  // Rock moss, feed-sack stack and crystal tips read as hops, not walls.
+  assert.match(render, /ball\(templates\.rock, "#77996b", -\.12, 1\.68, 0, \.78, \.2, \.65\)/);
+  assert.match(render, /const sackTop = ball\(templates\['feed-sacks'\], '#b3854f', \.12, \.82, 0, \.78, \.52, \.64\)/);
+  assert.match(render, /\[\[-\.45,\.7\],\[0,1\.25\],\[\.45,\.9\]\]/);
+  // The rolling snowball keeps a graze margin over its hop clearance.
+  assert.match(render, /const snowball = ball\(templates\.snowball, '#f7fcff', 0, \.40, 0, \.38, \.38, \.38\)/);
+  // The crate cart tops out near a fallen log, per its own comment.
+  assert.match(render, /box\(templates\['crate-cart'\], '#a5763f', 0, \.94, 0, 1\.72, \.07, 1\.0\)\.name = 'cart-top-rim'/);
+  // The catcher reads through his own net instead of behind a white veil.
+  assert.match(render, /opacity: \.3, side: THREE\.DoubleSide, depthWrite: false/);
+});

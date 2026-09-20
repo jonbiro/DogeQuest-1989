@@ -1666,7 +1666,9 @@ export function createView(canvas) {
   const boulder = mesh(templates.rock,createBoulderGeometry(),"#293e49",0,1.05,0,.94,1.1,.8);
   const riverBanks=createRiverBanks(scene,boulder.geometry);
   boulder.rotation.y = .35;
-  ball(templates.rock, "#77996b", -.12, 1.98, 0, .78, .2, .65);
+  // The moss cap stays inside the jump envelope: the whole rock reads as a
+  // 1.3m hop, not a wall, at every upgrade level.
+  ball(templates.rock, "#77996b", -.12, 1.68, 0, .78, .2, .65);
   box(templates.rock, "#e9dca6", 0, 1.08, 0.72, 0.35, 0.7, 0.06);
   templates.log = createLogModel(mesh,box);
   templates.arch = new THREE.Group();
@@ -1815,7 +1817,9 @@ export function createView(canvas) {
   }
   templates.gap = new THREE.Group();
   templates['crystal-rock'] = new THREE.Group();
-  for (const [x,height] of [[-.45,.8],[0,1.55],[.45,1.05]]) {
+  // Spire tips stay at the jump envelope so the crystal reads as a hop with
+  // a thrilling graze, matching the mogul's contract.
+  for (const [x,height] of [[-.45,.7],[0,1.25],[.45,.9]]) {
     const crystal=cone(templates['crystal-rock'],x===0?'#513187':'#256884',x,height/2,0,.65,height,.65);
     crystal.rotation.z=x*.3;
   }
@@ -1888,10 +1892,12 @@ export function createView(canvas) {
     ball(templates.yeti, '#b3d3df', side * .38, .2, -.06, .28, .2, .34).name = 'yeti-foot';
   }
   templates.snowball = new THREE.Group();
-  const snowball = ball(templates.snowball, '#f7fcff', 0, .55, 0, .58, .58, .58);
+  // The rolling ball stays near its hop envelope: big enough to read as a
+  // boulder-class threat, low enough that a committed hop grazes, not clips.
+  const snowball = ball(templates.snowball, '#f7fcff', 0, .40, 0, .38, .38, .38);
   snowball.castShadow = true;
-  ball(templates.snowball, '#b7e0ee', -.2, .46, -.39, .18, .12, .08).name = 'snowball-shadow';
-  ball(templates.snowball, '#ccecf5', .3, .66, -.38, .14, .1, .07).name = 'snowball-highlight';
+  ball(templates.snowball, '#b7e0ee', -.13, .33, -.26, .12, .08, .05).name = 'snowball-shadow';
+  ball(templates.snowball, '#ccecf5', .2, .47, -.25, .09, .07, .045).name = 'snowball-highlight';
   const snowballTrail = [];
   for (let index = 0; index < 3; index++) {
     const puff = ball(templates.snowball, '#e5f6fb', (index - 1) * .34, .17 + index * .06, .64 + index * .18,
@@ -2009,14 +2015,16 @@ export function createView(canvas) {
   // what sells "net you cannot jump through" instead of "ring to leap through".
   const netPole = box(templates['pound-officer'], '#8a6844', 0, 1.12, .18, 2.3, .09, .09);
   netPole.name = 'officer-pole';
-  const netHoop = new THREE.Mesh(new THREE.TorusGeometry(.52, .055, 8, 22), mat('#8a6844'));
+  const netHoop = new THREE.Mesh(new THREE.TorusGeometry(.52, .07, 8, 22), mat('#a08154'));
   netHoop.position.set(.78, 1.1, .18);
   netHoop.receiveShadow = true;
   netHoop.name = 'officer-net';
   templates['pound-officer'].add(netHoop);
   const netDisc = new THREE.Mesh(
     new THREE.CircleGeometry(.46, 20),
-    new THREE.MeshBasicMaterial({color: '#dcefe8', transparent: true, opacity: .42, side: THREE.DoubleSide, depthWrite: false}),
+    // Kept sheer so the catcher reads through his own net instead of
+    // disappearing behind a white veil at approach distance.
+    new THREE.MeshBasicMaterial({color: '#dcefe8', transparent: true, opacity: .3, side: THREE.DoubleSide, depthWrite: false}),
   );
   netDisc.position.set(.78, 1.1, .17);
   netDisc.name = 'officer-disc';
@@ -2042,16 +2050,16 @@ export function createView(canvas) {
     wheel.name = 'cart-wheel';
   }
   for (const postX of [-.78, .78]) for (const postZ of [-.48, .48])
-    box(templates['crate-cart'], '#6e4f30', postX, .88, postZ, .09, .5, .09).name = 'cart-post';
-  for (const slatY of [.78, .95, 1.1]) {
+    box(templates['crate-cart'], '#6e4f30', postX, .68, postZ, .09, .4, .09).name = 'cart-post';
+  for (const slatY of [.58, .73, .88]) {
     box(templates['crate-cart'], '#a5763f', 0, slatY, -.48, 1.65, .07, .06).name = 'cart-slat';
     box(templates['crate-cart'], '#a5763f', 0, slatY, .48, 1.65, .07, .06).name = 'cart-slat';
     box(templates['crate-cart'], '#a5763f', -.78, slatY, 0, .06, .07, .9).name = 'cart-slat';
     box(templates['crate-cart'], '#a5763f', .78, slatY, 0, .06, .07, .9).name = 'cart-slat';
   }
-  box(templates['crate-cart'], '#a5763f', 0, 1.16, 0, 1.72, .07, 1.0).name = 'cart-top-rim';
+  box(templates['crate-cart'], '#a5763f', 0, .94, 0, 1.72, .07, 1.0).name = 'cart-top-rim';
   for (const side of [-1, 1]) {
-    const cartHandle = box(templates['crate-cart'], '#6e4f30', side * 1.0, .78, 0, .5, .07, .07);
+    const cartHandle = box(templates['crate-cart'], '#6e4f30', side * 1.0, .6, 0, .5, .07, .07);
     cartHandle.rotation.z = side * .5;
     cartHandle.name = 'cart-handle';
   }
@@ -2076,10 +2084,11 @@ export function createView(canvas) {
   sackBottom.castShadow = true;
   sackBottom.rotation.z = .06;
   box(templates['feed-sacks'], '#7a5c3e', -.08, .82, 0, 1.0, .09, .83).name = 'sack-tie';
-  const sackTop = ball(templates['feed-sacks'], '#b3854f', .12, 1.12, 0, .78, .52, .64);
+  // The stack tops out at the jump envelope like the boulder it redresses.
+  const sackTop = ball(templates['feed-sacks'], '#b3854f', .12, .82, 0, .78, .52, .64);
   sackTop.name = 'sack-top';
   sackTop.rotation.z = -.09;
-  box(templates['feed-sacks'], '#7a5c3e', .12, 1.3, 0, .72, .08, .6).name = 'sack-tie';
+  box(templates['feed-sacks'], '#7a5c3e', .12, 1.0, 0, .72, .08, .6).name = 'sack-tie';
   ball(templates['feed-sacks'], '#d8b983', -.42, .3, .42, .3, .22, .26).name = 'sack-spill';
   const routeLabels=document.createElement('canvas');
   routeLabels.width=1024;routeLabels.height=512;
