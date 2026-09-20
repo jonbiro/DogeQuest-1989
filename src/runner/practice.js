@@ -40,10 +40,10 @@ export function practiceOffer(run, seen = {}) {
   if(mistake?.type && clearedBy(mistake.type)==='slide' && mistake.type!=='moving-gate')return {kind:'slide',cornerIndex:0,label:'Practice slide timing'};
   if (mistake?.type==='rock')
     return {kind:'moves',cornerIndex:0,label:'Practice the basics'};
-  // Discovery, not remediation: adventures end long before Frostpeak, so a
-  // finished adventure that never skied offers the ski drill exactly once.
-  // Mistake coaching above always wins; bare ended runs without a mode keep
-  // their long-standing null.
+  // Discovery, not remediation: adventures meet Frostpeak in the first minute,
+  // so a finished adventure that never skied (skipped slope) offers the ski
+  // drill exactly once. Mistake coaching above always wins; bare ended runs
+  // without a mode keep their long-standing null.
   if (!seen.ski && run.mode === 'adventure' && run.skiPrototype && !(run.skis > 0))
     return {kind:'ski',cornerIndex:0,label:'Try Frostpeak skiing'};
   return null;

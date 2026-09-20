@@ -9,6 +9,7 @@ import {encounterFor} from "../src/runner/encounter-director.js";
 import {movingGateFirst, movingGateByIndex, MOVING_GATE_FIRST} from "../src/runner/moving-gate.js";
 import {minecartFirst, minecartByIndex, MINECART_FIRST} from "../src/runner/minecart.js";
 import {skiFirst, skiByIndex, SKI_FIRST} from "../src/runner/ski.js";
+import {dogChaseFirst, dogChaseByIndex, DOG_CHASE_FIRST} from "../src/runner/dog-chase.js";
 
 function advance(run, seconds) {
   for (let i = 0; i < Math.ceil(seconds * 120); i++) {
@@ -157,22 +158,26 @@ test('wade and rail announce themselves as encounters', () => {
 });
 
 test('v6 debuts gates, carts and ski earlier while legacy grids stay frozen', () => {
-  assert.equal(movingGateFirst(6), 1900);
+  assert.equal(movingGateFirst(6), 1400);
   assert.equal(minecartFirst(6), 4960);
-  assert.equal(skiFirst(6), 4600);
+  assert.equal(skiFirst(6), 1667);
+  assert.equal(dogChaseFirst(6), 2780);
   for (const v of [1, 2, 3, 4, 5]) {
     assert.equal(movingGateFirst(v), MOVING_GATE_FIRST);
     assert.equal(minecartFirst(v), MINECART_FIRST);
     assert.equal(skiFirst(v), SKI_FIRST);
+    assert.equal(dogChaseFirst(v), DOG_CHASE_FIRST);
   }
-  assert.equal(movingGateByIndex(0, movingGateFirst(6)).start, 1900);
+  assert.equal(movingGateByIndex(0, movingGateFirst(6)).start, 1400);
   assert.equal(minecartByIndex(0, minecartFirst(6)).start, 4960);
-  assert.equal(skiByIndex(0, skiFirst(6)).start, 4600);
+  assert.equal(skiByIndex(0, skiFirst(6)).start, 1667);
+  assert.equal(dogChaseByIndex(0, dogChaseFirst(6)).start, 2780);
   // Default (v6) runs schedule the early chapters; v5 keeps legacy slots.
   const v6 = createRun(11, {}, 6);
-  assert.equal(v6.nextMovingGate, 1900);
+  assert.equal(v6.nextMovingGate, 1400);
   assert.equal(v6.nextMinecart, 4960);
-  assert.equal(v6.nextSki, 4600);
+  assert.equal(v6.nextSki, 1667);
+  assert.equal(v6.nextDogChase, 2780);
   const v5 = createRun(11, {}, 5);
   assert.equal(v5.nextMovingGate, MOVING_GATE_FIRST);
   assert.equal(v5.nextMinecart, MINECART_FIRST);
@@ -184,13 +189,13 @@ test('skipped chapters never board positionally (no phantom ski)', () => {
   // never generated, so positional boarding must refuse it even though the
   // grid math still names the section.
   const run = createRun(1, {}, 6);
-  Object.assign(run, {distance: 8000, nextRow: 8100, nextSki: 4600, objects: []});
+  Object.assign(run, {distance: 8000, nextRow: 8100, nextSki: 5267, objects: []});
   fillTrack(run);
-  assert.ok(run.skiSkipped.includes(4600));
-  assert.ok(run.nextSki > 4600);
-  Object.assign(run, {distance: 4590, previous: {x: 0, y: 0, distance: 4590}});
+  assert.ok(run.skiSkipped.includes(5267));
+  assert.ok(run.nextSki > 5267);
+  Object.assign(run, {distance: 5257, previous: {x: 0, y: 0, distance: 5257}});
   let guard = 0;
-  while (run.distance < 4610 && guard++ < 1000) step(run, 1 / 120);
+  while (run.distance < 5287 && guard++ < 1000) step(run, 1 / 120);
   assert.equal(run.ski, null, 'no phantom ride without emitted content');
   assert.equal(run.skis, 0);
 });
@@ -207,6 +212,7 @@ test('rail breaks demand hops across every lane', () => {
   run.hearts = 3;
   // Off-center lanes are no escape: the break spans the whole log.
   run.lane = 0; run.x = -2.4;
+  run.distance = 16;
   assert.equal(actionCue(run), '↑ JUMP GAP');
   let guard = 0;
   while (run.distance < 22 && guard++ < 2000) step(run, 1 / 120);

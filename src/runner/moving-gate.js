@@ -9,9 +9,10 @@ export const MOVING_GATE_PERIOD = 1800;
 export const MOVING_GATE_LENGTH = 56;
 export const MOVING_GATE_APPROACH = 32;
 export const MOVING_GATE_RECOVERY = 28;
-// Version-six trails debut the gate at 1900 so adventures meet it; later
-// trails keep the established 2850 opening and every shared link replays.
-export const MOVING_GATE_V6_FIRST = 1900;
+// Version-six trails debut the gate at 1400, right after the river: the
+// minute-one ski slope claimed the old 1900 slot, and the chase moved out to
+// 2780. Later trails keep 2850 and every shared link replays.
+export const MOVING_GATE_V6_FIRST = 1400;
 export function movingGateFirst(version) {
   return version >= 6 ? MOVING_GATE_V6_FIRST : MOVING_GATE_FIRST;
 }

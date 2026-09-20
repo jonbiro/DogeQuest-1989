@@ -13,11 +13,12 @@ export const SKI_PERIOD = 3600;
 export const SKI_LENGTH = 210;
 export const SKI_APPROACH = 46;
 export const SKI_RECOVERY = 42;
-// Version-six trails drop in at 4600, clear of the 4550 fork gates, the 4420
-// glide tail and the 4350 corner recovery, with the 4850 cable sitting just
-// past the exit as a legal ski-then-catch combo. Later trails keep the 8700
-// opening and every shared link replays.
-export const SKI_V6_FIRST = 4600;
+// Version-six trails board the first slope at 1667, inside the opening
+// minute: the approach starts a metre past the 1550 corner recovery, the
+// 1750 fork resolves passively by lane mid-descent, and the exit clears the
+// 2050 cable. Later trails keep the 8700 opening and every shared link
+// replays.
+export const SKI_V6_FIRST = 1667;
 export function skiFirst(version) {
   return version >= 6 ? SKI_V6_FIRST : SKI_FIRST;
 }
@@ -246,7 +247,11 @@ export function skiEncounter(section, challenge = false) {
   // clear lane around the snowman. Challenge runs add a second snowball as a
   // high-value optional hop without changing the original hazard count.
   const yetiFrom = (section.index + 1) % 3;
-  const yetiTo = (yetiFrom + 1) % 3;
+  // Adjacent lanes only: a crossing that spans the middle (2 to 0) walks its
+  // wide body straight through its own safe lane at the midpoint, so staying
+  // put reads as correct and kills. Stepping to the neighbor keeps the patrol
+  // character while the untouched third lane stays genuinely safe.
+  const yetiTo = yetiFrom === 2 ? 1 : yetiFrom + 1;
   const yetiSafeLane = [0, 1, 2].find(lane => lane !== yetiFrom && lane !== yetiTo) ?? 1;
   objects.push({
     type: 'yeti',

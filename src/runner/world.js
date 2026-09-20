@@ -48,10 +48,10 @@ import {
   bridgeCollapseIntersecting,
 } from './bridges.js';
 import {
-  DOG_CHASE_FIRST,
   DOG_CHASE_PERIOD,
   DOG_CHASE_REWARD,
   dogChaseByIndex,
+  dogChaseFirst,
 } from './dog-chase.js';
 import {
   SKI_PERIOD,
@@ -237,7 +237,7 @@ export function createRun(seed = Date.now(), upgrades = {}, generatorVersion = C
     minecartSkipped: [],
     nextMovingGate: generatorVersion >= 4 ? movingGateFirst(generatorVersion) : Infinity,
     movingGates: 0,
-    nextDogChase: generatorVersion >= 4 ? DOG_CHASE_FIRST : Infinity,
+    nextDogChase: generatorVersion >= 4 ? dogChaseFirst(generatorVersion) : Infinity,
     dogChaseUpcoming: null,
     dogChase: null,
     dogChases: 0,
@@ -324,8 +324,9 @@ function skiObjectX(object, distance) {
 
 function dogChaseByNext(run) {
   if (!run?.dogChasePrototype || !Number.isFinite(run.nextDogChase)) return null;
-  const index = Math.round((run.nextDogChase - DOG_CHASE_FIRST) / DOG_CHASE_PERIOD);
-  return dogChaseByIndex(index);
+  const dcFirst = dogChaseFirst(run.generatorVersion);
+  const index = Math.round((run.nextDogChase - dcFirst) / DOG_CHASE_PERIOD);
+  return dogChaseByIndex(index, dcFirst);
 }
 
 function dogChaseReserved(run, chase) {
@@ -470,7 +471,7 @@ export function fillTrack(run) {
   if (run.movingGatePrototype && !Number.isFinite(run.nextMovingGate)) run.nextMovingGate = movingGateFirst(run.generatorVersion);
   // Older restored version-four sessions may not carry the chase scheduler.
   // Opt them into the first deterministic beat without changing legacy trails.
-  if (run.dogChasePrototype && !Number.isFinite(run.nextDogChase)) run.nextDogChase = DOG_CHASE_FIRST;
+  if (run.dogChasePrototype && !Number.isFinite(run.nextDogChase)) run.nextDogChase = dogChaseFirst(run.generatorVersion);
   // Restored version-five sessions may predate the Frostpeak rollout. Opt
   // them into the first deterministic descent without touching older trails.
   if (run.skiPrototype && !Number.isFinite(run.nextSki)) run.nextSki = skiFirst(run.generatorVersion);
@@ -829,7 +830,10 @@ export function fillTrack(run) {
         for (let i = 0; i < 4; i++) add(run, "bone", [0,1,2,1][i], start + 8 + i * 8);
         // Two breaks in the log demand hops: one well-timed jump clears both,
         // and each break spans all three lanes so steering around is impossible.
-        for (const offset of [14, 28]) for (let lane = 0; lane < 3; lane++) {
+        // Ten meters apart puts the single-hop takeoff window near 280ms at
+        // full speed; fourteen demanded sub-200ms precision that cue followers
+        // could only land by luck.
+        for (const offset of [14, 24]) for (let lane = 0; lane < 3; lane++) {
           const brk = add(run, "gap", lane, start + offset);
           brk.railGap = true;
         }

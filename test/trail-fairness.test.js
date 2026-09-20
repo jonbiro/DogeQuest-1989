@@ -86,7 +86,12 @@ function perfectPolicy(run, done) {
   const needed = row.lanes.get(run.lane);
   const eta = (row.at - run.distance) / Math.max(1, run.speed);
   const key = `${row.at.toFixed(3)}:${run.lane}`;
-  if (needed && eta <= .34 && eta > .05 && !done.has(key) && !run.zipline) {
+  // Rail breaks forgive early jumps (landing short still lands on the log),
+  // while pits never do. Hopping a break pair early lands between the stripes
+  // with the buffer ready for the second hop; the standard window would land
+  // on the second break instead.
+  const jumpEta = needed === 'gap' && run.objects.some(object => object.railGap && Math.abs(object.at - row.at) < 1e-9) ? .5 : .34;
+  if (needed && eta <= jumpEta && eta > .05 && !done.has(key) && !run.zipline) {
     done.add(key);
     if (CLEARED_BY_JUMP.has(needed)) act(run, 'jump');
     else if (CLEARED_BY_SLIDE.has(needed)) act(run, 'slide');

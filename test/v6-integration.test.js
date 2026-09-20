@@ -77,8 +77,7 @@ test('v6 generation never rewinds nextRow (no duplicate rows over live content)'
   }
 });
 
-test('v6 adventure always meets the climb wall and the glide shimmer', () => {
-  for (const seed of [42, 7, 99, 1234]) {
+test('v6 adventure always meets the climb wall and the glide shimmer', () => {  for (const seed of [42, 7, 99, 1234]) {
     const run = createRun(seed, {}, 6, null, {encounterPacing: true, mode: 'adventure'});
     let guard = 0;
     while (!run.ended && guard++ < 20000) { run.hearts = 3; run.invulnerable = 1000; step(run, 1 / 120); }
@@ -87,5 +86,19 @@ test('v6 adventure always meets the climb wall and the glide shimmer', () => {
     assert.ok(run.nextGlide > 420, `seed ${seed}: glide never emitted`);
     assert.equal(run.climb, null, 'no stranded climb behind the results modal');
     assert.equal(run.glide, null, 'no stranded glide behind the results modal');
+  }
+});
+
+test('v6 adventure boards the minute-one ski and still reaches home', () => {
+  // The slope must EMIT on every seed, not merely advance past: a skip means
+  // some reservation stole the minute-one slot.
+  for (const seed of [42, 7, 99, 1234, 11, 5, 2024, 9001]) {
+    const run = createRun(seed, {}, 6, null, {encounterPacing: true, mode: 'adventure'});
+    let guard = 0;
+    while (!run.ended && guard++ < 20000) { run.hearts = 3; run.invulnerable = 1000; step(run, 1 / 120); }
+    assert.equal(run.finishReason, 'destination', `seed ${seed}: adventure completes`);
+    assert.ok(!(run.skiSkipped || []).includes(1667), `seed ${seed}: minute-one ski emitted`);
+    assert.equal(run.skis, 1, `seed ${seed}: slope boarded`);
+    assert.equal(run.ski, null, 'no stranded ski behind the results modal');
   }
 });

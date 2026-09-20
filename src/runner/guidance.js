@@ -18,13 +18,13 @@ function skiHazardCue(run) {
     ? 'SKI EXIT AHEAD' : 'SKI · CARVE THE OPEN LINE';
   if (hazard.type === 'mogul') {
     const gap = hazard.at - run.distance;
-    if (run.y > .4 || run.skiHop > 0) return '';
-    // The hop lasts 0.52s: commanding it earlier lands the puppy back on the
-    // mogul. Cue inside the hop window so any sub-half-second reaction works.
+    // No airborne suppression here: steering works mid-hop, jump inputs
+    // mid-hop are ignored by the game (no hop-spam), and hiding the next beat
+    // while hopping a snowball blinds the player to the ski-gate behind it.
+    // The hop command itself stays inside its window below.
     return gap < run.speed * .5 ? '↑ HOP MOGUL' : 'MOGUL AHEAD · GET READY';
   }
   if (hazard.type === 'snowball') {
-    if (run.y > .4 || run.skiHop > 0) return '';
     const gap = hazard.at - run.distance;
     return gap < run.speed * .5
       ? '↑ HOP SNOWBALL'
@@ -89,9 +89,11 @@ export function actionCue(run) {
     return laneCue(run.lane,bone.lane,bone.type==='gift'?'GIFT':'BONES') || 'HOLD JUMP TO FLOAT';
   }
   if (run.rail) {
-    // Breaks in the log outrank steering: hop them like any striped edge.
+    // Breaks in the log outrank steering: hop them like any striped edge. The
+    // window stays tight on purpose: a break hop is precision-timed like a ski
+    // hop, and an early command lands the puppy inside a double break.
     const brk = run.objects.find(object => object.railGap && !object.used &&
-      object.at > run.distance && object.at - run.distance < run.speed * 1.35);
+      object.at > run.distance && object.at - run.distance < run.speed * 0.5);
     if (brk) return '↑ JUMP GAP';
     return 'RAIL · STEER CENTER · STAY ON';
   }
@@ -158,9 +160,12 @@ export function actionCue(run) {
   }
   const skiStart = run.objects.find(object => object.type === 'ski-start' && !object.used &&
     object.at > run.distance && object.at - run.distance < run.speed * 1.8);
+  // The close cue names no action on purpose: "HOP" here reads as a command
+  // and launches an early ground jump whose landing eats the first mogul's
+  // hop window. The in-window '↑ HOP MOGUL' is the only hop command.
   if (skiStart && !farSuppressed(skiStart)) return skiStart.at - run.distance >= run.speed * .45
     ? 'FROSTPEAK AHEAD · GET READY'
-    : 'SKI DESCENT AHEAD · CARVE + HOP';
+    : 'SKI DESCENT AHEAD · STAY CENTER';
   // A chase is a reward beat, not a new hazard. Point at the next authored
   // pickup only while the lane is otherwise safe; any imminent obstacle below
   // still owns the cue and keeps the player out of a distracting side quest.
@@ -184,6 +189,10 @@ export function actionCue(run) {
     object.at>run.distance&&object.at-run.distance<run.speed*1.25&&object.lane===relic.lane);
   const danger = run.objects.reduce((nearest, object) => !object.used && !object.passed &&
     TRAIL_HAZARDS.includes(object.type) &&
+    // Rail breaks are cued by the rail branch once aboard: a general jump
+    // command before boarding launches a ground jump that lands inside the
+    // pair instead of hopping it from the log.
+    !object.railGap &&
     object.at > run.distance && object.at - run.distance < run.speed*.58 &&
     // A moving gate is a shared timing beat: announce it even when its bar is
     // currently sweeping across another lane so the player can watch the

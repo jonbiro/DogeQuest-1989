@@ -46,7 +46,16 @@ test('a cue-following player finishes v6 adventures with full hearts and all tra
         const cue = actionCue(run);
         if (/LEFT/.test(cue)) act(run, 'left');
         else if (/RIGHT/.test(cue)) act(run, 'right');
-        if (/PUMP/.test(cue) || (cue.includes('JUMP') && run.y === 0)) act(run, 'jump');
+        // Mogul and snowball hops are precision-timed: the cue opens ~18m out
+        // but the 0.52s hop covers ~19m, so hopping on the first frame lands
+        // back on the crest. Human reactions (~200ms) land past it; the
+        // harness waits for the close third of the window. Carves keep their
+        // wide windows and stay instant.
+        const hopNow = run.ski && cue.includes('HOP') && run.objects.some(
+          (o) => (o.type === 'mogul' || (o.type === 'snowball' && o.skiJumpable)) &&
+            !o.used && o.at > run.distance && o.at - run.distance < run.speed * 0.32,
+        );
+        if (/PUMP/.test(cue) || (cue.includes('JUMP') && run.y === 0) || hopNow) act(run, 'jump');
         else if (run.glide) act(run, 'jump');
         else if (cue.includes('SLIDE')) act(run, 'slide');
       }

@@ -4,6 +4,13 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Board the minute-one Frostpeak slope: version-six trails ski at 1,667 m
+  (riding before the 60-second mark) with the 1,750 fork resolving passively
+  mid-descent. The moving gate slides into the old chase slot at 1,400 and the
+  puppy chase moves out to 2,780, so every adventure keeps all verbs and
+  nothing overlaps. Also fixed a latent unfair slope: every third yeti
+  crossing walked its wide body through its own safe lane; crossings now step
+  to the neighboring lane so the untouched lane stays genuinely safe.
 - Dealt every 2D trail fresh: biome themes stay, layouts generate per game from
   a seed, and a bot-verifier proves each deal finishable before it ships, so no
   two sessions repeat and none loops unfairly. Retries replay the same deal;

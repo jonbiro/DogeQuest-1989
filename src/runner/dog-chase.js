@@ -8,14 +8,21 @@ export const DOG_CHASE_LENGTH = 84;
 export const DOG_CHASE_APPROACH = 28;
 export const DOG_CHASE_RECOVERY = 24;
 export const DOG_CHASE_REWARD = 140;
+// Version-six trails move the chase to 2780, after the climb and before the
+// 2950 corner: the moving gate takes the old 1400 slot so adventures keep
+// every verb. Later trails keep the 1400 chase and every shared link replays.
+export const DOG_CHASE_V6_FIRST = 2780;
+export function dogChaseFirst(version) {
+  return version >= 6 ? DOG_CHASE_V6_FIRST : DOG_CHASE_FIRST;
+}
 
 function finite(value, fallback = 0) {
   return Number.isFinite(value) ? value : fallback;
 }
 
-export function dogChaseByIndex(index) {
+export function dogChaseByIndex(index, first = DOG_CHASE_FIRST) {
   if (!Number.isSafeInteger(index) || index < 0) return null;
-  const start = DOG_CHASE_FIRST + index * DOG_CHASE_PERIOD;
+  const start = first + index * DOG_CHASE_PERIOD;
   if (!Number.isSafeInteger(start + DOG_CHASE_LENGTH + DOG_CHASE_RECOVERY)) return null;
   const lane = index % 2 === 0 ? 1 : 0;
   return {
@@ -28,21 +35,21 @@ export function dogChaseByIndex(index) {
   };
 }
 
-export function dogChaseAt(distance) {
-  if (!Number.isFinite(distance) || distance < DOG_CHASE_FIRST) return null;
-  const index = Math.floor((distance - DOG_CHASE_FIRST) / DOG_CHASE_PERIOD);
-  const chase = dogChaseByIndex(index);
+export function dogChaseAt(distance, first = DOG_CHASE_FIRST) {
+  if (!Number.isFinite(distance) || distance < first) return null;
+  const index = Math.floor((distance - first) / DOG_CHASE_PERIOD);
+  const chase = dogChaseByIndex(index, first);
   return chase && distance >= chase.start && distance < chase.end ? chase : null;
 }
 
-export function dogChaseIntersecting(start, end) {
+export function dogChaseIntersecting(start, end, first = DOG_CHASE_FIRST) {
   if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
   const index = Math.max(
     0,
-    Math.floor((start - DOG_CHASE_FIRST - DOG_CHASE_LENGTH - DOG_CHASE_RECOVERY) / DOG_CHASE_PERIOD),
+    Math.floor((start - first - DOG_CHASE_LENGTH - DOG_CHASE_RECOVERY) / DOG_CHASE_PERIOD),
   );
   for (let i = index; i <= index + 2; i++) {
-    const chase = dogChaseByIndex(i);
+    const chase = dogChaseByIndex(i, first);
     if (chase && end >= chase.approach && start <= chase.recovery) return chase;
   }
   return null;
