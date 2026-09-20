@@ -48,7 +48,7 @@ export const WORLDS = [
       [2520, 325, 140],
       [2790, 250, 150],
     ],
-    enemies: [1030, 1850, 2650],
+    enemies: [{x: 1030, kind: 'hopper'}, 1850, 2650],
     checkpoint: 1660,
   },
   {
@@ -77,7 +77,7 @@ export const WORLDS = [
       [2700, 280, 170],
       [3090, 335, 150],
     ],
-    enemies: [1040, 1770, 2510, 3220],
+    enemies: [1040, {x: 1770, kind: 'hopper'}, 2510, {x: 3220, kind: 'hopper'}],
     checkpoint: 1550,
   },
   {
@@ -106,7 +106,7 @@ export const WORLDS = [
       [2600, 255, 130],
       [3110, 320, 170],
     ],
-    enemies: [960, 1620, 2410, 3240],
+    enemies: [960, 1620, {x: 2410, kind: 'charger'}, 3240],
     checkpoint: 2190,
   },
   {
@@ -138,13 +138,21 @@ export const WORLDS = [
       [3300, 265, 140],
       [3630, 320, 150],
     ],
-    enemies: [1010, 1680, 2360, 3070, 3700],
+    enemies: [1010, {x: 1680, kind: 'charger'}, {x: 2360, kind: 'hopper'}, {x: 3070, kind: 'charger'}, 3700],
     checkpoint: 2160,
   },
 ];
 
 export const overlaps = (a, b) =>
   a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+export const ENEMY_KINDS = {
+  // Patrols amble; hoppers bounce on a fixed timer; chargers sweep fast and
+  // wide. Collision and stomp rules are identical for all three: only the
+  // movement rhythm differs, so every world teaches a new timing.
+  patrol: {speed: 55, range: 65, hopPeriod: 0, hopVelocity: 0},
+  hopper: {speed: 35, range: 45, hopPeriod: 1.6, hopVelocity: -380},
+  charger: {speed: 95, range: 110, hopPeriod: 0, hopVelocity: 0},
+};
 export function createWorld(index) {
   const spec = WORLDS[index];
   const solids = [
@@ -170,15 +178,24 @@ export function createWorld(index) {
     spec,
     solids,
     bones,
-    enemies: spec.enemies.map((x) => ({
-      x,
-      y: 406,
-      w: 30,
-      h: 24,
-      origin: x,
-      dir: -1,
-      alive: true,
-    })),
+    enemies: spec.enemies.map((entry) => {
+      // Plain numbers stay classic patrols; objects add a kind. Unknown kinds
+      // fall back to patrol so old and hand-made levels keep working.
+      const x = typeof entry === 'number' ? entry : entry.x;
+      const kind = ENEMY_KINDS[entry?.kind] ? entry.kind : 'patrol';
+      return {
+        x,
+        y: 406,
+        w: 30,
+        h: 24,
+        origin: x,
+        dir: -1,
+        alive: true,
+        kind,
+        vy: 0,
+        hopTimer: 0,
+      };
+    }),
     checkpoint: false,
     finished: false,
     time: 0,
@@ -289,8 +306,24 @@ export function update(world, input, dt) {
   }
   for (const e of world.enemies) {
     if (!e.alive) continue;
-    e.x += e.dir * 55 * dt;
-    if (Math.abs(e.x - e.origin) > 65) e.dir *= -1;
+    const kind = ENEMY_KINDS[e.kind] || ENEMY_KINDS.patrol;
+    e.x += e.dir * kind.speed * dt;
+    if (Math.abs(e.x - e.origin) > kind.range) e.dir *= -1;
+    // Hoppers bounce on their period and land back on the patrol line. The
+    // stomp rule below reads e.y live, so mid-hop stomps work unchanged.
+    if (kind.hopPeriod > 0) {
+      e.hopTimer += dt;
+      if (e.hopTimer >= kind.hopPeriod && e.y >= 406) {
+        e.vy = kind.hopVelocity;
+        e.hopTimer = 0;
+      }
+      e.vy = Math.min(850, e.vy + 1200 * dt);
+      e.y += e.vy * dt;
+      if (e.y >= 406) {
+        e.y = 406;
+        e.vy = 0;
+      }
+    }
     if (overlaps(p, e)) {
       if (p.vy > 0 && previousBottom < e.y + 14) {
         e.alive = false;

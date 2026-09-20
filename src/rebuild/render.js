@@ -106,8 +106,12 @@ export function draw(c, world, t, particles, attract = false) {
   }
   for (const e of world.enemies)
     if (e.alive) {
+      // One silhouette, three coats: patrols rust, hoppers moss, chargers dusk
+      // purple. All three read against every dirt palette in the five worlds.
+      const coat = e.kind === 'hopper' ? '#7a9e43' : e.kind === 'charger' ? '#8a4f6d' : '#ae614c';
+      const bounce = e.kind === 'hopper' && e.y < 406 ? -3 : 0;
       oval(c, e.x + 15, e.y + 15, 19, 13, "#283b34");
-      oval(c, e.x + 15, e.y + 15, 18, 12, "#ae614c");
+      oval(c, e.x + 15, e.y + 15 + bounce, 18, 12, coat);
       rect(c, e.x, e.y + 18, 30, 6, "#3d2b23");
       rect(c, e.x + 5, e.y + 5, 4, 5, "#fff1d7");
       rect(c, e.x + 20, e.y + 5, 4, 5, "#fff1d7");

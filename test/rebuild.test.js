@@ -94,3 +94,68 @@ test("every trail can be completed through simulated input with enemies enabled"
     assert.equal(w.finished, true, `trail ${n + 1} must be completable`);
   }
 });
+
+test("enemy rosters mix patrols, hoppers and chargers by world theme", () => {
+  const kinds = (n) => createWorld(n).enemies.map((e) => e.kind);
+  assert.deepEqual(kinds(0), ['patrol', 'patrol']);
+  assert.ok(kinds(1).includes('hopper'));
+  assert.ok(kinds(2).filter((k) => k === 'hopper').length >= 2);
+  assert.ok(kinds(3).includes('charger'));
+  assert.ok(kinds(4).includes('charger') && kinds(4).includes('hopper'));
+  assert.ok(createWorld(4).enemies.every((e) => ['patrol', 'hopper', 'charger'].includes(e.kind)));
+});
+
+test("plain numbers stay patrols and unknown kinds fall back safely", () => {
+  const w = createWorld(0);
+  assert.ok(w.enemies.every((e) => e.kind === 'patrol'));
+  WORLDS[0].enemies.push({x: 9999, kind: 'dragon'});
+  try {
+    assert.equal(createWorld(0).enemies.at(-1).kind, 'patrol');
+  } finally {
+    WORLDS[0].enemies.pop();
+  }
+});
+
+test("hoppers bounce on a fixed period and land back on the patrol line", () => {
+  const w = createWorld(1);
+  const hopper = w.enemies.find((e) => e.kind === 'hopper');
+  assert.ok(hopper);
+  let minY = 406;
+  // Sample to 4.7s: hops fire at 1.6s and 3.2s and both have landed again.
+  for (let i = 0; i < Math.round(4.7 * 120); i++) {
+    update(w, {direction: 0}, 1 / 120);
+    if (hopper.y < minY) minY = hopper.y;
+  }
+  assert.ok(minY < 380, `hopper must leave the ground, reached ${minY}`);
+  assert.equal(hopper.y, 406);
+  assert.equal(hopper.vy, 0);
+  // A second identical run hops in lockstep: the rhythm is deterministic.
+  const again = createWorld(1);
+  const other = again.enemies.find((e) => e.kind === 'hopper');
+  for (let i = 0; i < Math.round(4.7 * 120); i++) update(again, {direction: 0}, 1 / 120);
+  assert.equal(other.y, hopper.y);
+  assert.equal(other.x, hopper.x);
+});
+
+test("chargers sweep faster and wider than patrols", () => {
+  const w = createWorld(4);
+  const charger = w.enemies.find((e) => e.kind === 'charger');
+  const patrol = w.enemies.find((e) => e.kind === 'patrol');
+  const cx0 = charger.x, px0 = patrol.x;
+  for (let i = 0; i < 120; i++) update(w, {direction: 0}, 1 / 120);
+  assert.ok(Math.abs(charger.x - cx0) > Math.abs(patrol.x - px0), 'charger covers more ground per second');
+  assert.ok(Math.abs(charger.x - charger.origin) <= 110);
+  for (let i = 0; i < 600; i++) update(w, {direction: 0}, 1 / 120);
+  assert.ok(Math.abs(charger.x - charger.origin) <= 110, 'charger never leaves its range');
+});
+
+test("stomps work on hopping enemies with the same rules", () => {
+  const w = createWorld(1);
+  const hopper = w.enemies.find((e) => e.kind === 'hopper');
+  w.player.x = hopper.x;
+  w.player.y = hopper.y - w.player.h - 1;
+  w.player.vy = 240;
+  update(w, {direction: 0}, 1 / 120);
+  assert.equal(hopper.alive, false);
+  assert.equal(w.deaths, 0);
+});
