@@ -81,13 +81,15 @@ test("every trail can be completed through simulated input with enemies enabled"
       const enemy = w.enemies.find(
         (e) => e.alive && e.x > p.x && e.x - p.x < 100,
       );
+      // Tuck under any vine whose strands hang over the path ahead.
+      const vine = w.vines.find((v) => v.x + v.w > p.x && v.x - p.x < 110);
       const jump =
         (p.grounded &&
           ((ground && ground[0] + ground[1] - p.x < 95) || enemy)) ||
         (!p.grounded && p.jumps === 1 && p.vy > 30);
       update(
         w,
-        { direction: 1, run: true, jumpPressed: Boolean(jump) },
+        { direction: 1, run: true, jumpPressed: Boolean(jump && !vine), duck: Boolean(vine) },
         1 / 120,
       );
     }
@@ -158,4 +160,109 @@ test("stomps work on hopping enemies with the same rules", () => {
   update(w, {direction: 0}, 1 / 120);
   assert.equal(hopper.alive, false);
   assert.equal(w.deaths, 0);
+});
+
+test("ducking tucks under vines that catch a standing puppy", () => {
+  for (const n of [0, 2, 4]) {
+    const standing = createWorld(n);
+    const vx = standing.vines[0].x;
+    standing.player.x = vx + 5;
+    standing.player.y = 430 - standing.player.h;
+    standing.player.grounded = true;
+    update(standing, {direction: 0, duck: false}, 1 / 120);
+    assert.equal(standing.deaths, 1, `trail ${n + 1}: standing under a vine hurts`);
+    const ducked = createWorld(n);
+    ducked.player.x = vx + 5;
+    ducked.player.y = 430 - ducked.player.h;
+    ducked.player.grounded = true;
+    update(ducked, {direction: 0, duck: true}, 1 / 120);
+    assert.equal(ducked.deaths, 0, `trail ${n + 1}: a tuck slips through`);
+    assert.equal(ducked.player.ducking, true);
+    assert.equal(ducked.player.h, 18);
+  }
+});
+
+test("releasing duck under a vine keeps the tuck until headroom clears", () => {
+  const w = createWorld(0);
+  const vx = w.vines[0].x;
+  w.player.x = vx + 5;
+  w.player.y = 430 - w.player.h;
+  w.player.grounded = true;
+  update(w, {direction: 0, duck: true}, 1 / 120);
+  assert.equal(w.player.ducking, true);
+  update(w, {direction: 0, duck: false}, 1 / 120);
+  assert.equal(w.player.ducking, true, 'no headroom, no standing');
+  assert.equal(w.deaths, 0);
+  w.player.x = vx + 200;
+  update(w, {direction: 0, duck: false}, 1 / 120);
+  assert.equal(w.player.ducking, false);
+  assert.equal(w.player.h, 34);
+});
+
+test("a held duck persists off ledges instead of popping up", () => {
+  const w = createWorld(0);
+  w.player.x = 700;
+  w.player.y = 430 - w.player.h;
+  w.player.grounded = true;
+  update(w, {direction: 1, duck: true}, 1 / 120);
+  assert.equal(w.player.ducking, true);
+  let guard = 0;
+  while (w.player.grounded && guard++ < 300) update(w, {direction: 1, duck: true}, 1 / 120);
+  assert.equal(w.player.grounded, false, 'walked off the 760 edge');
+  assert.equal(w.player.ducking, true, 'still tucked in the air');
+  assert.equal(w.deaths, 0);
+});
+
+test("landing with duck held tucks on touchdown", () => {
+  const w = createWorld(0);
+  // Jump from open ground and hold duck: the landing frame tucks immediately
+  // instead of standing for a frame first.
+  w.player.x = 2300;
+  w.player.y = 430 - w.player.h;
+  w.player.grounded = true;
+  update(w, {direction: 1, run: true, jumpPressed: true}, 1 / 120);
+  let guard = 0;
+  while (!w.player.grounded && guard++ < 600) update(w, {direction: 1, run: true, duck: true}, 1 / 120);
+  assert.equal(w.player.ducking, true);
+  assert.equal(w.player.h, 18);
+  assert.equal(w.deaths, 0);
+});
+
+test("ducking never grants enemy immunity", () => {
+  const w = createWorld(0);
+  const e = w.enemies[0];
+  w.player.x = e.x + 5;
+  w.player.y = 430 - w.player.h;
+  w.player.grounded = true;
+  update(w, {direction: 0, duck: true}, 1 / 120);
+  assert.equal(w.deaths, 1, 'beetles meet the full standing height');
+});
+
+test("jumping from a tuck needs headroom and diving accelerates falls", () => {
+  const w = createWorld(0);
+  const vx = w.vines[0].x;
+  w.player.x = vx + 5;
+  w.player.y = 430 - w.player.h;
+  w.player.grounded = true;
+  update(w, {direction: 0, duck: true}, 1 / 120);
+  update(w, {direction: 0, duck: true, jumpPressed: true}, 1 / 120);
+  assert.equal(w.player.ducking, true, 'no headroom, no takeoff');
+  assert.equal(w.deaths, 0);
+  const open = createWorld(0);
+  open.player.y = 200;
+  open.player.vy = 100;
+  open.player.grounded = false;
+  update(open, {direction: 0, duck: true}, 1 / 120);
+  assert.ok(open.player.vy >= 500 - 1e-9, 'holding duck dives');
+  const rising = createRunLikeJump();
+  function createRunLikeJump() {
+    const r = createWorld(0);
+    r.player.y = 200;
+    r.player.vy = -570;
+    r.player.grounded = false;
+    r.player.jumps = 1;
+    update(r, {direction: 0, duck: true}, 1 / 120);
+    return r;
+  }
+  assert.ok(rising.player.vy < 0, 'a rising jump is never cut into a dive');
 });

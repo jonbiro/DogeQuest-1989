@@ -83,6 +83,16 @@ export function draw(c, world, t, particles, attract = false) {
   c.fillStyle = "#385a46";
   c.font = "bold 16px monospace";
   c.fillText("HOME →", 270, 380);
+  // Hanging vines: thin strands a tucked puppy slips under. They read as
+  // hazards, never footing, so they dangle without a branch to stand on.
+  for (const v of world.vines || []) {
+    if (v.x + v.w < cam || v.x > cam + width) continue;
+    for (const dx of [4, 12, 20]) {
+      rect(c, v.x + dx, 322, 3, 82, "#47684f");
+      oval(c, v.x + dx + 1, 326 + ((v.x + dx) % 23), 6, 9, spec.grass);
+    }
+    rect(c, v.x, 398, 26, 6, "#3d5147");
+  }
   const flagX = spec.checkpoint;
   rect(c, flagX, 350, 5, 80, "#fff1d7");
   rect(c, flagX + 5, 351, 34, 23, world.checkpoint ? "#e35e45" : "#829486");

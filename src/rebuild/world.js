@@ -22,6 +22,7 @@ export const WORLDS = [
       [2510, 320, 140],
     ],
     enemies: [1310, 2040],
+    vines: [2500],
     checkpoint: 1780,
   },
   {
@@ -49,6 +50,7 @@ export const WORLDS = [
       [2790, 250, 150],
     ],
     enemies: [{x: 1030, kind: 'hopper'}, 1850, 2650],
+    vines: [1200, 2400],
     checkpoint: 1660,
   },
   {
@@ -78,6 +80,7 @@ export const WORLDS = [
       [3090, 335, 150],
     ],
     enemies: [1040, {x: 1770, kind: 'hopper'}, 2510, {x: 3220, kind: 'hopper'}],
+    vines: [1200, 1950, 2650],
     checkpoint: 1550,
   },
   {
@@ -107,6 +110,7 @@ export const WORLDS = [
       [3110, 320, 170],
     ],
     enemies: [960, 1620, {x: 2410, kind: 'charger'}, 3240],
+    vines: [1100, 1850, 2650],
     checkpoint: 2190,
   },
   {
@@ -139,12 +143,20 @@ export const WORLDS = [
       [3630, 320, 150],
     ],
     enemies: [1010, {x: 1680, kind: 'charger'}, {x: 2360, kind: 'hopper'}, {x: 3070, kind: 'charger'}, 3700],
+    vines: [1150, 1800, 2550, 3200],
     checkpoint: 2160,
   },
 ];
 
 export const overlaps = (a, b) =>
   a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+export const STANDING_H = 34;
+export const DUCK_H = 18;
+// Ground top sits at y=430, so a standing puppy occupies 396-430 and a
+// tucked one 412-430. Vine strands end at 404: standing overlaps by 8px,
+// tucked clears by 8px, and skilled double jumps still sail over the 300 top.
+export const VINE_TOP = 300;
+export const VINE_BOTTOM = 404;
 export const ENEMY_KINDS = {
   // Patrols amble; hoppers bounce on a fixed timer; chargers sweep fast and
   // wide. Collision and stomp rules are identical for all three: only the
@@ -178,6 +190,7 @@ export function createWorld(index) {
     spec,
     solids,
     bones,
+    vines: (spec.vines || []).map((x) => ({x, y: VINE_TOP, w: 26, h: VINE_BOTTOM - VINE_TOP})),
     enemies: spec.enemies.map((entry) => {
       // Plain numbers stay classic patrols; objects add a kind. Unknown kinds
       // fall back to patrol so old and hand-made levels keep working.
@@ -206,10 +219,11 @@ export function createWorld(index) {
       x: 70,
       y: 370,
       w: 30,
-      h: 34,
+      h: STANDING_H,
       vx: 0,
       vy: 0,
       grounded: false,
+      ducking: false,
       coyote: 0,
       buffer: 0,
       jumps: 0,
@@ -221,6 +235,12 @@ export function createWorld(index) {
   };
 }
 
+export function canStand(world) {
+  const p = world.player;
+  const box = {x: p.x, y: p.y - (STANDING_H - DUCK_H), w: p.w, h: STANDING_H};
+  return !world.vines.some((v) => overlaps(box, v));
+}
+
 export function respawn(world) {
   const p = world.player;
   Object.assign(p, {
@@ -228,6 +248,8 @@ export function respawn(world) {
     y: 370,
     vx: 0,
     vy: 0,
+    h: STANDING_H,
+    ducking: false,
     jumps: 0,
     coyote: 0,
     buffer: 0,
@@ -245,6 +267,25 @@ export function update(world, input, dt) {
   p.coyote = Math.max(0, p.coyote - dt);
   p.buffer = Math.max(0, p.buffer - dt);
   if (input.jumpPressed) p.buffer = 0.13;
+  // Ducking tucks low on the ground and dives mid-air. Jumping always stands
+  // first; releasing duck under a vine keeps the tuck until headroom clears.
+  // A held duck persists through the air so walking off a ledge under vines
+  // never pops the player up into them.
+  if (input.jumpPressed && p.ducking) {
+    if (canStand(world)) {
+      p.y -= STANDING_H - DUCK_H;
+      p.h = STANDING_H;
+      p.ducking = false;
+    }
+  }
+  if (!input.duck && p.ducking && !input.jumpPressed && canStand(world)) {
+    p.y -= STANDING_H - DUCK_H;
+    p.h = STANDING_H;
+    p.ducking = false;
+  }
+  // Holding duck while falling dives; rising jump velocity is untouched so a
+  // jump from a tuck still takes off normally.
+  if (input.duck && !p.grounded && p.vy > 0) p.vy = Math.max(p.vy, 500);
   if (p.buffer > 0 && (p.coyote > 0 || p.jumps < 2)) {
     p.vy = p.jumps === 0 ? -570 : -510;
     p.jumps++;
@@ -289,6 +330,14 @@ export function update(world, input, dt) {
     }
   }
   if (!p.grounded && p.coyote === 0 && p.jumps === 0) p.jumps = 1;
+  // Tucking engages on the landing frame itself, so a held duck that meets
+  // the ground inside a vine zone is already low when the hazard check runs.
+  if (input.duck && p.grounded && !p.ducking) {
+    p.y += STANDING_H - DUCK_H;
+    p.h = DUCK_H;
+    p.ducking = true;
+    world.events.push({ type: "duck", x: p.x, y: p.y + p.h });
+  }
   for (const bone of world.bones)
     if (!bone.taken && overlaps(p, bone)) {
       bone.taken = true;
@@ -306,8 +355,7 @@ export function update(world, input, dt) {
   }
   for (const e of world.enemies) {
     if (!e.alive) continue;
-    const kind = ENEMY_KINDS[e.kind] || ENEMY_KINDS.patrol;
-    e.x += e.dir * kind.speed * dt;
+    const kind = ENEMY_KINDS[e.kind] || ENEMY_KINDS.patrol;    e.x += e.dir * kind.speed * dt;
     if (Math.abs(e.x - e.origin) > kind.range) e.dir *= -1;
     // Hoppers bounce on their period and land back on the patrol line. The
     // stomp rule below reads e.y live, so mid-hop stomps work unchanged.
@@ -324,7 +372,12 @@ export function update(world, input, dt) {
         e.vy = 0;
       }
     }
-    if (overlaps(p, e)) {
+    // Enemies meet the full standing height: tucking slips under vines, never
+    // through beetles. Stomps still read the real falling bottom below.
+    const foeBox = p.ducking
+      ? {x: p.x, y: p.y + p.h - STANDING_H, w: p.w, h: STANDING_H}
+      : p;
+    if (overlaps(foeBox, e)) {
       if (p.vy > 0 && previousBottom < e.y + 14) {
         e.alive = false;
         p.vy = -390;
@@ -332,6 +385,16 @@ export function update(world, input, dt) {
         world.score += 150;
         world.events.push({ type: "stomp", x: e.x, y: e.y });
       } else if (p.invincible <= 0) {
+        respawn(world);
+        break;
+      }
+    }
+  }
+  for (const v of world.vines) {
+    // Vines hang low: a standing or jumping puppy clips them, a tucked one
+    // slips underneath. They are hazards, never footing.
+    if (overlaps(p, v)) {
+      if (p.invincible <= 0) {
         respawn(world);
         break;
       }

@@ -189,10 +189,12 @@ window.addEventListener("keydown", (e) => {
       "ArrowLeft",
       "ArrowRight",
       "ArrowUp",
+      "ArrowDown",
       "Space",
       "KeyA",
       "KeyD",
       "KeyW",
+      "KeyS",
       "ShiftLeft",
       "ShiftRight",
     ].includes(e.code)
@@ -249,6 +251,7 @@ function frame(time) {
             (keys.has("ArrowRight") || keys.has("KeyD") ? 1 : 0) -
             (keys.has("ArrowLeft") || keys.has("KeyA") ? 1 : 0),
           run: keys.has("ShiftLeft") || keys.has("ShiftRight"),
+          duck: keys.has("ArrowDown") || keys.has("KeyS"),
           jumpPressed,
           jumpReleased,
         },

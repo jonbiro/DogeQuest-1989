@@ -34,7 +34,7 @@
             width="960"
             height="540"
             tabindex="0"
-            aria-label="Game world. Move with A and D, jump with Space, jump again in the air, run with Shift, pause with Escape."
+            aria-label="Game world. Move with A and D, jump with Space, jump again in the air, duck with S or Down, run with Shift, pause with Escape."
             inert
           ></canvas>
           <div id="hud" hidden>
@@ -156,14 +156,15 @@
         </div>
         <div>
           <button data-key="ShiftLeft">Run</button
+          ><button data-key="ArrowDown" aria-label="Duck">Duck ↓</button
           ><button data-key="Space" class="jump">Jump ↑</button>
         </div>
       </nav>
       <footer>
         <div>
           <kbd>A</kbd><kbd>D</kbd><span>move</span><kbd>SPACE</kbd
-          ><span>jump twice</span><kbd>SHIFT</kbd><span>run</span><kbd>ESC</kbd
-          ><span>pause</span>
+          ><span>jump twice</span><kbd>SHIFT</kbd><span>run</span><kbd>S/↓</kbd
+          ><span>duck</span><kbd>ESC</kbd><span>pause</span>
         </div>
         <p>Follow your nose. Find your way home.</p>
       </footer>
