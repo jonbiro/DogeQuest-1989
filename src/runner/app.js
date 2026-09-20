@@ -7,7 +7,7 @@ import {installBackupControls} from './backup-ui.js';
 import {installOfflineSupport} from './offline.js';
 import { createView } from "./render.js";
 import {prepareFirstFrame} from './shader-preparation.js';
-import { UPGRADES, levels, price, purchase, refundUpgrade } from "./progression.js";
+import { UPGRADES, levels, price, purchase, refundUpgrade, MAX_UPGRADE_LEVEL } from "./progression.js";
 import { missionFor, missionProgress, missionTip, missionPackFor } from "./missions.js";
 import { bankRun } from "./rewards.js";
 import {resultRecord,resultChallenge} from './result-record.js';
@@ -377,7 +377,7 @@ function shop() {
   $("overlay-primary").textContent = "Run with your upgrades ↗︎";
   $("upgrades").replaceChildren();
   const upgradeEffect = (key, level) => {
-    const value = Math.max(0, Math.min(3, Math.floor(Number(level) || 0)));
+    const value = Math.max(0, Math.min(MAX_UPGRADE_LEVEL, Math.floor(Number(level) || 0)));
     if (key === 'leap') return value ? `+${value * 10}% jump clearance` : 'Base jump clearance';
     if (key === 'slide') return `${(.58 + value * .07).toFixed(2)}s low hold`;
     if (key === 'magnet') return `${10 + value * 3}s pickup magnet`;
@@ -395,15 +395,15 @@ function shop() {
     const benefit=document.createElement('span');benefit.textContent=upgrade.description;
     const preview=document.createElement('small');
     preview.className='upgrade-preview';
-    preview.textContent = level >= 3
+    preview.textContent = level >= MAX_UPGRADE_LEVEL
       ? `MAX · ${upgradeEffect(key, level)}`
       : `NOW ${upgradeEffect(key, level)}  →  NEXT ${upgradeEffect(key, level + 1)}`;
-    preview.setAttribute('aria-label', `${upgrade.name}: current ${upgradeEffect(key, level)}; next ${level >= 3 ? 'maximum level' : upgradeEffect(key, level + 1)}`);
+    preview.setAttribute('aria-label', `${upgrade.name}: current ${upgradeEffect(key, level)}; next ${level >= MAX_UPGRADE_LEVEL ? 'maximum level' : upgradeEffect(key, level + 1)}`);
     const visual = document.createElement('div');
     visual.className = 'upgrade-preview-rail';
     visual.dataset.level = String(level);
     visual.setAttribute('role', 'img');
-    visual.setAttribute('aria-label', `${upgrade.name}: level ${level} of 3${level < 3 ? `, level ${level + 1} preview highlighted` : ', maximum level'}`);
+    visual.setAttribute('aria-label', `${upgrade.name}: level ${level} of ${MAX_UPGRADE_LEVEL}${level < MAX_UPGRADE_LEVEL ? `, level ${level + 1} preview highlighted` : ', maximum level'}`);
     const visualIcon = document.createElement('span');
     visualIcon.className = 'upgrade-preview-icon';
     visualIcon.textContent = upgradeIcons[key] || '✦';
@@ -411,7 +411,7 @@ function shop() {
     const track = document.createElement('span');
     track.className = 'upgrade-preview-pips';
     track.setAttribute('aria-hidden', 'true');
-    for (let index = 1; index <= 3; index++) {
+    for (let index = 1; index <= MAX_UPGRADE_LEVEL; index++) {
       const pip = document.createElement('i');
       pip.dataset.filled = String(index <= level);
       pip.dataset.next = String(index === level + 1);
@@ -419,9 +419,9 @@ function shop() {
       track.append(pip);
     }
     visual.append(visualIcon, track);
-    const meter=document.createElement('progress');meter.max=3;meter.value=level;
-    meter.setAttribute('aria-label',`${upgrade.name}: level ${level} of 3`);
-    const status=document.createElement('small');status.textContent=`Level ${level} / 3`;
+    const meter=document.createElement('progress');meter.max=MAX_UPGRADE_LEVEL;meter.value=level;
+    meter.setAttribute('aria-label',`${upgrade.name}: level ${level} of ${MAX_UPGRADE_LEVEL}`);
+    const status=document.createElement('small');status.textContent=`Level ${level} / ${MAX_UPGRADE_LEVEL}`;
     copy.append(name,benefit,preview,visual,status,meter);copy.className='upgrade-copy';
     button.textContent =
       cost === null ? "Maxed" : `${cost.toLocaleString()} pts`;

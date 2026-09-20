@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {UPGRADES, levels, price, purchase, refundUpgrade} from '../src/runner/progression.js';
+import {UPGRADES, levels, price, purchase, refundUpgrade, MAX_UPGRADE_LEVEL} from '../src/runner/progression.js';
 import {createRun, fillTrack, step, act} from '../src/runner/world.js';
 import {bankRun} from '../src/runner/rewards.js';
 import {missionPackFor, missionProgress} from '../src/runner/missions.js';
@@ -63,7 +63,7 @@ test('buying and refunding upgrades conserves every credit', () => {
 test('an upgrade level is never created by a refused purchase at the price boundary', () => {
   // The exact-cost boundary is where an off-by-one would let a player buy a
   // level they cannot afford, or refuse one they can.
-  for (const level of [0, 1, 2]) {
+  for (const level of [0, 1, 2, 3]) {
     const cost = price(level);
     const poor = {credits: cost - 1, upgrades: {...levels({}), leap: level}};
     assert.equal(purchase(poor, 'leap'), false, `level ${level} must not be affordable one point short`);
@@ -73,8 +73,8 @@ test('an upgrade level is never created by a refused purchase at the price bound
     assert.equal(exact.credits, 0);
   }
   // A maxed upgrade has no next price and must refuse any purchase.
-  const maxed = {credits: 99999, upgrades: {...levels({}), leap: 3}};
-  assert.equal(price(3), null);
+  const maxed = {credits: 99999, upgrades: {...levels({}), leap: 4}};
+  assert.equal(price(4), null);
   assert.equal(purchase(maxed, 'leap'), false, 'a maxed upgrade cannot be bought again');
   assert.equal(maxed.credits, 99999);
 });
@@ -156,4 +156,15 @@ test('practice and unfinished runs are never banked', () => {
   const practiceProfile = freshProfile();
   assert.equal(bankRun(practiceProfile, practice, practice.missions), null);
   assert.deepEqual(practiceProfile, freshProfile(), 'practice must never change progress');
+});
+
+test('a fourth mastery level extends every track for 3000 points',()=>{
+  assert.equal(MAX_UPGRADE_LEVEL,4);
+  assert.deepEqual([price(0),price(1),price(2),price(3),price(4)],[500,1000,1800,3000,null]);
+  const p={credits:3000,upgrades:levels({leap:3})};
+  assert.ok(purchase(p,'leap'));
+  assert.equal(p.upgrades.leap,4);
+  assert.equal(p.credits,0);
+  assert.equal(refundUpgrade(p,'leap'),3000);
+  assert.equal(p.upgrades.leap,3);
 });

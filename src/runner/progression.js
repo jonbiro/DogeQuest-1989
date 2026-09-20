@@ -1,3 +1,4 @@
+export const MAX_UPGRADE_LEVEL = 4;
 export const UPGRADES = {
   leap: {
     name: "Spring paws",
@@ -20,12 +21,12 @@ export function levels(value = {}) {
   return Object.fromEntries(
     Object.keys(UPGRADES).map((key) => [
       key,
-      Math.min(3, Math.max(0, Math.floor(Number(value?.[key]) || 0))),
+      Math.min(MAX_UPGRADE_LEVEL, Math.max(0, Math.floor(Number(value?.[key]) || 0))),
     ]),
   );
 }
 export function price(level) {
-  return [500, 1000, 1800][level] ?? null;
+  return [500, 1000, 1800, 3000][level] ?? null;
 }
 export function purchase(profile, key) {
   if (!Object.hasOwn(UPGRADES, key)) return false;
@@ -39,7 +40,7 @@ export function purchase(profile, key) {
 export function refundUpgrade(profile, key) {
   if (!Object.hasOwn(UPGRADES, key)) return 0;
   const level = profile.upgrades?.[key];
-  if (!Number.isInteger(level) || level < 1 || level > 3 || !Number.isFinite(profile.credits) || profile.credits < 0) return 0;
+  if (!Number.isInteger(level) || level < 1 || level > MAX_UPGRADE_LEVEL || !Number.isFinite(profile.credits) || profile.credits < 0) return 0;
   const refund = price(level - 1);
   if (!Number.isSafeInteger(profile.credits + refund)) return 0;
   profile.upgrades[key]--;

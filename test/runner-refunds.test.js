@@ -8,17 +8,17 @@ import {createRun,act,BASE_SLIDE_DURATION,SLIDE_UPGRADE_DURATION} from '../src/r
 const {structuredClone}=globalThis;
 test('every upgrade level refunds exactly its price without changing other progress',()=>{
   for(const key of Object.keys(UPGRADES)) {
-    const profile={credits:3300,upgrades:levels(),best:900,bones:50,collection:{puppy:'mochi'}};
+    const profile={credits:6300,upgrades:levels(),best:900,bones:50,collection:{puppy:'mochi'}};
     const before=structuredClone(profile);
-    for(let i=0;i<3;i++)assert.equal(purchase(profile,key),true);
+    for(let i=0;i<4;i++)assert.equal(purchase(profile,key),true);
     assert.equal(profile.credits,0);
-    for(let level=3;level>0;level--)assert.equal(refundUpgrade(profile,key),price(level-1));
+    for(let level=4;level>0;level--)assert.equal(refundUpgrade(profile,key),price(level-1));
     assert.deepEqual(profile,before);
     assert.equal(refundUpgrade(profile,key),0);
   }
 });
 test('invalid or unowned refunds cannot create points or negative levels',()=>{
-  for(const level of [0,-1,4,1.5,'1',null]) {
+  for(const level of [0,-1,5,1.5,'1',null]) {
     const p={credits:20,upgrades:{slide:level}};
     const before=structuredClone(p);
     assert.equal(refundUpgrade(p,'slide'),0);assert.deepEqual(p,before);
@@ -43,7 +43,7 @@ test('actual purchase handler keeps focus on the next usable action in its upgra
   const start=source.indexOf('    button.onclick = () => {',source.indexOf('function shop()'));
   const end=source.indexOf('    const actions =',start);
   assert.ok(start>=0&&end>start);
-  for(const key of Object.keys(UPGRADES))for(const level of [0,1,2])for(const extra of [0,10000]) {
+  for(const key of Object.keys(UPGRADES))for(const level of [0,1,2,3])for(const extra of [0,10000]) {
     const saved={credits:price(level)+extra,upgrades:levels({[key]:level})};
     const button={},focused=[];let persisted=0;
     const target=name=>({focus:options=>focused.push({name,preventScroll:options.preventScroll})});
@@ -56,6 +56,6 @@ test('actual purchase handler keeps focus on the next usable action in its upgra
     assert.equal(saved.upgrades[key],level+1);
     assert.equal(saved.credits,extra);
     assert.equal(persisted,1);
-    assert.deepEqual(focused,[{name:level<2&&extra>0?'purchase':'refund',preventScroll:true}]);
+    assert.deepEqual(focused,[{name:level<3&&extra>0?'purchase':'refund',preventScroll:true}]);
   }
 });
