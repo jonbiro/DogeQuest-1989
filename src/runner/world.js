@@ -771,6 +771,8 @@ export function fillTrack(run) {
     // Reuses gap collision; first miss costs streak, not a heart. Gaps sit
     // 40m apart so a full 26m top-speed jump always has a landing zone, and
     // Scenic never sees them (its contract promises no full-width gaps).
+    // Wade starts at 2200: no 140m window exists in the furnished adventure,
+    // so it remains an endless chapter like the rail, cart and Frostpeak.
     const inScenicRoute = run.route?.kind === 'scenic' && run.nextRow < run.route.until;
     if (run.climbPrototype && !inScenicRoute && run.nextRow >= 2200 && (run.row % 37 === 0)) {
       const start = Math.ceil(run.nextRow / 5) * 5;
