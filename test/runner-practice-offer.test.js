@@ -54,11 +54,26 @@ test('the actual results practice button routes collisions and rehearsal retries
     [{practice:{kind:'turn',cornerIndex:1,correct:0}},['turn',1]],
     [{practice:{kind:'zipline'}},['zipline',0]],
     [{ended:true,retired:true,lastMistake:{type:'log'}},null],
+    [{ended:true,mode:'adventure',skiPrototype:true,skis:0},['ski',0]],
   ]) {
     const button={};let actual=null;
-    runInNewContext(source.slice(from,to),{run,practiceOffer,$:()=>button,
+    runInNewContext(source.slice(from,to),{run,practiceOffer,saved:{},$ :()=>button,
       startPractice:(...args)=>{actual=args;}});
     button.onclick();
     assert.deepEqual(actual,expected);
   }
+});
+
+test('finished adventures without skiing offer the ski drill exactly once',()=>{
+  const finished = {ended:true, mode:'adventure', skiPrototype:true, skis:0};
+  assert.deepEqual(practiceOffer(finished, {}),
+    {kind:'ski', cornerIndex:0, label:'Try Frostpeak skiing'});
+  assert.equal(practiceOffer(finished, {ski: 1}), null);
+  assert.equal(practiceOffer({...finished, skis: 1}, {}), null);
+  assert.equal(practiceOffer({...finished, mode:'endless'}, {}), null);
+  assert.equal(practiceOffer({...finished, skiPrototype:false}, {}), null);
+  // Remediation still beats discovery, and bare runs keep their null.
+  assert.equal(practiceOffer({ended:true, mode:'adventure', skiPrototype:true, skis:0,
+    lastMistake:{type:'log'}}, {}).kind, 'jump');
+  assert.equal(practiceOffer({ended:true}), null);
 });

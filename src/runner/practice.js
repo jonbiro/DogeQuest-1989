@@ -22,7 +22,7 @@ const FOCUSED_LESSONS={
 };
 function moveLessons(kind){return FOCUSED_LESSONS[kind]||LESSONS;}
 function moveName(run){return run.practice.kind==='jump'?'jumps':run.practice.kind==='slide'?'slides':'moves';}
-export function practiceOffer(run) {
+export function practiceOffer(run, seen = {}) {
   if (!run.ended || run.practice || run.retired) return null;
   const mistake=run.lastMistake;
   if(mistake?.raftHazard)return {kind:'raft',cornerIndex:0,label:'Practice river steering'};
@@ -40,6 +40,12 @@ export function practiceOffer(run) {
   if(mistake?.type && clearedBy(mistake.type)==='slide' && mistake.type!=='moving-gate')return {kind:'slide',cornerIndex:0,label:'Practice slide timing'};
   if (mistake?.type==='rock')
     return {kind:'moves',cornerIndex:0,label:'Practice the basics'};
+  // Discovery, not remediation: adventures end long before Frostpeak, so a
+  // finished adventure that never skied offers the ski drill exactly once.
+  // Mistake coaching above always wins; bare ended runs without a mode keep
+  // their long-standing null.
+  if (!seen.ski && run.mode === 'adventure' && run.skiPrototype && !(run.skis > 0))
+    return {kind:'ski',cornerIndex:0,label:'Try Frostpeak skiing'};
   return null;
 }
 function lessonFeedback(lesson,correct,detail) {

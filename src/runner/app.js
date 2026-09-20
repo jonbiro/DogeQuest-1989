@@ -102,6 +102,7 @@ let saved = {
   runModifier: DEFAULT_RUN_MODIFIER,
   preferences: preferencesFrom(null,reducedMotion),
   fetchHint: 0,
+  skiHint: 0,
 };
 try {
   const {value,available,readable} = readStoredProfile(localStorage);
@@ -1067,7 +1068,11 @@ function finish() {
   updateTrailLink();
   $('trail-copy-status').textContent = '';
   showOverlay("ended");
-  const rehearsal=practiceOffer(run);
+  const rehearsal=practiceOffer(run, {ski: saved.skiHint});
+  if (rehearsal?.kind === 'ski' && !saved.skiHint) {
+    saved.skiHint = 1;
+    persist();
+  }
   $('practice-again').hidden = !rehearsal;
   if (rehearsal) $('practice-again').textContent = rehearsal.label;
   if (run.retired) {
@@ -1298,7 +1303,7 @@ $('practice-raft').onclick = () => startPractice('raft');
 $('practice-turn').onclick = () => startPractice('turn');
 $('practice-again').onclick = () => {
   if (!run.practice) {
-    const offer=practiceOffer(run);
+    const offer=practiceOffer(run, {ski: saved.skiHint});
     if (offer) startPractice(offer.kind,offer.cornerIndex);
     return;
   }
