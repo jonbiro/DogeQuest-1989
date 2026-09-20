@@ -550,20 +550,31 @@ export function fillTrack(run) {
       (run.skiSkipped ??= []).push(ski.start);
       continue;
     }
+    // A frontier that already passed the start (after a flavor/course jump)
+    // must not emit behind it: stale content would double up over live rows
+    // inside the cable window and beyond. This mirrors the climb/glide guard.
+    if (ski && run.nextRow >= ski.approach && ski.start < run.nextRow) {
+      run.nextSki = ski.start + SKI_PERIOD;
+      (run.skiSkipped ??= []).push(ski.start);
+      continue;
+    }
     if (ski && run.nextRow >= ski.approach) {
       const courseOverlap = run.course && run.course.end >= ski.approach &&
         run.course.start <= ski.recovery;
+      // The cable check is physical, not margined: a gantry inside the
+      // descent genuinely collides with it, but a cable starting past the
+      // exit is a legal combo (finish the ski, hop into the handle). Choice
+      // gates are passive markers that resolve by lane even mid-descent, so
+      // pending forks never veto a slope.
       const ziplineStart = Number.isFinite(run.nextZipline) ? run.nextZipline : Infinity;
-      const ziplineOverlap = ziplineStart <= ski.recovery + 45 &&
-        ziplineStart + ZIPLINE_LENGTH + 45 >= ski.approach;
-      const choiceOverlap = Number.isFinite(run.nextChoice) &&
-        run.nextChoice >= ski.approach - 45 && run.nextChoice <= ski.recovery + 45;
+      const ziplineOverlap = ziplineStart < ski.end + 20 &&
+        ziplineStart + ZIPLINE_LENGTH > ski.start - 20;
       const reserved = cornerIntersecting(ski.approach, ski.recovery) ||
         (run.raftPrototype && raftIntersecting(ski.approach, ski.recovery)) ||
         (run.minecartPrototype && minecartIntersecting(ski.approach, ski.recovery, mcFirst)) ||
         (run.movingGatePrototype && movingGateIntersecting(ski.approach, ski.recovery, mgFirst)) ||
         bridgeCollapseIntersecting(ski.approach, ski.recovery) ||
-        courseOverlap || ziplineOverlap || choiceOverlap;
+        courseOverlap || ziplineOverlap;
       if (!reserved) {
         const startMarker = add(run, 'ski-start', 1, ski.start);
         startMarker.skiSection = ski.index;

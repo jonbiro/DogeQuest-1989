@@ -25,7 +25,7 @@ for(const fps of [24,30,50,60])for(const level of [0,3])test(`delayed cues clear
       if(cue!==previous) {
         previous=cue;
         const action=cue.includes('LEFT')?'left':cue.includes('RIGHT')?'right':
-          cue.includes('SLIDE')?'slide':cue.includes('JUMP')?'jump':null;
+          cue.includes('SLIDE')?'slide':(cue.includes('JUMP')||cue.includes('HOP'))?'jump':null;
         if(action&&!cue.includes('SET'))pending.push({at:run.time+delay,action});
       }
       while(pending[0]?.at<=run.time)act(run,pending.shift().action);

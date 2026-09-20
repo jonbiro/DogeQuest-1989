@@ -48,7 +48,7 @@ for(const fps of [24,60])for(const level of [0,3])test(`Scenic cues tolerate 300
           if(history.length>8)history.shift();
           previous=decision;
           const action=decision.includes('LEFT')?'left':decision.includes('RIGHT')?'right':
-            decision.includes('SLIDE')?'slide':decision.includes('JUMP')?'jump':null;
+            decision.includes('SLIDE')?'slide':decision.includes('JUMP')||decision.includes('HOP')?'jump':null;
           if(action&&!decision.includes('SET'))pending.push({at:run.time+.3,action});
         }
       }

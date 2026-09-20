@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {createRun, act, step} from "../src/runner/world.js";
+import {createRun, act, step, fillTrack} from "../src/runner/world.js";
 import {climbAt, climbByIndex, CLIMB_FIRST} from "../src/runner/climb.js";
 import {glideAt, glideByIndex, GLIDE_FIRST} from "../src/runner/glide.js";
 import {CURRENT_TRAIL_VERSION} from "../src/runner/trail-version.js";
@@ -159,7 +159,7 @@ test('wade and rail announce themselves as encounters', () => {
 test('v6 debuts gates, carts and ski earlier while legacy grids stay frozen', () => {
   assert.equal(movingGateFirst(6), 1900);
   assert.equal(minecartFirst(6), 4960);
-  assert.equal(skiFirst(6), 3350);
+  assert.equal(skiFirst(6), 4600);
   for (const v of [1, 2, 3, 4, 5]) {
     assert.equal(movingGateFirst(v), MOVING_GATE_FIRST);
     assert.equal(minecartFirst(v), MINECART_FIRST);
@@ -167,12 +167,12 @@ test('v6 debuts gates, carts and ski earlier while legacy grids stay frozen', ()
   }
   assert.equal(movingGateByIndex(0, movingGateFirst(6)).start, 1900);
   assert.equal(minecartByIndex(0, minecartFirst(6)).start, 4960);
-  assert.equal(skiByIndex(0, skiFirst(6)).start, 3350);
+  assert.equal(skiByIndex(0, skiFirst(6)).start, 4600);
   // Default (v6) runs schedule the early chapters; v5 keeps legacy slots.
   const v6 = createRun(11, {}, 6);
   assert.equal(v6.nextMovingGate, 1900);
   assert.equal(v6.nextMinecart, 4960);
-  assert.equal(v6.nextSki, 3350);
+  assert.equal(v6.nextSki, 4600);
   const v5 = createRun(11, {}, 5);
   assert.equal(v5.nextMovingGate, MOVING_GATE_FIRST);
   assert.equal(v5.nextMinecart, MINECART_FIRST);
@@ -180,15 +180,17 @@ test('v6 debuts gates, carts and ski earlier while legacy grids stay frozen', ()
 });
 
 test('skipped chapters never board positionally (no phantom ski)', () => {
-  // Seed 4 skips the 6950 ski on the river recovery yet keeps ordinary rows
-  // there: crossing the window must not board an empty descent.
-  const run = createRun(4, {}, 6);
+  // Force the past-recovery skip, then cross the window: the chapter was
+  // never generated, so positional boarding must refuse it even though the
+  // grid math still names the section.
+  const run = createRun(1, {}, 6);
+  Object.assign(run, {distance: 8000, nextRow: 8100, nextSki: 4600, objects: []});
+  fillTrack(run);
+  assert.ok(run.skiSkipped.includes(4600));
+  assert.ok(run.nextSki > 4600);
+  Object.assign(run, {distance: 4590, previous: {x: 0, y: 0, distance: 4590}});
   let guard = 0;
-  while (run.distance < 6940 && guard++ < 60000) { run.hearts = 99; run.invulnerable = 1000; step(run, 1 / 120); }
-  assert.ok(run.nextSki > 6950, 'the overlapped ski is skipped in generation');
-  assert.ok(run.skiSkipped.includes(6950));
-  guard = 0;
-  while (run.distance < 7100 && guard++ < 60000) { run.hearts = 99; run.invulnerable = 1000; step(run, 1 / 120); }
+  while (run.distance < 4610 && guard++ < 1000) step(run, 1 / 120);
   assert.equal(run.ski, null, 'no phantom ride without emitted content');
   assert.equal(run.skis, 0);
 });

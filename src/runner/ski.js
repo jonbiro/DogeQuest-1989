@@ -13,10 +13,11 @@ export const SKI_PERIOD = 3600;
 export const SKI_LENGTH = 210;
 export const SKI_APPROACH = 46;
 export const SKI_RECOVERY = 42;
-// Version-six trails drop in at 3350, the first 300m gap that clears corners,
-// choices,raft, gates and the other v6 beats; later trails keep the 8700
+// Version-six trails drop in at 4600, clear of the 4550 fork gates, the 4420
+// glide tail and the 4350 corner recovery, with the 4850 cable sitting just
+// past the exit as a legal ski-then-catch combo. Later trails keep the 8700
 // opening and every shared link replays.
-export const SKI_V6_FIRST = 3350;
+export const SKI_V6_FIRST = 4600;
 export function skiFirst(version) {
   return version >= 6 ? SKI_V6_FIRST : SKI_FIRST;
 }
@@ -201,7 +202,10 @@ export function moveSki(run, target, dt) {
 export function skiEncounter(section, challenge = false) {
   if (!section) return [];
   const objects = [];
-  const safeLanes = [1, 0, 2, 1];
+  // Every beat flows single-or-stay: mogul hops anywhere, ice holds 0,
+  // snowballs are hopped or carved to center, and the gate threads center
+  // before the snowman. No beat demands a ×2 inside the next beat's window.
+  const safeLanes = [1, 0, 1, 1];
   const types = ['mogul', 'ice', 'ski-gate', 'mogul'];
   const offsets = [25, 73, 121, 169];
   for (const [index, safeLane] of safeLanes.entries()) {
@@ -270,7 +274,10 @@ export function skiEncounter(section, challenge = false) {
     skiSnowball: true,
     skiJumpable: true,
     skiWavePhase: section.index * .75,
-    skiSafeLane: (snowballLane + 1) % 3,
+    // Carve to center: single steers from the ice lane (0) and on to the ski
+    // gate (2). Deriving it from the ball's lane instead forces a ×2 in 23m
+    // right where the gate cue is still masked by the ball.
+    skiSafeLane: 1,
     skillReward: challenge ? 115 : 90,
   });
   const snowmanLane = section.index % 3;
