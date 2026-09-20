@@ -250,3 +250,34 @@ test("manual fixture jumps do not cause retroactive misses, and hazards record t
   assert.equal(hazard.hearts, 2);
   assert.ok(Math.abs(hazard.x - LANES[1]) < .001);
 });
+
+test('turns stay fair at Zoomies speed because the window is time-based',()=>{
+  // The prompt opens a full 1.0s window at any pace, so the same reaction
+  // turns as reliably boosted as it does at base speed. This locks the
+  // audit's open Zoomies-turn question on the sim side; sign readability at
+  // speed still needs eyes on hardware.
+  for (const zoomies of [0, 4]) {
+    const corner = cornerByIndex(2);
+    const run = createRun(1989);
+    const speed = zoomies > 0 ? 46.8 : 36;
+    Object.assign(run, {
+      distance: corner.at - speed * 0.4,
+      nextCorner: 2,
+      objects: [],
+      nextRow: Infinity,
+      nextChoice: Infinity,
+      choicePending: null,
+      nextZipline: Infinity,
+      events: [],
+      speed,
+      zoomies,
+    });
+    assert.ok(turnPrompt(run), 'prompt open at both paces');
+    for (let i = 0; i < Math.round(0.3 * 120); i++) step(run, 1 / 120);
+    act(run, corner.direction);
+    cross(run, corner);
+    assert.equal(run.turns, 1, `zoomies=${zoomies}: committed turn accepted`);
+    assert.equal(run.hearts, 3);
+    assert.ok(run.events.includes(`turn-${corner.direction}`));
+  }
+});
