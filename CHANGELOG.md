@@ -4,6 +4,25 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Added vine walls to all five 2D trails with a new duck move (S/Down on
+  keyboard, Duck button on touch): tuck under the strands, dive mid-air, or
+  jump from a tuck where headroom allows. Releasing duck under a vine keeps
+  the tuck until it is safe to stand.
+- Gave each 2D trail its own enemy rhythm: bouncing hoppers from the woods
+  on, and fast wide-sweeping chargers haunting the blue hour and the finale.
+  Stomps and patrols work exactly as before.
+- Added climbable vine walls and a glide canopy to runner adventures, plus
+  hop-friendly wade stones and steerable root rails in endless. Adventures
+  now run 2.6 km and include the moving gate; mine-carts and Frostpeak debut
+  earlier in endless.
+- Added wall-pump, shimmer-glide, mine-cart steering and Frostpeak skiing
+  practice drills, and routed cart/ski failures to them from results.
+- Taught the run HUD a first-charge Fetch hint (once per profile), a hazard
+  key beside the pickup key, and bond requirements on Pepper and Luna so the
+  roster signals skill as well as savings.
+- Added fourth upgrade levels (3,000 points each) with full refunds, and
+  widened early-game margins: a gentler speed ramp, earlier weave hints, a
+  renewal slide prompt, and a brief slide-expiry grace at the collision plane.
 - Refined the zipline hang composition with a warm, rounded handhold and
   high-contrast end caps that sit behind the puppy's raised paws. Hanging
   paintings now normalize their transparent matte before upload, removing the
