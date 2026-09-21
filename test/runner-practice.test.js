@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createPracticeRun,createZiplinePracticeRun,createClimbPracticeRun,createGlidePracticeRun,createMinecartPracticeRun,createSkiPracticeRun,stepPractice,practiceCue,practiceProgress,practiceResult,practiceOffer} from '../src/runner/practice.js';
+import {createPracticeRun,createZiplinePracticeRun,createClimbPracticeRun,createGlidePracticeRun,createMinecartPracticeRun,createSkiPracticeRun,createWadePracticeRun,createRailPracticeRun,stepPractice,practiceCue,practiceProgress,practiceResult,practiceOffer} from '../src/runner/practice.js';
 import {act} from '../src/runner/world.js';
 import {bankRun} from '../src/runner/rewards.js';
 for(const kind of ['jump','slide'])test(`focused ${kind} drill teaches three real actions at all upgrade levels`,()=>{
@@ -267,4 +267,53 @@ test('cart and ski failures offer the matching drill',()=>{
   assert.equal(practiceOffer({ended:true,lastMistake:{type:'rock',minecartHazard:true}}).kind,'cart');
   assert.equal(practiceOffer({ended:true,lastMistake:{type:'mogul',skiHazard:true}}).kind,'ski');
   assert.equal(practiceOffer({ended:true,lastMistake:{type:'yeti',skiObstacle:true}}).kind,'ski');
+  assert.equal(practiceOffer({ended:true,lastMistake:{type:'gap',wade:true}}).kind,'wade');
+  assert.equal(practiceOffer({ended:true,lastMistake:{type:'gap',railGap:true}}).kind,'rail');
+});
+
+test('wade practice hops three stones with a clean completion',()=>{
+  const run=createWadePracticeRun();
+  assert.match(practiceCue(run),/stone|hop/i);
+  let pending=null,previous='';
+  for(let i=0;i<4000&&!run.ended;i++) {
+    const cue=practiceCue(run);
+    if(cue!==previous) {
+      previous=cue;
+      const action=/LEFT/.test(cue)?'left':/RIGHT/.test(cue)?'right'
+        :/HOP|JUMP/.test(cue)?'jump':null;
+      if(action)pending={action,at:run.time+.15};
+    }
+    if(pending&&run.time>=pending.at){act(run,pending.action);pending=null;}
+    stepPractice(run,1/120);
+  }
+  assert.equal(run.ended,true);
+  assert.deepEqual(run.practice.outcomes,[true,true,true]);
+  assert.equal(run.hearts,3);assert.equal(run.fetchCharge,0);
+  assert.match(practiceProgress(run),/crossed/);
+  assert.match(practiceResult(run).lesson,/stones/);
+  assert.equal(bankRun({},run,[]),null);
+});
+
+test('rail practice rides the log and hops both breaks',()=>{
+  const run=createRailPracticeRun();
+  assert.match(practiceCue(run),/log|break|hop|jump/i);
+  let pending=null,previous='';
+  for(let i=0;i<4000&&!run.ended;i++) {
+    const cue=practiceCue(run);
+    if(cue!==previous) {
+      previous=cue;
+      const action=/LEFT/.test(cue)?'left':/RIGHT/.test(cue)?'right'
+        :/HOP|JUMP/.test(cue)?'jump':null;
+      if(action)pending={action,at:run.time+.15};
+    }
+    if(pending&&run.time>=pending.at){act(run,pending.action);pending=null;}
+    stepPractice(run,1/120);
+  }
+  assert.equal(run.ended,true);
+  assert.ok(run.clears>=2,'both striped breaks hopped');
+  assert.equal(run.hearts,3);assert.equal(run.fetchCharge,0);
+  assert.deepEqual(run.practice.outcomes,[true,true,true]);
+  assert.match(practiceProgress(run),/ridden|breaks/);
+  assert.match(practiceResult(run).lesson,/rail|log|break/i);
+  assert.equal(bankRun({},run,[]),null);
 });

@@ -9,6 +9,8 @@ import {courseAt,courseCue} from './courses.js';
 import {raftByIndex,raftEncounter} from './rafts.js';
 import {minecartByIndex,minecartEncounter,minecartFirst} from './minecart.js';
 import {skiByIndex,skiEncounter,skiFirst} from './ski.js';
+import {wadeByIndex} from './wade.js';
+import {railByIndex} from './rail.js';
 
 const LESSONS = [
   {at:35,type:'log',hint:'Logs ahead · wait for the cue'},
@@ -28,6 +30,8 @@ export function practiceOffer(run, seen = {}) {
   if(mistake?.raftHazard)return {kind:'raft',cornerIndex:0,label:'Practice river steering'};
   if(mistake?.minecartHazard)return {kind:'cart',cornerIndex:0,label:'Practice cart steering'};
   if(mistake?.skiHazard||mistake?.skiObstacle)return {kind:'ski',cornerIndex:0,label:'Practice Frostpeak skiing'};
+  if(mistake?.wade)return {kind:'wade',cornerIndex:0,label:'Practice stepping stones'};
+  if(mistake?.railGap)return {kind:'rail',cornerIndex:0,label:'Practice the root rail'};
   if (mistake?.type==='rock' && mistake.courseWeave)
     return {kind:'weave',cornerIndex:0,label:'Practice lane weaves'};
   if (mistake?.type==='gap') return {kind:'gap',cornerIndex:0,label:'Practice gap jumps'};
@@ -141,6 +145,41 @@ export function createSkiPracticeRun(upgrades = {}) {
   run.practice={kind:'ski',start:run.distance,end:section.end+15,correct:0,outcomes:[],hits:0};
   return run;
 }
+export function createWadePracticeRun(upgrades = {}) {
+  const run=createRun(1989,upgrades),section=wadeByIndex(0);
+  Object.assign(run,{distance:section.start-40,speed:12,
+    nextRow:Infinity,nextChoice:Infinity,nextZipline:Infinity,nextCorner:999,
+    choicePending:null,objects:[]});
+  run.previous={x:run.x,y:run.y,distance:run.distance};
+  const start=section.start;
+  run.objects=[
+    {type:'wade-start',lane:1,at:start},
+    ...[0,1,2].flatMap(i=>[
+      {type:'gap',lane:1,at:start+10+i*40,wade:true,wadeStretch:start},
+      {type:'bone',lane:1,at:start+14+i*40},
+    ]),
+    {type:'wade-end',lane:1,at:section.end},
+  ].map(object=>({...object,id:run.id++,used:false}));
+  run.practice={kind:'wade',start:run.distance,end:section.end+15,correct:0,outcomes:[],hits:0,cleared:false};
+  return run;
+}
+export function createRailPracticeRun(upgrades = {}) {
+  const run=createRun(1989,upgrades),section=railByIndex(0);
+  Object.assign(run,{distance:section.start-40,speed:12,
+    nextRow:Infinity,nextChoice:Infinity,nextZipline:Infinity,nextCorner:999,
+    choicePending:null,objects:[]});
+  run.previous={x:run.x,y:run.y,distance:run.distance};
+  const start=section.start;
+  run.objects=[
+    {type:'rail-start',lane:1,at:start},
+    ...[0,1,2,3].map(i=>({type:'bone',lane:[0,1,2,1][i],at:start+8+i*8})),
+    ...[14,24].flatMap(offset=>[0,1,2].map(lane=>({type:'gap',lane,at:start+offset,railGap:true}))),
+    {type:'gift',lane:1,at:start+36},
+    {type:'rail-end',lane:1,at:section.end},
+  ].map(object=>({...object,id:run.id++,used:false}));
+  run.practice={kind:'rail',start:run.distance,end:section.end+15,correct:0,outcomes:[],hits:0};
+  return run;
+}
 export function createTurnPracticeRun(upgrades = {}, cornerIndex = 0) {
   const run = createRun(1989, upgrades);
   const corner = cornerByIndex(cornerIndex === 1 ? 1 : 0);
@@ -210,6 +249,27 @@ export function stepPractice(run, dt) {
     step(run,dt);
     run.practice.hits+=run.events.filter(event=>event==='hit').length;
     run.practice.outcomes=[Boolean(run.skis),run.practice.hits===0,run.bones>=12];
+    run.practice.correct=run.practice.outcomes.filter(Boolean).length;
+    run.hearts=3;run.fetchCharge=0;
+    run.events=run.events.filter(event=>!['hit','flow','end'].includes(event));
+    if(run.distance>=run.practice.end)run.ended=true;
+    return;
+  }
+  if(run.practice.kind==='wade') {
+    step(run,dt);
+    run.practice.cleared ||= run.events.includes('wade-end');
+    run.practice.hits+=run.events.filter(event=>event==='hit').length;
+    run.practice.outcomes=[Boolean(run.practice.cleared),run.practice.hits===0,run.bones>=2];
+    run.practice.correct=run.practice.outcomes.filter(Boolean).length;
+    run.hearts=3;run.fetchCharge=0;
+    run.events=run.events.filter(event=>!['hit','flow','end'].includes(event));
+    if(run.distance>=run.practice.end)run.ended=true;
+    return;
+  }
+  if(run.practice.kind==='rail') {
+    step(run,dt);
+    run.practice.hits+=run.events.filter(event=>event==='hit').length;
+    run.practice.outcomes=[run.distance>=run.practice.end-15,run.practice.hits===0,run.clears>=2];
     run.practice.correct=run.practice.outcomes.filter(Boolean).length;
     run.hearts=3;run.fetchCharge=0;
     run.events=run.events.filter(event=>!['hit','flow','end'].includes(event));
@@ -314,6 +374,10 @@ export function practiceCue(run) {
     : actionCue(run) || 'Follow the bone lanes · boarding is automatic';
   if(run.practice.kind==='ski')return run.skis ? '✓ Slope finished · descent complete'
     : actionCue(run) || 'Carve the open lane · hop white moguls';
+  if(run.practice.kind==='wade')return run.practice.cleared ? '✓ Stones hopped · crossing complete'
+    : actionCue(run) || 'Hop each stone · the first splash is forgiven';
+  if(run.practice.kind==='rail')return run.distance>=run.practice.end-15 ? '✓ Log ridden · breaks hopped'
+    : actionCue(run) || 'Ride the log · hop the striped breaks';
   if(run.practice.kind==='weave') {
     if(run.practice.feedback?.until>run.time)return run.practice.feedback.text;
     return courseCue(run) || (run.practice.index===3?'Weave practice complete':'Open lane ahead · ×2 means two drag segments');
@@ -358,6 +422,8 @@ export function practiceProgress(run) {
   if(run.practice.kind==='raft')return `${run.bones}/12 river bones · ${run.rafts?'landed':'steer around rocks'}`;
   if(run.practice.kind==='cart')return `${run.bones}/12 cart bones · ${run.minecarts?'landed':'steer between rocks'}`;
   if(run.practice.kind==='ski')return `${run.bones} slope bones · ${run.skis?'finished':'carve and hop'}`;
+  if(run.practice.kind==='wade')return `${run.bones}/3 stone bones · ${run.practice.cleared?'crossed':'hop each gap'}`;
+  if(run.practice.kind==='rail')return `breaks hopped ${Math.min(2,run.clears)}/2 · ${run.distance>=run.practice.end-15?'ridden':'stay on the log'}`;
   if(run.practice.kind==='weave')return `${run.practice.correct}/3 weaves cleared`;
   if (run.practice.kind==='gap') return `${run.practice.correct}/1 gap cleared`;
   if (run.practice.kind==='turn') return `${run.practice.direction} corner · ${run.practice.correct}/1 cleared`;
@@ -381,6 +447,16 @@ export function practiceResult(run) {
     title:`${run.bones} slope bones collected`,
     lesson:run.practice.hits ? 'Carve into the highlighted open lane before each patch, and hop white moguls and rolling snowballs as their crests reach you. Sliding cannot help on the slope.'
       : 'Carve between lanes, hop moguls and snowballs, and dodge blue ice, patrols and snowmen. The descent ends automatically; practice does not award points.',
+  };
+  if(run.practice.kind==='wade')return {
+    title:`${run.bones} of 3 stone bones`,
+    lesson:run.practice.hits ? 'Jump each stone just before its striped edge and stay airborne across it. A splash breaks the set bonus but never costs a heart on the first miss.'
+      : 'Three clean hops earn the crossing bonus on top of clear points. The adventure stones work exactly like these.',
+  };
+  if(run.practice.kind==='rail')return {
+    title:`${Math.min(2,run.clears)} of 2 breaks hopped`,
+    lesson:run.practice.hits ? 'Jump just before the first striped edge: one well-timed hop clears both breaks. Steering cannot help; every break spans all three lanes.'
+      : 'Ride the log to the end and hop both striped breaks with one jump. The adventure rails work exactly like this one.',
   };
   if(run.practice.kind==='weave')return {
     title:`${run.practice.correct} of 3 weaves cleared`,

@@ -4,6 +4,10 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Added stepping-stone and root-rail practice drills with menu buttons:
+  hop three forgiving stones for the crossing bonus, ride the log and hop
+  both striped breaks. Wade and rail-gap mistakes now coach to their own
+  drills instead of generic gap jumps.
 - Added crows to the 2D night trails: flyers ride a slow deterministic sine
   above the meadow, clipping standers at the crest and clearing tucks at the
   trough, so every flyby answers with a hop, a timed tuck or a dipping stomp.
