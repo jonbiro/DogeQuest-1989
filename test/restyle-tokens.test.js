@@ -31,6 +31,6 @@ test('bone uses dark edge for warm-paving legibility', () => {
   assert.ok(BONE_IVORY);
 });
 
-test('renderer budget still caps new-verb work (no new geo/tex without a cut)', () => {
-  assert.deepEqual(RENDERER_BUDGET, {geometries: 37, textures: 10, drawCalls: 260, objects: 200});
+test('renderer budget grows only with named catalog additions (mood sky batches)', () => {
+  assert.deepEqual(RENDERER_BUDGET, {geometries: 39, textures: 10, drawCalls: 262, objects: 202});
 });

@@ -10,11 +10,12 @@ import { createCornerRoad } from "./corner-road.js";
 import { PUPPIES, DEFAULT_PUPPY } from "./collection.js";
 import { puppyVisual } from "./puppy-visuals.js";
 import { REGIONS, regionAt, horizonProfile } from "./regions.js";
-import {AREAS,areaAt,areaBlend,worldMoodAt,WORLD_MOODS,landmarkSway,landmarkVariation,LANDMARK_SHOULDER_MIN,LANDMARK_SHOULDER_SPREAD} from './areas.js';
+import {AREAS,areaAt,areaBlend,worldMoodAt,WORLD_MOODS,moodStarlitWeight,landmarkSway,landmarkVariation,LANDMARK_SHOULDER_MIN,LANDMARK_SHOULDER_SPREAD} from './areas.js';
 import {DESTINATION_KITS,buildShoulderFamily,buildSignature,buildTrailMotif,buildSetPiece,buildOverhead,buildGround,buildFar,buildBuilt,buildBoardwalk,buildBoardwalkEdge,buildCutStone,buildCutStoneEdge,sideFor} from './destination-kit.js';
 import {createBoneGeometry} from './bone-model.js';
 import {createCapeGeometry} from './cape-model.js';
 import {createSky} from './sky.js';
+import {cloudLayout,cloudFrame,CLOUD_COUNT,CLOUD_PUFFS} from './clouds.js';
 import {createMountainGeometry,blendMountainArea} from './mountain.js';
 import { puppyPose, smoothLegAngles, bodyMotion, mochiCrouch, pawDust } from "./puppy-pose.js";
 import { createMochiModel } from "./mochi-model.js";
@@ -240,6 +241,15 @@ export function createView(canvas) {
   const skiSkyColor=new THREE.Color('#b9d9ef');
   const skiGroundColor=new THREE.Color('#eef8fb');
   const skiSunColor=new THREE.Color('#fff8ec');
+  const SUN_BASE_COLOR=new THREE.Color('#fff0ca');
+  const CLOUD_BASE_COLOR=new THREE.Color('#ffffff');
+  const distantSun=sky.getObjectByName('distant-sun');
+  const moodStars=sky.getObjectByName('mood-stars');
+  const cloudTintColor=new THREE.Color();
+  const cloudMatrix=new THREE.Matrix4();
+  const cloudPosition=new THREE.Vector3();
+  const cloudScale=new THREE.Vector3();
+  const cloudQuaternion=new THREE.Quaternion();
   // Recycled slabs, lane inlays, and scenery are translated rather than rebuilt.
   const scenery = new THREE.Group();
   scene.add(scenery);
@@ -769,6 +779,19 @@ export function createView(canvas) {
   atmosphereParticles.renderOrder = .12;
   atmosphereParticles.setColorAt(0, new THREE.Color('#ffffff'));
   scene.add(atmosphereParticles);
+  // Two-puff seeded clouds drift across every sky, tinted toward the mood
+  // grade. One instanced batch, no textures, fogged for depth like the hills.
+  const cloudMesh = new THREE.InstancedMesh(
+    new THREE.SphereGeometry(1, 10, 8),
+    new THREE.MeshBasicMaterial({color: '#ffffff', fog: true, toneMapped: false}),
+    CLOUD_COUNT * CLOUD_PUFFS,
+  );
+  cloudMesh.name = 'mood-clouds';
+  cloudMesh.frustumCulled = false;
+  cloudMesh.renderOrder = .05;
+  cloudMesh.setColorAt(0, new THREE.Color('#ffffff'));
+  scene.add(cloudMesh);
+  const cloudLayoutData = cloudLayout(1989);
   const atmospherePalettes = AREAS.map(area => ({
     color: new THREE.Color(area.atmosphere.color),
     accent: new THREE.Color(area.atmosphere.accent),
@@ -2520,6 +2543,34 @@ export function createView(canvas) {
       // A light color grade differentiates repeated six-area passes without
       // washing out the stronger area palettes or the high-contrast road.
       scene.background.lerp(moodSkyColor,moodStrength);
+      // Seeded clouds drift overhead in every mood, tinted toward the grade;
+      // the star dome fades in only under starlit passes; the sun disc warms
+      // and swells with the mood. All three are sky-dome dressing: no light
+      // levels, intensities or gameplay contrasts move.
+      moodStars.material.opacity = moodStarlitWeight(mood);
+      distantSun.material.color.copy(SUN_BASE_COLOR).lerp(moodSunColor,moodStrength);
+      distantSun.scale.setScalar(1 + moodStrength * 1.5);
+      cloudTintColor.copy(CLOUD_BASE_COLOR).lerp(moodSkyColor,moodStrength*.55);
+      for (let index = 0; index < CLOUD_COUNT; index++) {
+        const layout = cloudLayoutData[index];
+        const frame = cloudFrame(cloudLayoutData, index, distance, time, reducedMotion);
+        cloudMatrix.compose(
+          cloudPosition.set(frame.x, frame.y, frame.z),
+          cloudQuaternion.identity(),
+          cloudScale.set(layout.scale, layout.scale * .32, layout.scale * .55),
+        );
+        cloudMesh.setMatrixAt(index * 2, cloudMatrix);
+        cloudMatrix.compose(
+          cloudPosition.set(frame.x + layout.lobeDx, frame.y + layout.lobeDy, frame.z + 2),
+          cloudQuaternion.identity(),
+          cloudScale.set(layout.scale * layout.lobeDs, layout.scale * layout.lobeDs * .32, layout.scale * layout.lobeDs * .55),
+        );
+        cloudMesh.setMatrixAt(index * 2 + 1, cloudMatrix);
+        cloudMesh.setColorAt(index * 2, cloudTintColor);
+        cloudMesh.setColorAt(index * 2 + 1, cloudTintColor);
+      }
+      cloudMesh.instanceMatrix.needsUpdate = true;
+      if (cloudMesh.instanceColor) cloudMesh.instanceColor.needsUpdate = true;
       if (skiBlend > 0) scene.background.lerp(skiSkyColor, skiBlend);
       scene.fog.color.copy(scene.background);
       sky.material.color.copy(scene.background);

@@ -4,6 +4,11 @@ Notable changes to Puppy Quest 1989 are recorded here. The project does not curr
 
 ## Unreleased
 
+- Deepened the trail sky: fourteen two-puff seeded clouds drift overhead in
+  every mood (tinted toward the grade, fogged for depth), a 140-star dome
+  fades in on starlit passes, and the sun disc warms and swells with the
+  mood. Sky-dome dressing only: no light levels, intensities or gameplay
+  contrasts move. Renderer budget grows by the two named batches.
 - Added stepping-stone and root-rail practice drills with menu buttons:
   hop three forgiving stones for the crossing bonus, ride the log and hop
   both striped breaks. Wade and rail-gap mistakes now coach to their own

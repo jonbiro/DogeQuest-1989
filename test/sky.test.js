@@ -17,4 +17,13 @@ test('sky uses a bounded texture-free gradient with a lighter horizon',()=>{
   }
   sky.geometry.dispose();sky.material.dispose();
   assert.equal(sky.getObjectByName('distant-sun').material.depthWrite,false);
+  // A seeded star dome waits transparently for starlit passes.
+  const stars=sky.getObjectByName('mood-stars');
+  assert.ok(stars);
+  assert.equal(stars.geometry.getAttribute('position').count,140);
+  assert.equal(stars.material.opacity,0);
+  assert.equal(stars.material.fog,false);
+  assert.equal(stars.material.depthWrite,false);
+  assert.equal(stars.frustumCulled,false);
+  stars.geometry.dispose();stars.material.dispose();
 });

@@ -26,5 +26,28 @@ export function createSky() {
   sun.position.set(-.48,.35,-.75);
   sun.name='distant-sun';
   sky.add(sun);
+  // A seeded star dome for the starlit mood. Positions are pure index math
+  // (no RNG import, no coupling), the material starts fully transparent, and
+  // the renderer drives opacity from the starlit blend only. Stars are sky
+  // dressing: fog-exempt points that never touch gameplay lighting.
+  const starCount=140;
+  const starPositions=new Float32Array(starCount*3);
+  for(let i=0;i<starCount;i++){
+    const a=((i*137.5)%360)*Math.PI/180;
+    const e=(0.18+((i*89)%70)/100)*Math.PI/2;
+    const r=.94;
+    starPositions[i*3]=Math.cos(a)*Math.cos(e)*r;
+    starPositions[i*3+1]=Math.sin(e)*r;
+    starPositions[i*3+2]=-Math.abs(Math.sin(a)*Math.cos(e)*r)-.02;
+  }
+  const starGeometry=new THREE.BufferGeometry();
+  starGeometry.setAttribute('position',new THREE.BufferAttribute(starPositions,3));
+  const starMaterial=new THREE.PointsMaterial({color:'#f4f1de',size:1.6,sizeAttenuation:false,
+    transparent:true,opacity:0,fog:false,toneMapped:false,depthWrite:false});
+  const stars=new THREE.Points(starGeometry,starMaterial);
+  stars.name='mood-stars';
+  stars.frustumCulled=false;
+  stars.renderOrder=-.5;
+  sky.add(stars);
   return sky;
 }

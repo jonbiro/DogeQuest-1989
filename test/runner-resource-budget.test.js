@@ -6,7 +6,7 @@ test('renderer budgets allow the bounded graphics catalog and reject excess or i
   assert.doesNotThrow(()=>checkRendererResources(sample));
   for(const key of ['geometries','textures','drawCalls'])for(const value of [RENDERER_BUDGET[key]+1,NaN,-1])
     assert.throws(()=>checkRendererResources({...sample,[key]:value}));
-  assert.throws(()=>checkRendererResources({...sample,pooledObjects:161}));
+  assert.throws(()=>checkRendererResources({...sample,pooledObjects:163}));
 });
 test('the texture budget covers the measured mobile gameplay catalog',()=>{
   // Mobile-profile measurement 2026-09-18: camp uploads 8, gameplay uploads

@@ -90,6 +90,16 @@ export function worldMoodAt(distance=0){
   const blend=progress*progress*(3-2*progress);
   return {index,previous,blend,cycle};
 }
+// How starlit the current mood blend is: 1 under a full starlit pass, fading
+// across handoffs, 0 everywhere else. Drives the sky-dome star opacity only;
+// gameplay lighting never consults it.
+export function moodStarlitWeight(mood){
+  const id=(i)=>WORLD_MOODS[i]?.id==='starlit';
+  let weight=0;
+  if(id(mood?.index))weight+=mood.blend??0;
+  if(id(mood?.previous))weight+=1-(mood?.blend??0);
+  return Math.max(0,Math.min(1,weight));
+}
 // Keep the destination identity in one small, read-only sampler so the HUD,
 // director and future accessibility surfaces describe the same mechanic as
 // the scenery. This is metadata only: object timing and collision streams do
